@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabaseClient";
 
 const VALOR_PARA_LLEVAR = 1500;
-const MAX_ACOMPANANTES = 3;
+const MAX_ACOMPANANTES_CLIENTE = 3;
 const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
 
@@ -13,15 +13,10 @@ const menuFallback = {
   fecha: new Date().toISOString().slice(0, 10),
   titulo: "Almuerzo ejecutivo Rafiki",
   descripcion: "Escoge una proteína y máximo 3 acompañantes. Incluye sopa y bebida.",
-  precio: 17500,
-  proteinas: ["Pechuga", "Carne", "Cerdo", "Pollo guisado"],
-  proteinas_detalle: [
-    { nombre: "Pechuga", precio: 17500 },
-    { nombre: "Carne", precio: 19000 },
-    { nombre: "Cerdo", precio: 17000 },
-    { nombre: "Pollo guisado", precio: 16000 }
-  ],
-  acompanantes: ["Arroz", "Ensalada", "Tajada", "Puré", "Yuca", "Papa salada"],
+  precio: 0,
+  proteinas: [],
+  proteinas_detalle: [],
+  acompanantes: [],
   activo: true
 };
 
@@ -33,17 +28,58 @@ function dinero(valor) {
   }).format(Number(valor) || 0);
 }
 
-function textoALista(texto) {
+function textoAListaPorLineas(texto) {
   return String(texto || "")
-    .split(",")
+    .split("\n")
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-function limpiarAcompanantes(lista) {
+function limpiarAcompanantesMenu(lista) {
   return (Array.isArray(lista) ? lista : [])
-    .filter((item) => String(item || "").trim().toLowerCase() !== "sopa")
-    .slice(0, MAX_ACOMPANANTES);
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .filter((item) => item.toLowerCase() !== "sopa");
+}
+
+function limpiarAcompanantesCliente(lista) {
+  return limpiarAcompanantesMenu(lista).slice(0, MAX_ACOMPANANTES_CLIENTE);
+}
+
+function textoAProteinasDetalle(texto) {
+  return String(texto || "")
+    .split("\n")
+    .map((linea) => linea.trim())
+    .filter(Boolean)
+    .map((linea) => {
+      const indiceSeparador = linea.lastIndexOf(":");
+
+      if (indiceSeparador === -1) {
+        return {
+          nombre: linea.trim(),
+          precio: 0
+        };
+      }
+
+      const nombre = linea.slice(0, indiceSeparador).trim();
+      const precioTexto = linea.slice(indiceSeparador + 1).replace(/[^\d]/g, "");
+
+      return {
+        nombre,
+        precio: Number(precioTexto) || 0
+      };
+    })
+    .filter((item) => item.nombre);
+}
+
+function proteinasATexto(proteinasDetalle) {
+  return (proteinasDetalle || [])
+    .map((item) => `${item.nombre}:${Number(item.precio) || 0}`)
+    .join("\n");
+}
+
+function acompanantesATexto(acompanantes) {
+  return (acompanantes || []).join("\n");
 }
 
 function normalizarProteinas(menu) {
@@ -56,50 +92,53 @@ function normalizarProteinas(menu) {
       .filter((item) => item.nombre);
   }
 
-  return (menu?.proteinas || []).map((nombre) => ({
-    nombre,
-    precio: Number(menu?.precio) || 0
-  }));
+  if (Array.isArray(menu?.proteinas) && menu.proteinas.length > 0) {
+    return menu.proteinas
+      .map((nombre) => ({
+        nombre: String(nombre || "").trim(),
+        precio: Number(menu?.precio) || 0
+      }))
+      .filter((item) => item.nombre);
+  }
+
+  return [];
 }
 
 function normalizarMenu(menu) {
   const proteinasDetalle = normalizarProteinas(menu);
+  const acompanantes = limpiarAcompanantesMenu(menu?.acompanantes || []);
 
   return {
+    ...menuFallback,
     ...menu,
     proteinas_detalle: proteinasDetalle,
     proteinas: proteinasDetalle.map((item) => item.nombre),
-    acompanantes: limpiarAcompanantes(menu?.acompanantes || [])
+    acompanantes
   };
 }
 
-function proteinasATexto(proteinasDetalle) {
-  return (proteinasDetalle || [])
-    .map((item) => `${item.nombre}:${Number(item.precio) || 0}`)
-    .join("\n");
-}
+function crearItemNuevo(menu) {
+  const menuNormalizado = normalizarMenu(menu);
+  const primeraProteina = menuNormalizado.proteinas_detalle[0] || {
+    nombre: "",
+    precio: 0
+  };
 
-function textoAProteinasDetalle(texto) {
-  return String(texto || "")
-    .split("\n")
-    .map((linea) => linea.trim())
-    .filter(Boolean)
-    .map((linea) => {
-      const partes = linea.split(":");
-      const nombre = String(partes[0] || "").trim();
-      const precioTexto = String(partes[1] || "0").replace(/[^\d]/g, "");
-      return {
-        nombre,
-        precio: Number(precioTexto) || 0
-      };
-    })
-    .filter((item) => item.nombre);
+  return {
+    id: Date.now() + Math.random(),
+    cantidad: 1,
+    proteina: primeraProteina.nombre,
+    precioProteina: Number(primeraProteina.precio) || 0,
+    acompanantes: [],
+    paraLlevar: false
+  };
 }
 
 function calcularTotalItem(item) {
   const cantidad = Number(item.cantidad) || 0;
   const precioProteina = Number(item.precioProteina) || 0;
   const adicional = item.paraLlevar ? VALOR_PARA_LLEVAR : 0;
+
   return cantidad * (precioProteina + adicional);
 }
 
@@ -108,8 +147,11 @@ function calcularTotalItems(items) {
 }
 
 function crearTextoItem(item) {
-  const partes = [`${item.cantidad} ${item.proteina} (${dinero(item.precioProteina)})`];
-  const acompanantes = limpiarAcompanantes(item.acompanantes || []);
+  const partes = [
+    `${item.cantidad} ${item.proteina} (${dinero(item.precioProteina)})`
+  ];
+
+  const acompanantes = limpiarAcompanantesCliente(item.acompanantes || []);
 
   if (acompanantes.length > 0) {
     partes.push(acompanantes.join(", "));
@@ -153,20 +195,6 @@ function crearLinkWhatsApp(numero, mensaje) {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 
-function crearItemNuevo(menu) {
-  const menuNormalizado = normalizarMenu(menu);
-  const primeraProteina = menuNormalizado.proteinas_detalle[0] || { nombre: "", precio: 0 };
-
-  return {
-    id: Date.now() + Math.random(),
-    cantidad: 1,
-    proteina: primeraProteina.nombre,
-    precioProteina: Number(primeraProteina.precio) || 0,
-    acompanantes: limpiarAcompanantes(menuNormalizado.acompanantes || []),
-    paraLlevar: false
-  };
-}
-
 function consolidarPedidos(pedidos) {
   const resumen = {};
 
@@ -175,7 +203,8 @@ function consolidarPedidos(pedidos) {
 
     items.forEach((item) => {
       if (item.proteina) {
-        resumen[item.proteina] = (resumen[item.proteina] || 0) + (Number(item.cantidad) || 0);
+        resumen[item.proteina] =
+          (resumen[item.proteina] || 0) + (Number(item.cantidad) || 0);
       }
     });
   });
@@ -183,7 +212,15 @@ function consolidarPedidos(pedidos) {
   return resumen;
 }
 
-function CampoTexto({ etiqueta, value, onChange, placeholder, multiline = false, type = "text" }) {
+function CampoTexto({
+  etiqueta,
+  value,
+  onChange,
+  placeholder,
+  multiline = false,
+  type = "text",
+  rows = 3
+}) {
   return (
     <label className="field">
       <span>{etiqueta}</span>
@@ -192,7 +229,7 @@ function CampoTexto({ etiqueta, value, onChange, placeholder, multiline = false,
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          rows={4}
+          rows={rows}
         />
       ) : (
         <input
@@ -207,7 +244,10 @@ function CampoTexto({ etiqueta, value, onChange, placeholder, multiline = false,
 }
 
 function EstadoBadge({ estado }) {
-  const clase = `badge badge-${String(estado || "").replaceAll(" ", "-").toLowerCase()}`;
+  const clase = `badge badge-${String(estado || "")
+    .replaceAll(" ", "-")
+    .toLowerCase()}`;
+
   return <span className={clase}>{estado}</span>;
 }
 
@@ -240,7 +280,9 @@ export default function App() {
   const [cargando, setCargando] = useState(true);
 
   const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
+
   const consolidado = useMemo(() => consolidarPedidos(pedidos), [pedidos]);
+
   const totalVendido = useMemo(
     () => pedidos.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0),
     [pedidos]
@@ -258,7 +300,10 @@ export default function App() {
     );
   }, [pedidos, busqueda]);
 
-  const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
+  const mensajeWhatsAppFinal = pedidoFinalizado
+    ? crearMensajeWhatsAppPedido(pedidoFinalizado)
+    : "";
+
   const linkWhatsAppFinal = pedidoFinalizado
     ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
     : "#";
@@ -311,7 +356,9 @@ export default function App() {
   }
 
   function cambiarProteinaItem(id, nombreProteina) {
-    const proteinaSeleccionada = menu.proteinas_detalle.find((p) => p.nombre === nombreProteina);
+    const proteinaSeleccionada = menu.proteinas_detalle.find(
+      (p) => p.nombre === nombreProteina
+    );
 
     actualizarItem(id, {
       proteina: proteinaSeleccionada?.nombre || "",
@@ -333,9 +380,9 @@ export default function App() {
           };
         }
 
-        if (item.acompanantes.length >= MAX_ACOMPANANTES) {
+        if (item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE) {
           setMensaje(
-            `Solo puedes escoger ${MAX_ACOMPANANTES} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`
+            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`
           );
           return item;
         }
@@ -363,7 +410,7 @@ export default function App() {
       .filter((item) => item.proteina)
       .map((item) => ({
         ...item,
-        acompanantes: limpiarAcompanantes(item.acompanantes)
+        acompanantes: limpiarAcompanantesCliente(item.acompanantes)
       }));
 
     if (itemsValidos.length === 0) {
@@ -386,7 +433,11 @@ export default function App() {
       enviado_whatsapp: false
     };
 
-    const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+    const { data, error } = await supabase
+      .from("pedidos")
+      .insert(nuevoPedido)
+      .select()
+      .single();
 
     if (error) {
       setMensaje(`Error guardando pedido: ${error.message}`);
@@ -402,14 +453,19 @@ export default function App() {
   async function guardarMenu() {
     const menuNormalizado = normalizarMenu(menu);
 
+    if (menuNormalizado.proteinas_detalle.length === 0) {
+      setMensaje("Debes agregar al menos una proteína del día.");
+      return;
+    }
+
     const menuActualizado = {
       fecha: menuNormalizado.fecha,
       titulo: menuNormalizado.titulo,
       descripcion: menuNormalizado.descripcion,
-      precio: Number(menuNormalizado.precio) || 0,
+      precio: Number(menuNormalizado.proteinas_detalle[0]?.precio) || 0,
       proteinas: menuNormalizado.proteinas_detalle.map((item) => item.nombre),
       proteinas_detalle: menuNormalizado.proteinas_detalle,
-      acompanantes: limpiarAcompanantes(menuNormalizado.acompanantes || []),
+      acompanantes: limpiarAcompanantesMenu(menuNormalizado.acompanantes || []),
       activo: true
     };
 
@@ -473,7 +529,7 @@ export default function App() {
       ...actual,
       proteinas_detalle: proteinasDetalle,
       proteinas: proteinasDetalle.map((item) => item.nombre),
-      precio: proteinasDetalle[0]?.precio || actual.precio || 0
+      precio: Number(proteinasDetalle[0]?.precio) || 0
     }));
 
     setItemsPedido((actual) =>
@@ -490,25 +546,22 @@ export default function App() {
     );
   }
 
-  function actualizarListaMenu(campo, texto) {
-    const nuevaLista =
-      campo === "acompanantes" ? limpiarAcompanantes(textoALista(texto)) : textoALista(texto);
+  function actualizarAcompanantesDesdeTexto(texto) {
+    const acompanantes = limpiarAcompanantesMenu(textoAListaPorLineas(texto));
 
     setMenu((actual) => ({
       ...actual,
-      [campo]: nuevaLista
+      acompanantes
     }));
 
-    if (campo === "acompanantes") {
-      setItemsPedido((actual) =>
-        actual.map((item) => ({
-          ...item,
-          acompanantes: limpiarAcompanantes(
-            item.acompanantes.filter((a) => nuevaLista.includes(a))
-          )
-        }))
-      );
-    }
+    setItemsPedido((actual) =>
+      actual.map((item) => ({
+        ...item,
+        acompanantes: limpiarAcompanantesCliente(
+          item.acompanantes.filter((a) => acompanantes.includes(a))
+        )
+      }))
+    );
   }
 
   function nuevoPedidoCliente() {
@@ -535,7 +588,6 @@ export default function App() {
         button, input, textarea, select { font-family: inherit; }
         button { cursor: pointer; }
         button:disabled { cursor: not-allowed; opacity: 0.6; }
-
         .app {
           min-height: 100vh;
           background: linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
@@ -569,7 +621,7 @@ export default function App() {
         }
         h2, h3, h4, h5, p { margin-top: 0; }
         .muted { color: #78716c; }
-
+        .small { font-size: 13px; }
         .nav {
           display: flex;
           gap: 6px;
@@ -613,7 +665,7 @@ export default function App() {
         }
         .admin-layout {
           display: grid;
-          grid-template-columns: 380px 1fr;
+          grid-template-columns: 420px 1fr;
           gap: 22px;
           align-items: start;
         }
@@ -646,11 +698,6 @@ export default function App() {
           padding: 10px 14px;
           border-radius: 16px;
           font-weight: 900;
-        }
-        .pill.price {
-          background: #fff;
-          color: #ea580c;
-          font-size: 24px;
         }
         .section { padding: 24px; }
         .meal-card {
@@ -701,6 +748,12 @@ export default function App() {
           border-radius: 18px;
           padding: 14px;
           font-weight: 900;
+        }
+        .option small {
+          display: block;
+          margin-top: 5px;
+          color: #ea580c;
+          font-size: 15px;
         }
         .option.selected {
           border-color: #f97316;
@@ -901,7 +954,7 @@ export default function App() {
                 </div>
                 <div className="card-pad">
                   <p>✅ Ver menú del día</p>
-                  <p>✅ Escoger proteína con precio propio</p>
+                  <p>✅ Escoger una proteína del día</p>
                   <p>✅ Escoger máximo 3 acompañantes</p>
                   <p>✅ Enviar consolidado por WhatsApp</p>
                   <button type="button" onClick={() => setVista("cliente")} className="button">
@@ -918,9 +971,9 @@ export default function App() {
                 </div>
                 <div className="card-pad">
                   <p>✅ Editar menú diario</p>
-                  <p>✅ Editar proteínas y precios</p>
-                  <p>✅ Ver pedidos recibidos</p>
-                  <p>✅ Revisar consolidado de cocina</p>
+                  <p>✅ Escribir proteínas del día</p>
+                  <p>✅ Escribir acompañantes del día</p>
+                  <p>✅ Revisar pedidos y consolidado</p>
                   <button type="button" onClick={() => setVista("admin")} className="button dark">
                     Entrar al panel admin
                   </button>
@@ -944,123 +997,147 @@ export default function App() {
                 </div>
 
                 <div className="section">
-                  <div className="row" style={{ marginBottom: 18 }}>
-                    <div>
-                      <h3>🛍️ Almuerzos del pedido</h3>
-                      <p className="muted">Agrega uno o varios almuerzos. Máximo 3 acompañantes.</p>
+                  {menu.proteinas_detalle.length === 0 ? (
+                    <div className="box soft">
+                      Todavía no hay proteínas configuradas para el menú de hoy.
+                      Entra al panel administrativo y agrega las proteínas del día.
                     </div>
-                    <button type="button" onClick={agregarAlmuerzo} className="button">
-                      + Agregar almuerzo
-                    </button>
-                  </div>
-
-                  {itemsPedido.map((item, index) => (
-                    <div key={item.id} className="meal-card">
-                      <div className="row">
-                        <h3>Almuerzo #{index + 1}</h3>
-                        {itemsPedido.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => eliminarAlmuerzo(item.id)}
-                            className="button danger"
-                          >
-                            Eliminar
-                          </button>
-                        )}
-                      </div>
-
-                      <h4>Proteína</h4>
-                      <div className="option-grid">
-                        {(menu.proteinas_detalle || []).map((proteina) => (
-                          <button
-                            key={proteina.nombre}
-                            type="button"
-                            onClick={() => cambiarProteinaItem(item.id, proteina.nombre)}
-                            className={`option ${item.proteina === proteina.nombre ? "selected" : ""}`}
-                          >
-                            <div>{proteina.nombre}</div>
-                            <small>{dinero(proteina.precio)}</small>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div style={{ marginTop: 18 }}>
-                        <div className="row">
-                          <h4>Acompañantes</h4>
-                          <strong>
-                            {item.acompanantes.length}/{MAX_ACOMPANANTES}
-                          </strong>
+                  ) : (
+                    <>
+                      <div className="row" style={{ marginBottom: 18 }}>
+                        <div>
+                          <h3>🛍️ Almuerzos del pedido</h3>
+                          <p className="muted">
+                            Agrega uno o varios almuerzos. Máximo 3 acompañantes.
+                          </p>
                         </div>
-                        <p className="muted">
-                          Puedes escoger máximo {MAX_ACOMPANANTES}. La sopa y la bebida ya están incluidas.
-                        </p>
+                        <button type="button" onClick={agregarAlmuerzo} className="button">
+                          + Agregar almuerzo
+                        </button>
+                      </div>
 
-                        <div className="chips">
-                          {(menu.acompanantes || []).map((acompanante) => {
-                            const seleccionado = item.acompanantes.includes(acompanante);
-                            const bloqueado =
-                              !seleccionado && item.acompanantes.length >= MAX_ACOMPANANTES;
-
-                            return (
+                      {itemsPedido.map((item, index) => (
+                        <div key={item.id} className="meal-card">
+                          <div className="row">
+                            <h3>Almuerzo #{index + 1}</h3>
+                            {itemsPedido.length > 1 && (
                               <button
-                                key={acompanante}
                                 type="button"
-                                onClick={() => cambiarAcompananteItem(item.id, acompanante)}
-                                disabled={bloqueado}
-                                className={`chip ${seleccionado ? "selected" : ""} ${
-                                  bloqueado ? "blocked" : ""
+                                onClick={() => eliminarAlmuerzo(item.id)}
+                                className="button danger"
+                              >
+                                Eliminar
+                              </button>
+                            )}
+                          </div>
+
+                          <h4>Proteína</h4>
+                          <div className="option-grid">
+                            {menu.proteinas_detalle.map((proteina) => (
+                              <button
+                                key={proteina.nombre}
+                                type="button"
+                                onClick={() => cambiarProteinaItem(item.id, proteina.nombre)}
+                                className={`option ${
+                                  item.proteina === proteina.nombre ? "selected" : ""
                                 }`}
                               >
-                                {seleccionado ? "✓ " : "+ "}
-                                {acompanante}
+                                <div>{proteina.nombre}</div>
+                                <small>{dinero(proteina.precio)}</small>
                               </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="box" style={{ marginTop: 18 }}>
-                        <strong>🥣 Sopa y bebida</strong>
-                        <p className="muted" style={{ marginBottom: 0 }}>
-                          Incluidas automáticamente en cada almuerzo.
-                        </p>
-                      </div>
-
-                      <div className="grid-2" style={{ marginTop: 18 }}>
-                        <div className="box">
-                          <strong>Cantidad</strong>
-                          <div style={{ marginTop: 10 }}>
-                            <SelectorCantidad
-                              cantidad={item.cantidad}
-                              onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
-                            />
+                            ))}
                           </div>
-                        </div>
 
-                        <label className="box row">
-                          <div>
-                            <strong>🥡 Para llevar</strong>
+                          <div style={{ marginTop: 18 }}>
+                            <div className="row">
+                              <h4>Acompañantes</h4>
+                              <strong>
+                                {item.acompanantes.length}/{MAX_ACOMPANANTES_CLIENTE}
+                              </strong>
+                            </div>
+                            <p className="muted">
+                              Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE}. La sopa y la bebida ya están incluidas.
+                            </p>
+
+                            <div className="chips">
+                              {menu.acompanantes.length === 0 ? (
+                                <span className="muted">No hay acompañantes configurados.</span>
+                              ) : (
+                                menu.acompanantes.map((acompanante) => {
+                                  const seleccionado = item.acompanantes.includes(acompanante);
+                                  const bloqueado =
+                                    !seleccionado &&
+                                    item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE;
+
+                                  return (
+                                    <button
+                                      key={acompanante}
+                                      type="button"
+                                      onClick={() =>
+                                        cambiarAcompananteItem(item.id, acompanante)
+                                      }
+                                      disabled={bloqueado}
+                                      className={`chip ${seleccionado ? "selected" : ""} ${
+                                        bloqueado ? "blocked" : ""
+                                      }`}
+                                    >
+                                      {seleccionado ? "✓ " : "+ "}
+                                      {acompanante}
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="box" style={{ marginTop: 18 }}>
+                            <strong>🥣 Sopa y bebida</strong>
                             <p className="muted" style={{ marginBottom: 0 }}>
-                              Suma {dinero(VALOR_PARA_LLEVAR)}
+                              Incluidas automáticamente en cada almuerzo.
                             </p>
                           </div>
-                          <input
-                            type="checkbox"
-                            checked={item.paraLlevar}
-                            onChange={(e) =>
-                              actualizarItem(item.id, { paraLlevar: e.target.checked })
-                            }
-                            style={{ width: 24, height: 24 }}
-                          />
-                        </label>
-                      </div>
 
-                      <div className="total-row">
-                        <span>Subtotal</span>
-                        <strong>{dinero(calcularTotalItem(item))}</strong>
-                      </div>
-                    </div>
-                  ))}
+                          <div className="grid-2" style={{ marginTop: 18 }}>
+                            <div className="box">
+                              <strong>Cantidad</strong>
+                              <div style={{ marginTop: 10 }}>
+                                <SelectorCantidad
+                                  cantidad={item.cantidad}
+                                  onChange={(cantidad) =>
+                                    actualizarItem(item.id, { cantidad })
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            <label className="box row">
+                              <div>
+                                <strong>🥡 Para llevar</strong>
+                                <p className="muted" style={{ marginBottom: 0 }}>
+                                  Suma {dinero(VALOR_PARA_LLEVAR)}
+                                </p>
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={item.paraLlevar}
+                                onChange={(e) =>
+                                  actualizarItem(item.id, {
+                                    paraLlevar: e.target.checked
+                                  })
+                                }
+                                style={{ width: 24, height: 24 }}
+                              />
+                            </label>
+                          </div>
+
+                          <div className="total-row">
+                            <span>Subtotal</span>
+                            <strong>{dinero(calcularTotalItem(item))}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               </section>
 
@@ -1076,11 +1153,16 @@ export default function App() {
                   {itemsPedido.map((item, index) => (
                     <div key={item.id} className="summary-item">
                       <p>
-                        #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"} - {dinero(item.precioProteina)}
+                        #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"} -{" "}
+                        {dinero(item.precioProteina)}
                       </p>
                       <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
                       <p>Sopa + bebida incluida</p>
-                      <p>{item.paraLlevar ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}` : "Sin empaque para llevar"}</p>
+                      <p>
+                        {item.paraLlevar
+                          ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}`
+                          : "Sin empaque para llevar"}
+                      </p>
                     </div>
                   ))}
 
@@ -1119,7 +1201,10 @@ export default function App() {
                 <button
                   type="button"
                   onClick={registrarPedido}
-                  disabled={itemsPedido.every((item) => !item.proteina)}
+                  disabled={
+                    menu.proteinas_detalle.length === 0 ||
+                    itemsPedido.every((item) => !item.proteina)
+                  }
                   className="button"
                   style={{ width: "100%", marginTop: 10 }}
                 >
@@ -1145,7 +1230,8 @@ export default function App() {
                       <strong>Cliente:</strong> {pedidoFinalizado.cliente}
                     </p>
                     <p>
-                      <strong>Teléfono:</strong> {pedidoFinalizado.telefono || "Sin teléfono"}
+                      <strong>Teléfono:</strong>{" "}
+                      {pedidoFinalizado.telefono || "Sin teléfono"}
                     </p>
                     <p>
                       <strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}
@@ -1166,13 +1252,21 @@ export default function App() {
                     target="_blank"
                     rel="noreferrer"
                     className="button green"
-                    style={{ display: "block", textAlign: "center", textDecoration: "none" }}
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      textDecoration: "none"
+                    }}
                   >
                     🟢 Enviar consolidado por WhatsApp
                   </a>
 
                   <div className="grid-2" style={{ marginTop: 14 }}>
-                    <button type="button" onClick={nuevoPedidoCliente} className="button light">
+                    <button
+                      type="button"
+                      onClick={nuevoPedidoCliente}
+                      className="button light"
+                    >
                       Hacer otro pedido
                     </button>
                     <button
@@ -1197,13 +1291,19 @@ export default function App() {
                   <CampoTexto
                     etiqueta="Fecha"
                     value={menu.fecha || ""}
-                    onChange={(valor) => setMenu((actual) => ({ ...actual, fecha: valor }))}
+                    onChange={(valor) =>
+                      setMenu((actual) => ({ ...actual, fecha: valor }))
+                    }
                   />
+
                   <CampoTexto
                     etiqueta="Nombre del menú"
                     value={menu.titulo || ""}
-                    onChange={(valor) => setMenu((actual) => ({ ...actual, titulo: valor }))}
+                    onChange={(valor) =>
+                      setMenu((actual) => ({ ...actual, titulo: valor }))
+                    }
                   />
+
                   <CampoTexto
                     etiqueta="Descripción"
                     value={menu.descripcion || ""}
@@ -1211,27 +1311,43 @@ export default function App() {
                       setMenu((actual) => ({ ...actual, descripcion: valor }))
                     }
                     multiline
+                    rows={3}
                   />
 
                   <CampoTexto
-                    etiqueta="Proteínas y precios"
+                    etiqueta="Proteínas del día"
                     value={proteinasATexto(menu.proteinas_detalle || [])}
                     onChange={actualizarProteinasDesdeTexto}
-                    placeholder={"Pechuga:17500\nCarne:19000\nCerdo:17000"}
+                    placeholder={
+                      "Pechuga gratinada:18000\nCarne molida especial:19000\nPollo en salsa criolla:17000"
+                    }
                     multiline
+                    rows={7}
                   />
 
                   <CampoTexto
-                    etiqueta="Acompañantes adicionales separados por coma"
-                    value={(menu.acompanantes || []).join(", ")}
-                    onChange={(valor) => actualizarListaMenu("acompanantes", valor)}
+                    etiqueta="Acompañantes del día"
+                    value={acompanantesATexto(menu.acompanantes || [])}
+                    onChange={actualizarAcompanantesDesdeTexto}
+                    placeholder={
+                      "Arroz con coco\nEnsalada verde\nPuré de papa\nTajadas maduras\nYuca cocida"
+                    }
                     multiline
+                    rows={7}
                   />
 
-                  <div className="box soft">
-                    Escribe cada proteína en una línea con este formato: <strong>Nombre:Precio</strong>.
+                  <div className="box soft small">
+                    <strong>Proteínas:</strong> escribe una proteína por línea con este formato:
                     <br />
-                    Ejemplo: <strong>Carne:19000</strong>
+                    Nombre de la proteína:Precio
+                    <br />
+                    <br />
+                    <strong>Ejemplo:</strong> Pollo en salsa criolla:17000
+                    <br />
+                    <br />
+                    <strong>Acompañantes:</strong> escribe un acompañante por línea.
+                    Pueden tener varias palabras. El cliente verá todos, pero solo podrá escoger 3.
+                    <br />
                     <br />
                     Sopa y bebida siempre van incluidas.
                   </div>
@@ -1317,7 +1433,9 @@ export default function App() {
                       <div className="grid-2" style={{ marginTop: 12 }}>
                         <select
                           value={pedido.estado}
-                          onChange={(e) => cambiarEstadoPedido(pedido.id, e.target.value)}
+                          onChange={(e) =>
+                            cambiarEstadoPedido(pedido.id, e.target.value)
+                          }
                           className="box"
                         >
                           {estadosPedido.map((estado) => (
@@ -1328,7 +1446,10 @@ export default function App() {
                         </select>
 
                         <a
-                          href={crearLinkWhatsApp(WHATSAPP_RAFIKI, crearMensajeWhatsAppPedido(pedido))}
+                          href={crearLinkWhatsApp(
+                            WHATSAPP_RAFIKI,
+                            crearMensajeWhatsAppPedido(pedido)
+                          )}
                           target="_blank"
                           rel="noreferrer"
                           className="button green"
