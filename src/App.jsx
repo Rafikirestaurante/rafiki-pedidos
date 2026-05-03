@@ -136,7 +136,7 @@ function crearItemNuevo(menu) {
 
 function calcularTotalItem(item) {
   const cantidad = Number(item.cantidad) || 0;
-  const precioProteina = Number(item.precioProteina) || 0;
+  const precioProteina = Number(item.precioProteina) || Number(item.precio) || 0;
   const adicional = item.paraLlevar ? VALOR_PARA_LLEVAR : 0;
 
   return cantidad * (precioProteina + adicional);
@@ -177,9 +177,9 @@ function crearMensajeWhatsAppPedido(pedido) {
   return [
     "Hola Rafiki, quiero confirmar este pedido:",
     "",
-    `Cliente: ${pedido.cliente}`,
+    `Cliente: ${pedido.cliente || pedido.cliente_nombre || "Cliente"}`,
     `Teléfono: ${pedido.telefono || "Sin teléfono"}`,
-    `Ubicación: ${pedido.ubicacion}`,
+    `Ubicación: ${pedido.ubicacion || "Sin ubicación"}`,
     "",
     "Pedido:",
     pedido.pedido_texto || "",
@@ -207,6 +207,14 @@ function consolidarPedidos(pedidos) {
   });
 
   return resumen;
+}
+
+function obtenerCliente(pedido) {
+  return pedido.cliente || pedido.cliente_nombre || "Cliente";
+}
+
+function obtenerItemsPedido(pedido) {
+  return Array.isArray(pedido.items) ? pedido.items : [];
 }
 
 function CampoTexto({
@@ -259,8 +267,96 @@ function SelectorCantidad({ cantidad, onChange }) {
   );
 }
 
+function PedidoCocina({ pedido, onCambiarEstado }) {
+  const items = obtenerItemsPedido(pedido);
+
+  return (
+    <article className="pedido-cocina">
+      <div className="pedido-top">
+        <div>
+          <div className="pedido-linea">
+            <EstadoBadge estado={pedido.estado} />
+            <span className="pedido-id">Pedido #{pedido.id}</span>
+          </div>
+          <h3>{obtenerCliente(pedido)}</h3>
+          <p className="muted">📍 {pedido.ubicacion || "Sin ubicación"}</p>
+          <p className="muted">📞 {pedido.telefono || "Sin teléfono"}</p>
+        </div>
+
+        <div className="pedido-total">
+          <span>Total</span>
+          <strong>{dinero(pedido.total)}</strong>
+        </div>
+      </div>
+
+      <div className="items-cocina">
+        {items.length === 0 ? (
+          <div className="pedido-text">{pedido.pedido_texto}</div>
+        ) : (
+          items.map((item, index) => (
+            <div key={item.id || index} className="item-cocina">
+              <div className="item-numero">#{index + 1}</div>
+              <div className="item-detalle">
+                <h4>
+                  {item.cantidad} x {item.proteina}
+                </h4>
+                <p>
+                  <strong>Precio:</strong>{" "}
+                  {dinero(item.precioProteina || item.precio || 0)}
+                </p>
+                <p>
+                  <strong>Acompañantes:</strong>{" "}
+                  {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+                    ? item.acompanantes.join(", ")
+                    : "Sin acompañantes"}
+                </p>
+                <p>
+                  <strong>Incluye:</strong> Sopa + bebida
+                </p>
+                <p>
+                  <strong>Empaque:</strong>{" "}
+                  {item.paraLlevar ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}` : "Sin empaque para llevar"}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {pedido.observaciones && (
+        <div className="nota-cocina">
+          <strong>Observaciones:</strong> {pedido.observaciones}
+        </div>
+      )}
+
+      <div className="pedido-actions">
+        <select
+          value={pedido.estado}
+          onChange={(e) => onCambiarEstado(pedido.id, e.target.value)}
+        >
+          {estadosPedido.map((estado) => (
+            <option key={estado} value={estado}>
+              {estado}
+            </option>
+          ))}
+        </select>
+
+        <a
+          href={crearLinkWhatsApp(WHATSAPP_RAFIKI, crearMensajeWhatsAppPedido(pedido))}
+          target="_blank"
+          rel="noreferrer"
+          className="button green link-button"
+        >
+          Enviar a WhatsApp
+        </a>
+      </div>
+    </article>
+  );
+}
+
 export default function App() {
   const [vista, setVista] = useState("inicio");
+  const [adminTab, setAdminTab] = useState("pedidos");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo(menuFallback)]);
@@ -287,7 +383,7 @@ export default function App() {
     if (!q) return pedidos;
 
     return pedidos.filter((pedido) =>
-      `${pedido.cliente} ${pedido.telefono} ${pedido.ubicacion} ${pedido.pedido_texto} ${pedido.estado}`
+      `${obtenerCliente(pedido)} ${pedido.telefono} ${pedido.ubicacion} ${pedido.pedido_texto} ${pedido.estado}`
         .toLowerCase()
         .includes(q)
     );
@@ -411,11 +507,13 @@ export default function App() {
       return;
     }
 
+    const clienteNombre = cliente.trim() || "Cliente";
     const pedidoTexto = crearTextoPedido(itemsValidos, observaciones.trim());
     const total = calcularTotalItems(itemsValidos);
 
     const nuevoPedido = {
-      cliente: cliente.trim() || "Cliente",
+      cliente: clienteNombre,
+      cliente_nombre: clienteNombre,
       telefono: telefono.trim(),
       ubicacion: ubicacion.trim() || "Ubicación pendiente",
       observaciones: observaciones.trim(),
@@ -479,6 +577,7 @@ export default function App() {
       setMenu(nuevoMenu);
       setItemsPedido([crearItemNuevo(nuevoMenu)]);
       setMensaje("Menú actualizado correctamente.");
+      setAdminTab("pedidos");
       return;
     }
 
@@ -497,6 +596,7 @@ export default function App() {
     setMenu(nuevoMenu);
     setItemsPedido([crearItemNuevo(nuevoMenu)]);
     setMensaje("Menú creado correctamente.");
+    setAdminTab("pedidos");
   }
 
   async function cambiarEstadoPedido(id, estado) {
@@ -581,10 +681,9 @@ export default function App() {
         button, input, textarea, select { font-family: inherit; }
         button { cursor: pointer; }
         button:disabled { cursor: not-allowed; opacity: 0.6; }
-
         .app {
           min-height: 100vh;
-          background: linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
+          background: radial-gradient(circle at top left, #fed7aa 0, transparent 32%), linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
           padding: 24px;
         }
         .container {
@@ -616,7 +715,6 @@ export default function App() {
         h2, h3, h4, h5, p { margin-top: 0; }
         .muted { color: #78716c; }
         .small { font-size: 13px; }
-
         .nav {
           display: flex;
           gap: 6px;
@@ -647,23 +745,6 @@ export default function App() {
           margin-bottom: 18px;
           font-weight: 700;
         }
-        .grid-2 {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 22px;
-        }
-        .layout {
-          display: grid;
-          grid-template-columns: 1fr 400px;
-          gap: 22px;
-          align-items: start;
-        }
-        .admin-layout {
-          display: grid;
-          grid-template-columns: 420px 1fr;
-          gap: 22px;
-          align-items: start;
-        }
         .card {
           background: #ffffff;
           border: 1px solid #fed7aa;
@@ -672,12 +753,61 @@ export default function App() {
           overflow: hidden;
         }
         .card-pad { padding: 24px; }
+        .welcome {
+          max-width: 820px;
+          margin: 0 auto;
+          text-align: center;
+        }
+        .welcome-card {
+          background: linear-gradient(135deg, #f97316, #f59e0b);
+          color: white;
+          border-radius: 36px;
+          padding: 44px 28px;
+          box-shadow: 0 25px 60px rgba(249, 115, 22, 0.25);
+        }
+        .welcome-icon {
+          font-size: 64px;
+          margin-bottom: 12px;
+        }
+        .welcome-card h2 {
+          font-size: clamp(34px, 7vw, 62px);
+          margin-bottom: 10px;
+          line-height: 0.95;
+        }
+        .welcome-card p {
+          color: #fff7ed;
+          font-size: 18px;
+          margin-bottom: 24px;
+        }
+        .welcome-button {
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+          width: min(100%, 420px);
+          border: 0;
+          background: #ffffff;
+          color: #c2410c;
+          padding: 18px 22px;
+          border-radius: 22px;
+          font-size: 22px;
+          font-weight: 900;
+          text-decoration: none;
+          box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        .admin-small {
+          margin-top: 18px;
+          border: 0;
+          background: transparent;
+          color: #78716c;
+          font-weight: 800;
+          text-decoration: underline;
+          font-size: 13px;
+        }
         .hero {
           background: linear-gradient(135deg, #f97316, #f59e0b);
           color: white;
           padding: 32px;
         }
-        .hero.dark { background: linear-gradient(135deg, #292524, #57534e); }
         .hero.green { background: linear-gradient(135deg, #22c55e, #10b981); }
         .pill-row {
           display: flex;
@@ -693,6 +823,44 @@ export default function App() {
           padding: 10px 14px;
           border-radius: 16px;
           font-weight: 900;
+        }
+        .grid-2 {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 22px;
+        }
+        .layout {
+          display: grid;
+          grid-template-columns: 1fr 400px;
+          gap: 22px;
+          align-items: start;
+        }
+        .admin-tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 18px;
+          background: #fff;
+          border: 1px solid #fed7aa;
+          border-radius: 22px;
+          padding: 8px;
+        }
+        .admin-tabs button {
+          flex: 1;
+          border: 0;
+          border-radius: 16px;
+          padding: 14px 16px;
+          background: transparent;
+          font-weight: 900;
+          color: #57534e;
+        }
+        .admin-tabs button.active {
+          background: #f97316;
+          color: #fff;
+        }
+        .admin-layout {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 22px;
         }
         .section { padding: 24px; }
         .meal-card {
@@ -717,7 +885,6 @@ export default function App() {
           border-radius: 16px;
           box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25);
         }
-        .button.dark { background: #292524; }
         .button.green { background: #22c55e; }
         .button.light {
           background: #fff;
@@ -730,6 +897,11 @@ export default function App() {
           color: #b91c1c;
           border: 1px solid #fecaca;
           box-shadow: none;
+        }
+        .link-button {
+          display: block;
+          text-align: center;
+          text-decoration: none;
         }
         .option-grid {
           display: grid;
@@ -858,12 +1030,96 @@ export default function App() {
           display: block;
           font-size: 28px;
         }
-        .pedido {
-          border: 1px solid #e7e5e4;
-          border-radius: 24px;
-          padding: 18px;
-          margin-bottom: 14px;
+        .pedido-cocina {
+          border: 1px solid #fed7aa;
           background: #fff;
+          border-radius: 26px;
+          padding: 20px;
+          margin-bottom: 16px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+        }
+        .pedido-top {
+          display: flex;
+          justify-content: space-between;
+          gap: 18px;
+          align-items: flex-start;
+          border-bottom: 1px solid #f5f5f4;
+          padding-bottom: 14px;
+          margin-bottom: 14px;
+        }
+        .pedido-linea {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .pedido-id {
+          font-weight: 900;
+          color: #78716c;
+          font-size: 13px;
+        }
+        .pedido-total {
+          text-align: right;
+        }
+        .pedido-total span {
+          display: block;
+          color: #78716c;
+          font-weight: 800;
+        }
+        .pedido-total strong {
+          color: #ea580c;
+          font-size: 28px;
+        }
+        .items-cocina {
+          display: grid;
+          gap: 12px;
+        }
+        .item-cocina {
+          display: grid;
+          grid-template-columns: 48px 1fr;
+          gap: 12px;
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          border-radius: 20px;
+          padding: 14px;
+        }
+        .item-numero {
+          width: 42px;
+          height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f97316;
+          color: #fff;
+          border-radius: 14px;
+          font-weight: 900;
+        }
+        .item-detalle h4 {
+          margin-bottom: 8px;
+          font-size: 19px;
+        }
+        .item-detalle p {
+          margin-bottom: 5px;
+        }
+        .nota-cocina {
+          margin-top: 12px;
+          background: #fef3c7;
+          border: 1px solid #fde68a;
+          border-radius: 16px;
+          padding: 12px;
+        }
+        .pedido-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-top: 14px;
+        }
+        .pedido-actions select {
+          border: 1px solid #e7e5e4;
+          border-radius: 16px;
+          padding: 13px 14px;
+          background: #fafaf9;
+          font-weight: 800;
         }
         .pedido-text {
           white-space: pre-line;
@@ -897,9 +1153,10 @@ export default function App() {
         @media (max-width: 900px) {
           .topbar,
           .layout,
-          .admin-layout,
           .grid-2,
-          .stats {
+          .stats,
+          .pedido-top,
+          .pedido-actions {
             grid-template-columns: 1fr;
             display: grid;
           }
@@ -907,19 +1164,20 @@ export default function App() {
           .nav { margin-top: 16px; }
           .option-grid { grid-template-columns: 1fr; }
           .app { padding: 14px; }
+          .pedido-total { text-align: left; }
         }
       `}</style>
 
       <div className="app">
         <div className="container">
-          <header className="topbar">
-            <div>
-              <div className="brand">🍽️ Rafiki Pedidos</div>
-              <h1>Menú diario y pedidos por WhatsApp</h1>
-              <p className="muted">App real conectada a Supabase.</p>
-            </div>
+          {vista !== "inicio" && (
+            <header className="topbar">
+              <div>
+                <div className="brand">🍽️ Rafiki Pedidos</div>
+                <h1>Menú diario y pedidos por WhatsApp</h1>
+                <p className="muted">App real conectada a Supabase.</p>
+              </div>
 
-            {vista !== "inicio" && (
               <div className="nav">
                 <button
                   type="button"
@@ -932,48 +1190,29 @@ export default function App() {
                   Inicio
                 </button>
               </div>
-            )}
-          </header>
+            </header>
+          )}
 
           {mensaje && <div className="alert">{mensaje}</div>}
 
           {cargando && <div className="card card-pad">Cargando datos de Rafiki...</div>}
 
           {!cargando && vista === "inicio" && (
-            <main className="grid-2">
-              <section className="card">
-                <div className="hero">
-                  <p style={{ fontSize: 48 }}>🍽️</p>
-                  <h2>Pedido cliente</h2>
-                  <p>Esta es la opción que usarán tus clientes.</p>
-                </div>
-                <div className="card-pad">
-                  <p>✅ Ver menú del día</p>
-                  <p>✅ Escoger una proteína del día</p>
-                  <p>✅ Escoger máximo 3 acompañantes</p>
-                  <p>✅ Enviar consolidado por WhatsApp</p>
-                  <button type="button" onClick={() => setVista("cliente")} className="button">
-                    Entrar como cliente
-                  </button>
-                </div>
+            <main className="welcome">
+              <section className="welcome-card">
+                <div className="welcome-icon">🍽️</div>
+                <h2>Bienvenido a Rafiki</h2>
+                <p>
+                  Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.
+                </p>
+                <button type="button" onClick={() => setVista("cliente")} className="welcome-button">
+                  Haz tu pedido aquí
+                </button>
               </section>
 
-              <section className="card">
-                <div className="hero dark">
-                  <p style={{ fontSize: 48 }}>🔐</p>
-                  <h2>Panel administrativo</h2>
-                  <p>Entrada interna para Rafiki.</p>
-                </div>
-                <div className="card-pad">
-                  <p>✅ Editar menú diario</p>
-                  <p>✅ Escribir proteínas del día</p>
-                  <p>✅ Escribir acompañantes del día</p>
-                  <p>✅ Revisar pedidos y consolidado</p>
-                  <button type="button" onClick={() => setVista("admin")} className="button dark">
-                    Entrar al panel admin
-                  </button>
-                </div>
-              </section>
+              <button type="button" onClick={() => setVista("admin")} className="admin-small">
+                Panel administrativo
+              </button>
             </main>
           )}
 
@@ -1210,7 +1449,7 @@ export default function App() {
                   <div className="box soft">
                     <h3>Consolidado del pedido</h3>
                     <p>
-                      <strong>Cliente:</strong> {pedidoFinalizado.cliente}
+                      <strong>Cliente:</strong> {obtenerCliente(pedidoFinalizado)}
                     </p>
                     <p>
                       <strong>Teléfono:</strong> {pedidoFinalizado.telefono || "Sin teléfono"}
@@ -1233,12 +1472,7 @@ export default function App() {
                     href={linkWhatsAppFinal}
                     target="_blank"
                     rel="noreferrer"
-                    className="button green"
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      textDecoration: "none"
-                    }}
+                    className="button green link-button"
                   >
                     🟢 Enviar consolidado por WhatsApp
                   </a>
@@ -1262,9 +1496,92 @@ export default function App() {
 
           {!cargando && vista === "admin" && (
             <main className="admin-layout">
-              <section>
-                <div className="card card-pad">
+              <div className="admin-tabs">
+                <button
+                  type="button"
+                  onClick={() => setAdminTab("pedidos")}
+                  className={adminTab === "pedidos" ? "active" : ""}
+                >
+                  Pedidos de hoy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminTab("menu")}
+                  className={adminTab === "menu" ? "active" : ""}
+                >
+                  Editar menú diario
+                </button>
+              </div>
+
+              {adminTab === "pedidos" && (
+                <section className="card card-pad">
+                  <div className="row">
+                    <div>
+                      <h2>📋 Pedidos de hoy</h2>
+                      <p className="muted">
+                        Vista organizada para preparar los pedidos sin enredos.
+                      </p>
+                    </div>
+                  </div>
+
+                  <CampoTexto
+                    etiqueta="Buscar pedido"
+                    value={busqueda}
+                    onChange={setBusqueda}
+                    placeholder="Buscar por cliente, ubicación o estado..."
+                  />
+
+                  <div className="stats">
+                    <div className="stat">
+                      <span>Pedidos</span>
+                      <strong>{pedidos.length}</strong>
+                    </div>
+                    <div className="stat">
+                      <span>Pendientes</span>
+                      <strong>{pedidos.filter((p) => p.estado === "Pendiente").length}</strong>
+                    </div>
+                    <div className="stat">
+                      <span>Total vendido</span>
+                      <strong>{dinero(totalVendido)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="card card-pad" style={{ marginBottom: 18 }}>
+                    <h3>Consolidado cocina</h3>
+                    {Object.keys(consolidado).length === 0 ? (
+                      <p className="muted">Todavía no hay productos para consolidar.</p>
+                    ) : (
+                      <div className="grid-2">
+                        {Object.entries(consolidado).map(([producto, cantidadProducto]) => (
+                          <div key={producto} className="box row">
+                            <strong>{producto}</strong>
+                            <strong>{cantidadProducto}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {pedidosFiltrados.length === 0 ? (
+                    <div className="box soft">No se encontraron pedidos.</div>
+                  ) : (
+                    pedidosFiltrados.map((pedido) => (
+                      <PedidoCocina
+                        key={pedido.id}
+                        pedido={pedido}
+                        onCambiarEstado={cambiarEstadoPedido}
+                      />
+                    ))
+                  )}
+                </section>
+              )}
+
+              {adminTab === "menu" && (
+                <section className="card card-pad">
                   <h2>✏️ Editar menú diario</h2>
+                  <p className="muted">
+                    Aquí modificas las proteínas, precios y acompañantes disponibles para los clientes.
+                  </p>
 
                   <CampoTexto
                     etiqueta="Fecha"
@@ -1317,7 +1634,8 @@ export default function App() {
                     <strong>Ejemplo:</strong> Pollo en salsa criolla:17000
                     <br />
                     <br />
-                    <strong>Acompañantes:</strong> escribe un acompañante por línea. Pueden tener varias palabras. El cliente verá todos, pero solo podrá escoger 3.
+                    <strong>Acompañantes:</strong> escribe un acompañante por línea. Pueden tener varias palabras.
+                    El cliente verá todos, pero solo podrá escoger 3.
                     <br />
                     <br />
                     Sopa y bebida siempre van incluidas.
@@ -1331,106 +1649,8 @@ export default function App() {
                   >
                     Guardar menú del día
                   </button>
-                </div>
-
-                <div className="card card-pad" style={{ marginTop: 18 }}>
-                  <h2>Consolidado cocina</h2>
-
-                  {Object.keys(consolidado).length === 0 ? (
-                    <p className="muted">Todavía no hay productos para consolidar.</p>
-                  ) : (
-                    Object.entries(consolidado).map(([producto, cantidadProducto]) => (
-                      <div key={producto} className="box row" style={{ marginBottom: 10 }}>
-                        <strong>{producto}</strong>
-                        <strong>{cantidadProducto}</strong>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-
-              <section className="card card-pad">
-                <div className="row">
-                  <div>
-                    <h2>📋 Pedidos de hoy</h2>
-                    <p className="muted">Revisa pedidos, ubicación, total y estado.</p>
-                  </div>
-                </div>
-
-                <CampoTexto
-                  etiqueta="Buscar pedido"
-                  value={busqueda}
-                  onChange={setBusqueda}
-                  placeholder="Buscar por cliente, ubicación o estado..."
-                />
-
-                <div className="stats">
-                  <div className="stat">
-                    <span>Pedidos</span>
-                    <strong>{pedidos.length}</strong>
-                  </div>
-                  <div className="stat">
-                    <span>Entregados</span>
-                    <strong>{pedidos.filter((p) => p.estado === "Entregado").length}</strong>
-                  </div>
-                  <div className="stat">
-                    <span>Total vendido</span>
-                    <strong>{dinero(totalVendido)}</strong>
-                  </div>
-                </div>
-
-                {pedidosFiltrados.length === 0 ? (
-                  <div className="box soft">No se encontraron pedidos.</div>
-                ) : (
-                  pedidosFiltrados.map((pedido) => (
-                    <div key={pedido.id} className="pedido">
-                      <div className="row">
-                        <div>
-                          <EstadoBadge estado={pedido.estado} />
-                          <h3 style={{ marginTop: 10 }}>{pedido.cliente}</h3>
-                          <p>📍 {pedido.ubicacion}</p>
-                          <p>📞 {pedido.telefono || "Sin teléfono"}</p>
-                        </div>
-
-                        <div style={{ textAlign: "right" }}>
-                          <strong style={{ fontSize: 24, color: "#ea580c" }}>
-                            {dinero(pedido.total)}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className="pedido-text">{pedido.pedido_texto}</div>
-
-                      <div className="grid-2" style={{ marginTop: 12 }}>
-                        <select
-                          value={pedido.estado}
-                          onChange={(e) => cambiarEstadoPedido(pedido.id, e.target.value)}
-                          className="box"
-                        >
-                          {estadosPedido.map((estado) => (
-                            <option key={estado} value={estado}>
-                              {estado}
-                            </option>
-                          ))}
-                        </select>
-
-                        <a
-                          href={crearLinkWhatsApp(
-                            WHATSAPP_RAFIKI,
-                            crearMensajeWhatsAppPedido(pedido)
-                          )}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="button green"
-                          style={{ textAlign: "center", textDecoration: "none" }}
-                        >
-                          Enviar a WhatsApp
-                        </a>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </section>
+                </section>
+              )}
             </main>
           )}
         </div>
