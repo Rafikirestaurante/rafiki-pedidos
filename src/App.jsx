@@ -86,7 +86,7 @@ function crearMensajeWhatsAppPedido(pedido) {
     `Ubicación: ${pedido.ubicacion}`,
     "",
     "Pedido:",
-    pedido.pedido_texto || pedido.pedido,
+    pedido.pedido_texto || pedido.pedido || "",
     "",
     `Total: ${dinero(pedido.total)}`
   ].join("\n");
@@ -124,15 +124,14 @@ function consolidarPedidos(pedidos) {
 
 function CampoTexto({ etiqueta, value, onChange, placeholder, multiline = false, type = "text" }) {
   return (
-    <label className="block">
-      <span className="block text-sm font-bold text-stone-700 mb-2">{etiqueta}</span>
+    <label className="field">
+      <span>{etiqueta}</span>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={3}
-          className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 outline-none focus:border-orange-400"
         />
       ) : (
         <input
@@ -140,7 +139,6 @@ function CampoTexto({ etiqueta, value, onChange, placeholder, multiline = false,
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 outline-none focus:border-orange-400"
         />
       )}
     </label>
@@ -148,29 +146,18 @@ function CampoTexto({ etiqueta, value, onChange, placeholder, multiline = false,
 }
 
 function EstadoBadge({ estado }) {
-  const estilos = {
-    Pendiente: "bg-amber-100 text-amber-800 border-amber-200",
-    "En preparación": "bg-blue-100 text-blue-800 border-blue-200",
-    Enviado: "bg-purple-100 text-purple-800 border-purple-200",
-    Entregado: "bg-green-100 text-green-800 border-green-200",
-    Cancelado: "bg-red-100 text-red-800 border-red-200"
-  };
-
-  return (
-    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${estilos[estado] || "bg-stone-100 text-stone-700 border-stone-200"}`}>
-      {estado}
-    </span>
-  );
+  const clase = `badge badge-${String(estado || "").replaceAll(" ", "-").toLowerCase()}`;
+  return <span className={clase}>{estado}</span>;
 }
 
 function SelectorCantidad({ cantidad, onChange }) {
   return (
-    <div className="flex items-center gap-3">
-      <button type="button" onClick={() => onChange(Math.max(1, cantidad - 1))} className="flex h-10 w-10 items-center justify-center rounded-full border bg-white text-xl font-black">
+    <div className="quantity">
+      <button type="button" onClick={() => onChange(Math.max(1, cantidad - 1))}>
         −
       </button>
-      <span className="w-8 text-center text-2xl font-black">{cantidad}</span>
-      <button type="button" onClick={() => onChange(cantidad + 1)} className="flex h-10 w-10 items-center justify-center rounded-full border bg-white text-xl font-black">
+      <strong>{cantidad}</strong>
+      <button type="button" onClick={() => onChange(cantidad + 1)}>
         +
       </button>
     </div>
@@ -191,9 +178,17 @@ export default function App() {
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
 
-  const totalPedido = useMemo(() => calcularTotalItems(itemsPedido, menu.precio), [itemsPedido, menu.precio]);
+  const totalPedido = useMemo(
+    () => calcularTotalItems(itemsPedido, menu.precio),
+    [itemsPedido, menu.precio]
+  );
+
   const consolidado = useMemo(() => consolidarPedidos(pedidos), [pedidos]);
-  const totalVendido = useMemo(() => pedidos.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0), [pedidos]);
+
+  const totalVendido = useMemo(
+    () => pedidos.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0),
+    [pedidos]
+  );
 
   const pedidosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -208,7 +203,9 @@ export default function App() {
   }, [pedidos, busqueda]);
 
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
-  const linkWhatsAppFinal = pedidoFinalizado ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal) : "#";
+  const linkWhatsAppFinal = pedidoFinalizado
+    ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
+    : "#";
 
   useEffect(() => {
     cargarDatos();
@@ -251,7 +248,9 @@ export default function App() {
   }
 
   function actualizarItem(id, cambios) {
-    setItemsPedido((actual) => actual.map((item) => (item.id === id ? { ...item, ...cambios } : item)));
+    setItemsPedido((actual) =>
+      actual.map((item) => (item.id === id ? { ...item, ...cambios } : item))
+    );
   }
 
   function cambiarAcompananteItem(id, acompanante) {
@@ -269,7 +268,9 @@ export default function App() {
         }
 
         if (item.acompanantes.length >= MAX_ACOMPANANTES) {
-          setMensaje(`Solo puedes escoger ${MAX_ACOMPANANTES} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`);
+          setMensaje(
+            `Solo puedes escoger ${MAX_ACOMPANANTES} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`
+          );
           return item;
         }
 
@@ -286,7 +287,9 @@ export default function App() {
   }
 
   function eliminarAlmuerzo(id) {
-    setItemsPedido((actual) => (actual.length === 1 ? actual : actual.filter((item) => item.id !== id)));
+    setItemsPedido((actual) =>
+      actual.length === 1 ? actual : actual.filter((item) => item.id !== id)
+    );
   }
 
   async function registrarPedido() {
@@ -296,6 +299,11 @@ export default function App() {
         ...item,
         acompanantes: limpiarAcompanantes(item.acompanantes)
       }));
+
+    if (itemsValidos.length === 0) {
+      setMensaje("Debes escoger al menos un almuerzo.");
+      return;
+    }
 
     const pedidoTexto = crearTextoPedido(itemsValidos, observaciones.trim());
     const total = calcularTotalItems(itemsValidos, menu.precio);
@@ -312,11 +320,7 @@ export default function App() {
       enviado_whatsapp: false
     };
 
-    const { data, error } = await supabase
-      .from("pedidos")
-      .insert(nuevoPedido)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
 
     if (error) {
       setMensaje(`Error guardando pedido: ${error.message}`);
@@ -331,11 +335,12 @@ export default function App() {
 
   async function guardarMenu() {
     const menuActualizado = {
+      fecha: menu.fecha,
       titulo: menu.titulo,
       descripcion: menu.descripcion,
       precio: Number(menu.precio) || 0,
-      proteinas: menu.proteinas,
-      acompanantes: limpiarAcompanantes(menu.acompanantes),
+      proteinas: menu.proteinas || [],
+      acompanantes: limpiarAcompanantes(menu.acompanantes || []),
       activo: true
     };
 
@@ -353,6 +358,7 @@ export default function App() {
       }
 
       setMenu(data);
+      setItemsPedido([crearItemNuevo(data)]);
       setMensaje("Menú actualizado correctamente.");
       return;
     }
@@ -369,6 +375,7 @@ export default function App() {
     }
 
     setMenu(data);
+    setItemsPedido([crearItemNuevo(data)]);
     setMensaje("Menú creado correctamente.");
   }
 
@@ -388,19 +395,9 @@ export default function App() {
     setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
   }
 
-  function nuevoPedidoCliente() {
-    setItemsPedido([crearItemNuevo(menu)]);
-    setCliente("");
-    setTelefono("");
-    setUbicacion("");
-    setObservaciones("");
-    setPedidoFinalizado(null);
-    setMensaje("");
-    setVista("cliente");
-  }
-
   function actualizarListaMenu(campo, texto) {
-    const nuevaLista = campo === "acompanantes" ? limpiarAcompanantes(textoALista(texto)) : textoALista(texto);
+    const nuevaLista =
+      campo === "acompanantes" ? limpiarAcompanantes(textoALista(texto)) : textoALista(texto);
 
     setMenu((actual) => ({
       ...actual,
@@ -420,278 +417,693 @@ export default function App() {
       setItemsPedido((actual) =>
         actual.map((item) => ({
           ...item,
-          acompanantes: limpiarAcompanantes(item.acompanantes.filter((a) => nuevaLista.includes(a)))
+          acompanantes: limpiarAcompanantes(
+            item.acompanantes.filter((a) => nuevaLista.includes(a))
+          )
         }))
       );
     }
   }
 
+  function nuevoPedidoCliente() {
+    setItemsPedido([crearItemNuevo(menu)]);
+    setCliente("");
+    setTelefono("");
+    setUbicacion("");
+    setObservaciones("");
+    setPedidoFinalizado(null);
+    setMensaje("");
+    setVista("cliente");
+  }
+
   return (
-    <div className="min-h-screen bg-orange-50 text-stone-900">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1 text-sm font-bold text-orange-700">
-              🍽️ Rafiki Pedidos
+    <>
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          font-family: Arial, Helvetica, sans-serif;
+          background: #fff7ed;
+          color: #292524;
+        }
+
+        button, input, textarea, select {
+          font-family: inherit;
+        }
+
+        button {
+          cursor: pointer;
+        }
+
+        button:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        .app {
+          min-height: 100vh;
+          background: linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
+          padding: 24px;
+        }
+
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .topbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .brand {
+          display: inline-flex;
+          background: #ffedd5;
+          color: #c2410c;
+          padding: 8px 14px;
+          border-radius: 999px;
+          font-weight: 800;
+          margin-bottom: 10px;
+        }
+
+        h1 {
+          margin: 0;
+          font-size: clamp(30px, 5vw, 52px);
+          line-height: 1;
+          letter-spacing: -1.5px;
+        }
+
+        h2, h3, h4, h5, p {
+          margin-top: 0;
+        }
+
+        .muted {
+          color: #78716c;
+        }
+
+        .nav {
+          display: flex;
+          gap: 6px;
+          background: #ffffff;
+          border: 1px solid #fed7aa;
+          padding: 6px;
+          border-radius: 20px;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        .nav button {
+          border: 0;
+          padding: 12px 18px;
+          border-radius: 14px;
+          font-weight: 900;
+          background: transparent;
+          color: #57534e;
+        }
+
+        .nav button.active {
+          background: #f97316;
+          color: #fff;
+        }
+
+        .alert {
+          background: #ecfdf5;
+          color: #166534;
+          border: 1px solid #bbf7d0;
+          padding: 14px 18px;
+          border-radius: 18px;
+          margin-bottom: 18px;
+          font-weight: 700;
+        }
+
+        .grid-2 {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 22px;
+        }
+
+        .layout {
+          display: grid;
+          grid-template-columns: 1fr 400px;
+          gap: 22px;
+          align-items: start;
+        }
+
+        .admin-layout {
+          display: grid;
+          grid-template-columns: 380px 1fr;
+          gap: 22px;
+          align-items: start;
+        }
+
+        .card {
+          background: #ffffff;
+          border: 1px solid #fed7aa;
+          border-radius: 32px;
+          box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+          overflow: hidden;
+        }
+
+        .card-pad {
+          padding: 24px;
+        }
+
+        .hero {
+          background: linear-gradient(135deg, #f97316, #f59e0b);
+          color: white;
+          padding: 32px;
+        }
+
+        .hero.dark {
+          background: linear-gradient(135deg, #292524, #57534e);
+        }
+
+        .hero.green {
+          background: linear-gradient(135deg, #22c55e, #10b981);
+        }
+
+        .pill-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 18px;
+        }
+
+        .pill {
+          display: inline-flex;
+          background: rgba(255,255,255,0.22);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,0.35);
+          padding: 10px 14px;
+          border-radius: 16px;
+          font-weight: 900;
+        }
+
+        .pill.price {
+          background: #fff;
+          color: #ea580c;
+          font-size: 24px;
+        }
+
+        .section {
+          padding: 24px;
+        }
+
+        .meal-card {
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          border-radius: 28px;
+          padding: 20px;
+          margin-bottom: 18px;
+        }
+
+        .row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .button {
+          border: 0;
+          background: #f97316;
+          color: white;
+          font-weight: 900;
+          padding: 14px 18px;
+          border-radius: 16px;
+          box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25);
+        }
+
+        .button.dark {
+          background: #292524;
+        }
+
+        .button.green {
+          background: #22c55e;
+        }
+
+        .button.light {
+          background: #fff;
+          color: #44403c;
+          border: 1px solid #e7e5e4;
+          box-shadow: none;
+        }
+
+        .button.danger {
+          background: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+          box-shadow: none;
+        }
+
+        .option-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .option {
+          text-align: left;
+          border: 1px solid #e7e5e4;
+          background: #fff;
+          border-radius: 18px;
+          padding: 14px;
+          font-weight: 900;
+        }
+
+        .option.selected {
+          border-color: #f97316;
+          color: #c2410c;
+          background: #fff7ed;
+        }
+
+        .chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .chip {
+          border: 1px solid #e7e5e4;
+          background: #fff;
+          border-radius: 999px;
+          padding: 12px 14px;
+          font-weight: 900;
+        }
+
+        .chip.selected {
+          border-color: #86efac;
+          background: #dcfce7;
+          color: #15803d;
+        }
+
+        .chip.blocked {
+          background: #f5f5f4;
+          color: #a8a29e;
+        }
+
+        .box {
+          background: #fff;
+          border: 1px solid #e7e5e4;
+          border-radius: 18px;
+          padding: 14px;
+        }
+
+        .box.soft {
+          background: #fafaf9;
+        }
+
+        .field {
+          display: block;
+          margin-bottom: 14px;
+        }
+
+        .field span {
+          display: block;
+          font-weight: 900;
+          margin-bottom: 8px;
+        }
+
+        .field input,
+        .field textarea,
+        .field select {
+          width: 100%;
+          border: 1px solid #e7e5e4;
+          background: #fafaf9;
+          border-radius: 16px;
+          padding: 13px 14px;
+          outline: none;
+        }
+
+        .field input:focus,
+        .field textarea:focus {
+          border-color: #f97316;
+        }
+
+        .quantity {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .quantity button {
+          width: 40px;
+          height: 40px;
+          border-radius: 999px;
+          border: 1px solid #e7e5e4;
+          background: #fff;
+          font-size: 22px;
+          font-weight: 900;
+        }
+
+        .summary-item {
+          background: #fff;
+          border: 1px solid #e7e5e4;
+          border-radius: 16px;
+          padding: 12px;
+          margin-bottom: 10px;
+          font-weight: 700;
+        }
+
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-top: 1px solid #e7e5e4;
+          margin-top: 14px;
+          padding-top: 14px;
+          font-weight: 900;
+        }
+
+        .total-row strong {
+          color: #ea580c;
+          font-size: 26px;
+        }
+
+        .stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin-bottom: 18px;
+        }
+
+        .stat {
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          border-radius: 20px;
+          padding: 16px;
+        }
+
+        .stat strong {
+          display: block;
+          font-size: 28px;
+        }
+
+        .pedido {
+          border: 1px solid #e7e5e4;
+          border-radius: 24px;
+          padding: 18px;
+          margin-bottom: 14px;
+          background: #fff;
+        }
+
+        .pedido-text {
+          white-space: pre-line;
+          background: #fafaf9;
+          border: 1px solid #e7e5e4;
+          border-radius: 16px;
+          padding: 12px;
+          font-weight: 700;
+        }
+
+        .badge {
+          border: 1px solid #e7e5e4;
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .badge-pendiente {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .badge-en-preparación {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
+        .badge-enviado {
+          background: #ede9fe;
+          color: #6d28d9;
+        }
+
+        .badge-entregado {
+          background: #dcfce7;
+          color: #15803d;
+        }
+
+        .badge-cancelado {
+          background: #fee2e2;
+          color: #b91c1c;
+        }
+
+        pre {
+          white-space: pre-wrap;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          border-radius: 18px;
+          padding: 16px;
+          overflow: auto;
+        }
+
+        @media (max-width: 900px) {
+          .topbar,
+          .layout,
+          .admin-layout,
+          .grid-2,
+          .stats {
+            grid-template-columns: 1fr;
+            display: grid;
+          }
+
+          .topbar {
+            display: block;
+          }
+
+          .nav {
+            margin-top: 16px;
+          }
+
+          .option-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .app {
+            padding: 14px;
+          }
+        }
+      `}</style>
+
+      <div className="app">
+        <div className="container">
+          <header className="topbar">
+            <div>
+              <div className="brand">🍽️ Rafiki Pedidos</div>
+              <h1>Menú diario y pedidos por WhatsApp</h1>
+              <p className="muted">App real conectada a Supabase.</p>
             </div>
-            <h1 className="text-3xl font-black tracking-tight md:text-5xl">
-              Menú diario y pedidos por WhatsApp
-            </h1>
-            <p className="mt-2 max-w-2xl text-stone-600">
-              App real conectada a Supabase.
-            </p>
-          </div>
 
-          {vista !== "inicio" && (
-            <div className="flex w-full gap-1 rounded-2xl border bg-white p-1 shadow-sm md:w-auto">
-              <button
-                type="button"
-                onClick={() => setVista("cliente")}
-                className={`flex-1 rounded-xl px-5 py-3 font-black transition md:flex-none ${vista === "cliente" ? "bg-orange-500 text-white shadow" : "text-stone-600 hover:bg-orange-50"}`}
-              >
-                Vista cliente
-              </button>
-              <button
-                type="button"
-                onClick={() => setVista("inicio")}
-                className="flex-1 rounded-xl px-5 py-3 font-black text-stone-600 transition hover:bg-orange-50 md:flex-none"
-              >
-                Inicio
-              </button>
-            </div>
-          )}
-        </header>
-
-        {mensaje && (
-          <div className="mb-5 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 font-semibold text-green-800">
-            {mensaje}
-          </div>
-        )}
-
-        {cargando && (
-          <div className="rounded-3xl bg-white p-8 text-center font-black shadow">
-            Cargando datos de Rafiki...
-          </div>
-        )}
-
-        {!cargando && vista === "inicio" && (
-          <main className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
-            <section className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-xl">
-              <div className="bg-gradient-to-br from-orange-500 to-amber-400 p-8 text-white">
-                <p className="text-5xl">🍽️</p>
-                <h2 className="mt-3 text-4xl font-black">Pedido cliente</h2>
-                <p className="mt-2 text-orange-50">
-                  Esta es la opción que usarán tus clientes.
-                </p>
-              </div>
-              <div className="p-6 md:p-8">
-                <ul className="mb-6 space-y-3 text-sm font-semibold text-stone-600">
-                  <li>✅ Ver menú del día</li>
-                  <li>✅ Escoger proteína</li>
-                  <li>✅ Escoger máximo 3 acompañantes</li>
-                  <li>✅ Enviar consolidado por WhatsApp</li>
-                </ul>
+            {vista !== "inicio" && (
+              <div className="nav">
                 <button
                   type="button"
                   onClick={() => setVista("cliente")}
-                  className="w-full rounded-2xl bg-orange-500 px-5 py-4 text-lg font-black text-white shadow transition hover:bg-orange-600"
+                  className={vista === "cliente" ? "active" : ""}
                 >
-                  Entrar como cliente
+                  Vista cliente
+                </button>
+                <button type="button" onClick={() => setVista("inicio")}>
+                  Inicio
                 </button>
               </div>
-            </section>
+            )}
+          </header>
 
-            <section className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-xl">
-              <div className="bg-gradient-to-br from-stone-800 to-stone-600 p-8 text-white">
-                <p className="text-5xl">🔐</p>
-                <h2 className="mt-3 text-4xl font-black">Panel administrativo</h2>
-                <p className="mt-2 text-stone-200">
-                  Entrada interna para Rafiki.
-                </p>
-              </div>
-              <div className="p-6 md:p-8">
-                <ul className="mb-6 space-y-3 text-sm font-semibold text-stone-600">
-                  <li>✅ Editar menú diario</li>
-                  <li>✅ Ver pedidos recibidos</li>
-                  <li>✅ Cambiar estado del pedido</li>
-                  <li>✅ Revisar consolidado de cocina</li>
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => setVista("admin")}
-                  className="w-full rounded-2xl bg-stone-800 px-5 py-4 text-lg font-black text-white shadow transition hover:bg-stone-900"
-                >
-                  Entrar al panel admin
-                </button>
-              </div>
-            </section>
-          </main>
-        )}
+          {mensaje && <div className="alert">{mensaje}</div>}
 
-        {!cargando && vista === "cliente" && (
-          <main className="grid gap-6 lg:grid-cols-[1fr_420px]">
-            <section className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-xl">
-              <div className="bg-gradient-to-br from-orange-500 to-amber-400 p-8 text-white">
-                <p className="font-semibold opacity-90">{menu.fecha}</p>
-                <h2 className="mt-2 text-4xl font-black">{menu.titulo}</h2>
-                <p className="mt-3 text-lg text-orange-50">{menu.descripcion}</p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <div className="inline-flex rounded-2xl bg-white px-5 py-3 text-2xl font-black text-orange-600 shadow">
-                    {dinero(menu.precio)}
-                  </div>
-                  <div className="inline-flex rounded-2xl bg-orange-900/20 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/30">
-                    Para llevar suma {dinero(VALOR_PARA_LLEVAR)}
-                  </div>
-                  <div className="inline-flex rounded-2xl bg-white/20 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/30">
-                    Incluye sopa y bebida
-                  </div>
+          {cargando && <div className="card card-pad">Cargando datos de Rafiki...</div>}
+
+          {!cargando && vista === "inicio" && (
+            <main className="grid-2">
+              <section className="card">
+                <div className="hero">
+                  <p style={{ fontSize: 48 }}>🍽️</p>
+                  <h2>Pedido cliente</h2>
+                  <p>Esta es la opción que usarán tus clientes.</p>
                 </div>
-              </div>
-
-              <div className="space-y-5 p-6 md:p-8">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-2xl font-black">🛍️ Almuerzos del pedido</h3>
-                    <p className="text-sm font-semibold text-stone-500">
-                      Agrega uno o varios almuerzos. Máximo 3 acompañantes.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={agregarAlmuerzo}
-                    className="rounded-2xl bg-orange-500 px-5 py-3 font-black text-white shadow transition hover:bg-orange-600"
-                  >
-                    + Agregar almuerzo
+                <div className="card-pad">
+                  <p>✅ Ver menú del día</p>
+                  <p>✅ Escoger proteína</p>
+                  <p>✅ Escoger máximo 3 acompañantes</p>
+                  <p>✅ Enviar consolidado por WhatsApp</p>
+                  <button type="button" onClick={() => setVista("cliente")} className="button">
+                    Entrar como cliente
                   </button>
                 </div>
+              </section>
 
-                {itemsPedido.map((item, index) => (
-                  <div key={item.id} className="rounded-3xl border border-orange-100 bg-orange-50/40 p-5">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <h4 className="text-xl font-black">Almuerzo #{index + 1}</h4>
-                      {itemsPedido.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => eliminarAlmuerzo(item.id)}
-                          className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700"
-                        >
-                          Eliminar
-                        </button>
-                      )}
-                    </div>
+              <section className="card">
+                <div className="hero dark">
+                  <p style={{ fontSize: 48 }}>🔐</p>
+                  <h2>Panel administrativo</h2>
+                  <p>Entrada interna para Rafiki.</p>
+                </div>
+                <div className="card-pad">
+                  <p>✅ Editar menú diario</p>
+                  <p>✅ Ver pedidos recibidos</p>
+                  <p>✅ Cambiar estado del pedido</p>
+                  <p>✅ Revisar consolidado de cocina</p>
+                  <button type="button" onClick={() => setVista("admin")} className="button dark">
+                    Entrar al panel admin
+                  </button>
+                </div>
+              </section>
+            </main>
+          )}
 
-                    <h5 className="mb-3 font-black">Proteína</h5>
-                    <div className="mb-5 grid gap-3 sm:grid-cols-2">
-                      {menu.proteinas.map((proteina) => (
-                        <button
-                          key={proteina}
-                          type="button"
-                          onClick={() => actualizarItem(item.id, { proteina })}
-                          className={`rounded-2xl border p-4 text-left font-bold transition ${
-                            item.proteina === proteina
-                              ? "border-orange-500 bg-white text-orange-700 shadow-sm"
-                              : "border-stone-200 bg-white/70 hover:border-orange-300"
-                          }`}
-                        >
-                          {proteina}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="mb-5">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <h5 className="font-black">Acompañantes</h5>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-orange-700 ring-1 ring-orange-200">
-                          {item.acompanantes.length}/{MAX_ACOMPANANTES}
-                        </span>
-                      </div>
-                      <p className="mb-3 text-sm font-semibold text-stone-500">
-                        Puedes escoger máximo {MAX_ACOMPANANTES}.
-                      </p>
-                      <div className="flex flex-wrap gap-3">
-                        {menu.acompanantes.map((acompanante) => {
-                          const seleccionado = item.acompanantes.includes(acompanante);
-                          const bloqueado = !seleccionado && item.acompanantes.length >= MAX_ACOMPANANTES;
-
-                          return (
-                            <button
-                              key={acompanante}
-                              type="button"
-                              onClick={() => cambiarAcompananteItem(item.id, acompanante)}
-                              disabled={bloqueado}
-                              className={`rounded-full border px-4 py-3 font-bold ${
-                                seleccionado
-                                  ? "border-green-300 bg-green-100 text-green-700"
-                                  : bloqueado
-                                  ? "border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed"
-                                  : "border-stone-200 bg-white"
-                              }`}
-                            >
-                              {seleccionado ? "✓ " : "+ "}
-                              {acompanante}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="mb-5 rounded-2xl border bg-white p-4">
-                      <p className="font-black">🥣 Sopa y bebida</p>
-                      <p className="text-sm font-semibold text-stone-500">
-                        Incluidas automáticamente.
-                      </p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <h5 className="mb-3 font-black">Cantidad</h5>
-                        <div className="rounded-2xl border bg-white p-3">
-                          <SelectorCantidad
-                            cantidad={item.cantidad}
-                            onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
-                          />
-                        </div>
-                      </div>
-
-                      <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border bg-white p-4">
-                        <div>
-                          <p className="font-black">🥡 Para llevar</p>
-                          <p className="text-sm font-semibold text-stone-500">
-                            Suma {dinero(VALOR_PARA_LLEVAR)}
-                          </p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={item.paraLlevar}
-                          onChange={(e) => actualizarItem(item.id, { paraLlevar: e.target.checked })}
-                          className="h-6 w-6 accent-orange-500"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="mt-4 flex justify-between rounded-2xl border bg-white p-4">
-                      <span className="font-semibold text-stone-500">Subtotal</span>
-                      <span className="text-xl font-black text-orange-600">
-                        {dinero(calcularTotalItem(item, menu.precio))}
-                      </span>
-                    </div>
+          {!cargando && vista === "cliente" && (
+            <main className="layout">
+              <section className="card">
+                <div className="hero">
+                  <p>{menu.fecha}</p>
+                  <h2>{menu.titulo}</h2>
+                  <p>{menu.descripcion}</p>
+                  <div className="pill-row">
+                    <span className="pill price">{dinero(menu.precio)}</span>
+                    <span className="pill">Para llevar suma {dinero(VALOR_PARA_LLEVAR)}</span>
+                    <span className="pill">Incluye sopa y bebida</span>
                   </div>
-                ))}
-              </div>
-            </section>
+                </div>
 
-            <aside className="h-fit rounded-[2rem] border border-orange-100 bg-white p-6 shadow-xl lg:sticky lg:top-6">
-              <h3 className="mb-2 text-2xl font-black">Datos de entrega</h3>
-              <p className="mb-5 text-stone-500">
-                Estos datos se guardan y luego el cliente puede enviar el consolidado por WhatsApp.
-              </p>
+                <div className="section">
+                  <div className="row" style={{ marginBottom: 18 }}>
+                    <div>
+                      <h3>🛍️ Almuerzos del pedido</h3>
+                      <p className="muted">Agrega uno o varios almuerzos. Máximo 3 acompañantes.</p>
+                    </div>
+                    <button type="button" onClick={agregarAlmuerzo} className="button">
+                      + Agregar almuerzo
+                    </button>
+                  </div>
 
-              <div className="mb-5 rounded-3xl border bg-stone-50 p-5">
-                <h4 className="mb-3 text-lg font-black">Resumen</h4>
-                <div className="space-y-3">
                   {itemsPedido.map((item, index) => (
-                    <div key={item.id} className="rounded-2xl border bg-white p-3 text-sm font-semibold text-stone-700">
-                      <p className="font-black text-stone-900">
+                    <div key={item.id} className="meal-card">
+                      <div className="row">
+                        <h3>Almuerzo #{index + 1}</h3>
+                        {itemsPedido.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarAlmuerzo(item.id)}
+                            className="button danger"
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+
+                      <h4>Proteína</h4>
+                      <div className="option-grid">
+                        {(menu.proteinas || []).map((proteina) => (
+                          <button
+                            key={proteina}
+                            type="button"
+                            onClick={() => actualizarItem(item.id, { proteina })}
+                            className={`option ${item.proteina === proteina ? "selected" : ""}`}
+                          >
+                            {proteina}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ marginTop: 18 }}>
+                        <div className="row">
+                          <h4>Acompañantes</h4>
+                          <strong>
+                            {item.acompanantes.length}/{MAX_ACOMPANANTES}
+                          </strong>
+                        </div>
+                        <p className="muted">
+                          Puedes escoger máximo {MAX_ACOMPANANTES}. La sopa y la bebida ya están incluidas.
+                        </p>
+
+                        <div className="chips">
+                          {(menu.acompanantes || []).map((acompanante) => {
+                            const seleccionado = item.acompanantes.includes(acompanante);
+                            const bloqueado =
+                              !seleccionado && item.acompanantes.length >= MAX_ACOMPANANTES;
+
+                            return (
+                              <button
+                                key={acompanante}
+                                type="button"
+                                onClick={() => cambiarAcompananteItem(item.id, acompanante)}
+                                disabled={bloqueado}
+                                className={`chip ${seleccionado ? "selected" : ""} ${
+                                  bloqueado ? "blocked" : ""
+                                }`}
+                              >
+                                {seleccionado ? "✓ " : "+ "}
+                                {acompanante}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="box" style={{ marginTop: 18 }}>
+                        <strong>🥣 Sopa y bebida</strong>
+                        <p className="muted" style={{ marginBottom: 0 }}>
+                          Incluidas automáticamente en cada almuerzo.
+                        </p>
+                      </div>
+
+                      <div className="grid-2" style={{ marginTop: 18 }}>
+                        <div className="box">
+                          <strong>Cantidad</strong>
+                          <div style={{ marginTop: 10 }}>
+                            <SelectorCantidad
+                              cantidad={item.cantidad}
+                              onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
+                            />
+                          </div>
+                        </div>
+
+                        <label className="box row">
+                          <div>
+                            <strong>🥡 Para llevar</strong>
+                            <p className="muted" style={{ marginBottom: 0 }}>
+                              Suma {dinero(VALOR_PARA_LLEVAR)}
+                            </p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={item.paraLlevar}
+                            onChange={(e) =>
+                              actualizarItem(item.id, { paraLlevar: e.target.checked })
+                            }
+                            style={{ width: 24, height: 24 }}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="total-row">
+                        <span>Subtotal</span>
+                        <strong>{dinero(calcularTotalItem(item, menu.precio))}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <aside className="card card-pad">
+                <h2>Datos de entrega</h2>
+                <p className="muted">
+                  Estos datos se guardan y luego el cliente puede enviar el consolidado por WhatsApp.
+                </p>
+
+                <div className="box soft" style={{ marginBottom: 18 }}>
+                  <h3>Resumen</h3>
+
+                  {itemsPedido.map((item, index) => (
+                    <div key={item.id} className="summary-item">
+                      <p>
                         #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"}
                       </p>
                       <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
@@ -699,213 +1111,269 @@ export default function App() {
                       <p>{item.paraLlevar ? "Para llevar" : "Sin empaque para llevar"}</p>
                     </div>
                   ))}
-                </div>
-                <div className="mt-4 flex justify-between border-t pt-4">
-                  <span className="font-black">Total</span>
-                  <span className="text-2xl font-black text-orange-600">{dinero(totalPedido)}</span>
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                <CampoTexto etiqueta="👤 Nombre" value={cliente} onChange={setCliente} placeholder="Ej: Laura Pérez" />
-                <CampoTexto etiqueta="📞 Teléfono" value={telefono} onChange={setTelefono} placeholder="Ej: 300 123 4567" />
-                <CampoTexto etiqueta="📍 Ubicación" value={ubicacion} onChange={setUbicacion} placeholder="Ej: Edificio, oficina o barrio" />
-                <CampoTexto etiqueta="Observaciones generales" value={observaciones} onChange={setObservaciones} placeholder="Ej: llevar a recepción, sin cubiertos, pago en efectivo..." multiline />
-              </div>
-
-              <button
-                type="button"
-                onClick={registrarPedido}
-                disabled={itemsPedido.every((item) => !item.proteina)}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-4 text-lg font-black text-white shadow-lg transition hover:bg-orange-600 disabled:opacity-50"
-              >
-                Revisar y finalizar pedido
-              </button>
-            </aside>
-          </main>
-        )}
-
-        {!cargando && vista === "confirmacion" && pedidoFinalizado && (
-          <main className="mx-auto max-w-3xl">
-            <section className="overflow-hidden rounded-[2rem] border border-green-100 bg-white shadow-xl">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-400 p-8 text-white">
-                <p className="text-5xl">✅</p>
-                <h2 className="mt-3 text-4xl font-black">Pedido finalizado</h2>
-                <p className="mt-2 text-green-50">
-                  Revisa el consolidado y envíalo a Rafiki por WhatsApp.
-                </p>
-              </div>
-
-              <div className="space-y-5 p-6 md:p-8">
-                <div className="rounded-3xl border bg-stone-50 p-5">
-                  <h3 className="mb-4 text-2xl font-black">Consolidado del pedido</h3>
-                  <p><strong>Cliente:</strong> {pedidoFinalizado.cliente}</p>
-                  <p><strong>Teléfono:</strong> {pedidoFinalizado.telefono}</p>
-                  <p><strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}</p>
-                  <div className="mt-4 whitespace-pre-line rounded-2xl border bg-white p-4 font-semibold">
-                    {pedidoFinalizado.pedido_texto}
-                  </div>
-                  <div className="mt-4 flex justify-between rounded-2xl border bg-white p-4">
-                    <span className="text-lg font-black">Total</span>
-                    <span className="text-3xl font-black text-orange-600">{dinero(pedidoFinalizado.total)}</span>
+                  <div className="total-row">
+                    <span>Total</span>
+                    <strong>{dinero(totalPedido)}</strong>
                   </div>
                 </div>
 
-                <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-2xl border bg-green-50 p-4 text-sm font-semibold text-stone-700">
-                  {mensajeWhatsAppFinal}
-                </pre>
+                <CampoTexto
+                  etiqueta="👤 Nombre"
+                  value={cliente}
+                  onChange={setCliente}
+                  placeholder="Ej: Laura Pérez"
+                />
+                <CampoTexto
+                  etiqueta="📞 Teléfono"
+                  value={telefono}
+                  onChange={setTelefono}
+                  placeholder="Ej: 300 123 4567"
+                />
+                <CampoTexto
+                  etiqueta="📍 Ubicación"
+                  value={ubicacion}
+                  onChange={setUbicacion}
+                  placeholder="Ej: Edificio, oficina o barrio"
+                />
+                <CampoTexto
+                  etiqueta="Observaciones generales"
+                  value={observaciones}
+                  onChange={setObservaciones}
+                  placeholder="Ej: llevar a recepción, sin cubiertos, pago en efectivo..."
+                  multiline
+                />
 
-                <a
-                  href={linkWhatsAppFinal}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex w-full items-center justify-center rounded-2xl bg-green-500 px-5 py-4 text-center text-lg font-black text-white shadow-lg transition hover:bg-green-600"
-                >
-                  🟢 Enviar consolidado por WhatsApp
-                </a>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={nuevoPedidoCliente}
-                    className="rounded-2xl border bg-white px-5 py-4 font-black text-stone-700 transition hover:bg-stone-50"
-                  >
-                    Hacer otro pedido
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setVista("inicio")}
-                    className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 font-black text-orange-700 transition hover:bg-orange-100"
-                  >
-                    Volver al inicio
-                  </button>
-                </div>
-              </div>
-            </section>
-          </main>
-        )}
-
-        {!cargando && vista === "admin" && (
-          <main className="grid gap-6 xl:grid-cols-[380px_1fr]">
-            <section className="space-y-6">
-              <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-xl">
-                <h2 className="mb-5 text-2xl font-black">✏️ Editar menú diario</h2>
-                <div className="space-y-4">
-                  <CampoTexto etiqueta="Fecha" value={menu.fecha || ""} onChange={(valor) => setMenu((actual) => ({ ...actual, fecha: valor }))} />
-                  <CampoTexto etiqueta="Nombre del menú" value={menu.titulo || ""} onChange={(valor) => setMenu((actual) => ({ ...actual, titulo: valor }))} />
-                  <CampoTexto etiqueta="Descripción" value={menu.descripcion || ""} onChange={(valor) => setMenu((actual) => ({ ...actual, descripcion: valor }))} multiline />
-                  <CampoTexto etiqueta="Precio base del almuerzo" type="number" value={String(menu.precio || 0)} onChange={(valor) => setMenu((actual) => ({ ...actual, precio: Number(valor) || 0 }))} />
-                  <CampoTexto etiqueta="Proteínas separadas por coma" value={(menu.proteinas || []).join(", ")} onChange={(valor) => actualizarListaMenu("proteinas", valor)} multiline />
-                  <CampoTexto etiqueta="Acompañantes adicionales separados por coma" value={(menu.acompanantes || []).join(", ")} onChange={(valor) => actualizarListaMenu("acompanantes", valor)} multiline />
-                </div>
-                <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 p-4 text-sm font-semibold text-orange-800">
-                  Sopa y bebida siempre van incluidas. Solo se editan acompañantes adicionales.
-                </div>
                 <button
                   type="button"
-                  onClick={guardarMenu}
-                  className="mt-5 w-full rounded-2xl bg-orange-500 py-4 font-black text-white shadow transition hover:bg-orange-600"
+                  onClick={registrarPedido}
+                  disabled={itemsPedido.every((item) => !item.proteina)}
+                  className="button"
+                  style={{ width: "100%", marginTop: 10 }}
                 >
-                  Guardar menú del día
+                  Revisar y finalizar pedido
                 </button>
-              </div>
+              </aside>
+            </main>
+          )}
 
-              <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-xl">
-                <h2 className="mb-4 text-2xl font-black">Consolidado cocina</h2>
-                <div className="space-y-3">
-                  {Object.keys(consolidado).length === 0 ? (
-                    <p className="rounded-2xl border bg-stone-50 p-4 font-semibold text-stone-500">
-                      Todavía no hay productos para consolidar.
+          {!cargando && vista === "confirmacion" && pedidoFinalizado && (
+            <main style={{ maxWidth: 760, margin: "0 auto" }}>
+              <section className="card">
+                <div className="hero green">
+                  <p style={{ fontSize: 48 }}>✅</p>
+                  <h2>Pedido finalizado</h2>
+                  <p>Revisa el consolidado y envíalo a Rafiki por WhatsApp.</p>
+                </div>
+
+                <div className="card-pad">
+                  <div className="box soft">
+                    <h3>Consolidado del pedido</h3>
+                    <p>
+                      <strong>Cliente:</strong> {pedidoFinalizado.cliente}
                     </p>
+                    <p>
+                      <strong>Teléfono:</strong> {pedidoFinalizado.telefono || "Sin teléfono"}
+                    </p>
+                    <p>
+                      <strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}
+                    </p>
+
+                    <div className="pedido-text">{pedidoFinalizado.pedido_texto}</div>
+
+                    <div className="total-row">
+                      <span>Total</span>
+                      <strong>{dinero(pedidoFinalizado.total)}</strong>
+                    </div>
+                  </div>
+
+                  <pre>{mensajeWhatsAppFinal}</pre>
+
+                  <a
+                    href={linkWhatsAppFinal}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="button green"
+                    style={{ display: "block", textAlign: "center", textDecoration: "none" }}
+                  >
+                    🟢 Enviar consolidado por WhatsApp
+                  </a>
+
+                  <div className="grid-2" style={{ marginTop: 14 }}>
+                    <button type="button" onClick={nuevoPedidoCliente} className="button light">
+                      Hacer otro pedido
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVista("inicio")}
+                      className="button light"
+                    >
+                      Volver al inicio
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </main>
+          )}
+
+          {!cargando && vista === "admin" && (
+            <main className="admin-layout">
+              <section>
+                <div className="card card-pad">
+                  <h2>✏️ Editar menú diario</h2>
+
+                  <CampoTexto
+                    etiqueta="Fecha"
+                    value={menu.fecha || ""}
+                    onChange={(valor) => setMenu((actual) => ({ ...actual, fecha: valor }))}
+                  />
+                  <CampoTexto
+                    etiqueta="Nombre del menú"
+                    value={menu.titulo || ""}
+                    onChange={(valor) => setMenu((actual) => ({ ...actual, titulo: valor }))}
+                  />
+                  <CampoTexto
+                    etiqueta="Descripción"
+                    value={menu.descripcion || ""}
+                    onChange={(valor) =>
+                      setMenu((actual) => ({ ...actual, descripcion: valor }))
+                    }
+                    multiline
+                  />
+                  <CampoTexto
+                    etiqueta="Precio base del almuerzo"
+                    type="number"
+                    value={String(menu.precio || 0)}
+                    onChange={(valor) =>
+                      setMenu((actual) => ({ ...actual, precio: Number(valor) || 0 }))
+                    }
+                  />
+                  <CampoTexto
+                    etiqueta="Proteínas separadas por coma"
+                    value={(menu.proteinas || []).join(", ")}
+                    onChange={(valor) => actualizarListaMenu("proteinas", valor)}
+                    multiline
+                  />
+                  <CampoTexto
+                    etiqueta="Acompañantes adicionales separados por coma"
+                    value={(menu.acompanantes || []).join(", ")}
+                    onChange={(valor) => actualizarListaMenu("acompanantes", valor)}
+                    multiline
+                  />
+
+                  <div className="box soft">
+                    Sopa y bebida siempre van incluidas. Solo se editan acompañantes adicionales.
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={guardarMenu}
+                    className="button"
+                    style={{ width: "100%", marginTop: 14 }}
+                  >
+                    Guardar menú del día
+                  </button>
+                </div>
+
+                <div className="card card-pad" style={{ marginTop: 18 }}>
+                  <h2>Consolidado cocina</h2>
+
+                  {Object.keys(consolidado).length === 0 ? (
+                    <p className="muted">Todavía no hay productos para consolidar.</p>
                   ) : (
                     Object.entries(consolidado).map(([producto, cantidadProducto]) => (
-                      <div key={producto} className="flex items-center justify-between rounded-2xl border bg-stone-50 p-4">
-                        <span className="font-bold">{producto}</span>
-                        <span className="text-xl font-black text-orange-600">{cantidadProducto}</span>
+                      <div key={producto} className="box row" style={{ marginBottom: 10 }}>
+                        <strong>{producto}</strong>
+                        <strong>{cantidadProducto}</strong>
                       </div>
                     ))
                   )}
                 </div>
-              </div>
-            </section>
+              </section>
 
-            <section className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-xl">
-              <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-3xl font-black">📋 Pedidos de hoy</h2>
-                  <p className="text-stone-500">Revisa pedidos, ubicación, total y estado.</p>
+              <section className="card card-pad">
+                <div className="row">
+                  <div>
+                    <h2>📋 Pedidos de hoy</h2>
+                    <p className="muted">Revisa pedidos, ubicación, total y estado.</p>
+                  </div>
                 </div>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">🔎</span>
-                  <input
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    placeholder="Buscar pedido..."
-                    className="w-full rounded-2xl border bg-stone-50 py-3 pl-11 pr-4 outline-none focus:border-orange-400 md:w-72"
-                  />
+
+                <CampoTexto
+                  etiqueta="Buscar pedido"
+                  value={busqueda}
+                  onChange={setBusqueda}
+                  placeholder="Buscar por cliente, ubicación o estado..."
+                />
+
+                <div className="stats">
+                  <div className="stat">
+                    <span>Pedidos</span>
+                    <strong>{pedidos.length}</strong>
+                  </div>
+                  <div className="stat">
+                    <span>Entregados</span>
+                    <strong>{pedidos.filter((p) => p.estado === "Entregado").length}</strong>
+                  </div>
+                  <div className="stat">
+                    <span>Total vendido</span>
+                    <strong>{dinero(totalVendido)}</strong>
+                  </div>
                 </div>
-              </div>
 
-              <div className="mb-6 grid gap-4 md:grid-cols-3">
-                <div className="rounded-3xl border border-orange-100 bg-orange-50 p-5">
-                  <p className="font-semibold text-stone-500">Pedidos</p>
-                  <p className="text-3xl font-black">{pedidos.length}</p>
-                </div>
-                <div className="rounded-3xl border border-green-100 bg-green-50 p-5">
-                  <p className="font-semibold text-stone-500">Entregados</p>
-                  <p className="text-3xl font-black">{pedidos.filter((p) => p.estado === "Entregado").length}</p>
-                </div>
-                <div className="rounded-3xl border border-purple-100 bg-purple-50 p-5">
-                  <p className="font-semibold text-stone-500">Total vendido</p>
-                  <p className="text-3xl font-black">{dinero(totalVendido)}</p>
-                </div>
-              </div>
+                {pedidosFiltrados.length === 0 ? (
+                  <div className="box soft">No se encontraron pedidos.</div>
+                ) : (
+                  pedidosFiltrados.map((pedido) => (
+                    <div key={pedido.id} className="pedido">
+                      <div className="row">
+                        <div>
+                          <EstadoBadge estado={pedido.estado} />
+                          <h3 style={{ marginTop: 10 }}>{pedido.cliente}</h3>
+                          <p>📍 {pedido.ubicacion}</p>
+                          <p>📞 {pedido.telefono || "Sin teléfono"}</p>
+                        </div>
 
-Need respond next steps. Mention canvas has corrupted duplicate manual edit; but real project code from previous is clean? The developer context shows manual canvas contains duplicate corruption at the end, should refer if edit requested. Here user says they executed. Need answer with next step: create Vercel env and files. Since we already gave full code. Now maybe guide to Vercel and variables. Need mention Supabase URL/key. Maybe say don't use canvas code because duplicate in canvas? But user probably not asking. "ya ejecuté". We need provide specific next actions.
+                        <div style={{ textAlign: "right" }}>
+                          <strong style={{ fontSize: 24, color: "#ea580c" }}>
+                            {dinero(pedido.total)}
+                          </strong>
+                        </div>
+                      </div>
 
-Need perhaps suggest "perfecto, ahora haz GitHub files; after create send link." We can include the 3 env variables and how to add in Vercel. Maybe because step now.
+                      <div className="pedido-text">{pedido.pedido_texto}</div>
 
-Need maybe mention "NO copies from canvas because it currently has duplicate block" due context. Since user may use canvas. For safe, say usaremos code from previous message for App.jsx, not canvas unless we clean it. But maybe should update canvas to set WHATSAPP_RAFIKI to provided and remove duplicate? We may not need. But maybe user wants make reality with code, not canvas. Since canmore only single file, not full project. Could offer to clean App.jsx? But final should provide step-by-step.
+                      <div className="grid-2" style={{ marginTop: 12 }}>
+                        <select
+                          value={pedido.estado}
+                          onChange={(e) => cambiarEstadoPedido(pedido.id, e.target.value)}
+                          className="box"
+                        >
+                          {estadosPedido.map((estado) => (
+                            <option key={estado} value={estado}>
+                              {estado}
+                            </option>
+                          ))}
+                        </select>
 
-Need maybe note exact where variables in Vercel. Also need "commit" steps.
-
-Need include citations from web used. "Vite variables VITE_ ..." cite; "Vercel env ..." cite. Since web used, cite statements. "Supabase JS createClient"? search poor, but cite Supabase homepage? It didn't show createClient. Use another search? Maybe official docs by URL maybe open maybe reference. We'll cite Vite/Vercel only, not Supabase? But we can mention no citation maybe. Need if called web, all internet facts cited. We can cite Supabase generic? Better use docs search for createClient maybe. use web open? Search better. 
-Need no more tools? Maybe enough. We can cite Supabase docs? Search result not specific. Could mention "Supabase project is postgres ..." irrelevant. We need cite if saying Vercel environment. We have sources. Fine.
-
-Need answer Spanish.
-
-Need include that user shouldn't paste service_role. They provided public key. But no secret. Fine.
-
-Final with exact steps:
-1. In GitHub create/edit files.
-2. In Vercel import project: Add New Project -> import GitHub -> framework auto Vite -> env vars: all 3 -> deploy.
-3. After deploy if error, "Redeploy" after env variables because changes don't apply old deployments cite Vercel.
-4. Test flows.
-
-But user asked "ya", so "siguiente paso".
-
-Need maybe include "cuando app cargue, error common: not connected if RLS/policies". But okay.
-
-Need not end with "I can". Could say "Cuando termines el deploy, envíame captura..." Is that follow-up suggestion one max. Fine.
-
-Let's respond. 
-Also could mention "VITE_SUPABASE_ANON_KEY" uses publishable key. 
-VITE docs: cite. Vercel env cite.
-Need no raw URLs. Good.
-
-Final desired oververbosity 4. Need concise but clear.
-
-Let's produce with steps. 
-Also state "No compartas secret/service_role". Good. 
-Use markdown. 
-Need "siguiente paso: subir app a GitHub" etc. 
-Ensure no "if you want". Avoid "Si quieres". Use "Ahora haz". 
-Ok. 
-Wait user said "ya ejecuté SQL" but not created GitHub? Maybe maybe they have repo already. We need phrase "Ahora vamos a GitHub". Good. 
-Include variables values. 
-Need maybe mention "después de agregar variables, deploy." 
-Need mention "en Vercel variables must be in Production/Preview/Development and redeploy after changes" cite. 
-
-Final. 
-
-::contentReference[oaicite:1]{index=1}
+                        <a
+                          href={crearLinkWhatsApp(WHATSAPP_RAFIKI, crearMensajeWhatsAppPedido(pedido))}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="button green"
+                          style={{ textAlign: "center", textDecoration: "none" }}
+                        >
+                          Enviar a WhatsApp
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </section>
+            </main>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
