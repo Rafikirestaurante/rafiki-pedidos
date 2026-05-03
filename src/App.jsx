@@ -15,6 +15,12 @@ const menuFallback = {
   descripcion: "Escoge una proteína y máximo 3 acompañantes. Incluye sopa y bebida.",
   precio: 17500,
   proteinas: ["Pechuga", "Carne", "Cerdo", "Pollo guisado"],
+  proteinas_detalle: [
+    { nombre: "Pechuga", precio: 17500 },
+    { nombre: "Carne", precio: 19000 },
+    { nombre: "Cerdo", precio: 17000 },
+    { nombre: "Pollo guisado", precio: 16000 }
+  ],
   acompanantes: ["Arroz", "Ensalada", "Tajada", "Puré", "Yuca", "Papa salada"],
   activo: true
 };
@@ -40,18 +46,69 @@ function limpiarAcompanantes(lista) {
     .slice(0, MAX_ACOMPANANTES);
 }
 
-function calcularTotalItem(item, precioBase) {
-  const cantidad = Number(item.cantidad) || 0;
-  const adicional = item.paraLlevar ? VALOR_PARA_LLEVAR : 0;
-  return cantidad * (Number(precioBase) + adicional);
+function normalizarProteinas(menu) {
+  if (Array.isArray(menu?.proteinas_detalle) && menu.proteinas_detalle.length > 0) {
+    return menu.proteinas_detalle
+      .map((item) => ({
+        nombre: String(item.nombre || "").trim(),
+        precio: Number(item.precio) || 0
+      }))
+      .filter((item) => item.nombre);
+  }
+
+  return (menu?.proteinas || []).map((nombre) => ({
+    nombre,
+    precio: Number(menu?.precio) || 0
+  }));
 }
 
-function calcularTotalItems(items, precioBase) {
-  return items.reduce((suma, item) => suma + calcularTotalItem(item, precioBase), 0);
+function normalizarMenu(menu) {
+  const proteinasDetalle = normalizarProteinas(menu);
+
+  return {
+    ...menu,
+    proteinas_detalle: proteinasDetalle,
+    proteinas: proteinasDetalle.map((item) => item.nombre),
+    acompanantes: limpiarAcompanantes(menu?.acompanantes || [])
+  };
+}
+
+function proteinasATexto(proteinasDetalle) {
+  return (proteinasDetalle || [])
+    .map((item) => `${item.nombre}:${Number(item.precio) || 0}`)
+    .join("\n");
+}
+
+function textoAProteinasDetalle(texto) {
+  return String(texto || "")
+    .split("\n")
+    .map((linea) => linea.trim())
+    .filter(Boolean)
+    .map((linea) => {
+      const partes = linea.split(":");
+      const nombre = String(partes[0] || "").trim();
+      const precioTexto = String(partes[1] || "0").replace(/[^\d]/g, "");
+      return {
+        nombre,
+        precio: Number(precioTexto) || 0
+      };
+    })
+    .filter((item) => item.nombre);
+}
+
+function calcularTotalItem(item) {
+  const cantidad = Number(item.cantidad) || 0;
+  const precioProteina = Number(item.precioProteina) || 0;
+  const adicional = item.paraLlevar ? VALOR_PARA_LLEVAR : 0;
+  return cantidad * (precioProteina + adicional);
+}
+
+function calcularTotalItems(items) {
+  return items.reduce((suma, item) => suma + calcularTotalItem(item), 0);
 }
 
 function crearTextoItem(item) {
-  const partes = [`${item.cantidad} ${item.proteina}`];
+  const partes = [`${item.cantidad} ${item.proteina} (${dinero(item.precioProteina)})`];
   const acompanantes = limpiarAcompanantes(item.acompanantes || []);
 
   if (acompanantes.length > 0) {
@@ -86,7 +143,7 @@ function crearMensajeWhatsAppPedido(pedido) {
     `Ubicación: ${pedido.ubicacion}`,
     "",
     "Pedido:",
-    pedido.pedido_texto || pedido.pedido || "",
+    pedido.pedido_texto || "",
     "",
     `Total: ${dinero(pedido.total)}`
   ].join("\n");
@@ -97,11 +154,15 @@ function crearLinkWhatsApp(numero, mensaje) {
 }
 
 function crearItemNuevo(menu) {
+  const menuNormalizado = normalizarMenu(menu);
+  const primeraProteina = menuNormalizado.proteinas_detalle[0] || { nombre: "", precio: 0 };
+
   return {
     id: Date.now() + Math.random(),
     cantidad: 1,
-    proteina: menu.proteinas?.[0] || "",
-    acompanantes: limpiarAcompanantes(menu.acompanantes || []),
+    proteina: primeraProteina.nombre,
+    precioProteina: Number(primeraProteina.precio) || 0,
+    acompanantes: limpiarAcompanantes(menuNormalizado.acompanantes || []),
     paraLlevar: false
   };
 }
@@ -131,7 +192,7 @@ function CampoTexto({ etiqueta, value, onChange, placeholder, multiline = false,
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          rows={3}
+          rows={4}
         />
       ) : (
         <input
@@ -166,7 +227,7 @@ function SelectorCantidad({ cantidad, onChange }) {
 
 export default function App() {
   const [vista, setVista] = useState("inicio");
-  const [menu, setMenu] = useState(menuFallback);
+  const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo(menuFallback)]);
   const [cliente, setCliente] = useState("");
@@ -178,13 +239,8 @@ export default function App() {
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
 
-  const totalPedido = useMemo(
-    () => calcularTotalItems(itemsPedido, menu.precio),
-    [itemsPedido, menu.precio]
-  );
-
+  const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
   const consolidado = useMemo(() => consolidarPedidos(pedidos), [pedidos]);
-
   const totalVendido = useMemo(
     () => pedidos.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0),
     [pedidos]
@@ -227,8 +283,9 @@ export default function App() {
     }
 
     if (menuData) {
-      setMenu(menuData);
-      setItemsPedido([crearItemNuevo(menuData)]);
+      const menuNormalizado = normalizarMenu(menuData);
+      setMenu(menuNormalizado);
+      setItemsPedido([crearItemNuevo(menuNormalizado)]);
     }
 
     const { data: pedidosData, error: pedidosError } = await supabase
@@ -251,6 +308,15 @@ export default function App() {
     setItemsPedido((actual) =>
       actual.map((item) => (item.id === id ? { ...item, ...cambios } : item))
     );
+  }
+
+  function cambiarProteinaItem(id, nombreProteina) {
+    const proteinaSeleccionada = menu.proteinas_detalle.find((p) => p.nombre === nombreProteina);
+
+    actualizarItem(id, {
+      proteina: proteinaSeleccionada?.nombre || "",
+      precioProteina: Number(proteinaSeleccionada?.precio) || 0
+    });
   }
 
   function cambiarAcompananteItem(id, acompanante) {
@@ -306,7 +372,7 @@ export default function App() {
     }
 
     const pedidoTexto = crearTextoPedido(itemsValidos, observaciones.trim());
-    const total = calcularTotalItems(itemsValidos, menu.precio);
+    const total = calcularTotalItems(itemsValidos);
 
     const nuevoPedido = {
       cliente: cliente.trim() || "Cliente",
@@ -334,13 +400,16 @@ export default function App() {
   }
 
   async function guardarMenu() {
+    const menuNormalizado = normalizarMenu(menu);
+
     const menuActualizado = {
-      fecha: menu.fecha,
-      titulo: menu.titulo,
-      descripcion: menu.descripcion,
-      precio: Number(menu.precio) || 0,
-      proteinas: menu.proteinas || [],
-      acompanantes: limpiarAcompanantes(menu.acompanantes || []),
+      fecha: menuNormalizado.fecha,
+      titulo: menuNormalizado.titulo,
+      descripcion: menuNormalizado.descripcion,
+      precio: Number(menuNormalizado.precio) || 0,
+      proteinas: menuNormalizado.proteinas_detalle.map((item) => item.nombre),
+      proteinas_detalle: menuNormalizado.proteinas_detalle,
+      acompanantes: limpiarAcompanantes(menuNormalizado.acompanantes || []),
       activo: true
     };
 
@@ -357,8 +426,9 @@ export default function App() {
         return;
       }
 
-      setMenu(data);
-      setItemsPedido([crearItemNuevo(data)]);
+      const nuevoMenu = normalizarMenu(data);
+      setMenu(nuevoMenu);
+      setItemsPedido([crearItemNuevo(nuevoMenu)]);
       setMensaje("Menú actualizado correctamente.");
       return;
     }
@@ -374,8 +444,9 @@ export default function App() {
       return;
     }
 
-    setMenu(data);
-    setItemsPedido([crearItemNuevo(data)]);
+    const nuevoMenu = normalizarMenu(data);
+    setMenu(nuevoMenu);
+    setItemsPedido([crearItemNuevo(nuevoMenu)]);
     setMensaje("Menú creado correctamente.");
   }
 
@@ -395,6 +466,30 @@ export default function App() {
     setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
   }
 
+  function actualizarProteinasDesdeTexto(texto) {
+    const proteinasDetalle = textoAProteinasDetalle(texto);
+
+    setMenu((actual) => ({
+      ...actual,
+      proteinas_detalle: proteinasDetalle,
+      proteinas: proteinasDetalle.map((item) => item.nombre),
+      precio: proteinasDetalle[0]?.precio || actual.precio || 0
+    }));
+
+    setItemsPedido((actual) =>
+      actual.map((item) => {
+        const encontrada = proteinasDetalle.find((p) => p.nombre === item.proteina);
+        const primera = proteinasDetalle[0];
+
+        return {
+          ...item,
+          proteina: encontrada?.nombre || primera?.nombre || "",
+          precioProteina: Number(encontrada?.precio || primera?.precio || 0)
+        };
+      })
+    );
+  }
+
   function actualizarListaMenu(campo, texto) {
     const nuevaLista =
       campo === "acompanantes" ? limpiarAcompanantes(textoALista(texto)) : textoALista(texto);
@@ -403,15 +498,6 @@ export default function App() {
       ...actual,
       [campo]: nuevaLista
     }));
-
-    if (campo === "proteinas") {
-      setItemsPedido((actual) =>
-        actual.map((item) => ({
-          ...item,
-          proteina: nuevaLista.includes(item.proteina) ? item.proteina : nuevaLista[0] || ""
-        }))
-      );
-    }
 
     if (campo === "acompanantes") {
       setItemsPedido((actual) =>
@@ -439,41 +525,26 @@ export default function App() {
   return (
     <>
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
           margin: 0;
           font-family: Arial, Helvetica, sans-serif;
           background: #fff7ed;
           color: #292524;
         }
-
-        button, input, textarea, select {
-          font-family: inherit;
-        }
-
-        button {
-          cursor: pointer;
-        }
-
-        button:disabled {
-          cursor: not-allowed;
-          opacity: 0.6;
-        }
+        button, input, textarea, select { font-family: inherit; }
+        button { cursor: pointer; }
+        button:disabled { cursor: not-allowed; opacity: 0.6; }
 
         .app {
           min-height: 100vh;
           background: linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
           padding: 24px;
         }
-
         .container {
           max-width: 1200px;
           margin: 0 auto;
         }
-
         .topbar {
           display: flex;
           justify-content: space-between;
@@ -481,7 +552,6 @@ export default function App() {
           gap: 16px;
           margin-bottom: 24px;
         }
-
         .brand {
           display: inline-flex;
           background: #ffedd5;
@@ -491,21 +561,14 @@ export default function App() {
           font-weight: 800;
           margin-bottom: 10px;
         }
-
         h1 {
           margin: 0;
           font-size: clamp(30px, 5vw, 52px);
           line-height: 1;
           letter-spacing: -1.5px;
         }
-
-        h2, h3, h4, h5, p {
-          margin-top: 0;
-        }
-
-        .muted {
-          color: #78716c;
-        }
+        h2, h3, h4, h5, p { margin-top: 0; }
+        .muted { color: #78716c; }
 
         .nav {
           display: flex;
@@ -516,7 +579,6 @@ export default function App() {
           border-radius: 20px;
           box-shadow: 0 8px 20px rgba(0,0,0,0.05);
         }
-
         .nav button {
           border: 0;
           padding: 12px 18px;
@@ -525,12 +587,10 @@ export default function App() {
           background: transparent;
           color: #57534e;
         }
-
         .nav button.active {
           background: #f97316;
           color: #fff;
         }
-
         .alert {
           background: #ecfdf5;
           color: #166534;
@@ -540,27 +600,23 @@ export default function App() {
           margin-bottom: 18px;
           font-weight: 700;
         }
-
         .grid-2 {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 22px;
         }
-
         .layout {
           display: grid;
           grid-template-columns: 1fr 400px;
           gap: 22px;
           align-items: start;
         }
-
         .admin-layout {
           display: grid;
           grid-template-columns: 380px 1fr;
           gap: 22px;
           align-items: start;
         }
-
         .card {
           background: #ffffff;
           border: 1px solid #fed7aa;
@@ -568,32 +624,20 @@ export default function App() {
           box-shadow: 0 18px 40px rgba(0,0,0,0.08);
           overflow: hidden;
         }
-
-        .card-pad {
-          padding: 24px;
-        }
-
+        .card-pad { padding: 24px; }
         .hero {
           background: linear-gradient(135deg, #f97316, #f59e0b);
           color: white;
           padding: 32px;
         }
-
-        .hero.dark {
-          background: linear-gradient(135deg, #292524, #57534e);
-        }
-
-        .hero.green {
-          background: linear-gradient(135deg, #22c55e, #10b981);
-        }
-
+        .hero.dark { background: linear-gradient(135deg, #292524, #57534e); }
+        .hero.green { background: linear-gradient(135deg, #22c55e, #10b981); }
         .pill-row {
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
           margin-top: 18px;
         }
-
         .pill {
           display: inline-flex;
           background: rgba(255,255,255,0.22);
@@ -603,17 +647,12 @@ export default function App() {
           border-radius: 16px;
           font-weight: 900;
         }
-
         .pill.price {
           background: #fff;
           color: #ea580c;
           font-size: 24px;
         }
-
-        .section {
-          padding: 24px;
-        }
-
+        .section { padding: 24px; }
         .meal-card {
           background: #fff7ed;
           border: 1px solid #fed7aa;
@@ -621,14 +660,12 @@ export default function App() {
           padding: 20px;
           margin-bottom: 18px;
         }
-
         .row {
           display: flex;
           justify-content: space-between;
           gap: 12px;
           align-items: center;
         }
-
         .button {
           border: 0;
           background: #f97316;
@@ -638,35 +675,25 @@ export default function App() {
           border-radius: 16px;
           box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25);
         }
-
-        .button.dark {
-          background: #292524;
-        }
-
-        .button.green {
-          background: #22c55e;
-        }
-
+        .button.dark { background: #292524; }
+        .button.green { background: #22c55e; }
         .button.light {
           background: #fff;
           color: #44403c;
           border: 1px solid #e7e5e4;
           box-shadow: none;
         }
-
         .button.danger {
           background: #fef2f2;
           color: #b91c1c;
           border: 1px solid #fecaca;
           box-shadow: none;
         }
-
         .option-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
         }
-
         .option {
           text-align: left;
           border: 1px solid #e7e5e4;
@@ -675,19 +702,16 @@ export default function App() {
           padding: 14px;
           font-weight: 900;
         }
-
         .option.selected {
           border-color: #f97316;
           color: #c2410c;
           background: #fff7ed;
         }
-
         .chips {
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
         }
-
         .chip {
           border: 1px solid #e7e5e4;
           background: #fff;
@@ -695,43 +719,35 @@ export default function App() {
           padding: 12px 14px;
           font-weight: 900;
         }
-
         .chip.selected {
           border-color: #86efac;
           background: #dcfce7;
           color: #15803d;
         }
-
         .chip.blocked {
           background: #f5f5f4;
           color: #a8a29e;
         }
-
         .box {
           background: #fff;
           border: 1px solid #e7e5e4;
           border-radius: 18px;
           padding: 14px;
         }
-
-        .box.soft {
-          background: #fafaf9;
-        }
-
+        .box.soft { background: #fafaf9; }
         .field {
           display: block;
           margin-bottom: 14px;
         }
-
         .field span {
           display: block;
           font-weight: 900;
           margin-bottom: 8px;
         }
-
         .field input,
         .field textarea,
-        .field select {
+        .field select,
+        select.box {
           width: 100%;
           border: 1px solid #e7e5e4;
           background: #fafaf9;
@@ -739,18 +755,15 @@ export default function App() {
           padding: 13px 14px;
           outline: none;
         }
-
         .field input:focus,
         .field textarea:focus {
           border-color: #f97316;
         }
-
         .quantity {
           display: flex;
           align-items: center;
           gap: 12px;
         }
-
         .quantity button {
           width: 40px;
           height: 40px;
@@ -760,7 +773,6 @@ export default function App() {
           font-size: 22px;
           font-weight: 900;
         }
-
         .summary-item {
           background: #fff;
           border: 1px solid #e7e5e4;
@@ -769,7 +781,6 @@ export default function App() {
           margin-bottom: 10px;
           font-weight: 700;
         }
-
         .total-row {
           display: flex;
           justify-content: space-between;
@@ -779,31 +790,26 @@ export default function App() {
           padding-top: 14px;
           font-weight: 900;
         }
-
         .total-row strong {
           color: #ea580c;
           font-size: 26px;
         }
-
         .stats {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 14px;
           margin-bottom: 18px;
         }
-
         .stat {
           background: #fff7ed;
           border: 1px solid #fed7aa;
           border-radius: 20px;
           padding: 16px;
         }
-
         .stat strong {
           display: block;
           font-size: 28px;
         }
-
         .pedido {
           border: 1px solid #e7e5e4;
           border-radius: 24px;
@@ -811,7 +817,6 @@ export default function App() {
           margin-bottom: 14px;
           background: #fff;
         }
-
         .pedido-text {
           white-space: pre-line;
           background: #fafaf9;
@@ -819,8 +824,8 @@ export default function App() {
           border-radius: 16px;
           padding: 12px;
           font-weight: 700;
+          margin-top: 12px;
         }
-
         .badge {
           border: 1px solid #e7e5e4;
           border-radius: 999px;
@@ -828,32 +833,11 @@ export default function App() {
           font-size: 12px;
           font-weight: 900;
         }
-
-        .badge-pendiente {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .badge-en-preparación {
-          background: #dbeafe;
-          color: #1d4ed8;
-        }
-
-        .badge-enviado {
-          background: #ede9fe;
-          color: #6d28d9;
-        }
-
-        .badge-entregado {
-          background: #dcfce7;
-          color: #15803d;
-        }
-
-        .badge-cancelado {
-          background: #fee2e2;
-          color: #b91c1c;
-        }
-
+        .badge-pendiente { background: #fef3c7; color: #92400e; }
+        .badge-en-preparación { background: #dbeafe; color: #1d4ed8; }
+        .badge-enviado { background: #ede9fe; color: #6d28d9; }
+        .badge-entregado { background: #dcfce7; color: #15803d; }
+        .badge-cancelado { background: #fee2e2; color: #b91c1c; }
         pre {
           white-space: pre-wrap;
           background: #f0fdf4;
@@ -862,7 +846,6 @@ export default function App() {
           padding: 16px;
           overflow: auto;
         }
-
         @media (max-width: 900px) {
           .topbar,
           .layout,
@@ -872,22 +855,10 @@ export default function App() {
             grid-template-columns: 1fr;
             display: grid;
           }
-
-          .topbar {
-            display: block;
-          }
-
-          .nav {
-            margin-top: 16px;
-          }
-
-          .option-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .app {
-            padding: 14px;
-          }
+          .topbar { display: block; }
+          .nav { margin-top: 16px; }
+          .option-grid { grid-template-columns: 1fr; }
+          .app { padding: 14px; }
         }
       `}</style>
 
@@ -930,7 +901,7 @@ export default function App() {
                 </div>
                 <div className="card-pad">
                   <p>✅ Ver menú del día</p>
-                  <p>✅ Escoger proteína</p>
+                  <p>✅ Escoger proteína con precio propio</p>
                   <p>✅ Escoger máximo 3 acompañantes</p>
                   <p>✅ Enviar consolidado por WhatsApp</p>
                   <button type="button" onClick={() => setVista("cliente")} className="button">
@@ -947,8 +918,8 @@ export default function App() {
                 </div>
                 <div className="card-pad">
                   <p>✅ Editar menú diario</p>
+                  <p>✅ Editar proteínas y precios</p>
                   <p>✅ Ver pedidos recibidos</p>
-                  <p>✅ Cambiar estado del pedido</p>
                   <p>✅ Revisar consolidado de cocina</p>
                   <button type="button" onClick={() => setVista("admin")} className="button dark">
                     Entrar al panel admin
@@ -966,7 +937,7 @@ export default function App() {
                   <h2>{menu.titulo}</h2>
                   <p>{menu.descripcion}</p>
                   <div className="pill-row">
-                    <span className="pill price">{dinero(menu.precio)}</span>
+                    <span className="pill">Cada proteína tiene precio propio</span>
                     <span className="pill">Para llevar suma {dinero(VALOR_PARA_LLEVAR)}</span>
                     <span className="pill">Incluye sopa y bebida</span>
                   </div>
@@ -1000,14 +971,15 @@ export default function App() {
 
                       <h4>Proteína</h4>
                       <div className="option-grid">
-                        {(menu.proteinas || []).map((proteina) => (
+                        {(menu.proteinas_detalle || []).map((proteina) => (
                           <button
-                            key={proteina}
+                            key={proteina.nombre}
                             type="button"
-                            onClick={() => actualizarItem(item.id, { proteina })}
-                            className={`option ${item.proteina === proteina ? "selected" : ""}`}
+                            onClick={() => cambiarProteinaItem(item.id, proteina.nombre)}
+                            className={`option ${item.proteina === proteina.nombre ? "selected" : ""}`}
                           >
-                            {proteina}
+                            <div>{proteina.nombre}</div>
+                            <small>{dinero(proteina.precio)}</small>
                           </button>
                         ))}
                       </div>
@@ -1085,7 +1057,7 @@ export default function App() {
 
                       <div className="total-row">
                         <span>Subtotal</span>
-                        <strong>{dinero(calcularTotalItem(item, menu.precio))}</strong>
+                        <strong>{dinero(calcularTotalItem(item))}</strong>
                       </div>
                     </div>
                   ))}
@@ -1104,11 +1076,11 @@ export default function App() {
                   {itemsPedido.map((item, index) => (
                     <div key={item.id} className="summary-item">
                       <p>
-                        #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"}
+                        #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"} - {dinero(item.precioProteina)}
                       </p>
                       <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
                       <p>Sopa + bebida incluida</p>
-                      <p>{item.paraLlevar ? "Para llevar" : "Sin empaque para llevar"}</p>
+                      <p>{item.paraLlevar ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}` : "Sin empaque para llevar"}</p>
                     </div>
                   ))}
 
@@ -1240,20 +1212,15 @@ export default function App() {
                     }
                     multiline
                   />
+
                   <CampoTexto
-                    etiqueta="Precio base del almuerzo"
-                    type="number"
-                    value={String(menu.precio || 0)}
-                    onChange={(valor) =>
-                      setMenu((actual) => ({ ...actual, precio: Number(valor) || 0 }))
-                    }
-                  />
-                  <CampoTexto
-                    etiqueta="Proteínas separadas por coma"
-                    value={(menu.proteinas || []).join(", ")}
-                    onChange={(valor) => actualizarListaMenu("proteinas", valor)}
+                    etiqueta="Proteínas y precios"
+                    value={proteinasATexto(menu.proteinas_detalle || [])}
+                    onChange={actualizarProteinasDesdeTexto}
+                    placeholder={"Pechuga:17500\nCarne:19000\nCerdo:17000"}
                     multiline
                   />
+
                   <CampoTexto
                     etiqueta="Acompañantes adicionales separados por coma"
                     value={(menu.acompanantes || []).join(", ")}
@@ -1262,7 +1229,11 @@ export default function App() {
                   />
 
                   <div className="box soft">
-                    Sopa y bebida siempre van incluidas. Solo se editan acompañantes adicionales.
+                    Escribe cada proteína en una línea con este formato: <strong>Nombre:Precio</strong>.
+                    <br />
+                    Ejemplo: <strong>Carne:19000</strong>
+                    <br />
+                    Sopa y bebida siempre van incluidas.
                   </div>
 
                   <button
