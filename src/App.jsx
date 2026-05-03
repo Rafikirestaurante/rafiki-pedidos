@@ -28,7 +28,7 @@ function dinero(valor) {
   }).format(Number(valor) || 0);
 }
 
-function textoAListaPorLineas(texto) {
+function listaPorLineas(texto) {
   return String(texto || "")
     .split("\n")
     .map((item) => item.trim())
@@ -147,10 +147,7 @@ function calcularTotalItems(items) {
 }
 
 function crearTextoItem(item) {
-  const partes = [
-    `${item.cantidad} ${item.proteina} (${dinero(item.precioProteina)})`
-  ];
-
+  const partes = [`${item.cantidad} ${item.proteina} (${dinero(item.precioProteina)})`];
   const acompanantes = limpiarAcompanantesCliente(item.acompanantes || []);
 
   if (acompanantes.length > 0) {
@@ -244,10 +241,7 @@ function CampoTexto({
 }
 
 function EstadoBadge({ estado }) {
-  const clase = `badge badge-${String(estado || "")
-    .replaceAll(" ", "-")
-    .toLowerCase()}`;
-
+  const clase = `badge badge-${String(estado || "").replaceAll(" ", "-").toLowerCase()}`;
   return <span className={clase}>{estado}</span>;
 }
 
@@ -280,7 +274,6 @@ export default function App() {
   const [cargando, setCargando] = useState(true);
 
   const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
-
   const consolidado = useMemo(() => consolidarPedidos(pedidos), [pedidos]);
 
   const totalVendido = useMemo(
@@ -319,7 +312,7 @@ export default function App() {
       .from("menu_diario")
       .select("*")
       .eq("activo", true)
-      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -336,7 +329,7 @@ export default function App() {
     const { data: pedidosData, error: pedidosError } = await supabase
       .from("pedidos")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("id", { ascending: false });
 
     if (pedidosError) {
       setMensaje(`Error cargando pedidos: ${pedidosError.message}`);
@@ -547,7 +540,7 @@ export default function App() {
   }
 
   function actualizarAcompanantesDesdeTexto(texto) {
-    const acompanantes = limpiarAcompanantesMenu(textoAListaPorLineas(texto));
+    const acompanantes = limpiarAcompanantesMenu(listaPorLineas(texto));
 
     setMenu((actual) => ({
       ...actual,
@@ -588,6 +581,7 @@ export default function App() {
         button, input, textarea, select { font-family: inherit; }
         button { cursor: pointer; }
         button:disabled { cursor: not-allowed; opacity: 0.6; }
+
         .app {
           min-height: 100vh;
           background: linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
@@ -622,6 +616,7 @@ export default function App() {
         h2, h3, h4, h5, p { margin-top: 0; }
         .muted { color: #78716c; }
         .small { font-size: 13px; }
+
         .nav {
           display: flex;
           gap: 6px;
@@ -999,17 +994,14 @@ export default function App() {
                 <div className="section">
                   {menu.proteinas_detalle.length === 0 ? (
                     <div className="box soft">
-                      Todavía no hay proteínas configuradas para el menú de hoy.
-                      Entra al panel administrativo y agrega las proteínas del día.
+                      Todavía no hay proteínas configuradas para el menú de hoy. Entra al panel administrativo y agrega las proteínas del día.
                     </div>
                   ) : (
                     <>
                       <div className="row" style={{ marginBottom: 18 }}>
                         <div>
                           <h3>🛍️ Almuerzos del pedido</h3>
-                          <p className="muted">
-                            Agrega uno o varios almuerzos. Máximo 3 acompañantes.
-                          </p>
+                          <p className="muted">Agrega uno o varios almuerzos. Máximo 3 acompañantes.</p>
                         </div>
                         <button type="button" onClick={agregarAlmuerzo} className="button">
                           + Agregar almuerzo
@@ -1038,9 +1030,7 @@ export default function App() {
                                 key={proteina.nombre}
                                 type="button"
                                 onClick={() => cambiarProteinaItem(item.id, proteina.nombre)}
-                                className={`option ${
-                                  item.proteina === proteina.nombre ? "selected" : ""
-                                }`}
+                                className={`option ${item.proteina === proteina.nombre ? "selected" : ""}`}
                               >
                                 <div>{proteina.nombre}</div>
                                 <small>{dinero(proteina.precio)}</small>
@@ -1073,13 +1063,9 @@ export default function App() {
                                     <button
                                       key={acompanante}
                                       type="button"
-                                      onClick={() =>
-                                        cambiarAcompananteItem(item.id, acompanante)
-                                      }
+                                      onClick={() => cambiarAcompananteItem(item.id, acompanante)}
                                       disabled={bloqueado}
-                                      className={`chip ${seleccionado ? "selected" : ""} ${
-                                        bloqueado ? "blocked" : ""
-                                      }`}
+                                      className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}
                                     >
                                       {seleccionado ? "✓ " : "+ "}
                                       {acompanante}
@@ -1103,9 +1089,7 @@ export default function App() {
                               <div style={{ marginTop: 10 }}>
                                 <SelectorCantidad
                                   cantidad={item.cantidad}
-                                  onChange={(cantidad) =>
-                                    actualizarItem(item.id, { cantidad })
-                                  }
+                                  onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
                                 />
                               </div>
                             </div>
@@ -1153,8 +1137,7 @@ export default function App() {
                   {itemsPedido.map((item, index) => (
                     <div key={item.id} className="summary-item">
                       <p>
-                        #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"} -{" "}
-                        {dinero(item.precioProteina)}
+                        #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"} - {dinero(item.precioProteina)}
                       </p>
                       <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
                       <p>Sopa + bebida incluida</p>
@@ -1230,8 +1213,7 @@ export default function App() {
                       <strong>Cliente:</strong> {pedidoFinalizado.cliente}
                     </p>
                     <p>
-                      <strong>Teléfono:</strong>{" "}
-                      {pedidoFinalizado.telefono || "Sin teléfono"}
+                      <strong>Teléfono:</strong> {pedidoFinalizado.telefono || "Sin teléfono"}
                     </p>
                     <p>
                       <strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}
@@ -1262,11 +1244,7 @@ export default function App() {
                   </a>
 
                   <div className="grid-2" style={{ marginTop: 14 }}>
-                    <button
-                      type="button"
-                      onClick={nuevoPedidoCliente}
-                      className="button light"
-                    >
+                    <button type="button" onClick={nuevoPedidoCliente} className="button light">
                       Hacer otro pedido
                     </button>
                     <button
@@ -1291,25 +1269,19 @@ export default function App() {
                   <CampoTexto
                     etiqueta="Fecha"
                     value={menu.fecha || ""}
-                    onChange={(valor) =>
-                      setMenu((actual) => ({ ...actual, fecha: valor }))
-                    }
+                    onChange={(valor) => setMenu((actual) => ({ ...actual, fecha: valor }))}
                   />
 
                   <CampoTexto
                     etiqueta="Nombre del menú"
                     value={menu.titulo || ""}
-                    onChange={(valor) =>
-                      setMenu((actual) => ({ ...actual, titulo: valor }))
-                    }
+                    onChange={(valor) => setMenu((actual) => ({ ...actual, titulo: valor }))}
                   />
 
                   <CampoTexto
                     etiqueta="Descripción"
                     value={menu.descripcion || ""}
-                    onChange={(valor) =>
-                      setMenu((actual) => ({ ...actual, descripcion: valor }))
-                    }
+                    onChange={(valor) => setMenu((actual) => ({ ...actual, descripcion: valor }))}
                     multiline
                     rows={3}
                   />
@@ -1345,8 +1317,7 @@ export default function App() {
                     <strong>Ejemplo:</strong> Pollo en salsa criolla:17000
                     <br />
                     <br />
-                    <strong>Acompañantes:</strong> escribe un acompañante por línea.
-                    Pueden tener varias palabras. El cliente verá todos, pero solo podrá escoger 3.
+                    <strong>Acompañantes:</strong> escribe un acompañante por línea. Pueden tener varias palabras. El cliente verá todos, pero solo podrá escoger 3.
                     <br />
                     <br />
                     Sopa y bebida siempre van incluidas.
@@ -1433,9 +1404,7 @@ export default function App() {
                       <div className="grid-2" style={{ marginTop: 12 }}>
                         <select
                           value={pedido.estado}
-                          onChange={(e) =>
-                            cambiarEstadoPedido(pedido.id, e.target.value)
-                          }
+                          onChange={(e) => cambiarEstadoPedido(pedido.id, e.target.value)}
                           className="box"
                         >
                           {estadosPedido.map((estado) => (
