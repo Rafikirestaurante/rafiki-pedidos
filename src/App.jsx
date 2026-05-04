@@ -47,6 +47,22 @@ function limpiarAcompanantesCliente(lista) {
   return limpiarAcompanantesMenu(lista).slice(0, MAX_ACOMPANANTES_CLIENTE);
 }
 
+function limpiarTelefonoWhatsApp(telefono) {
+  const soloNumeros = String(telefono || "").replace(/[^\d]/g, "");
+
+  if (!soloNumeros) return "";
+
+  if (soloNumeros.startsWith("57") && soloNumeros.length >= 12) {
+    return soloNumeros;
+  }
+
+  if (soloNumeros.length === 10 && soloNumeros.startsWith("3")) {
+    return `57${soloNumeros}`;
+  }
+
+  return soloNumeros;
+}
+
 function textoAPlatosDetalle(texto, { estricto = false } = {}) {
   const lineas = String(texto || "")
     .split("\n")
@@ -269,6 +285,23 @@ function crearMensajeWhatsAppPedido(pedido) {
   ].join("\n");
 }
 
+function crearMensajeWhatsAppCliente(pedido) {
+  const cliente = pedido.cliente || pedido.cliente_nombre || "Cliente";
+
+  return [
+    `Hola ${cliente}, te escribimos de Rafiki 🍽️`,
+    "",
+    "Queremos confirmarte que recibimos tu pedido:",
+    "",
+    pedido.pedido_texto || "",
+    "",
+    `Total: ${dinero(pedido.total)}`,
+    `Tipo de pago: ${pedido.tipo_pago || "No especificado"}`,
+    "",
+    "Muchas gracias por tu pedido. Te avisaremos cualquier novedad."
+  ].join("\n");
+}
+
 function crearLinkWhatsApp(numero, mensaje) {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
@@ -352,6 +385,10 @@ function SelectorCantidad({ cantidad, onChange }) {
 function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
+  const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
+  const linkCliente = telefonoCliente
+    ? crearLinkWhatsApp(telefonoCliente, crearMensajeWhatsAppCliente(pedido))
+    : "";
 
   return (
     <article className={`pedido-cocina ${estadoNormalizado === "Finalizado" ? "pedido-finalizado" : ""}`}>
@@ -443,14 +480,20 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
           ))}
         </select>
 
-        <a
-          href={crearLinkWhatsApp(WHATSAPP_RAFIKI, crearMensajeWhatsAppPedido(pedido))}
-          target="_blank"
-          rel="noreferrer"
-          className="button green link-button"
-        >
-          Enviar a WhatsApp
-        </a>
+        {telefonoCliente ? (
+          <a
+            href={linkCliente}
+            target="_blank"
+            rel="noreferrer"
+            className="button green link-button"
+          >
+            Enviar al cliente
+          </a>
+        ) : (
+          <button type="button" className="button light" disabled>
+            Sin teléfono
+          </button>
+        )}
       </div>
     </article>
   );
