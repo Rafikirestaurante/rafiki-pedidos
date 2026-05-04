@@ -52,25 +52,9 @@ function obtenerRangoPedidos(filtro, fechaManual = fechaISOColombia()) {
   const baseTexto = filtro === "dia" ? fechaManual : fechaISOColombia();
   const base = new Date(`${baseTexto}T00:00:00-05:00`);
 
-  let inicio = new Date(base);
-  let fin = new Date(base);
+  const inicio = new Date(base);
+  const fin = new Date(base);
   fin.setDate(fin.getDate() + 1);
-
-  if (filtro === "semana") {
-    const dia = base.getDay();
-    const diferenciaLunes = dia === 0 ? -6 : 1 - dia;
-
-    inicio = new Date(base);
-    inicio.setDate(base.getDate() + diferenciaLunes);
-
-    fin = new Date(inicio);
-    fin.setDate(inicio.getDate() + 7);
-  }
-
-  if (filtro === "mes") {
-    inicio = new Date(base.getFullYear(), base.getMonth(), 1);
-    fin = new Date(base.getFullYear(), base.getMonth() + 1, 1);
-  }
 
   return {
     inicio: inicio.toISOString(),
@@ -618,8 +602,6 @@ export default function App() {
   );
 
   const tituloPedidos = useMemo(() => {
-    if (filtroPedidos === "semana") return "Historial de esta semana";
-    if (filtroPedidos === "mes") return "Historial de este mes";
     if (filtroPedidos === "dia") return `Pedidos del ${fechaSeleccionada}`;
     return "Pedidos de hoy";
   }, [filtroPedidos, fechaSeleccionada]);
@@ -862,7 +844,11 @@ export default function App() {
       return;
     }
 
-    const { data, error } = await supabase.from("menu_diario").insert(menuActualizado).select().single();
+    const { data, error } = await supabase
+      .from("menu_diario")
+      .insert(menuActualizado)
+      .select()
+      .single();
 
     if (error) {
       mostrarMensaje(`Error creando menú: ${error.message}`, "error");
@@ -1415,30 +1401,17 @@ export default function App() {
                   <div className="filtros-historial">
                     <button
                       type="button"
-                      onClick={() => setFiltroPedidos("hoy")}
+                      onClick={() => {
+                        setFiltroPedidos("hoy");
+                        setFechaSeleccionada(fechaISOColombia());
+                      }}
                       className={filtroPedidos === "hoy" ? "active" : ""}
                     >
                       Hoy
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setFiltroPedidos("semana")}
-                      className={filtroPedidos === "semana" ? "active" : ""}
-                    >
-                      Semana
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setFiltroPedidos("mes")}
-                      className={filtroPedidos === "mes" ? "active" : ""}
-                    >
-                      Mes
-                    </button>
-
                     <label className="calendario-filtro">
-                      <span>📅 Día</span>
+                      <span>Buscar día</span>
                       <input
                         type="date"
                         value={fechaSeleccionada}
@@ -1505,7 +1478,7 @@ export default function App() {
                   <div className="bottom-summary">
                     <div className="card card-pad">
                       <h3>Consolidado cocina</h3>
-                      <p className="muted">Resumen total de platos del rango seleccionado.</p>
+                      <p className="muted">Resumen total de platos del día seleccionado.</p>
 
                       {Object.keys(consolidado).length === 0 ? (
                         <p className="muted">Todavía no hay productos para consolidar.</p>
