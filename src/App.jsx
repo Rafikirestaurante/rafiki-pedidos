@@ -206,11 +206,7 @@ function limpiarTelefonoWhatsApp(telefono) {
 function crearMensajePedidoListo(pedido) {
   const cliente = obtenerCliente(pedido);
 
-  return [
-    `Hola ${cliente}, su pedido está listo.`,
-    "",
-    "Gracias por comprar en Rafiki 🍽️"
-  ].join("\n");
+  return [`Hola ${cliente}, su pedido está listo.`, "", "Gracias por comprar en Rafiki 🍽️"].join("\n");
 }
 
 function crearItemNuevo(menu) {
@@ -849,624 +845,99 @@ export default function App() {
         button, input, textarea, select { font-family: inherit; }
         button { cursor: pointer; }
         button:disabled { cursor: not-allowed; opacity: 0.6; }
-
-        .app {
-          min-height: 100vh;
-          background: radial-gradient(circle at top left, #fed7aa 0, transparent 32%), linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
-          padding: 24px;
-        }
-
+        .app { min-height: 100vh; background: radial-gradient(circle at top left, #fed7aa 0, transparent 32%), linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%); padding: 24px; }
         .container { max-width: 1200px; margin: 0 auto; }
-
-        .topbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .brand {
-          display: inline-flex;
-          background: #ffedd5;
-          color: #c2410c;
-          padding: 8px 14px;
-          border-radius: 999px;
-          font-weight: 800;
-          margin-bottom: 10px;
-        }
-
-        h1 {
-          margin: 0;
-          font-size: clamp(30px, 5vw, 52px);
-          line-height: 1;
-          letter-spacing: -1.5px;
-        }
-
+        .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+        .brand { display: inline-flex; background: #ffedd5; color: #c2410c; padding: 8px 14px; border-radius: 999px; font-weight: 800; margin-bottom: 10px; }
+        h1 { margin: 0; font-size: clamp(30px, 5vw, 52px); line-height: 1; letter-spacing: -1.5px; }
         h2, h3, h4, h5, p { margin-top: 0; }
-
         .muted { color: #78716c; }
         .small { font-size: 13px; }
-
-        .nav {
-          display: flex;
-          gap: 6px;
-          background: #ffffff;
-          border: 1px solid #fed7aa;
-          padding: 6px;
-          border-radius: 20px;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-        }
-
-        .nav button {
-          border: 0;
-          padding: 12px 18px;
-          border-radius: 14px;
-          font-weight: 900;
-          background: transparent;
-          color: #57534e;
-        }
-
-        .nav button.active {
-          background: #f97316;
-          color: #fff;
-        }
-
-        .alert {
-          white-space: pre-line;
-          padding: 14px 18px;
-          border-radius: 18px;
-          margin-bottom: 18px;
-          font-weight: 700;
-          border: 1px solid transparent;
-        }
-
+        .nav { display: flex; gap: 6px; background: #ffffff; border: 1px solid #fed7aa; padding: 6px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+        .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; }
+        .nav button.active { background: #f97316; color: #fff; }
+        .alert { white-space: pre-line; padding: 14px 18px; border-radius: 18px; margin-bottom: 18px; font-weight: 700; border: 1px solid transparent; }
         .alert-info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .alert-success { background: #ecfdf5; color: #166534; border-color: #bbf7d0; }
         .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
         .alert-error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-
-        .card {
-          background: #ffffff;
-          border: 1px solid #fed7aa;
-          border-radius: 32px;
-          box-shadow: 0 18px 40px rgba(0,0,0,0.08);
-          overflow: hidden;
-        }
-
+        .card { background: #ffffff; border: 1px solid #fed7aa; border-radius: 32px; box-shadow: 0 18px 40px rgba(0,0,0,0.08); overflow: hidden; }
         .card-pad { padding: 24px; }
-
-        .welcome {
-          max-width: 820px;
-          margin: 0 auto;
-          text-align: center;
-        }
-
-        .welcome-card {
-          background: linear-gradient(135deg, #f97316, #f59e0b);
-          color: white;
-          border-radius: 36px;
-          padding: 44px 28px;
-          box-shadow: 0 25px 60px rgba(249, 115, 22, 0.25);
-        }
-
-        .welcome-icon {
-          font-size: 64px;
-          margin-bottom: 12px;
-        }
-
-        .welcome-card h2 {
-          font-size: clamp(34px, 7vw, 62px);
-          margin-bottom: 10px;
-          line-height: 0.95;
-        }
-
-        .welcome-card p {
-          color: #fff7ed;
-          font-size: 18px;
-          margin-bottom: 24px;
-        }
-
-        .welcome-button {
-          display: inline-flex;
-          justify-content: center;
-          align-items: center;
-          width: min(100%, 420px);
-          border: 0;
-          background: #ffffff;
-          color: #c2410c;
-          padding: 18px 22px;
-          border-radius: 22px;
-          font-size: 22px;
-          font-weight: 900;
-          text-decoration: none;
-          box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-        }
-
-        .admin-small {
-          margin-top: 18px;
-          border: 0;
-          background: transparent;
-          color: #78716c;
-          font-weight: 800;
-          text-decoration: underline;
-          font-size: 13px;
-        }
-
-        .hero {
-          background: linear-gradient(135deg, #f97316, #f59e0b);
-          color: white;
-          padding: 32px;
-        }
-
-        .hero.green {
-          background: linear-gradient(135deg, #22c55e, #10b981);
-        }
-
-        .pill-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-top: 18px;
-        }
-
-        .pill {
-          display: inline-flex;
-          background: rgba(255,255,255,0.22);
-          color: #fff;
-          border: 1px solid rgba(255,255,255,0.35);
-          padding: 10px 14px;
-          border-radius: 16px;
-          font-weight: 900;
-        }
-
-        .grid-2 {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 22px;
-        }
-
-        .layout {
-          display: grid;
-          grid-template-columns: 1fr 400px;
-          gap: 22px;
-          align-items: start;
-        }
-
-        .admin-tabs {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 18px;
-          background: #fff;
-          border: 1px solid #fed7aa;
-          border-radius: 22px;
-          padding: 8px;
-        }
-
-        .admin-tabs button {
-          flex: 1;
-          border: 0;
-          border-radius: 16px;
-          padding: 14px 16px;
-          background: transparent;
-          font-weight: 900;
-          color: #57534e;
-        }
-
-        .admin-tabs button.active {
-          background: #f97316;
-          color: #fff;
-        }
-
-        .admin-layout {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 22px;
-        }
-
+        .welcome { max-width: 820px; margin: 0 auto; text-align: center; }
+        .welcome-card { background: linear-gradient(135deg, #f97316, #f59e0b); color: white; border-radius: 36px; padding: 44px 28px; box-shadow: 0 25px 60px rgba(249, 115, 22, 0.25); }
+        .welcome-icon { font-size: 64px; margin-bottom: 12px; }
+        .welcome-card h2 { font-size: clamp(34px, 7vw, 62px); margin-bottom: 10px; line-height: 0.95; }
+        .welcome-card p { color: #fff7ed; font-size: 18px; margin-bottom: 24px; }
+        .welcome-button { display: inline-flex; justify-content: center; align-items: center; width: min(100%, 420px); border: 0; background: #ffffff; color: #c2410c; padding: 18px 22px; border-radius: 22px; font-size: 22px; font-weight: 900; text-decoration: none; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+        .admin-small { margin-top: 18px; border: 0; background: transparent; color: #78716c; font-weight: 800; text-decoration: underline; font-size: 13px; }
+        .hero { background: linear-gradient(135deg, #f97316, #f59e0b); color: white; padding: 32px; }
+        .hero.green { background: linear-gradient(135deg, #22c55e, #10b981); }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+        .layout { display: grid; grid-template-columns: 1fr 400px; gap: 22px; align-items: start; }
+        .admin-tabs { display: flex; gap: 8px; margin-bottom: 18px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 8px; }
+        .admin-tabs button { flex: 1; border: 0; border-radius: 16px; padding: 14px 16px; background: transparent; font-weight: 900; color: #57534e; }
+        .admin-tabs button.active { background: #f97316; color: #fff; }
+        .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .section { padding: 24px; }
-
-        .meal-card {
-          background: #fff7ed;
-          border: 1px solid #fed7aa;
-          border-radius: 28px;
-          padding: 20px;
-          margin-bottom: 18px;
-        }
-
-        .row {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: center;
-        }
-
-        .button {
-          border: 0;
-          background: #f97316;
-          color: white;
-          font-weight: 900;
-          padding: 14px 18px;
-          border-radius: 16px;
-          box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25);
-        }
-
+        .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; }
+        .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+        .button { border: 0; background: #f97316; color: white; font-weight: 900; padding: 14px 18px; border-radius: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25); }
         .button.green { background: #22c55e; }
-
-        .button.light {
-          background: #fff;
-          color: #44403c;
-          border: 1px solid #e7e5e4;
-          box-shadow: none;
-        }
-
-        .button.danger {
-          background: #fef2f2;
-          color: #b91c1c;
-          border: 1px solid #fecaca;
-          box-shadow: none;
-        }
-
-        .link-button {
-          display: block;
-          text-align: center;
-          text-decoration: none;
-        }
-
-        .category-block {
-          margin-bottom: 20px;
-          border: 1px solid #fed7aa;
-          border-radius: 24px;
-          padding: 16px;
-          background: #fffaf0;
-        }
-
-        .category-title {
-          font-size: 22px;
-          margin-bottom: 12px;
-          color: #c2410c;
-        }
-
-        .option-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-        }
-
-        .option {
-          text-align: left;
-          border: 1px solid #e7e5e4;
-          background: #fff;
-          border-radius: 18px;
-          padding: 14px;
-          font-weight: 900;
-        }
-
-        .option small {
-          display: block;
-          margin-top: 5px;
-          color: #ea580c;
-          font-size: 15px;
-        }
-
-        .option.selected {
-          border-color: #f97316;
-          color: #c2410c;
-          background: #fff7ed;
-        }
-
-        .chips {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-
-        .chip {
-          border: 1px solid #e7e5e4;
-          background: #fff;
-          border-radius: 999px;
-          padding: 12px 14px;
-          font-weight: 900;
-        }
-
-        .chip.selected {
-          border-color: #86efac;
-          background: #dcfce7;
-          color: #15803d;
-        }
-
-        .chip.blocked {
-          background: #f5f5f4;
-          color: #a8a29e;
-        }
-
-        .box {
-          background: #fff;
-          border: 1px solid #e7e5e4;
-          border-radius: 18px;
-          padding: 14px;
-        }
-
+        .button.light { background: #fff; color: #44403c; border: 1px solid #e7e5e4; box-shadow: none; }
+        .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
+        .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
+        .link-button { display: block; text-align: center; text-decoration: none; }
+        .category-block { margin-bottom: 20px; border: 1px solid #fed7aa; border-radius: 24px; padding: 16px; background: #fffaf0; }
+        .category-title { font-size: 22px; margin-bottom: 12px; color: #c2410c; }
+        .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .option { text-align: left; border: 1px solid #e7e5e4; background: #fff; border-radius: 18px; padding: 14px; font-weight: 900; }
+        .option small { display: block; margin-top: 5px; color: #ea580c; font-size: 15px; }
+        .option.selected { border-color: #f97316; color: #c2410c; background: #fff7ed; }
+        .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        .chip { border: 1px solid #e7e5e4; background: #fff; border-radius: 999px; padding: 12px 14px; font-weight: 900; }
+        .chip.selected { border-color: #86efac; background: #dcfce7; color: #15803d; }
+        .chip.blocked { background: #f5f5f4; color: #a8a29e; }
+        .box { background: #fff; border: 1px solid #e7e5e4; border-radius: 18px; padding: 14px; }
         .box.soft { background: #fafaf9; }
-
-        .field {
-          display: block;
-          margin-bottom: 14px;
-        }
-
-        .field span {
-          display: block;
-          font-weight: 900;
-          margin-bottom: 8px;
-        }
-
-        .field input,
-        .field textarea,
-        .field select,
-        select.box {
-          width: 100%;
-          border: 1px solid #e7e5e4;
-          background: #fafaf9;
-          border-radius: 16px;
-          padding: 13px 14px;
-          outline: none;
-        }
-
-        .field input:focus,
-        .field textarea:focus {
-          border-color: #f97316;
-        }
-
-        .quantity {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .quantity button {
-          width: 40px;
-          height: 40px;
-          border-radius: 999px;
-          border: 1px solid #e7e5e4;
-          background: #fff;
-          font-size: 22px;
-          font-weight: 900;
-        }
-
-        .summary-item {
-          background: #fff;
-          border: 1px solid #e7e5e4;
-          border-radius: 16px;
-          padding: 12px;
-          margin-bottom: 10px;
-          font-weight: 700;
-        }
-
-        .total-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-top: 1px solid #e7e5e4;
-          margin-top: 14px;
-          padding-top: 14px;
-          font-weight: 900;
-        }
-
-        .total-row strong {
-          color: #ea580c;
-          font-size: 26px;
-        }
-
-        .stats {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-          margin-bottom: 18px;
-        }
-
-        .stat {
-          background: #fff7ed;
-          border: 1px solid #fed7aa;
-          border-radius: 20px;
-          padding: 16px;
-        }
-
-        .stat strong {
-          display: block;
-          font-size: 28px;
-        }
-
-        .pedido-seccion {
-          margin-bottom: 26px;
-        }
-
-        .section-heading {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: #fff7ed;
-          border: 1px solid #fed7aa;
-          border-radius: 22px;
-          padding: 16px 18px;
-          margin-bottom: 14px;
-        }
-
-        .section-heading h3 {
-          margin: 0;
-          color: #c2410c;
-        }
-
-        .section-heading span {
-          background: #f97316;
-          color: #fff;
-          min-width: 34px;
-          height: 34px;
-          border-radius: 999px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 900;
-        }
-
-        .pedido-cocina {
-          border: 1px solid #fed7aa;
-          background: #fff;
-          border-radius: 26px;
-          padding: 20px;
-          margin-bottom: 16px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.05);
-        }
-
-        .pedido-finalizado {
-          opacity: 0.75;
-          background: #f8fafc;
-        }
-
-        .pedido-top {
-          display: flex;
-          justify-content: space-between;
-          gap: 18px;
-          align-items: flex-start;
-          border-bottom: 1px solid #f5f5f4;
-          padding-bottom: 14px;
-          margin-bottom: 14px;
-        }
-
-        .pedido-linea {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-
-        .pedido-id {
-          font-weight: 900;
-          color: #78716c;
-          font-size: 13px;
-        }
-
-        .pedido-total {
-          text-align: right;
-        }
-
-        .pedido-total span {
-          display: block;
-          color: #78716c;
-          font-weight: 800;
-        }
-
-        .pedido-total strong {
-          color: #ea580c;
-          font-size: 28px;
-        }
-
-        .items-cocina {
-          display: grid;
-          gap: 12px;
-        }
-
-        .item-cocina {
-          display: grid;
-          grid-template-columns: 48px 1fr;
-          gap: 12px;
-          background: #fff7ed;
-          border: 1px solid #fed7aa;
-          border-radius: 20px;
-          padding: 14px;
-        }
-
-        .item-numero {
-          width: 42px;
-          height: 42px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f97316;
-          color: #fff;
-          border-radius: 14px;
-          font-weight: 900;
-        }
-
-        .item-detalle h4 {
-          margin-bottom: 8px;
-          font-size: 19px;
-        }
-
-        .item-detalle p {
-          margin-bottom: 5px;
-        }
-
-        .nota-cocina {
-          margin-top: 12px;
-          background: #fef3c7;
-          border: 1px solid #fde68a;
-          border-radius: 16px;
-          padding: 12px;
-        }
-
-        .pedido-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-          margin-top: 14px;
-        }
-
-        .pedido-actions select {
-          border: 1px solid #e7e5e4;
-          border-radius: 16px;
-          padding: 13px 14px;
-          background: #fafaf9;
-          font-weight: 800;
-        }
-
-        .pedido-text {
-          white-space: pre-line;
-          background: #fafaf9;
-          border: 1px solid #e7e5e4;
-          border-radius: 16px;
-          padding: 12px;
-          font-weight: 700;
-          margin-top: 12px;
-        }
-
-        .badge {
-          border: 1px solid #e7e5e4;
-          border-radius: 999px;
-          padding: 6px 10px;
-          font-size: 12px;
-          font-weight: 900;
-        }
-
-        .badge-pendiente {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .badge-finalizado {
-          background: #dcfce7;
-          color: #15803d;
-        }
-
-        pre {
-          white-space: pre-wrap;
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
-          border-radius: 18px;
-          padding: 16px;
-          overflow: auto;
-        }
-
+        .field { display: block; margin-bottom: 14px; }
+        .field span { display: block; font-weight: 900; margin-bottom: 8px; }
+        .field input, .field textarea, .field select, select.box { width: 100%; border: 1px solid #e7e5e4; background: #fafaf9; border-radius: 16px; padding: 13px 14px; outline: none; }
+        .field input:focus, .field textarea:focus { border-color: #f97316; }
+        .quantity { display: flex; align-items: center; gap: 12px; }
+        .quantity button { width: 40px; height: 40px; border-radius: 999px; border: 1px solid #e7e5e4; background: #fff; font-size: 22px; font-weight: 900; }
+        .summary-item { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; margin-bottom: 10px; font-weight: 700; }
+        .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }
+        .total-row strong { color: #ea580c; font-size: 26px; }
+        .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+        .stat { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 16px; }
+        .stat strong { display: block; font-size: 28px; }
+        .pedido-seccion { margin-bottom: 26px; }
+        .section-heading { display: flex; justify-content: space-between; align-items: center; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px 18px; margin-bottom: 14px; }
+        .section-heading h3 { margin: 0; color: #c2410c; }
+        .section-heading span { background: #f97316; color: #fff; min-width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; }
+        .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; padding: 20px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+        .pedido-finalizado { opacity: 0.75; background: #f8fafc; }
+        .pedido-top { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; border-bottom: 1px solid #f5f5f4; padding-bottom: 14px; margin-bottom: 14px; }
+        .pedido-linea { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .pedido-id { font-weight: 900; color: #78716c; font-size: 13px; }
+        .pedido-total { text-align: right; }
+        .pedido-total span { display: block; color: #78716c; font-weight: 800; }
+        .pedido-total strong { color: #ea580c; font-size: 28px; }
+        .items-cocina { display: grid; gap: 12px; }
+        .item-cocina { display: grid; grid-template-columns: 48px 1fr; gap: 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 14px; }
+        .item-numero { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: #f97316; color: #fff; border-radius: 14px; font-weight: 900; }
+        .item-detalle h4 { margin-bottom: 8px; font-size: 19px; }
+        .item-detalle p { margin-bottom: 5px; }
+        .nota-cocina { margin-top: 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 16px; padding: 12px; }
+        .pedido-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+        .pedido-actions select { border: 1px solid #e7e5e4; border-radius: 16px; padding: 13px 14px; background: #fafaf9; font-weight: 800; }
+        .pedido-text { white-space: pre-line; background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; font-weight: 700; margin-top: 12px; }
+        .badge { border: 1px solid #e7e5e4; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 900; }
+        .badge-pendiente { background: #fef3c7; color: #92400e; }
+        .badge-finalizado { background: #dcfce7; color: #15803d; }
+        pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; }
         @media (max-width: 900px) {
-          .topbar,
-          .layout,
-          .grid-2,
-          .stats,
-          .pedido-top,
-          .pedido-actions {
-            grid-template-columns: 1fr;
-            display: grid;
-          }
-
+          .topbar, .layout, .grid-2, .stats, .pedido-top, .pedido-actions { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
           .option-grid { grid-template-columns: 1fr; }
@@ -1531,12 +1002,6 @@ export default function App() {
                   <p>{menu.fecha}</p>
                   <h2>{menu.titulo}</h2>
                   <p>{menu.descripcion}</p>
-
-                  <div className="pill-row">
-                    <span className="pill">Menú organizado por categorías</span>
-                    <span className="pill">Para llevar suma {dinero(VALOR_PARA_LLEVAR)}</span>
-                    <span className="pill">Incluye sopa y bebida</span>
-                  </div>
                 </div>
 
                 <div className="section">
@@ -1546,15 +1011,9 @@ export default function App() {
                     </div>
                   ) : (
                     <>
-                      <div className="row" style={{ marginBottom: 18 }}>
-                        <div>
-                          <h3>🛍️ Almuerzos del pedido</h3>
-                          <p className="muted">Agrega uno o varios almuerzos. Máximo 3 acompañantes.</p>
-                        </div>
-
-                        <button type="button" onClick={agregarAlmuerzo} className="button">
-                          + Agregar almuerzo
-                        </button>
+                      <div style={{ marginBottom: 18 }}>
+                        <h3>🛍️ Almuerzos del pedido</h3>
+                        <p className="muted">Arma tu almuerzo. Puedes agregar otro al finalizar esta selección.</p>
                       </div>
 
                       {itemsPedido.map((item, index) => (
@@ -1679,6 +1138,10 @@ export default function App() {
                           </div>
                         </div>
                       ))}
+
+                      <button type="button" onClick={agregarAlmuerzo} className="button add-meal">
+                        + Agregar otro almuerzo
+                      </button>
                     </>
                   )}
                 </div>
