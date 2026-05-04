@@ -12,10 +12,11 @@ const menuFallback = {
   id: null,
   fecha: new Date().toISOString().slice(0, 10),
   titulo: "Almuerzo ejecutivo Rafiki",
-  descripcion: "Escoge una proteína y máximo 3 acompañantes. Incluye sopa y bebida.",
+  descripcion: "Escoge tu plato del día y máximo 3 acompañantes. Incluye sopa y bebida.",
   precio: 0,
   proteinas: [],
   proteinas_detalle: [],
+  platos_detalle: [],
   acompanantes: [],
   activo: true
 };
@@ -46,25 +47,36 @@ function limpiarAcompanantesCliente(lista) {
   return limpiarAcompanantesMenu(lista).slice(0, MAX_ACOMPANANTES_CLIENTE);
 }
 
-function textoAProteinasDetalle(texto) {
+function textoAPlatosDetalle(texto) {
   return String(texto || "")
     .split("\n")
     .map((linea) => linea.trim())
     .filter(Boolean)
     .map((linea) => {
-      const indiceSeparador = linea.lastIndexOf(":");
+      let categoria = "Platos";
+      let resto = linea;
 
-      if (indiceSeparador === -1) {
+      if (linea.includes("|")) {
+        const partesCategoria = linea.split("|");
+        categoria = String(partesCategoria[0] || "Platos").trim() || "Platos";
+        resto = partesCategoria.slice(1).join("|").trim();
+      }
+
+      const indicePrecio = resto.lastIndexOf(":");
+
+      if (indicePrecio === -1) {
         return {
-          nombre: linea.trim(),
+          categoria,
+          nombre: resto.trim(),
           precio: 0
         };
       }
 
-      const nombre = linea.slice(0, indiceSeparador).trim();
-      const precioTexto = linea.slice(indiceSeparador + 1).replace(/[^\d]/g, "");
+      const nombre = resto.slice(0, indicePrecio).trim();
+      const precioTexto = resto.slice(indicePrecio + 1).replace(/[^\d]/g, "");
 
       return {
+        categoria,
         nombre,
         precio: Number(precioTexto) || 0
       };
@@ -72,9 +84,9 @@ function textoAProteinasDetalle(texto) {
     .filter((item) => item.nombre);
 }
 
-function proteinasATexto(proteinasDetalle) {
-  return (proteinasDetalle || [])
-    .map((item) => `${item.nombre}:${Number(item.precio) || 0}`)
+function platosATexto(platosDetalle) {
+  return (platosDetalle || [])
+    .map((item) => `${item.categoria || "Platos"} | ${item.nombre}:${Number(item.precio) || 0}`)
     .join("\n");
 }
 
@@ -82,10 +94,21 @@ function acompanantesATexto(acompanantes) {
   return (acompanantes || []).join("\n");
 }
 
-function normalizarProteinas(menu) {
+function normalizarPlatos(menu) {
+  if (Array.isArray(menu?.platos_detalle) && menu.platos_detalle.length > 0) {
+    return menu.platos_detalle
+      .map((item) => ({
+        categoria: String(item.categoria || "Platos").trim() || "Platos",
+        nombre: String(item.nombre || "").trim(),
+        precio: Number(item.precio) || 0
+      }))
+      .filter((item) => item.nombre);
+  }
+
   if (Array.isArray(menu?.proteinas_detalle) && menu.proteinas_detalle.length > 0) {
     return menu.proteinas_detalle
       .map((item) => ({
+        categoria: "Platos",
         nombre: String(item.nombre || "").trim(),
         precio: Number(item.precio) || 0
       }))
@@ -95,6 +118,7 @@ function normalizarProteinas(menu) {
   if (Array.isArray(menu?.proteinas) && menu.proteinas.length > 0) {
     return menu.proteinas
       .map((nombre) => ({
+        categoria: "Platos",
         nombre: String(nombre || "").trim(),
         precio: Number(menu?.precio) || 0
       }))
@@ -105,21 +129,35 @@ function normalizarProteinas(menu) {
 }
 
 function normalizarMenu(menu) {
-  const proteinasDetalle = normalizarProteinas(menu);
+  const platosDetalle = normalizarPlatos(menu);
   const acompanantes = limpiarAcompanantesMenu(menu?.acompanantes || []);
 
   return {
     ...menuFallback,
     ...menu,
-    proteinas_detalle: proteinasDetalle,
-    proteinas: proteinasDetalle.map((item) => item.nombre),
+    platos_detalle: platosDetalle,
+    proteinas_detalle: platosDetalle.map((item) => ({
+      nombre: item.nombre,
+      precio: item.precio
+    })),
+    proteinas: platosDetalle.map((item) => item.nombre),
     acompanantes
   };
 }
 
+function agruparPlatosPorCategoria(platos) {
+  return (platos || []).reduce((grupos, plato) => {
+    const categoria = plato.categoria || "Platos";
+    if (!grupos[categoria]) grupos[categoria] = [];
+    grupos[categoria].push(plato);
+    return grupos;
+  }, {});
+}
+
 function crearItemNuevo(menu) {
   const menuNormalizado = normalizarMenu(menu);
-  const primeraProteina = menuNormalizado.proteinas_detalle[0] || {
+  const primerPlato = menuNormalizado.platos_detalle[0] || {
+    categoria: "",
     nombre: "",
     precio: 0
   };
@@ -127,8 +165,11 @@ function crearItemNuevo(menu) {
   return {
     id: Date.now() + Math.random(),
     cantidad: 1,
-    proteina: primeraProteina.nombre,
-    precioProteina: Number(primeraProteina.precio) || 0,
+    categoria: primerPlato.categoria || "",
+    plato: primerPlato.nombre || "",
+    proteina: primerPlato.nombre || "",
+    precioPlato: Number(primerPlato.precio) || 0,
+    precioProteina: Number(primerPlato.precio) || 0,
     acompanantes: [],
     paraLlevar: false
   };
@@ -136,10 +177,10 @@ function crearItemNuevo(menu) {
 
 function calcularTotalItem(item) {
   const cantidad = Number(item.cantidad) || 0;
-  const precioProteina = Number(item.precioProteina) || Number(item.precio) || 0;
+  const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
   const adicional = item.paraLlevar ? VALOR_PARA_LLEVAR : 0;
 
-  return cantidad * (precioProteina + adicional);
+  return cantidad * (precio + adicional);
 }
 
 function calcularTotalItems(items) {
@@ -147,7 +188,10 @@ function calcularTotalItems(items) {
 }
 
 function crearTextoItem(item) {
-  const partes = [`${item.cantidad} ${item.proteina} (${dinero(item.precioProteina)})`];
+  const nombrePlato = item.plato || item.proteina || "Plato";
+  const precio = Number(item.precioPlato || item.precioProteina || 0);
+
+  const partes = [`${item.cantidad} ${nombrePlato} (${dinero(precio)})`];
   const acompanantes = limpiarAcompanantesCliente(item.acompanantes || []);
 
   if (acompanantes.length > 0) {
@@ -192,29 +236,29 @@ function crearLinkWhatsApp(numero, mensaje) {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 
-function consolidarPedidos(pedidos) {
-  const resumen = {};
-
-  pedidos.forEach((pedido) => {
-    const items = Array.isArray(pedido.items) ? pedido.items : [];
-
-    items.forEach((item) => {
-      if (item.proteina) {
-        resumen[item.proteina] =
-          (resumen[item.proteina] || 0) + (Number(item.cantidad) || 0);
-      }
-    });
-  });
-
-  return resumen;
-}
-
 function obtenerCliente(pedido) {
   return pedido.cliente || pedido.cliente_nombre || "Cliente";
 }
 
 function obtenerItemsPedido(pedido) {
   return Array.isArray(pedido.items) ? pedido.items : [];
+}
+
+function consolidarPedidos(pedidos) {
+  const resumen = {};
+
+  pedidos.forEach((pedido) => {
+    const items = obtenerItemsPedido(pedido);
+
+    items.forEach((item) => {
+      const nombre = item.plato || item.proteina;
+      if (nombre) {
+        resumen[nombre] = (resumen[nombre] || 0) + (Number(item.cantidad) || 0);
+      }
+    });
+  });
+
+  return resumen;
 }
 
 function CampoTexto({
@@ -293,33 +337,44 @@ function PedidoCocina({ pedido, onCambiarEstado }) {
         {items.length === 0 ? (
           <div className="pedido-text">{pedido.pedido_texto}</div>
         ) : (
-          items.map((item, index) => (
-            <div key={item.id || index} className="item-cocina">
-              <div className="item-numero">#{index + 1}</div>
-              <div className="item-detalle">
-                <h4>
-                  {item.cantidad} x {item.proteina}
-                </h4>
-                <p>
-                  <strong>Precio:</strong>{" "}
-                  {dinero(item.precioProteina || item.precio || 0)}
-                </p>
-                <p>
-                  <strong>Acompañantes:</strong>{" "}
-                  {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
-                    ? item.acompanantes.join(", ")
-                    : "Sin acompañantes"}
-                </p>
-                <p>
-                  <strong>Incluye:</strong> Sopa + bebida
-                </p>
-                <p>
-                  <strong>Empaque:</strong>{" "}
-                  {item.paraLlevar ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}` : "Sin empaque para llevar"}
-                </p>
+          items.map((item, index) => {
+            const nombre = item.plato || item.proteina || "Plato";
+            const precio = item.precioPlato || item.precioProteina || 0;
+
+            return (
+              <div key={item.id || index} className="item-cocina">
+                <div className="item-numero">#{index + 1}</div>
+                <div className="item-detalle">
+                  <h4>
+                    {item.cantidad} x {nombre}
+                  </h4>
+                  {item.categoria && (
+                    <p>
+                      <strong>Categoría:</strong> {item.categoria}
+                    </p>
+                  )}
+                  <p>
+                    <strong>Precio:</strong> {dinero(precio)}
+                  </p>
+                  <p>
+                    <strong>Acompañantes:</strong>{" "}
+                    {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+                      ? item.acompanantes.join(", ")
+                      : "Sin acompañantes"}
+                  </p>
+                  <p>
+                    <strong>Incluye:</strong> Sopa + bebida
+                  </p>
+                  <p>
+                    <strong>Empaque:</strong>{" "}
+                    {item.paraLlevar
+                      ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}`
+                      : "Sin empaque para llevar"}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -389,6 +444,11 @@ export default function App() {
     );
   }, [pedidos, busqueda]);
 
+  const platosAgrupados = useMemo(
+    () => agruparPlatosPorCategoria(menu.platos_detalle),
+    [menu.platos_detalle]
+  );
+
   const mensajeWhatsAppFinal = pedidoFinalizado
     ? crearMensajeWhatsAppPedido(pedidoFinalizado)
     : "";
@@ -444,14 +504,13 @@ export default function App() {
     );
   }
 
-  function cambiarProteinaItem(id, nombreProteina) {
-    const proteinaSeleccionada = menu.proteinas_detalle.find(
-      (p) => p.nombre === nombreProteina
-    );
-
+  function cambiarPlatoItem(id, platoSeleccionado) {
     actualizarItem(id, {
-      proteina: proteinaSeleccionada?.nombre || "",
-      precioProteina: Number(proteinaSeleccionada?.precio) || 0
+      categoria: platoSeleccionado.categoria || "",
+      plato: platoSeleccionado.nombre || "",
+      proteina: platoSeleccionado.nombre || "",
+      precioPlato: Number(platoSeleccionado.precio) || 0,
+      precioProteina: Number(platoSeleccionado.precio) || 0
     });
   }
 
@@ -496,7 +555,7 @@ export default function App() {
 
   async function registrarPedido() {
     const itemsValidos = itemsPedido
-      .filter((item) => item.proteina)
+      .filter((item) => item.plato || item.proteina)
       .map((item) => ({
         ...item,
         acompanantes: limpiarAcompanantesCliente(item.acompanantes)
@@ -544,8 +603,8 @@ export default function App() {
   async function guardarMenu() {
     const menuNormalizado = normalizarMenu(menu);
 
-    if (menuNormalizado.proteinas_detalle.length === 0) {
-      setMensaje("Debes agregar al menos una proteína del día.");
+    if (menuNormalizado.platos_detalle.length === 0) {
+      setMensaje("Debes agregar al menos un plato del día.");
       return;
     }
 
@@ -553,9 +612,13 @@ export default function App() {
       fecha: menuNormalizado.fecha,
       titulo: menuNormalizado.titulo,
       descripcion: menuNormalizado.descripcion,
-      precio: Number(menuNormalizado.proteinas_detalle[0]?.precio) || 0,
-      proteinas: menuNormalizado.proteinas_detalle.map((item) => item.nombre),
-      proteinas_detalle: menuNormalizado.proteinas_detalle,
+      precio: Number(menuNormalizado.platos_detalle[0]?.precio) || 0,
+      proteinas: menuNormalizado.platos_detalle.map((item) => item.nombre),
+      proteinas_detalle: menuNormalizado.platos_detalle.map((item) => ({
+        nombre: item.nombre,
+        precio: item.precio
+      })),
+      platos_detalle: menuNormalizado.platos_detalle,
       acompanantes: limpiarAcompanantesMenu(menuNormalizado.acompanantes || []),
       activo: true
     };
@@ -615,24 +678,31 @@ export default function App() {
     setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
   }
 
-  function actualizarProteinasDesdeTexto(texto) {
-    const proteinasDetalle = textoAProteinasDetalle(texto);
+  function actualizarPlatosDesdeTexto(texto) {
+    const platosDetalle = textoAPlatosDetalle(texto);
 
     setMenu((actual) => ({
       ...actual,
-      proteinas_detalle: proteinasDetalle,
-      proteinas: proteinasDetalle.map((item) => item.nombre),
-      precio: Number(proteinasDetalle[0]?.precio) || 0
+      platos_detalle: platosDetalle,
+      proteinas_detalle: platosDetalle.map((item) => ({
+        nombre: item.nombre,
+        precio: item.precio
+      })),
+      proteinas: platosDetalle.map((item) => item.nombre),
+      precio: Number(platosDetalle[0]?.precio) || 0
     }));
 
     setItemsPedido((actual) =>
       actual.map((item) => {
-        const encontrada = proteinasDetalle.find((p) => p.nombre === item.proteina);
-        const primera = proteinasDetalle[0];
+        const encontrada = platosDetalle.find((p) => p.nombre === item.plato || p.nombre === item.proteina);
+        const primera = platosDetalle[0];
 
         return {
           ...item,
+          categoria: encontrada?.categoria || primera?.categoria || "",
+          plato: encontrada?.nombre || primera?.nombre || "",
           proteina: encontrada?.nombre || primera?.nombre || "",
+          precioPlato: Number(encontrada?.precio || primera?.precio || 0),
           precioProteina: Number(encontrada?.precio || primera?.precio || 0)
         };
       })
@@ -902,6 +972,18 @@ export default function App() {
           display: block;
           text-align: center;
           text-decoration: none;
+        }
+        .category-block {
+          margin-bottom: 20px;
+          border: 1px solid #fed7aa;
+          border-radius: 24px;
+          padding: 16px;
+          background: #fffaf0;
+        }
+        .category-title {
+          font-size: 22px;
+          margin-bottom: 12px;
+          color: #c2410c;
         }
         .option-grid {
           display: grid;
@@ -1224,16 +1306,16 @@ export default function App() {
                   <h2>{menu.titulo}</h2>
                   <p>{menu.descripcion}</p>
                   <div className="pill-row">
-                    <span className="pill">Cada proteína tiene precio propio</span>
+                    <span className="pill">Menú organizado por categorías</span>
                     <span className="pill">Para llevar suma {dinero(VALOR_PARA_LLEVAR)}</span>
                     <span className="pill">Incluye sopa y bebida</span>
                   </div>
                 </div>
 
                 <div className="section">
-                  {menu.proteinas_detalle.length === 0 ? (
+                  {menu.platos_detalle.length === 0 ? (
                     <div className="box soft">
-                      Todavía no hay proteínas configuradas para el menú de hoy. Entra al panel administrativo y agrega las proteínas del día.
+                      Todavía no hay platos configurados para el menú de hoy. Entra al panel administrativo y agrega los platos del día.
                     </div>
                   ) : (
                     <>
@@ -1262,20 +1344,28 @@ export default function App() {
                             )}
                           </div>
 
-                          <h4>Proteína</h4>
-                          <div className="option-grid">
-                            {menu.proteinas_detalle.map((proteina) => (
-                              <button
-                                key={proteina.nombre}
-                                type="button"
-                                onClick={() => cambiarProteinaItem(item.id, proteina.nombre)}
-                                className={`option ${item.proteina === proteina.nombre ? "selected" : ""}`}
-                              >
-                                <div>{proteina.nombre}</div>
-                                <small>{dinero(proteina.precio)}</small>
-                              </button>
-                            ))}
-                          </div>
+                          <h4>Elige tu plato</h4>
+
+                          {Object.entries(platosAgrupados).map(([categoria, platos]) => (
+                            <div key={categoria} className="category-block">
+                              <h3 className="category-title">{categoria}</h3>
+                              <div className="option-grid">
+                                {platos.map((plato) => (
+                                  <button
+                                    key={`${plato.categoria}-${plato.nombre}`}
+                                    type="button"
+                                    onClick={() => cambiarPlatoItem(item.id, plato)}
+                                    className={`option ${
+                                      item.plato === plato.nombre ? "selected" : ""
+                                    }`}
+                                  >
+                                    <div>{plato.nombre}</div>
+                                    <small>{dinero(plato.precio)}</small>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
 
                           <div style={{ marginTop: 18 }}>
                             <div className="row">
@@ -1304,7 +1394,9 @@ export default function App() {
                                       type="button"
                                       onClick={() => cambiarAcompananteItem(item.id, acompanante)}
                                       disabled={bloqueado}
-                                      className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}
+                                      className={`chip ${seleccionado ? "selected" : ""} ${
+                                        bloqueado ? "blocked" : ""
+                                      }`}
                                     >
                                       {seleccionado ? "✓ " : "+ "}
                                       {acompanante}
@@ -1376,8 +1468,10 @@ export default function App() {
                   {itemsPedido.map((item, index) => (
                     <div key={item.id} className="summary-item">
                       <p>
-                        #{index + 1} {item.cantidad} {item.proteina || "Sin proteína"} - {dinero(item.precioProteina)}
+                        #{index + 1} {item.cantidad} {item.plato || item.proteina || "Sin plato"} -{" "}
+                        {dinero(item.precioPlato || item.precioProteina)}
                       </p>
+                      {item.categoria && <p>Categoría: {item.categoria}</p>}
                       <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
                       <p>Sopa + bebida incluida</p>
                       <p>
@@ -1424,8 +1518,8 @@ export default function App() {
                   type="button"
                   onClick={registrarPedido}
                   disabled={
-                    menu.proteinas_detalle.length === 0 ||
-                    itemsPedido.every((item) => !item.proteina)
+                    menu.platos_detalle.length === 0 ||
+                    itemsPedido.every((item) => !(item.plato || item.proteina))
                   }
                   className="button"
                   style={{ width: "100%", marginTop: 10 }}
@@ -1580,7 +1674,7 @@ export default function App() {
                 <section className="card card-pad">
                   <h2>✏️ Editar menú diario</h2>
                   <p className="muted">
-                    Aquí modificas las proteínas, precios y acompañantes disponibles para los clientes.
+                    Aquí modificas los platos, precios, categorías y acompañantes disponibles para los clientes.
                   </p>
 
                   <CampoTexto
@@ -1604,14 +1698,14 @@ export default function App() {
                   />
 
                   <CampoTexto
-                    etiqueta="Proteínas del día"
-                    value={proteinasATexto(menu.proteinas_detalle || [])}
-                    onChange={actualizarProteinasDesdeTexto}
+                    etiqueta="Platos del día"
+                    value={platosATexto(menu.platos_detalle || [])}
+                    onChange={actualizarPlatosDesdeTexto}
                     placeholder={
-                      "Pechuga gratinada:18000\nCarne molida especial:19000\nPollo en salsa criolla:17000"
+                      "Pechuga | Pechuga asada sin salsa:17500\nPechuga | Pechuga en salsa criolla:18500\nCerdo | Cerdo asado sin salsa:17000\nSopas | Sancocho de costilla:22000\nCarnes | Carne guisada:19000"
                     }
                     multiline
-                    rows={7}
+                    rows={9}
                   />
 
                   <CampoTexto
@@ -1626,12 +1720,12 @@ export default function App() {
                   />
 
                   <div className="box soft small">
-                    <strong>Proteínas:</strong> escribe una proteína por línea con este formato:
+                    <strong>Platos:</strong> escribe un plato por línea con este formato:
                     <br />
-                    Nombre de la proteína:Precio
+                    Categoría | Nombre del plato:Precio
                     <br />
                     <br />
-                    <strong>Ejemplo:</strong> Pollo en salsa criolla:17000
+                    <strong>Ejemplo:</strong> Pechuga | Pechuga en salsa criolla:18500
                     <br />
                     <br />
                     <strong>Acompañantes:</strong> escribe un acompañante por línea. Pueden tener varias palabras.
