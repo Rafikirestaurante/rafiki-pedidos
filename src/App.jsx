@@ -48,29 +48,28 @@ function formatearFechaHora(fecha) {
   }).format(new Date(fecha));
 }
 
-function obtenerRangoPedidos(filtro) {
-  const ahora = new Date();
-  const hoyTexto = fechaISOColombia(ahora);
-  const hoy = new Date(`${hoyTexto}T00:00:00-05:00`);
+function obtenerRangoPedidos(filtro, fechaManual = fechaISOColombia()) {
+  const baseTexto = filtro === "dia" ? fechaManual : fechaISOColombia();
+  const base = new Date(`${baseTexto}T00:00:00-05:00`);
 
-  let inicio = new Date(hoy);
-  let fin = new Date(hoy);
+  let inicio = new Date(base);
+  let fin = new Date(base);
   fin.setDate(fin.getDate() + 1);
 
   if (filtro === "semana") {
-    const dia = hoy.getDay();
+    const dia = base.getDay();
     const diferenciaLunes = dia === 0 ? -6 : 1 - dia;
 
-    inicio = new Date(hoy);
-    inicio.setDate(hoy.getDate() + diferenciaLunes);
+    inicio = new Date(base);
+    inicio.setDate(base.getDate() + diferenciaLunes);
 
     fin = new Date(inicio);
     fin.setDate(inicio.getDate() + 7);
   }
 
   if (filtro === "mes") {
-    inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+    inicio = new Date(base.getFullYear(), base.getMonth(), 1);
+    fin = new Date(base.getFullYear(), base.getMonth() + 1, 1);
   }
 
   return {
@@ -553,6 +552,7 @@ export default function App() {
   const [observaciones, setObservaciones] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [filtroPedidos, setFiltroPedidos] = useState("hoy");
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaISOColombia());
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -620,8 +620,9 @@ export default function App() {
   const tituloPedidos = useMemo(() => {
     if (filtroPedidos === "semana") return "Historial de esta semana";
     if (filtroPedidos === "mes") return "Historial de este mes";
+    if (filtroPedidos === "dia") return `Pedidos del ${fechaSeleccionada}`;
     return "Pedidos de hoy";
-  }, [filtroPedidos]);
+  }, [filtroPedidos, fechaSeleccionada]);
 
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
 
@@ -660,7 +661,7 @@ export default function App() {
         setAcompanantesTexto("");
       }
 
-      const rango = obtenerRangoPedidos(filtroPedidos);
+      const rango = obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
 
       const { data: pedidosData, error: pedidosError } = await supabase
         .from("pedidos")
@@ -687,7 +688,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [filtroPedidos]);
+  }, [filtroPedidos, fechaSeleccionada]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -783,7 +784,7 @@ export default function App() {
       return;
     }
 
-    if (filtroPedidos === "hoy") {
+    if (filtroPedidos === "hoy" || filtroPedidos === "dia") {
       setPedidos((actual) => [...actual, data]);
     }
 
@@ -979,16 +980,23 @@ export default function App() {
         .summary-item { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; margin-bottom: 10px; font-weight: 700; }
         .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }
         .total-row strong { color: #ea580c; font-size: 26px; }
-        .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
-        .stat { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 16px; }
-        .stat strong { display: block; font-size: 28px; }
-        .filtros-historial { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
-        .filtros-historial button { border: 1px solid #fed7aa; background: #fff; color: #c2410c; padding: 12px 16px; border-radius: 999px; font-weight: 900; }
+        .mini-pending { display: inline-flex; align-items: center; gap: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c; border-radius: 999px; padding: 9px 13px; font-weight: 900; margin: 12px 0 16px; }
+        .mini-pending strong { background: #f97316; color: #fff; min-width: 28px; height: 28px; border-radius: 999px; display: inline-flex; justify-content: center; align-items: center; }
+        .filtros-historial { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 6px; align-items: center; }
+        .filtros-historial button { border: 1px solid #fed7aa; background: #fff; color: #c2410c; padding: 10px 14px; border-radius: 999px; font-weight: 900; }
         .filtros-historial button.active { background: #f97316; color: #fff; }
+        .calendario-filtro { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #fed7aa; border-radius: 999px; padding: 8px 12px; color: #c2410c; font-weight: 900; }
+        .calendario-filtro span { font-size: 13px; }
+        .calendario-filtro input { border: 0; outline: none; background: transparent; color: #44403c; font-weight: 800; padding: 0; }
         .pedido-seccion { margin-bottom: 26px; }
         .section-heading { display: flex; justify-content: space-between; align-items: center; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px 18px; margin-bottom: 14px; }
         .section-heading h3 { margin: 0; color: #c2410c; }
         .section-heading span { background: #f97316; color: #fff; min-width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; }
+        .bottom-summary { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 18px; }
+        .summary-cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .summary-card { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; }
+        .summary-card span { color: #78716c; font-weight: 800; }
+        .summary-card strong { display: block; color: #ea580c; font-size: 30px; margin-top: 6px; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; padding: 20px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
         .pedido-finalizado { opacity: 0.75; background: #f8fafc; }
         .pedido-top { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; border-bottom: 1px solid #f5f5f4; padding-bottom: 14px; margin-bottom: 14px; }
@@ -1011,7 +1019,7 @@ export default function App() {
         .badge-finalizado { background: #dcfce7; color: #15803d; }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; }
         @media (max-width: 900px) {
-          .topbar, .layout, .grid-2, .stats, .pedido-top, .pedido-actions { grid-template-columns: 1fr; display: grid; }
+          .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
           .option-grid { grid-template-columns: 1fr; }
@@ -1038,6 +1046,7 @@ export default function App() {
                 >
                   Vista cliente
                 </button>
+
                 <button type="button" onClick={() => setVista("inicio")}>
                   Inicio
                 </button>
@@ -1398,7 +1407,7 @@ export default function App() {
                     <div>
                       <h2>📋 {tituloPedidos}</h2>
                       <p className="muted">
-                        Vista organizada para preparar pedidos y revisar el historial.
+                        Vista organizada para preparar pedidos y revisar historial.
                       </p>
                     </div>
                   </div>
@@ -1417,7 +1426,7 @@ export default function App() {
                       onClick={() => setFiltroPedidos("semana")}
                       className={filtroPedidos === "semana" ? "active" : ""}
                     >
-                      Esta semana
+                      Semana
                     </button>
 
                     <button
@@ -1425,8 +1434,25 @@ export default function App() {
                       onClick={() => setFiltroPedidos("mes")}
                       className={filtroPedidos === "mes" ? "active" : ""}
                     >
-                      Este mes
+                      Mes
                     </button>
+
+                    <label className="calendario-filtro">
+                      <span>📅 Día</span>
+                      <input
+                        type="date"
+                        value={fechaSeleccionada}
+                        onChange={(e) => {
+                          setFechaSeleccionada(e.target.value);
+                          setFiltroPedidos("dia");
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mini-pending">
+                    <span>Pedidos pendientes</span>
+                    <strong>{pedidosPendientes.length}</strong>
                   </div>
 
                   <CampoTexto
@@ -1435,23 +1461,6 @@ export default function App() {
                     onChange={setBusqueda}
                     placeholder="Buscar por cliente, ubicación, pago o estado..."
                   />
-
-                  <div className="stats">
-                    <div className="stat">
-                      <span>Pedidos</span>
-                      <strong>{pedidosFiltrados.length}</strong>
-                    </div>
-
-                    <div className="stat">
-                      <span>Pendientes</span>
-                      <strong>{pedidosPendientes.length}</strong>
-                    </div>
-
-                    <div className="stat">
-                      <span>Finalizados</span>
-                      <strong>{pedidosFinalizados.length}</strong>
-                    </div>
-                  </div>
 
                   <div className="pedido-seccion">
                     <div className="section-heading">
@@ -1493,29 +1502,41 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="card card-pad" style={{ marginTop: 18 }}>
-                    <h3>Consolidado cocina</h3>
-                    <p className="muted">Resumen total de platos del rango seleccionado.</p>
+                  <div className="bottom-summary">
+                    <div className="card card-pad">
+                      <h3>Consolidado cocina</h3>
+                      <p className="muted">Resumen total de platos del rango seleccionado.</p>
 
-                    {Object.keys(consolidado).length === 0 ? (
-                      <p className="muted">Todavía no hay productos para consolidar.</p>
-                    ) : (
-                      <div className="grid-2">
-                        {Object.entries(consolidado).map(([producto, cantidadProducto]) => (
-                          <div key={producto} className="box row">
-                            <strong>{producto}</strong>
-                            <strong>{cantidadProducto}</strong>
-                          </div>
-                        ))}
+                      {Object.keys(consolidado).length === 0 ? (
+                        <p className="muted">Todavía no hay productos para consolidar.</p>
+                      ) : (
+                        <div className="grid-2">
+                          {Object.entries(consolidado).map(([producto, cantidadProducto]) => (
+                            <div key={producto} className="box row">
+                              <strong>{producto}</strong>
+                              <strong>{cantidadProducto}</strong>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="summary-cards">
+                      <div className="summary-card">
+                        <span>Pedidos</span>
+                        <strong>{pedidosFiltrados.length}</strong>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="card card-pad" style={{ marginTop: 18 }}>
-                    <h3>Total vendido</h3>
-                    <strong style={{ fontSize: 30, color: "#ea580c" }}>
-                      {dinero(totalVendido)}
-                    </strong>
+                      <div className="summary-card">
+                        <span>Finalizados</span>
+                        <strong>{pedidosFinalizados.length}</strong>
+                      </div>
+
+                      <div className="summary-card">
+                        <span>Total vendido</span>
+                        <strong>{dinero(totalVendido)}</strong>
+                      </div>
+                    </div>
                   </div>
                 </section>
               )}
