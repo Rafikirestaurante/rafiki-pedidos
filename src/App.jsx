@@ -180,7 +180,7 @@ function crearItemNuevo(menu) {
     precioPlato: Number(primerPlato.precio) || 0,
     precioProteina: Number(primerPlato.precio) || 0,
     acompanantes: [],
-    paraLlevar: false
+    paraLlevar: true
   };
 }
 
@@ -221,6 +221,7 @@ function crearMensajeWhatsAppPedido(pedido) {
     `Cliente: ${pedido.cliente || pedido.cliente_nombre || "Cliente"}`,
     `Teléfono: ${pedido.telefono || "Sin teléfono"}`,
     `Ubicación: ${pedido.ubicacion || "Sin ubicación"}`,
+    `Tipo de pago: ${pedido.tipo_pago || "No especificado"}`,
     "",
     "Pedido:",
     pedido.pedido_texto || "",
@@ -294,6 +295,7 @@ function PedidoCocina({ pedido, onCambiarEstado }) {
           <h3>{obtenerCliente(pedido)}</h3>
           <p className="muted">📍 {pedido.ubicacion || "Sin ubicación"}</p>
           <p className="muted">📞 {pedido.telefono || "Sin teléfono"}</p>
+          <p className="muted">💳 {pedido.tipo_pago || "Pago no especificado"}</p>
         </div>
 
         <div className="pedido-total">
@@ -348,6 +350,7 @@ export default function App() {
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
+  const [tipoPago, setTipoPago] = useState("Efectivo");
   const [observaciones, setObservaciones] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
@@ -378,7 +381,11 @@ export default function App() {
   const pedidosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     if (!q) return pedidos;
-    return pedidos.filter((pedido) => `${obtenerCliente(pedido)} ${pedido.telefono} ${pedido.ubicacion} ${pedido.pedido_texto} ${pedido.estado}`.toLowerCase().includes(q));
+    return pedidos.filter((pedido) =>
+      `${obtenerCliente(pedido)} ${pedido.telefono} ${pedido.ubicacion} ${pedido.tipo_pago} ${pedido.pedido_texto} ${pedido.estado}`
+        .toLowerCase()
+        .includes(q)
+    );
   }, [pedidos, busqueda]);
 
   const platosAgrupados = useMemo(() => agruparPlatosPorCategoria(menu.platos_detalle), [menu.platos_detalle]);
@@ -493,6 +500,7 @@ export default function App() {
       cliente_nombre: clienteNombre,
       telefono: telefono.trim(),
       ubicacion: ubicacion.trim() || "Ubicación pendiente",
+      tipo_pago: tipoPago,
       observaciones: observaciones.trim(),
       items: itemsValidos,
       pedido_texto: pedidoTexto,
@@ -616,6 +624,7 @@ export default function App() {
     setCliente("");
     setTelefono("");
     setUbicacion("");
+    setTipoPago("Efectivo");
     setObservaciones("");
     setPedidoFinalizado(null);
     setMensaje({ texto: "", tipo: "info" });
@@ -870,6 +879,11 @@ export default function App() {
                 <p className="muted">Estos datos se guardan y luego el cliente puede enviar el consolidado por WhatsApp.</p>
 
                 <div className="box soft" style={{ marginBottom: 18 }}>
+                  <strong>🥡 Para llevar activado</strong>
+                  <p className="muted" style={{ marginBottom: 0 }}>Por defecto cada almuerzo suma {dinero(VALOR_PARA_LLEVAR)} por empaque. Puedes desmarcarlo si el cliente no lo necesita.</p>
+                </div>
+
+                <div className="box soft" style={{ marginBottom: 18 }}>
                   <h3>Resumen</h3>
                   {itemsPedido.map((item, index) => (
                     <div key={item.id} className="summary-item">
@@ -889,6 +903,15 @@ export default function App() {
                 <CampoTexto etiqueta="👤 Nombre" value={cliente} onChange={setCliente} placeholder="Ej: Laura Pérez" />
                 <CampoTexto etiqueta="📞 Teléfono" value={telefono} onChange={setTelefono} placeholder="Ej: 300 123 4567" />
                 <CampoTexto etiqueta="📍 Ubicación" value={ubicacion} onChange={setUbicacion} placeholder="Ej: Edificio, oficina o barrio" />
+
+                <label className="field">
+                  <span>💳 Tipo de pago</span>
+                  <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)}>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                  </select>
+                </label>
+
                 <CampoTexto etiqueta="Observaciones generales" value={observaciones} onChange={setObservaciones} placeholder="Ej: llevar a recepción, sin cubiertos, pago en efectivo..." multiline />
 
                 <button type="button" onClick={registrarPedido} disabled={menu.platos_detalle.length === 0 || itemsPedido.every((item) => !(item.plato || item.proteina))} className="button" style={{ width: "100%", marginTop: 10 }}>Revisar y finalizar pedido</button>
@@ -910,6 +933,7 @@ export default function App() {
                     <p><strong>Cliente:</strong> {obtenerCliente(pedidoFinalizado)}</p>
                     <p><strong>Teléfono:</strong> {pedidoFinalizado.telefono || "Sin teléfono"}</p>
                     <p><strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}</p>
+                    <p><strong>Tipo de pago:</strong> {pedidoFinalizado.tipo_pago || "No especificado"}</p>
                     <div className="pedido-text">{pedidoFinalizado.pedido_texto}</div>
                     <div className="total-row">
                       <span>Total</span>
@@ -944,7 +968,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <CampoTexto etiqueta="Buscar pedido" value={busqueda} onChange={setBusqueda} placeholder="Buscar por cliente, ubicación o estado..." />
+                  <CampoTexto etiqueta="Buscar pedido" value={busqueda} onChange={setBusqueda} placeholder="Buscar por cliente, ubicación, pago o estado..." />
 
                   <div className="stats">
                     <div className="stat"><span>Pedidos</span><strong>{pedidos.length}</strong></div>
