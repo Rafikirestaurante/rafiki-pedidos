@@ -29,6 +29,48 @@ function dinero(valor) {
   }).format(Number(valor) || 0);
 }
 
+function normalizarTexto(texto) {
+  return String(texto || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function esCategoriaSopa(categoria) {
+  return normalizarTexto(categoria).includes("sopa");
+}
+
+function esSopaParaLlevarGratis(item) {
+  if (!esCategoriaSopa(item?.categoria)) return false;
+
+  const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre);
+
+  const sopasGratis = [
+    "sopas medianas",
+    "sopas medianas con arroz",
+    "sancocho de pollo"
+  ];
+
+  return sopasGratis.includes(nombre);
+}
+
+function valorParaLlevarItem(item) {
+  if (!item?.paraLlevar) return 0;
+  if (esSopaParaLlevarGratis(item)) return 0;
+  return VALOR_PARA_LLEVAR;
+}
+
+function textoParaLlevarItem(item) {
+  if (!item?.paraLlevar) return "Sin empaque para llevar";
+
+  const valor = valorParaLlevarItem(item);
+
+  if (valor === 0) return "Para llevar sin costo adicional";
+
+  return `Para llevar +${dinero(valor)}`;
+}
+
 function fechaISOColombia(fecha = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Bogota",
@@ -54,6 +96,7 @@ function obtenerRangoPedidos(filtro, fechaManual = fechaISOColombia()) {
 
   const inicio = new Date(base);
   const fin = new Date(base);
+
   fin.setDate(fin.getDate() + 1);
 
   return {
@@ -272,7 +315,7 @@ function crearItemNuevo(menu) {
 function calcularTotalItem(item) {
   const cantidad = Number(item.cantidad) || 0;
   const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
-  const adicional = item.paraLlevar ? VALOR_PARA_LLEVAR : 0;
+  const adicional = valorParaLlevarItem(item);
 
   return cantidad * (precio + adicional);
 }
@@ -286,15 +329,23 @@ function crearTextoItem(item) {
   const precio = Number(item.precioPlato || item.precioProteina || 0);
   const partes = [`${item.cantidad} ${nombrePlato} (${dinero(precio)})`];
   const acompanantes = limpiarAcompanantesCliente(item.acompanantes || []);
+  const esSopa = esCategoriaSopa(item.categoria);
+  const valorLlevar = valorParaLlevarItem(item);
 
   if (acompanantes.length > 0) {
     partes.push(acompanantes.join(", "));
   }
 
-  partes.push(INCLUIDOS_FIJOS);
+  if (!esSopa) {
+    partes.push(INCLUIDOS_FIJOS);
+  }
 
   if (item.paraLlevar) {
-    partes.push(`Para llevar +${dinero(VALOR_PARA_LLEVAR)}`);
+    if (valorLlevar === 0) {
+      partes.push("Para llevar sin costo adicional");
+    } else {
+      partes.push(`Para llevar +${dinero(valorLlevar)}`);
+    }
   }
 
   return partes.join(" + ");
@@ -469,15 +520,14 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
                       : "Sin acompañantes"}
                   </p>
 
-                  <p>
-                    <strong>Incluye:</strong> Sopa + bebida
-                  </p>
+                  {!esCategoriaSopa(item.categoria) && (
+                    <p>
+                      <strong>Incluye:</strong> Sopa + bebida
+                    </p>
+                  )}
 
                   <p>
-                    <strong>Empaque:</strong>{" "}
-                    {item.paraLlevar
-                      ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}`
-                      : "Sin empaque para llevar"}
+                    <strong>Empaque:</strong> {textoParaLlevarItem(item)}
                   </p>
                 </div>
               </div>
@@ -704,7 +754,7 @@ export default function App() {
 
         if (item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE) {
           mostrarMensaje(
-            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`,
+            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por almuerzo.`,
             "warning"
           );
           return item;
@@ -811,6 +861,7 @@ export default function App() {
     };
 
     const idActual = menu.id || 0;
+
     const { error: errorDesactivar } = await supabase
       .from("menu_diario")
       .update({ activo: false })
@@ -1128,7 +1179,7 @@ export default function App() {
                             </div>
 
                             <p className="muted">
-                              Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE}. La sopa y la bebida ya están incluidas.
+                              Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE} acompañantes.
                             </p>
 
                             <div className="chips">
@@ -1160,12 +1211,14 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="box" style={{ marginTop: 18 }}>
-                            <strong>🥣 Sopa y bebida</strong>
-                            <p className="muted" style={{ marginBottom: 0 }}>
-                              Incluidas automáticamente en cada almuerzo.
-                            </p>
-                          </div>
+                          {!esCategoriaSopa(item.categoria) && (
+                            <div className="box" style={{ marginTop: 18 }}>
+                              <strong>🥣 Sopa y bebida</strong>
+                              <p className="muted" style={{ marginBottom: 0 }}>
+                                Incluidas automáticamente en este almuerzo.
+                              </p>
+                            </div>
+                          )}
 
                           <div className="grid-2" style={{ marginTop: 18 }}>
                             <div className="box">
@@ -1182,7 +1235,9 @@ export default function App() {
                               <div>
                                 <strong>🥡 Para llevar</strong>
                                 <p className="muted" style={{ marginBottom: 0 }}>
-                                  Suma {dinero(VALOR_PARA_LLEVAR)}
+                                  {item.paraLlevar
+                                    ? textoParaLlevarItem(item)
+                                    : "Sin empaque para llevar"}
                                 </p>
                               </div>
 
@@ -1221,7 +1276,7 @@ export default function App() {
                 <div className="box soft" style={{ marginBottom: 18 }}>
                   <strong>🥡 Para llevar activado</strong>
                   <p className="muted" style={{ marginBottom: 0 }}>
-                    Por defecto cada almuerzo suma {dinero(VALOR_PARA_LLEVAR)} por empaque. Puedes desmarcarlo si el cliente no lo necesita.
+                    En almuerzos suma {dinero(VALOR_PARA_LLEVAR)}. En sopas medianas, sopas medianas con arroz y sancocho de pollo no suma adicional.
                   </p>
                 </div>
 
@@ -1237,12 +1292,10 @@ export default function App() {
 
                       {item.categoria && <p>Categoría: {item.categoria}</p>}
                       <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
-                      <p>Sopa + bebida incluida</p>
-                      <p>
-                        {item.paraLlevar
-                          ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}`
-                          : "Sin empaque para llevar"}
-                      </p>
+
+                      {!esCategoriaSopa(item.categoria) && <p>Sopa + bebida incluida</p>}
+
+                      <p>{textoParaLlevarItem(item)}</p>
                     </div>
                   ))}
 
@@ -1546,7 +1599,7 @@ export default function App() {
                     value={platosTexto}
                     onChange={setPlatosTexto}
                     placeholder={
-                      "Pechuga | Pechuga asada sin salsa:17500\nPechuga | Pechuga en salsa criolla:18500\nCerdo | Cerdo asado sin salsa:17000\nSopas | Sancocho de costilla:22000\nCarnes | Carne guisada:19000"
+                      "Pechuga | Pechuga asada sin salsa:17500\nSopas | Sopas medianas:7000\nSopas | Sopas medianas con arroz:9000\nSopas | Sancocho de pollo:15000\nCarnes | Carne guisada:19000"
                     }
                     multiline
                     rows={9}
@@ -1571,11 +1624,12 @@ export default function App() {
                     <br />
                     <strong>Ejemplo:</strong> Pechuga | Pechuga en salsa criolla:18500
                     <br />
+                    <strong>Ejemplo sopa:</strong> Sopas | Sopas medianas:7000
                     <br />
-                    <strong>Acompañantes:</strong> escribe un acompañante por línea. Puedes bajar de renglón libremente; la app solo validará cuando presiones guardar.
                     <br />
+                    Cuando la categoría sea Sopas, no se mostrará sopa + bebida incluida.
                     <br />
-                    Sopa y bebida siempre van incluidas.
+                    Las sopas medianas, sopas medianas con arroz y sancocho de pollo no cobran adicional de para llevar.
                   </div>
 
                   <button
