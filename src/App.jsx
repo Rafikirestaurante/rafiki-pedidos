@@ -46,33 +46,58 @@ function limpiarAcompanantesCliente(lista) {
   return limpiarAcompanantesMenu(lista).slice(0, MAX_ACOMPANANTES_CLIENTE);
 }
 
-function textoAPlatosDetalle(texto) {
-  return String(texto || "")
+function textoAPlatosDetalle(texto, { estricto = false } = {}) {
+  const lineas = String(texto || "")
     .split("\n")
     .map((linea) => linea.trim())
-    .filter(Boolean)
-    .map((linea) => {
-      let categoria = "Platos";
-      let resto = linea;
+    .filter(Boolean);
 
-      if (linea.includes("|")) {
-        const partesCategoria = linea.split("|");
-        categoria = String(partesCategoria[0] || "Platos").trim() || "Platos";
-        resto = partesCategoria.slice(1).join("|").trim();
-      }
+  const platos = [];
+  const errores = [];
 
-      const indicePrecio = resto.lastIndexOf(":");
+  lineas.forEach((linea, index) => {
+    const numeroLinea = index + 1;
 
-      if (indicePrecio === -1) {
-        return { categoria, nombre: resto.trim(), precio: 0 };
-      }
+    if (!linea.includes("|")) {
+      if (estricto) errores.push(`Línea ${numeroLinea}: falta el formato "Categoría | Plato:Precio".`);
+      return;
+    }
 
-      const nombre = resto.slice(0, indicePrecio).trim();
-      const precioTexto = resto.slice(indicePrecio + 1).replace(/[^\d]/g, "");
+    const partesCategoria = linea.split("|");
+    const categoria = String(partesCategoria[0] || "Platos").trim() || "Platos";
+    const resto = partesCategoria.slice(1).join("|").trim();
 
-      return { categoria, nombre, precio: Number(precioTexto) || 0 };
-    })
-    .filter((item) => item.nombre);
+    if (!resto) {
+      if (estricto) errores.push(`Línea ${numeroLinea}: falta el nombre del plato y el precio.`);
+      return;
+    }
+
+    const indicePrecio = resto.lastIndexOf(":");
+
+    if (indicePrecio === -1) {
+      if (estricto) errores.push(`Línea ${numeroLinea}: falta el precio después de ":".`);
+      return;
+    }
+
+    const nombre = resto.slice(0, indicePrecio).trim();
+    const precioTextoOriginal = resto.slice(indicePrecio + 1).trim();
+    const precioTexto = precioTextoOriginal.replace(/[^\d]/g, "");
+    const precio = Number(precioTexto);
+
+    if (!nombre) {
+      if (estricto) errores.push(`Línea ${numeroLinea}: el nombre del plato está vacío.`);
+      return;
+    }
+
+    if (!precio || precio <= 0) {
+      if (estricto) errores.push(`Línea ${numeroLinea}: precio inválido "${precioTextoOriginal || "vacío"}". Usa solo números, ejemplo 18000.`);
+      return;
+    }
+
+    platos.push({ categoria, nombre, precio });
+  });
+
+  return { platos, errores };
 }
 
 function platosATexto(platosDetalle) {
@@ -328,6 +353,8 @@ export default function App() {
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [platosTexto, setPlatosTexto] = useState("");
+  const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
 
   function mostrarMensaje(texto, tipo = "info") {
@@ -335,7 +362,7 @@ export default function App() {
     setMensaje({ texto, tipo });
     mensajeTimer.current = setTimeout(() => {
       setMensaje({ texto: "", tipo: "info" });
-    }, 4000);
+    }, 5000);
   }
 
   useEffect(() => {
@@ -380,6 +407,11 @@ export default function App() {
         const menuNormalizado = normalizarMenu(menuData);
         setMenu(menuNormalizado);
         setItemsPedido([crearItemNuevo(menuNormalizado)]);
+        setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
+        setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
+      } else {
+        setPlatosTexto("");
+        setAcompanantesTexto("");
       }
 
       const { data: pedidosData, error: pedidosError } = await supabase
@@ -483,22 +515,28 @@ export default function App() {
   }
 
   async function guardarMenu() {
-    const menuNormalizado = normalizarMenu(menu);
+    const resultadoPlatos = textoAPlatosDetalle(platosTexto, { estricto: true });
+    const acompanantes = limpiarAcompanantesMenu(listaPorLineas(acompanantesTexto));
 
-    if (menuNormalizado.platos_detalle.length === 0) {
-      mostrarMensaje("Debes agregar al menos un plato del día.", "warning");
+    if (resultadoPlatos.errores.length > 0) {
+      mostrarMensaje(`No se puede guardar el menú. Corrige:\n${resultadoPlatos.errores.slice(0, 5).join("\n")}`, "error");
+      return;
+    }
+
+    if (resultadoPlatos.platos.length === 0) {
+      mostrarMensaje("Debes agregar al menos un plato del día con el formato Categoría | Plato:Precio.", "warning");
       return;
     }
 
     const menuActualizado = {
-      fecha: menuNormalizado.fecha,
-      titulo: menuNormalizado.titulo,
-      descripcion: menuNormalizado.descripcion,
-      precio: Number(menuNormalizado.platos_detalle[0]?.precio) || 0,
-      proteinas: menuNormalizado.platos_detalle.map((item) => item.nombre),
-      proteinas_detalle: menuNormalizado.platos_detalle.map((item) => ({ nombre: item.nombre, precio: item.precio })),
-      platos_detalle: menuNormalizado.platos_detalle,
-      acompanantes: limpiarAcompanantesMenu(menuNormalizado.acompanantes || []),
+      fecha: menu.fecha,
+      titulo: menu.titulo,
+      descripcion: menu.descripcion,
+      precio: Number(resultadoPlatos.platos[0]?.precio) || 0,
+      proteinas: resultadoPlatos.platos.map((item) => item.nombre),
+      proteinas_detalle: resultadoPlatos.platos.map((item) => ({ nombre: item.nombre, precio: item.precio })),
+      platos_detalle: resultadoPlatos.platos,
+      acompanantes,
       activo: true
     };
 
@@ -529,6 +567,8 @@ export default function App() {
       const nuevoMenu = normalizarMenu(data);
       setMenu(nuevoMenu);
       setItemsPedido([crearItemNuevo(nuevoMenu)]);
+      setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
+      setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
       mostrarMensaje("Menú actualizado correctamente.", "success");
       setAdminTab("pedidos");
       return;
@@ -548,6 +588,8 @@ export default function App() {
     const nuevoMenu = normalizarMenu(data);
     setMenu(nuevoMenu);
     setItemsPedido([crearItemNuevo(nuevoMenu)]);
+    setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
+    setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
     mostrarMensaje("Menú creado correctamente.", "success");
     setAdminTab("pedidos");
   }
@@ -567,42 +609,6 @@ export default function App() {
 
     setPedidos((actual) => actual.map((pedido) => pedido.id === id ? data : pedido));
     mostrarMensaje(`Pedido marcado como ${estado}.`, "success");
-  }
-
-  function actualizarPlatosDesdeTexto(texto) {
-    const platosDetalle = textoAPlatosDetalle(texto);
-
-    setMenu((actual) => ({
-      ...actual,
-      platos_detalle: platosDetalle,
-      proteinas_detalle: platosDetalle.map((item) => ({ nombre: item.nombre, precio: item.precio })),
-      proteinas: platosDetalle.map((item) => item.nombre),
-      precio: Number(platosDetalle[0]?.precio) || 0
-    }));
-
-    setItemsPedido((actual) => actual.map((item) => {
-      const encontrada = platosDetalle.find((p) => p.nombre === item.plato || p.nombre === item.proteina);
-      const primera = platosDetalle[0];
-
-      return {
-        ...item,
-        categoria: encontrada?.categoria || primera?.categoria || "",
-        plato: encontrada?.nombre || primera?.nombre || "",
-        proteina: encontrada?.nombre || primera?.nombre || "",
-        precioPlato: Number(encontrada?.precio || primera?.precio || 0),
-        precioProteina: Number(encontrada?.precio || primera?.precio || 0)
-      };
-    }));
-  }
-
-  function actualizarAcompanantesDesdeTexto(texto) {
-    const acompanantes = limpiarAcompanantesMenu(listaPorLineas(texto));
-
-    setMenu((actual) => ({ ...actual, acompanantes }));
-    setItemsPedido((actual) => actual.map((item) => ({
-      ...item,
-      acompanantes: limpiarAcompanantesCliente(item.acompanantes.filter((a) => acompanantes.includes(a)))
-    })));
   }
 
   function nuevoPedidoCliente() {
@@ -635,7 +641,7 @@ export default function App() {
         .nav { display: flex; gap: 6px; background: #ffffff; border: 1px solid #fed7aa; padding: 6px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
         .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; }
         .nav button.active { background: #f97316; color: #fff; }
-        .alert { padding: 14px 18px; border-radius: 18px; margin-bottom: 18px; font-weight: 700; border: 1px solid transparent; }
+        .alert { white-space: pre-line; padding: 14px 18px; border-radius: 18px; margin-bottom: 18px; font-weight: 700; border: 1px solid transparent; }
         .alert-info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .alert-success { background: #ecfdf5; color: #166534; border-color: #bbf7d0; }
         .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
@@ -975,14 +981,14 @@ export default function App() {
                   <CampoTexto etiqueta="Fecha" value={menu.fecha || ""} onChange={(valor) => setMenu((actual) => ({ ...actual, fecha: valor }))} />
                   <CampoTexto etiqueta="Nombre del menú" value={menu.titulo || ""} onChange={(valor) => setMenu((actual) => ({ ...actual, titulo: valor }))} />
                   <CampoTexto etiqueta="Descripción" value={menu.descripcion || ""} onChange={(valor) => setMenu((actual) => ({ ...actual, descripcion: valor }))} multiline rows={3} />
-                  <CampoTexto etiqueta="Platos del día" value={platosATexto(menu.platos_detalle || [])} onChange={actualizarPlatosDesdeTexto} placeholder={"Pechuga | Pechuga asada sin salsa:17500\nPechuga | Pechuga en salsa criolla:18500\nCerdo | Cerdo asado sin salsa:17000\nSopas | Sancocho de costilla:22000\nCarnes | Carne guisada:19000"} multiline rows={9} />
-                  <CampoTexto etiqueta="Acompañantes del día" value={acompanantesATexto(menu.acompanantes || [])} onChange={actualizarAcompanantesDesdeTexto} placeholder={"Arroz con coco\nEnsalada verde\nPuré de papa\nTajadas maduras\nYuca cocida"} multiline rows={7} />
+                  <CampoTexto etiqueta="Platos del día" value={platosTexto} onChange={setPlatosTexto} placeholder={"Pechuga | Pechuga asada sin salsa:17500\nPechuga | Pechuga en salsa criolla:18500\nCerdo | Cerdo asado sin salsa:17000\nSopas | Sancocho de costilla:22000\nCarnes | Carne guisada:19000"} multiline rows={9} />
+                  <CampoTexto etiqueta="Acompañantes del día" value={acompanantesTexto} onChange={setAcompanantesTexto} placeholder={"Arroz con coco\nEnsalada verde\nPuré de papa\nTajadas maduras\nYuca cocida"} multiline rows={7} />
 
                   <div className="box soft small">
                     <strong>Platos:</strong> escribe un plato por línea con este formato:<br />
                     Categoría | Nombre del plato:Precio<br /><br />
                     <strong>Ejemplo:</strong> Pechuga | Pechuga en salsa criolla:18500<br /><br />
-                    <strong>Acompañantes:</strong> escribe un acompañante por línea. Pueden tener varias palabras. El cliente verá todos, pero solo podrá escoger 3.<br /><br />
+                    <strong>Acompañantes:</strong> escribe un acompañante por línea. Puedes bajar de renglón libremente; la app solo validará cuando presiones guardar.<br /><br />
                     Sopa y bebida siempre van incluidas.
                   </div>
 
