@@ -47,22 +47,6 @@ function limpiarAcompanantesCliente(lista) {
   return limpiarAcompanantesMenu(lista).slice(0, MAX_ACOMPANANTES_CLIENTE);
 }
 
-function limpiarTelefonoWhatsApp(telefono) {
-  const soloNumeros = String(telefono || "").replace(/[^\d]/g, "");
-
-  if (!soloNumeros) return "";
-
-  if (soloNumeros.startsWith("57") && soloNumeros.length >= 12) {
-    return soloNumeros;
-  }
-
-  if (soloNumeros.length === 10 && soloNumeros.startsWith("3")) {
-    return `57${soloNumeros}`;
-  }
-
-  return soloNumeros;
-}
-
 function textoAPlatosDetalle(texto, { estricto = false } = {}) {
   const lineas = String(texto || "")
     .split("\n")
@@ -207,6 +191,28 @@ function obtenerEstadoPedido(pedido) {
   return "Pendiente";
 }
 
+function limpiarTelefonoWhatsApp(telefono) {
+  const digitos = String(telefono || "").replace(/\D/g, "");
+
+  if (!digitos) return "";
+
+  if (digitos.startsWith("57")) return digitos;
+
+  if (digitos.length === 10) return `57${digitos}`;
+
+  return digitos;
+}
+
+function crearMensajePedidoListo(pedido) {
+  const cliente = obtenerCliente(pedido);
+
+  return [
+    `Hola ${cliente}, su pedido está listo.`,
+    "",
+    "Gracias por comprar en Rafiki 🍽️"
+  ].join("\n");
+}
+
 function crearItemNuevo(menu) {
   const menuNormalizado = normalizarMenu(menu);
   const primerPlato = menuNormalizado.platos_detalle[0] || {
@@ -282,23 +288,6 @@ function crearMensajeWhatsAppPedido(pedido) {
     pedido.pedido_texto || "",
     "",
     `Total: ${dinero(pedido.total)}`
-  ].join("\n");
-}
-
-function crearMensajeWhatsAppCliente(pedido) {
-  const cliente = pedido.cliente || pedido.cliente_nombre || "Cliente";
-
-  return [
-    `Hola ${cliente}, te escribimos de Rafiki 🍽️`,
-    "",
-    "Queremos confirmarte que recibimos tu pedido:",
-    "",
-    pedido.pedido_texto || "",
-    "",
-    `Total: ${dinero(pedido.total)}`,
-    `Tipo de pago: ${pedido.tipo_pago || "No especificado"}`,
-    "",
-    "Muchas gracias por tu pedido. Te avisaremos cualquier novedad."
   ].join("\n");
 }
 
@@ -386,9 +375,8 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
-  const linkCliente = telefonoCliente
-    ? crearLinkWhatsApp(telefonoCliente, crearMensajeWhatsAppCliente(pedido))
-    : "";
+  const mensajeCliente = crearMensajePedidoListo(pedido);
+  const linkCliente = telefonoCliente ? crearLinkWhatsApp(telefonoCliente, mensajeCliente) : "#";
 
   return (
     <article className={`pedido-cocina ${estadoNormalizado === "Finalizado" ? "pedido-finalizado" : ""}`}>
@@ -487,7 +475,7 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
             rel="noreferrer"
             className="button green link-button"
           >
-            Enviar al cliente
+            Avisar pedido listo
           </a>
         ) : (
           <button type="button" className="button light" disabled>
