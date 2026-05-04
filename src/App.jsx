@@ -29,48 +29,6 @@ function dinero(valor) {
   }).format(Number(valor) || 0);
 }
 
-function normalizarTexto(texto) {
-  return String(texto || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function esCategoriaSopa(categoria) {
-  return normalizarTexto(categoria).includes("sopa");
-}
-
-function esSopaParaLlevarGratis(item) {
-  if (!esCategoriaSopa(item?.categoria)) return false;
-
-  const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre);
-
-  const sopasGratis = [
-    "sopas medianas",
-    "sopas medianas con arroz",
-    "sancocho de pollo"
-  ];
-
-  return sopasGratis.includes(nombre);
-}
-
-function valorParaLlevarItem(item) {
-  if (!item?.paraLlevar) return 0;
-  if (esSopaParaLlevarGratis(item)) return 0;
-  return VALOR_PARA_LLEVAR;
-}
-
-function textoParaLlevarItem(item) {
-  if (!item?.paraLlevar) return "Sin empaque para llevar";
-
-  const valor = valorParaLlevarItem(item);
-
-  if (valor === 0) return "Para llevar sin costo adicional";
-
-  return `Para llevar +${dinero(valor)}`;
-}
-
 function fechaISOColombia(fecha = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Bogota",
@@ -96,13 +54,55 @@ function obtenerRangoPedidos(filtro, fechaManual = fechaISOColombia()) {
 
   const inicio = new Date(base);
   const fin = new Date(base);
-
   fin.setDate(fin.getDate() + 1);
 
   return {
     inicio: inicio.toISOString(),
     fin: fin.toISOString()
   };
+}
+
+function normalizarTexto(texto) {
+  return String(texto || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function esCategoriaSopa(categoria) {
+  return normalizarTexto(categoria).includes("sopa");
+}
+
+function esSopaParaLlevarGratis(item) {
+  const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre);
+  const categoria = normalizarTexto(item?.categoria);
+
+  if (!categoria.includes("sopa")) return false;
+
+  const nombresGratis = [
+    "sopas medianas sin arroz",
+    "sopas medianas con arroz",
+    "sancocho de pollo con arroz"
+  ];
+
+  return nombresGratis.includes(nombre);
+}
+
+function valorParaLlevarItem(item) {
+  if (!item?.paraLlevar) return 0;
+  if (esSopaParaLlevarGratis(item)) return 0;
+  return VALOR_PARA_LLEVAR;
+}
+
+function textoParaLlevarItem(item) {
+  if (!item?.paraLlevar) return "Sin empaque para llevar";
+
+  const valor = valorParaLlevarItem(item);
+
+  if (valor === 0) return "Para llevar sin costo adicional";
+
+  return `Para llevar +${dinero(valor)}`;
 }
 
 function listaPorLineas(texto) {
@@ -328,9 +328,8 @@ function crearTextoItem(item) {
   const nombrePlato = item.plato || item.proteina || "Plato";
   const precio = Number(item.precioPlato || item.precioProteina || 0);
   const partes = [`${item.cantidad} ${nombrePlato} (${dinero(precio)})`];
-  const acompanantes = limpiarAcompanantesCliente(item.acompanantes || []);
   const esSopa = esCategoriaSopa(item.categoria);
-  const valorLlevar = valorParaLlevarItem(item);
+  const acompanantes = esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || []);
 
   if (acompanantes.length > 0) {
     partes.push(acompanantes.join(", "));
@@ -341,11 +340,8 @@ function crearTextoItem(item) {
   }
 
   if (item.paraLlevar) {
-    if (valorLlevar === 0) {
-      partes.push("Para llevar sin costo adicional");
-    } else {
-      partes.push(`Para llevar +${dinero(valorLlevar)}`);
-    }
+    const valor = valorParaLlevarItem(item);
+    partes.push(valor === 0 ? "Para llevar sin costo adicional" : `Para llevar +${dinero(valor)}`);
   }
 
   return partes.join(" + ");
@@ -493,6 +489,7 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
           items.map((item, index) => {
             const nombre = item.plato || item.proteina || "Plato";
             const precio = item.precioPlato || item.precioProteina || 0;
+            const esSopa = esCategoriaSopa(item.categoria);
 
             return (
               <div key={item.id || index} className="item-cocina">
@@ -513,14 +510,22 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
                     <strong>Precio:</strong> {dinero(precio)}
                   </p>
 
-                  <p>
-                    <strong>Acompañantes:</strong>{" "}
-                    {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
-                      ? item.acompanantes.join(", ")
-                      : "Sin acompañantes"}
-                  </p>
+                  {!esSopa && (
+                    <p>
+                      <strong>Acompañantes:</strong>{" "}
+                      {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+                        ? item.acompanantes.join(", ")
+                        : "Sin acompañantes"}
+                    </p>
+                  )}
 
-                  {!esCategoriaSopa(item.categoria) && (
+                  {esSopa && (
+                    <p>
+                      <strong>Acompañantes:</strong> No aplica para sopas
+                    </p>
+                  )}
+
+                  {!esSopa && (
                     <p>
                       <strong>Incluye:</strong> Sopa + bebida
                     </p>
@@ -729,12 +734,15 @@ export default function App() {
   }
 
   function cambiarPlatoItem(id, platoSeleccionado) {
+    const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+
     actualizarItem(id, {
       categoria: platoSeleccionado.categoria || "",
       plato: platoSeleccionado.nombre || "",
       proteina: platoSeleccionado.nombre || "",
       precioPlato: Number(platoSeleccionado.precio) || 0,
-      precioProteina: Number(platoSeleccionado.precio) || 0
+      precioProteina: Number(platoSeleccionado.precio) || 0,
+      acompanantes: esSopa ? [] : undefined
     });
   }
 
@@ -742,6 +750,13 @@ export default function App() {
     setItemsPedido((actual) =>
       actual.map((item) => {
         if (item.id !== id) return item;
+
+        if (esCategoriaSopa(item.categoria)) {
+          return {
+            ...item,
+            acompanantes: []
+          };
+        }
 
         const seleccionado = item.acompanantes.includes(acompanante);
 
@@ -754,7 +769,7 @@ export default function App() {
 
         if (item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE) {
           mostrarMensaje(
-            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por almuerzo.`,
+            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`,
             "warning"
           );
           return item;
@@ -781,10 +796,14 @@ export default function App() {
   async function registrarPedido() {
     const itemsValidos = itemsPedido
       .filter((item) => item.plato || item.proteina)
-      .map((item) => ({
-        ...item,
-        acompanantes: limpiarAcompanantesCliente(item.acompanantes)
-      }));
+      .map((item) => {
+        const esSopa = esCategoriaSopa(item.categoria);
+
+        return {
+          ...item,
+          acompanantes: esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes)
+        };
+      });
 
     if (itemsValidos.length === 0) {
       mostrarMensaje("Debes escoger al menos un almuerzo.", "warning");
@@ -861,7 +880,6 @@ export default function App() {
     };
 
     const idActual = menu.id || 0;
-
     const { error: errorDesactivar } = await supabase
       .from("menu_diario")
       .update({ activo: false })
@@ -1129,138 +1147,153 @@ export default function App() {
                     <>
                       <div style={{ marginBottom: 18 }}>
                         <h3>🛍️ Almuerzos del pedido</h3>
-                        <p className="muted">Arma tu almuerzo. Puedes agregar otro al finalizar esta selección.</p>
+                        <p className="muted">Arma tu pedido. Puedes agregar otro al finalizar esta selección.</p>
                       </div>
 
-                      {itemsPedido.map((item, index) => (
-                        <div key={item.id} className="meal-card">
-                          <div className="row">
-                            <h3>Almuerzo #{index + 1}</h3>
+                      {itemsPedido.map((item, index) => {
+                        const itemEsSopa = esCategoriaSopa(item.categoria);
 
-                            {itemsPedido.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => eliminarAlmuerzo(item.id)}
-                                className="button danger"
-                              >
-                                Eliminar
-                              </button>
-                            )}
-                          </div>
-
-                          <h4>Elige tu plato</h4>
-
-                          {Object.entries(platosAgrupados).map(([categoria, platos]) => (
-                            <div key={categoria} className="category-block">
-                              <h3 className="category-title">{categoria}</h3>
-
-                              <div className="option-grid">
-                                {platos.map((plato) => (
-                                  <button
-                                    key={`${plato.categoria}-${plato.nombre}`}
-                                    type="button"
-                                    onClick={() => cambiarPlatoItem(item.id, plato)}
-                                    className={`option ${item.plato === plato.nombre ? "selected" : ""}`}
-                                  >
-                                    <div>{plato.nombre}</div>
-                                    <small>{dinero(plato.precio)}</small>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-
-                          <div style={{ marginTop: 18 }}>
+                        return (
+                          <div key={item.id} className="meal-card">
                             <div className="row">
-                              <h4>Acompañantes</h4>
-                              <strong>
-                                {item.acompanantes.length}/{MAX_ACOMPANANTES_CLIENTE}
-                              </strong>
-                            </div>
+                              <h3>Pedido #{index + 1}</h3>
 
-                            <p className="muted">
-                              Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE} acompañantes.
-                            </p>
-
-                            <div className="chips">
-                              {menu.acompanantes.length === 0 ? (
-                                <span className="muted">No hay acompañantes configurados.</span>
-                              ) : (
-                                menu.acompanantes.map((acompanante) => {
-                                  const seleccionado = item.acompanantes.includes(acompanante);
-                                  const bloqueado =
-                                    !seleccionado &&
-                                    item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE;
-
-                                  return (
-                                    <button
-                                      key={acompanante}
-                                      type="button"
-                                      onClick={() => cambiarAcompananteItem(item.id, acompanante)}
-                                      disabled={bloqueado}
-                                      className={`chip ${seleccionado ? "selected" : ""} ${
-                                        bloqueado ? "blocked" : ""
-                                      }`}
-                                    >
-                                      {seleccionado ? "✓ " : "+ "}
-                                      {acompanante}
-                                    </button>
-                                  );
-                                })
+                              {itemsPedido.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => eliminarAlmuerzo(item.id)}
+                                  className="button danger"
+                                >
+                                  Eliminar
+                                </button>
                               )}
                             </div>
-                          </div>
 
-                          {!esCategoriaSopa(item.categoria) && (
-                            <div className="box" style={{ marginTop: 18 }}>
-                              <strong>🥣 Sopa y bebida</strong>
-                              <p className="muted" style={{ marginBottom: 0 }}>
-                                Incluidas automáticamente en este almuerzo.
-                              </p>
-                            </div>
-                          )}
+                            <h4>Elige tu plato</h4>
 
-                          <div className="grid-2" style={{ marginTop: 18 }}>
-                            <div className="box">
-                              <strong>Cantidad</strong>
-                              <div style={{ marginTop: 10 }}>
-                                <SelectorCantidad
-                                  cantidad={item.cantidad}
-                                  onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
-                                />
+                            {Object.entries(platosAgrupados).map(([categoria, platos]) => (
+                              <div key={categoria} className="category-block">
+                                <h3 className="category-title">{categoria}</h3>
+
+                                <div className="option-grid">
+                                  {platos.map((plato) => (
+                                    <button
+                                      key={`${plato.categoria}-${plato.nombre}`}
+                                      type="button"
+                                      onClick={() => cambiarPlatoItem(item.id, plato)}
+                                      className={`option ${item.plato === plato.nombre ? "selected" : ""}`}
+                                    >
+                                      <div>{plato.nombre}</div>
+                                      <small>{dinero(plato.precio)}</small>
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            ))}
 
-                            <label className="box row">
-                              <div>
-                                <strong>🥡 Para llevar</strong>
+                            {!itemEsSopa && (
+                              <div style={{ marginTop: 18 }}>
+                                <div className="row">
+                                  <h4>Acompañantes</h4>
+                                  <strong>
+                                    {item.acompanantes.length}/{MAX_ACOMPANANTES_CLIENTE}
+                                  </strong>
+                                </div>
+
+                                <p className="muted">
+                                  Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE}. La sopa y la bebida ya están incluidas.
+                                </p>
+
+                                <div className="chips">
+                                  {menu.acompanantes.length === 0 ? (
+                                    <span className="muted">No hay acompañantes configurados.</span>
+                                  ) : (
+                                    menu.acompanantes.map((acompanante) => {
+                                      const seleccionado = item.acompanantes.includes(acompanante);
+                                      const bloqueado =
+                                        !seleccionado &&
+                                        item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE;
+
+                                      return (
+                                        <button
+                                          key={acompanante}
+                                          type="button"
+                                          onClick={() => cambiarAcompananteItem(item.id, acompanante)}
+                                          disabled={bloqueado}
+                                          className={`chip ${seleccionado ? "selected" : ""} ${
+                                            bloqueado ? "blocked" : ""
+                                          }`}
+                                        >
+                                          {seleccionado ? "✓ " : "+ "}
+                                          {acompanante}
+                                        </button>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {itemEsSopa && (
+                              <div className="box soft" style={{ marginTop: 18 }}>
+                                <strong>🥣 Producto de sopas</strong>
                                 <p className="muted" style={{ marginBottom: 0 }}>
-                                  {item.paraLlevar
-                                    ? textoParaLlevarItem(item)
-                                    : "Sin empaque para llevar"}
+                                  Este producto no incluye acompañantes, sopa adicional ni bebida.
                                 </p>
                               </div>
+                            )}
 
-                              <input
-                                type="checkbox"
-                                checked={item.paraLlevar}
-                                onChange={(e) =>
-                                  actualizarItem(item.id, { paraLlevar: e.target.checked })
-                                }
-                                style={{ width: 24, height: 24 }}
-                              />
-                            </label>
-                          </div>
+                            {!itemEsSopa && (
+                              <div className="box" style={{ marginTop: 18 }}>
+                                <strong>🥣 Sopa y bebida</strong>
+                                <p className="muted" style={{ marginBottom: 0 }}>
+                                  Incluidas automáticamente en cada almuerzo.
+                                </p>
+                              </div>
+                            )}
 
-                          <div className="total-row">
-                            <span>Subtotal</span>
-                            <strong>{dinero(calcularTotalItem(item))}</strong>
+                            <div className="grid-2" style={{ marginTop: 18 }}>
+                              <div className="box">
+                                <strong>Cantidad</strong>
+                                <div style={{ marginTop: 10 }}>
+                                  <SelectorCantidad
+                                    cantidad={item.cantidad}
+                                    onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
+                                  />
+                                </div>
+                              </div>
+
+                              <label className="box row">
+                                <div>
+                                  <strong>🥡 Para llevar</strong>
+                                  <p className="muted" style={{ marginBottom: 0 }}>
+                                    {valorParaLlevarItem(item) === 0 && item.paraLlevar
+                                      ? "Sin costo adicional"
+                                      : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
+                                  </p>
+                                </div>
+
+                                <input
+                                  type="checkbox"
+                                  checked={item.paraLlevar}
+                                  onChange={(e) =>
+                                    actualizarItem(item.id, { paraLlevar: e.target.checked })
+                                  }
+                                  style={{ width: 24, height: 24 }}
+                                />
+                              </label>
+                            </div>
+
+                            <div className="total-row">
+                              <span>Subtotal</span>
+                              <strong>{dinero(calcularTotalItem(item))}</strong>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
 
                       <button type="button" onClick={agregarAlmuerzo} className="button add-meal">
-                        + Agregar otro almuerzo
+                        + Agregar otro producto
                       </button>
                     </>
                   )}
@@ -1276,28 +1309,34 @@ export default function App() {
                 <div className="box soft" style={{ marginBottom: 18 }}>
                   <strong>🥡 Para llevar activado</strong>
                   <p className="muted" style={{ marginBottom: 0 }}>
-                    En almuerzos suma {dinero(VALOR_PARA_LLEVAR)}. En sopas medianas, sopas medianas con arroz y sancocho de pollo no suma adicional.
+                    Para almuerzos suma {dinero(VALOR_PARA_LLEVAR)}. Para las sopas indicadas no tiene costo adicional.
                   </p>
                 </div>
 
                 <div className="box soft" style={{ marginBottom: 18 }}>
                   <h3>Resumen</h3>
 
-                  {itemsPedido.map((item, index) => (
-                    <div key={item.id} className="summary-item">
-                      <p>
-                        #{index + 1} {item.cantidad} {item.plato || item.proteina || "Sin plato"} -{" "}
-                        {dinero(item.precioPlato || item.precioProteina)}
-                      </p>
+                  {itemsPedido.map((item, index) => {
+                    const itemEsSopa = esCategoriaSopa(item.categoria);
 
-                      {item.categoria && <p>Categoría: {item.categoria}</p>}
-                      <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
+                    return (
+                      <div key={item.id} className="summary-item">
+                        <p>
+                          #{index + 1} {item.cantidad} {item.plato || item.proteina || "Sin plato"} -{" "}
+                          {dinero(item.precioPlato || item.precioProteina)}
+                        </p>
 
-                      {!esCategoriaSopa(item.categoria) && <p>Sopa + bebida incluida</p>}
+                        {item.categoria && <p>Categoría: {item.categoria}</p>}
 
-                      <p>{textoParaLlevarItem(item)}</p>
-                    </div>
-                  ))}
+                        {!itemEsSopa && <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>}
+                        {itemEsSopa && <p>Acompañantes: No aplica</p>}
+
+                        {!itemEsSopa && <p>Sopa + bebida incluida</p>}
+
+                        <p>{textoParaLlevarItem(item)}</p>
+                      </div>
+                    );
+                  })}
 
                   <div className="total-row">
                     <span>Total</span>
@@ -1599,7 +1638,7 @@ export default function App() {
                     value={platosTexto}
                     onChange={setPlatosTexto}
                     placeholder={
-                      "Pechuga | Pechuga asada sin salsa:17500\nSopas | Sopas medianas:7000\nSopas | Sopas medianas con arroz:9000\nSopas | Sancocho de pollo:15000\nCarnes | Carne guisada:19000"
+                      "Pechuga | Pechuga asada sin salsa:17500\nPechuga | Pechuga en salsa criolla:18500\nCerdo | Cerdo asado sin salsa:17000\nSopas | Sopas medianas sin arroz:7000\nSopas | Sopas medianas con arroz:9000\nSopas | Sancocho de pollo con arroz:15000\nCarnes | Carne guisada:19000"
                     }
                     multiline
                     rows={9}
@@ -1624,12 +1663,11 @@ export default function App() {
                     <br />
                     <strong>Ejemplo:</strong> Pechuga | Pechuga en salsa criolla:18500
                     <br />
-                    <strong>Ejemplo sopa:</strong> Sopas | Sopas medianas:7000
+                    <br />
+                    <strong>Sopas:</strong> los platos con categoría Sopas no permiten acompañantes ni incluyen sopa + bebida.
                     <br />
                     <br />
-                    Cuando la categoría sea Sopas, no se mostrará sopa + bebida incluida.
-                    <br />
-                    Las sopas medianas, sopas medianas con arroz y sancocho de pollo no cobran adicional de para llevar.
+                    <strong>Para llevar:</strong> las sopas configuradas como “Sopas medianas sin arroz”, “Sopas medianas con arroz” y “Sancocho de pollo con arroz” tienen empaque sin costo adicional.
                   </div>
 
                   <button
