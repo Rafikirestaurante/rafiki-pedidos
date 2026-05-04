@@ -29,6 +29,56 @@ function dinero(valor) {
   }).format(Number(valor) || 0);
 }
 
+function fechaISOColombia(fecha = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(fecha);
+}
+
+function formatearFechaHora(fecha) {
+  if (!fecha) return "Fecha no disponible";
+
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(new Date(fecha));
+}
+
+function obtenerRangoPedidos(filtro) {
+  const ahora = new Date();
+  const hoyTexto = fechaISOColombia(ahora);
+  const hoy = new Date(`${hoyTexto}T00:00:00-05:00`);
+
+  let inicio = new Date(hoy);
+  let fin = new Date(hoy);
+  fin.setDate(fin.getDate() + 1);
+
+  if (filtro === "semana") {
+    const dia = hoy.getDay();
+    const diferenciaLunes = dia === 0 ? -6 : 1 - dia;
+
+    inicio = new Date(hoy);
+    inicio.setDate(hoy.getDate() + diferenciaLunes);
+
+    fin = new Date(inicio);
+    fin.setDate(inicio.getDate() + 7);
+  }
+
+  if (filtro === "mes") {
+    inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+  }
+
+  return {
+    inicio: inicio.toISOString(),
+    fin: fin.toISOString()
+  };
+}
+
 function listaPorLineas(texto) {
   return String(texto || "")
     .split("\n")
@@ -177,7 +227,11 @@ function normalizarMenu(menu) {
 function agruparPlatosPorCategoria(platos) {
   return (platos || []).reduce((grupos, plato) => {
     const categoria = plato.categoria || "Platos";
-    if (!grupos[categoria]) grupos[categoria] = [];
+
+    if (!grupos[categoria]) {
+      grupos[categoria] = [];
+    }
+
     grupos[categoria].push(plato);
     return grupos;
   }, {});
@@ -195,9 +249,7 @@ function limpiarTelefonoWhatsApp(telefono) {
   const digitos = String(telefono || "").replace(/\D/g, "");
 
   if (!digitos) return "";
-
   if (digitos.startsWith("57")) return digitos;
-
   if (digitos.length === 10) return `57${digitos}`;
 
   return digitos;
@@ -206,7 +258,11 @@ function limpiarTelefonoWhatsApp(telefono) {
 function crearMensajePedidoListo(pedido) {
   const cliente = obtenerCliente(pedido);
 
-  return [`Hola ${cliente}, su pedido está listo.`, "", "Gracias por comprar en Rafiki 🍽️"].join("\n");
+  return [
+    `Hola ${cliente}, su pedido está listo.`,
+    "",
+    "Gracias por comprar en Rafiki 🍽️"
+  ].join("\n");
 }
 
 function crearItemNuevo(menu) {
@@ -347,8 +403,8 @@ function CampoTexto({
 }
 
 function EstadoBadge({ estado }) {
-  const estadoNormalizado = estado === "Finalizado" || estado === "Entregado" ? "Finalizado" : "Pendiente";
-  const clase = `badge badge-${String(estadoNormalizado).replaceAll(" ", "-").toLowerCase()}`;
+  const estadoNormalizado = obtenerEstadoPedido({ estado });
+  const clase = `badge badge-${estadoNormalizado.toLowerCase()}`;
 
   return <span className={clase}>{estadoNormalizado}</span>;
 }
@@ -384,6 +440,7 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
           </div>
 
           <h3>{obtenerCliente(pedido)}</h3>
+          <p className="muted">🕒 {formatearFechaHora(pedido.created_at)}</p>
           <p className="muted">📍 {pedido.ubicacion || "Sin ubicación"}</p>
           <p className="muted">📞 {pedido.telefono || "Sin teléfono"}</p>
           <p className="muted">💳 {pedido.tipo_pago || "Pago no especificado"}</p>
@@ -495,6 +552,7 @@ export default function App() {
   const [tipoPago, setTipoPago] = useState("Efectivo");
   const [observaciones, setObservaciones] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [filtroPedidos, setFiltroPedidos] = useState("hoy");
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -525,7 +583,7 @@ export default function App() {
   const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
 
   const pedidosOrdenados = useMemo(() => {
-    return [...pedidos].sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
+    return [...pedidos].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
   }, [pedidos]);
 
   const pedidosFiltrados = useMemo(() => {
@@ -558,6 +616,12 @@ export default function App() {
     () => agruparPlatosPorCategoria(menu.platos_detalle),
     [menu.platos_detalle]
   );
+
+  const tituloPedidos = useMemo(() => {
+    if (filtroPedidos === "semana") return "Historial de esta semana";
+    if (filtroPedidos === "mes") return "Historial de este mes";
+    return "Pedidos de hoy";
+  }, [filtroPedidos]);
 
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
 
@@ -596,10 +660,14 @@ export default function App() {
         setAcompanantesTexto("");
       }
 
+      const rango = obtenerRangoPedidos(filtroPedidos);
+
       const { data: pedidosData, error: pedidosError } = await supabase
         .from("pedidos")
         .select("*")
-        .order("id", { ascending: true });
+        .gte("created_at", rango.inicio)
+        .lt("created_at", rango.fin)
+        .order("created_at", { ascending: true });
 
       if (cancelado) return;
 
@@ -619,7 +687,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [filtroPedidos]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -715,7 +783,10 @@ export default function App() {
       return;
     }
 
-    setPedidos((actual) => [...actual, data]);
+    if (filtroPedidos === "hoy") {
+      setPedidos((actual) => [...actual, data]);
+    }
+
     setPedidoFinalizado(data);
     mostrarMensaje("Pedido guardado. Ahora puedes enviar el consolidado por WhatsApp.", "success");
     setVista("confirmacion");
@@ -911,6 +982,9 @@ export default function App() {
         .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
         .stat { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 16px; }
         .stat strong { display: block; font-size: 28px; }
+        .filtros-historial { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+        .filtros-historial button { border: 1px solid #fed7aa; background: #fff; color: #c2410c; padding: 12px 16px; border-radius: 999px; font-weight: 900; }
+        .filtros-historial button.active { background: #f97316; color: #fff; }
         .pedido-seccion { margin-bottom: 26px; }
         .section-heading { display: flex; justify-content: space-between; align-items: center; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px 18px; margin-bottom: 14px; }
         .section-heading h3 { margin: 0; color: #c2410c; }
@@ -964,7 +1038,6 @@ export default function App() {
                 >
                   Vista cliente
                 </button>
-
                 <button type="button" onClick={() => setVista("inicio")}>
                   Inicio
                 </button>
@@ -973,7 +1046,6 @@ export default function App() {
           )}
 
           {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
-
           {cargando && <div className="card card-pad">Cargando datos de Rafiki...</div>}
 
           {!cargando && vista === "inicio" && (
@@ -981,9 +1053,7 @@ export default function App() {
               <section className="welcome-card">
                 <div className="welcome-icon">🍽️</div>
                 <h2>Bienvenido a Rafiki</h2>
-                <p>
-                  Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.
-                </p>
+                <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
                 <button type="button" onClick={() => setVista("cliente")} className="welcome-button">
                   Haz tu pedido aquí
                 </button>
@@ -1171,10 +1241,8 @@ export default function App() {
                       </p>
 
                       {item.categoria && <p>Categoría: {item.categoria}</p>}
-
                       <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>
                       <p>Sopa + bebida incluida</p>
-
                       <p>
                         {item.paraLlevar
                           ? `Para llevar +${dinero(VALOR_PARA_LLEVAR)}`
@@ -1264,8 +1332,7 @@ export default function App() {
                       <strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}
                     </p>
                     <p>
-                      <strong>Tipo de pago:</strong>{" "}
-                      {pedidoFinalizado.tipo_pago || "No especificado"}
+                      <strong>Tipo de pago:</strong> {pedidoFinalizado.tipo_pago || "No especificado"}
                     </p>
 
                     <div className="pedido-text">{pedidoFinalizado.pedido_texto}</div>
@@ -1329,11 +1396,37 @@ export default function App() {
                 <section className="card card-pad">
                   <div className="row">
                     <div>
-                      <h2>📋 Pedidos de hoy</h2>
+                      <h2>📋 {tituloPedidos}</h2>
                       <p className="muted">
-                        Vista organizada para preparar los pedidos en orden de llegada.
+                        Vista organizada para preparar pedidos y revisar el historial.
                       </p>
                     </div>
+                  </div>
+
+                  <div className="filtros-historial">
+                    <button
+                      type="button"
+                      onClick={() => setFiltroPedidos("hoy")}
+                      className={filtroPedidos === "hoy" ? "active" : ""}
+                    >
+                      Hoy
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFiltroPedidos("semana")}
+                      className={filtroPedidos === "semana" ? "active" : ""}
+                    >
+                      Esta semana
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFiltroPedidos("mes")}
+                      className={filtroPedidos === "mes" ? "active" : ""}
+                    >
+                      Este mes
+                    </button>
                   </div>
 
                   <CampoTexto
@@ -1402,7 +1495,7 @@ export default function App() {
 
                   <div className="card card-pad" style={{ marginTop: 18 }}>
                     <h3>Consolidado cocina</h3>
-                    <p className="muted">Resumen total de platos pedidos.</p>
+                    <p className="muted">Resumen total de platos del rango seleccionado.</p>
 
                     {Object.keys(consolidado).length === 0 ? (
                       <p className="muted">Todavía no hay productos para consolidar.</p>
@@ -1449,9 +1542,7 @@ export default function App() {
                   <CampoTexto
                     etiqueta="Descripción"
                     value={menu.descripcion || ""}
-                    onChange={(valor) =>
-                      setMenu((actual) => ({ ...actual, descripcion: valor }))
-                    }
+                    onChange={(valor) => setMenu((actual) => ({ ...actual, descripcion: valor }))}
                     multiline
                     rows={3}
                   />
