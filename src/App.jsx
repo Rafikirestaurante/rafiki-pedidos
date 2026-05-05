@@ -734,16 +734,23 @@ export default function App() {
   }
 
   function cambiarPlatoItem(id, platoSeleccionado) {
-    const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+    setItemsPedido((actual) =>
+      actual.map((item) => {
+        if (item.id !== id) return item;
 
-    actualizarItem(id, {
-      categoria: platoSeleccionado.categoria || "",
-      plato: platoSeleccionado.nombre || "",
-      proteina: platoSeleccionado.nombre || "",
-      precioPlato: Number(platoSeleccionado.precio) || 0,
-      precioProteina: Number(platoSeleccionado.precio) || 0,
-      acompanantes: esSopa ? [] : undefined
-    });
+        const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+
+        return {
+          ...item,
+          categoria: platoSeleccionado.categoria || "",
+          plato: platoSeleccionado.nombre || "",
+          proteina: platoSeleccionado.nombre || "",
+          precioPlato: Number(platoSeleccionado.precio) || 0,
+          precioProteina: Number(platoSeleccionado.precio) || 0,
+          acompanantes: esSopa ? [] : item.acompanantes || []
+        };
+      })
+    );
   }
 
   function cambiarAcompananteItem(id, acompanante) {
@@ -758,16 +765,17 @@ export default function App() {
           };
         }
 
-        const seleccionado = item.acompanantes.includes(acompanante);
+        const acompanantesActuales = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+        const seleccionado = acompanantesActuales.includes(acompanante);
 
         if (seleccionado) {
           return {
             ...item,
-            acompanantes: item.acompanantes.filter((x) => x !== acompanante)
+            acompanantes: acompanantesActuales.filter((x) => x !== acompanante)
           };
         }
 
-        if (item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE) {
+        if (acompanantesActuales.length >= MAX_ACOMPANANTES_CLIENTE) {
           mostrarMensaje(
             `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`,
             "warning"
@@ -777,7 +785,7 @@ export default function App() {
 
         return {
           ...item,
-          acompanantes: [...item.acompanantes, acompanante]
+          acompanantes: [...acompanantesActuales, acompanante]
         };
       })
     );
@@ -801,12 +809,12 @@ export default function App() {
 
         return {
           ...item,
-          acompanantes: esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes)
+          acompanantes: esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || [])
         };
       });
 
     if (itemsValidos.length === 0) {
-      mostrarMensaje("Debes escoger al menos un almuerzo.", "warning");
+      mostrarMensaje("Debes escoger al menos un producto.", "warning");
       return;
     }
 
@@ -1146,17 +1154,18 @@ export default function App() {
                   ) : (
                     <>
                       <div style={{ marginBottom: 18 }}>
-                        <h3>🛍️ Almuerzos del pedido</h3>
-                        <p className="muted">Arma tu pedido. Puedes agregar otro al finalizar esta selección.</p>
+                        <h3>🛍️ Productos del pedido</h3>
+                        <p className="muted">Arma tu pedido. Puedes agregar otro producto al finalizar esta selección.</p>
                       </div>
 
                       {itemsPedido.map((item, index) => {
                         const itemEsSopa = esCategoriaSopa(item.categoria);
+                        const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
                         return (
                           <div key={item.id} className="meal-card">
                             <div className="row">
-                              <h3>Pedido #{index + 1}</h3>
+                              <h3>Producto #{index + 1}</h3>
 
                               {itemsPedido.length > 1 && (
                                 <button
@@ -1196,7 +1205,7 @@ export default function App() {
                                 <div className="row">
                                   <h4>Acompañantes</h4>
                                   <strong>
-                                    {item.acompanantes.length}/{MAX_ACOMPANANTES_CLIENTE}
+                                    {acompanantesItem.length}/{MAX_ACOMPANANTES_CLIENTE}
                                   </strong>
                                 </div>
 
@@ -1209,10 +1218,10 @@ export default function App() {
                                     <span className="muted">No hay acompañantes configurados.</span>
                                   ) : (
                                     menu.acompanantes.map((acompanante) => {
-                                      const seleccionado = item.acompanantes.includes(acompanante);
+                                      const seleccionado = acompanantesItem.includes(acompanante);
                                       const bloqueado =
                                         !seleccionado &&
-                                        item.acompanantes.length >= MAX_ACOMPANANTES_CLIENTE;
+                                        acompanantesItem.length >= MAX_ACOMPANANTES_CLIENTE;
 
                                       return (
                                         <button
@@ -1318,6 +1327,7 @@ export default function App() {
 
                   {itemsPedido.map((item, index) => {
                     const itemEsSopa = esCategoriaSopa(item.categoria);
+                    const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
                     return (
                       <div key={item.id} className="summary-item">
@@ -1328,7 +1338,7 @@ export default function App() {
 
                         {item.categoria && <p>Categoría: {item.categoria}</p>}
 
-                        {!itemEsSopa && <p>{item.acompanantes.join(", ") || "Sin acompañantes"}</p>}
+                        {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
                         {itemEsSopa && <p>Acompañantes: No aplica</p>}
 
                         {!itemEsSopa && <p>Sopa + bebida incluida</p>}
