@@ -610,7 +610,7 @@ export default function App() {
       if (elemento) {
         elemento.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    }, 120);
+    }, 150);
   }
 
   useEffect(() => {
@@ -812,10 +812,16 @@ export default function App() {
   }
 
   function agregarAlmuerzo() {
-    setItemsPedido((actual) => [...actual, crearItemNuevo()]);
+    const nuevoItem = crearItemNuevo();
+
+    setItemsPedido((actual) => [...actual, nuevoItem]);
+
     setTimeout(() => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    }, 120);
+      const elemento = document.getElementById(`producto-${nuevoItem.id}`);
+      if (elemento) {
+        elemento.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 150);
   }
 
   function eliminarAlmuerzo(id) {
@@ -1037,7 +1043,7 @@ export default function App() {
         .admin-tabs button.active { background: #f97316; color: #fff; }
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .section { padding: 24px; }
-        .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; }
+        .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; scroll-margin-top: 18px; }
         .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
         .button { border: 0; background: #f97316; color: white; font-weight: 900; padding: 14px 18px; border-radius: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25); }
         .button.green { background: #22c55e; }
@@ -1046,8 +1052,10 @@ export default function App() {
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
         .continue-button { width: 100%; margin-top: 16px; background: #22c55e; }
         .link-button { display: block; text-align: center; text-decoration: none; }
-        .step-title { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #f97316; color: white; font-weight: 900; flex: 0 0 auto; }
+        .step-title { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.08); }
+        .step-title h4 { font-size: 23px; line-height: 1.1; margin-bottom: 6px; color: #c2410c; }
+        .step-title p { font-size: 15px; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 999px; background: linear-gradient(135deg, #f97316, #f59e0b); color: white; font-weight: 900; font-size: 20px; flex: 0 0 auto; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25); }
         .selected-dish { background: #ecfdf5; border: 1px solid #86efac; color: #166534; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px; font-weight: 900; }
         .contador-acompanantes { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #fed7aa; color: #c2410c; border-radius: 999px; padding: 10px 14px; font-weight: 900; margin: 10px 0 14px; }
         .contador-acompanantes strong { background: #f97316; color: #fff; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; }
@@ -1193,7 +1201,7 @@ export default function App() {
                         const tienePlato = Boolean(item.plato || item.proteina);
 
                         return (
-                          <div key={item.id} className="meal-card">
+                          <div key={item.id} id={`producto-${item.id}`} className="meal-card">
                             <div className="row">
                               <h3>Producto #{index + 1}</h3>
 
@@ -1371,7 +1379,7 @@ export default function App() {
                       })}
 
                       <button type="button" onClick={agregarAlmuerzo} className="button add-meal">
-                        + Agregar otro producto
+                        + Agregar otro plato o producto
                       </button>
                     </>
                   )}
