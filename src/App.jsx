@@ -797,9 +797,15 @@ export default function App() {
           return item;
         }
 
+        const nuevosAcompanantes = [...acompanantesActuales, acompanante];
+
+        if (nuevosAcompanantes.length === MAX_ACOMPANANTES_CLIENTE) {
+          irAElemento(`paso-cantidad-${id}`);
+        }
+
         return {
           ...item,
-          acompanantes: [...acompanantesActuales, acompanante]
+          acompanantes: nuevosAcompanantes
         };
       })
     );
@@ -1038,10 +1044,13 @@ export default function App() {
         .button.light { background: #fff; color: #44403c; border: 1px solid #e7e5e4; box-shadow: none; }
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
+        .continue-button { width: 100%; margin-top: 16px; background: #22c55e; }
         .link-button { display: block; text-align: center; text-decoration: none; }
         .step-title { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #f97316; color: white; font-weight: 900; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #f97316; color: white; font-weight: 900; flex: 0 0 auto; }
         .selected-dish { background: #ecfdf5; border: 1px solid #86efac; color: #166534; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px; font-weight: 900; }
+        .contador-acompanantes { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #fed7aa; color: #c2410c; border-radius: 999px; padding: 10px 14px; font-weight: 900; margin: 10px 0 14px; }
+        .contador-acompanantes strong { background: #f97316; color: #fff; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; }
         .category-block { margin-bottom: 20px; border: 1px solid #fed7aa; border-radius: 24px; padding: 16px; background: #fffaf0; }
         .category-title { font-size: 22px; margin-bottom: 12px; color: #c2410c; }
         .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1241,11 +1250,16 @@ export default function App() {
                                 <div className="step-title">
                                   <span className="step-number">2</span>
                                   <div>
-                                    <h4>Ahora escoge tus acompañantes</h4>
+                                    <h4>Perfecto, ahora escoge tus acompañantes</h4>
                                     <p className="muted" style={{ marginBottom: 0 }}>
-                                      Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE}.
+                                      Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones para completar tu almuerzo.
                                     </p>
                                   </div>
+                                </div>
+
+                                <div className="contador-acompanantes">
+                                  <strong>{acompanantesItem.length}</strong>
+                                  <span>de {MAX_ACOMPANANTES_CLIENTE} seleccionados</span>
                                 </div>
 
                                 <div className="chips">
@@ -1276,6 +1290,14 @@ export default function App() {
                                   )}
                                 </div>
 
+                                <button
+                                  type="button"
+                                  className="button continue-button"
+                                  onClick={() => irAElemento(`paso-cantidad-${item.id}`)}
+                                >
+                                  Continuar con cantidad y empaque →
+                                </button>
+
                                 <div className="box" style={{ marginTop: 18 }}>
                                   <strong>🥣 Sopa y bebida</strong>
                                   <p className="muted" style={{ marginBottom: 0 }}>
@@ -1286,7 +1308,7 @@ export default function App() {
                             )}
 
                             {tienePlato && itemEsSopa && (
-                              <div id={`paso-cantidad-${item.id}`} className="box soft" style={{ marginTop: 18 }}>
+                              <div className="box soft" style={{ marginTop: 18 }}>
                                 <strong>🥣 Producto de sopas</strong>
                                 <p className="muted" style={{ marginBottom: 0 }}>
                                   Este producto no incluye acompañantes, sopa adicional ni bebida.
