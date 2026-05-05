@@ -816,7 +816,7 @@ export default function App() {
     const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
 
     if (esSopa) {
-      irAElemento(`paso-cantidad-${id}`);
+      irAElemento("resumen-pedido");
     } else {
       irAElemento(`paso-acompanantes-${id}`);
     }
@@ -855,7 +855,7 @@ export default function App() {
         const nuevosAcompanantes = [...acompanantesActuales, acompanante];
 
         if (nuevosAcompanantes.length === MAX_ACOMPANANTES_CLIENTE) {
-          irAElemento(`paso-cantidad-${id}`);
+          irAElemento("resumen-pedido");
         }
 
         return {
@@ -916,7 +916,13 @@ export default function App() {
       return;
     }
 
-    const clienteNombre = cliente.trim() || "Cliente";
+    if (!cliente.trim() || !telefono.trim() || !ubicacion.trim()) {
+      mostrarMensaje("Debes ingresar nombre, teléfono y ubicación para finalizar el pedido.", "warning");
+      irAElemento("datos-entrega");
+      return;
+    }
+
+    const clienteNombre = cliente.trim();
     const pedidoTexto = crearTextoPedido(itemsValidos, observaciones.trim());
     const total = calcularTotalItems(itemsValidos);
 
@@ -924,7 +930,7 @@ export default function App() {
       cliente: clienteNombre,
       cliente_nombre: clienteNombre,
       telefono: telefono.trim(),
-      ubicacion: ubicacion.trim() || "Ubicación pendiente",
+      ubicacion: ubicacion.trim(),
       tipo_pago: tipoPago,
       observaciones: observaciones.trim(),
       items: itemsValidos,
@@ -1420,9 +1426,9 @@ export default function App() {
                         const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
 
                         const pasos = itemEsSopa
-                          ? ["Plato", "Cantidad", "Resumen", "Datos"]
-                          : ["Plato", "Acomp.", "Cantidad", "Datos"];
-                        const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : 2;
+                          ? ["Plato", "Datos"]
+                          : ["Plato", "Acomp.", "Datos"];
+                        const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
 
                         return (
                           <div key={item.id} id={`producto-${item.id}`} className="meal-card">
@@ -1531,7 +1537,7 @@ export default function App() {
                                 <button
                                   type="button"
                                   className="button continue-button"
-                                  onClick={() => irAElemento(`paso-cantidad-${item.id}`)}
+                                  onClick={() => irAElemento("resumen-pedido")}
                                 >
                                   Continuar
                                 </button>
@@ -1554,64 +1560,6 @@ export default function App() {
                               </div>
                             )}
 
-                            {tienePlato && (
-                              <div id={`paso-cantidad-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
-                                <div className="step-title">
-                                  <span className="step-number">{itemEsSopa ? "2" : "3"}</span>
-                                  <div>
-                                    <h4>Confirma cantidad y empaque</h4>
-                                    <p className="muted" style={{ marginBottom: 0 }}>
-                                      Puedes cambiar la cantidad o desmarcar para llevar.
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="grid-2">
-                                  <div className="box">
-                                    <strong>Cantidad</strong>
-                                    <div style={{ marginTop: 10 }}>
-                                      <SelectorCantidad
-                                        cantidad={item.cantidad}
-                                        onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <label className="box row">
-                                    <div>
-                                      <strong>🥡 Para llevar</strong>
-                                      <p className="muted" style={{ marginBottom: 0 }}>
-                                        {valorParaLlevarItem(item) === 0 && item.paraLlevar
-                                          ? "Sin costo adicional"
-                                          : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
-                                      </p>
-                                    </div>
-
-                                    <input
-                                      type="checkbox"
-                                      checked={item.paraLlevar}
-                                      onChange={(e) =>
-                                        actualizarItem(item.id, { paraLlevar: e.target.checked })
-                                      }
-                                      style={{ width: 24, height: 24 }}
-                                    />
-                                  </label>
-                                </div>
-
-                                <div className="total-row">
-                                  <span>Subtotal</span>
-                                  <strong>{dinero(calcularTotalItem(item))}</strong>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  className="button continue-button"
-                                  onClick={() => irAElemento("resumen-pedido")}
-                                >
-                                  Continuar
-                                </button>
-                              </div>
-                            )}
                           </div>
                         );
                       })}
@@ -1676,8 +1624,8 @@ export default function App() {
                       Borrar y volver a empezar
                     </button>
 
-                    <div className="step-title" style={{ marginTop: 18 }}>
-                      <span className="step-number">4</span>
+                    <div id="datos-entrega" className="step-title" style={{ marginTop: 18 }}>
+                      <span className="step-number">3</span>
                       <div>
                         <h4>Datos de entrega</h4>
                         <p className="muted" style={{ marginBottom: 0 }}>
@@ -1687,21 +1635,21 @@ export default function App() {
                     </div>
 
                     <CampoTexto
-                      etiqueta="👤 Nombre"
+                      etiqueta="👤 Nombre *"
                       value={cliente}
                       onChange={setCliente}
                       placeholder="Ej: Laura Pérez"
                     />
 
                     <CampoTexto
-                      etiqueta="📞 Teléfono"
+                      etiqueta="📞 Teléfono *"
                       value={telefono}
                       onChange={setTelefono}
                       placeholder="Ej: 300 123 4567"
                     />
 
                     <CampoTexto
-                      etiqueta="📍 Ubicación"
+                      etiqueta="📍 Ubicación *"
                       value={ubicacion}
                       onChange={setUbicacion}
                       placeholder="Ej: Edificio, oficina o barrio"
@@ -1790,7 +1738,7 @@ export default function App() {
                     rel="noreferrer"
                     className="button green link-button"
                   >
-                    🟢 Enviar consolidado por WhatsApp
+                    🟢 Confirmar pedido por WhatsApp
                   </a>
 
                   <div className="grid-2" style={{ marginTop: 14 }}>
