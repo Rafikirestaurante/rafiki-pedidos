@@ -614,13 +614,15 @@ export default function App() {
   const [tipoPago, setTipoPago] = useState("Efectivo");
   const [observaciones, setObservaciones] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [busquedaDebounced, setBusquedaDebounced] = useState("");
   const [filtroPedidos, setFiltroPedidos] = useState("hoy");
   const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaISOColombia());
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [mensajeMenu, setMensajeMenu] = useState({ texto: "", tipo: "info" });
   const [errorDatosPedido, setErrorDatosPedido] = useState("");
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  const [cargandoMenu, setCargandoMenu] = useState(true);
+  const [cargandoPedidos, setCargandoPedidos] = useState(true);
   const [guardandoPedido, setGuardandoPedido] = useState(false);
   const [guardandoMenu, setGuardandoMenu] = useState(false);
   const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
@@ -629,6 +631,7 @@ export default function App() {
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
   const mensajeMenuTimer = useRef(null);
+  const menuHashRef = useRef("");
 
   function mostrarMensaje(texto, tipo = "info") {
     if (mensajeTimer.current) {
@@ -675,6 +678,16 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBusquedaDebounced(busqueda);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [busqueda]);
+
+  const cargando = cargandoMenu || cargandoPedidos;
+
   const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
 
   const hayProductoSeleccionado = useMemo(() => {
@@ -686,7 +699,7 @@ export default function App() {
   }, [pedidos]);
 
   const pedidosFiltrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
+    const q = busquedaDebounced.trim().toLowerCase();
 
     if (!q) return pedidosOrdenados;
 
@@ -695,7 +708,7 @@ export default function App() {
         .toLowerCase()
         .includes(q)
     );
-  }, [pedidosOrdenados, busqueda]);
+  }, [pedidosOrdenados, busquedaDebounced]);
 
   const pedidosPendientes = useMemo(() => {
     return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) !== "Finalizado");
@@ -732,57 +745,113 @@ export default function App() {
   useEffect(() => {
     let cancelado = false;
 
-    async function cargarDatosSeguro() {
-      setCargando(true);
+    async function cargarMenuSeguro() {
+      setCargandoMenu(true);
 
-      const { data: menuData, error: menuError } = await supabase
-        .from("menu_diario")
-        .select("*")
-        .eq("activo", true)
-        .order("id", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      try {
+        const { data: menuData, error: menuError } = await supabase
+          .from("menu_diario")
+          .select("*")
+          .eq("activo", true)
+          .order("id", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (cancelado) return;
+        if (cancelado) return;
 
-      if (menuError) {
-        mostrarMensaje(`Error cargando menú: ${menuError.message}`, "error");
+        if (menuError) {
+          mostrarMensaje(`Error cargando menú: ${menuError.message}`, "error");
+          return;
+        }
+
+        if (menuData) {
+          const menuNormalizado = normalizarMenu(menuData);
+          const nuevoHash = JSON.stringify({
+            id: menuNormalizado.id,
+            fecha: menuNormalizado.fecha,
+            titulo: menuNormalizado.titulo,
+            descripcion: menuNormalizado.descripcion,
+            platos_detalle: menuNormalizado.platos_detalle,
+            acompanantes: menuNormalizado.acompanantes
+          });
+
+          if (menuHashRef.current !== nuevoHash) {
+            menuHashRef.current = nuevoHash;
+            setMenu(menuNormalizado);
+            setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
+            setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
+
+            setItemsPedido((actual) => {
+              const hayPedidoEnCurso = actual.some((item) => item.plato || item.proteina);
+              return hayPedidoEnCurso ? actual : [crearItemNuevo()];
+            });
+          }
+        } else {
+          setPlatosTexto("");
+          setAcompanantesTexto("");
+        }
+      } catch (error) {
+        if (!cancelado) {
+          mostrarMensaje(
+            `No se pudo cargar el menú. Revisa la conexión e intenta recargar la página. ${error.message || ""}`.trim(),
+            "error"
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoMenu(false);
+        }
       }
-
-      if (menuData) {
-        const menuNormalizado = normalizarMenu(menuData);
-        setMenu(menuNormalizado);
-        setItemsPedido([crearItemNuevo()]);
-        setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
-        setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
-      } else {
-        setPlatosTexto("");
-        setAcompanantesTexto("");
-      }
-
-      const rango = obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
-
-      const { data: pedidosData, error: pedidosError } = await supabase
-        .from("pedidos")
-        .select("*")
-        .gte("created_at", rango.inicio)
-        .lt("created_at", rango.fin)
-        .order("created_at", { ascending: true });
-
-      if (cancelado) return;
-
-      if (pedidosError) {
-        mostrarMensaje(`Error cargando pedidos: ${pedidosError.message}`, "error");
-      }
-
-      if (pedidosData) {
-        setPedidos(pedidosData);
-      }
-
-      setCargando(false);
     }
 
-    cargarDatosSeguro();
+    cargarMenuSeguro();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarPedidosSeguro() {
+      setCargandoPedidos(true);
+
+      try {
+        const rango = obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
+
+        const { data: pedidosData, error: pedidosError } = await supabase
+          .from("pedidos")
+          .select("*")
+          .gte("created_at", rango.inicio)
+          .lt("created_at", rango.fin)
+          .order("created_at", { ascending: true });
+
+        if (cancelado) return;
+
+        if (pedidosError) {
+          mostrarMensaje(`Error cargando pedidos: ${pedidosError.message}`, "error");
+          setPedidos([]);
+          return;
+        }
+
+        setPedidos(pedidosData || []);
+      } catch (error) {
+        if (!cancelado) {
+          mostrarMensaje(
+            `No se pudieron cargar los pedidos. Revisa la conexión y usa el botón Actualizar pedidos. ${error.message || ""}`.trim(),
+            "error"
+          );
+          setPedidos([]);
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoPedidos(false);
+        }
+      }
+    }
+
+    cargarPedidosSeguro();
 
     return () => {
       cancelado = true;
