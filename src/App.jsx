@@ -1160,7 +1160,7 @@ export default function App() {
         .welcome-card { background: linear-gradient(145deg, #ea580c, #f97316 40%, #f59e0b); color: white; border-radius: 36px; padding: 48px 32px 40px; box-shadow: 0 32px 80px rgba(249,115,22,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset; position: relative; overflow: hidden; }
         .welcome-card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: rgba(255,255,255,0.07); border-radius: 50%; }
         .welcome-card::after { content: ''; position: absolute; bottom: -60px; left: -30px; width: 260px; height: 260px; background: rgba(255,255,255,0.05); border-radius: 50%; }
-        .welcome-logo { width: 96px; height: 96px; object-fit: contain; background: #ffffff; border-radius: 24px; padding: 10px; margin-bottom: 20px; box-shadow: 0 16px 36px rgba(0,0,0,0.2); position: relative; z-index: 1; }
+        .welcome-logo { width: 135px; height: 135px; object-fit: contain; background: #ffffff; border-radius: 24px; padding: 10px; margin-bottom: 20px; box-shadow: 0 16px 36px rgba(0,0,0,0.2); position: relative; z-index: 1; }
         .welcome-card h2 { font-family: 'Fraunces', serif; font-size: clamp(36px, 7vw, 66px); margin-bottom: 12px; line-height: 0.92; position: relative; z-index: 1; }
         .welcome-card p { color: rgba(255,255,255,0.88); font-size: 17px; margin-bottom: 8px; position: relative; z-index: 1; }
         .welcome-menu-preview { background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.25); border-radius: 18px; padding: 14px 20px; margin: 20px 0 28px; display: inline-block; text-align: left; position: relative; z-index: 1; }
@@ -1331,16 +1331,6 @@ export default function App() {
                 <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="welcome-logo" />
                 <h2>Bienvenido a Rafiki</h2>
                 <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
-
-                {menu.platos_detalle.length > 0 && (
-                  <div className="welcome-menu-preview">
-                    <div className="label">🍽️ Menú de hoy</div>
-                    <div className="menu-name">{menu.titulo}</div>
-                    <div className="menu-price">
-                      Desde {dinero(Math.min(...menu.platos_detalle.map(p => p.precio).filter(p => p > 0)))} · {menu.platos_detalle.length} platos disponibles
-                    </div>
-                  </div>
-                )}
 
                 <button type="button" onClick={() => setVista("cliente")} className="welcome-button">
                   🛍️ Haz tu pedido aquí
@@ -1653,14 +1643,14 @@ export default function App() {
 
                       {itemsPedido
                         .filter((item) => item.plato || item.proteina)
-                        .map((item, index) => {
+                        .map((item) => {
                           const itemEsSopa = esCategoriaSopa(item.categoria);
                           const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
                           return (
                             <div key={item.id} className="summary-item">
                               <p>
-                                #{index + 1} {item.cantidad} {item.plato || item.proteina} -{" "}
+                                <strong>{item.cantidad} x {item.plato || item.proteina}</strong> - {" "}
                                 {dinero(item.precioPlato || item.precioProteina)}
                               </p>
 
