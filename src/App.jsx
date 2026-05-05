@@ -38,11 +38,11 @@ function formatoNumeroPedido(numero) {
   return String(valor).padStart(4, "0");
 }
 
-function obtenerCodigoPedido(pedido, fallback) {
-  const numeroBase = pedido?.numero_pedido || fallback;
+function obtenerCodigoPedido(pedido) {
+  const numeroBase = pedido?.numero_pedido;
   const numero = formatoNumeroPedido(numeroBase);
 
-  if (numero === "----") return "----";
+  if (numero === "----") return "Sin N°";
 
   const ciclo = Number(pedido?.ciclo_pedido) || 1;
 
@@ -467,7 +467,7 @@ function SelectorCantidad({ cantidad, onChange }) {
   );
 }
 
-function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
+function PedidoCocina({ pedido, onCambiarEstado }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
@@ -478,7 +478,7 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
     <article className={`pedido-cocina ${estadoNormalizado === "Finalizado" ? "pedido-finalizado" : ""}`}>
       <div className={`pedido-header ${estadoNormalizado === "Finalizado" ? "pedido-header-finalizado" : "pedido-header-pending"}`}>
         <div className="pedido-header-title">
-          Pedido #{obtenerCodigoPedido(pedido, numeroVisual)}
+          Pedido #{obtenerCodigoPedido(pedido)}
         </div>
         <div className="pedido-header-right">
           <EstadoBadge estado={pedido.estado} />
@@ -491,9 +491,7 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
           <div>
             <p className="pedido-cliente-nombre">{obtenerCliente(pedido)}</p>
             <div className="pedido-meta">
-              {pedido.numero_pedido && (
-                <span>🧾 Pedido N° {obtenerCodigoPedido(pedido)}</span>
-              )}
+              <span>🧾 Pedido N° {obtenerCodigoPedido(pedido)}</span>
               <span>🕒 {formatearFechaHora(pedido.created_at)}</span>
               <span>📍 {pedido.ubicacion || "Sin ubicación"}</span>
               <span>📞 {pedido.telefono || "Sin teléfono"}</span>
@@ -1834,7 +1832,6 @@ export default function App() {
                         <PedidoCocina
                           key={pedido.id}
                           pedido={pedido}
-                          numeroVisual={index + 1}
                           onCambiarEstado={cambiarEstadoPedido}
                         />
                       ))
@@ -1854,7 +1851,6 @@ export default function App() {
                         <PedidoCocina
                           key={pedido.id}
                           pedido={pedido}
-                          numeroVisual={index + 1}
                           onCambiarEstado={cambiarEstadoPedido}
                         />
                       ))
