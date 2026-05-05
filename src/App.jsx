@@ -29,6 +29,26 @@ function dinero(valor) {
   }).format(Number(valor) || 0);
 }
 
+function formatoNumeroPedido(numero) {
+  const valor = Number(numero) || 0;
+
+  if (!valor) return "----";
+  if (valor >= 10000) return "10000";
+
+  return String(valor).padStart(4, "0");
+}
+
+function obtenerCodigoPedido(pedido, fallback) {
+  const numeroBase = pedido?.numero_pedido || fallback;
+  const numero = formatoNumeroPedido(numeroBase);
+
+  if (numero === "----") return "----";
+
+  const ciclo = Number(pedido?.ciclo_pedido) || 1;
+
+  return ciclo > 1 ? `C${ciclo}-${numero}` : numero;
+}
+
 function fechaISOColombia(fecha = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Bogota",
@@ -354,6 +374,7 @@ function crearMensajeWhatsAppPedido(pedido) {
   return [
     "Hola Rafiki, quiero confirmar este pedido:",
     "",
+    `Pedido N°: ${obtenerCodigoPedido(pedido)}`,
     `Cliente: ${pedido.cliente || pedido.cliente_nombre || "Cliente"}`,
     `Teléfono: ${pedido.telefono || "Sin teléfono"}`,
     `Ubicación: ${pedido.ubicacion || "Sin ubicación"}`,
@@ -457,7 +478,7 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
     <article className={`pedido-cocina ${estadoNormalizado === "Finalizado" ? "pedido-finalizado" : ""}`}>
       <div className={`pedido-header ${estadoNormalizado === "Finalizado" ? "pedido-header-finalizado" : "pedido-header-pending"}`}>
         <div className="pedido-header-title">
-          Pedido #{numeroVisual}
+          Pedido #{obtenerCodigoPedido(pedido, numeroVisual)}
         </div>
         <div className="pedido-header-right">
           <EstadoBadge estado={pedido.estado} />
@@ -470,6 +491,9 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
           <div>
             <p className="pedido-cliente-nombre">{obtenerCliente(pedido)}</p>
             <div className="pedido-meta">
+              {pedido.numero_pedido && (
+                <span>🧾 Pedido N° {obtenerCodigoPedido(pedido)}</span>
+              )}
               <span>🕒 {formatearFechaHora(pedido.created_at)}</span>
               <span>📍 {pedido.ubicacion || "Sin ubicación"}</span>
               <span>📞 {pedido.telefono || "Sin teléfono"}</span>
@@ -1652,6 +1676,9 @@ export default function App() {
                 <div className="card-pad">
                   <div className="box soft">
                     <h3>Consolidado del pedido</h3>
+                    <p>
+                      <strong>Pedido N°:</strong> {obtenerCodigoPedido(pedidoFinalizado)}
+                    </p>
                     <p>
                       <strong>Cliente:</strong> {obtenerCliente(pedidoFinalizado)}
                     </p>
