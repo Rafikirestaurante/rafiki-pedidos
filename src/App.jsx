@@ -1053,7 +1053,7 @@ export default function App() {
         .card-pad { padding: 24px; }
         .welcome { max-width: 820px; margin: 0 auto; text-align: center; }
         .welcome-card { background: linear-gradient(135deg, #f97316, #f59e0b); color: white; border-radius: 36px; padding: 44px 28px; box-shadow: 0 25px 60px rgba(249, 115, 22, 0.25); }
-        .welcome-icon { font-size: 64px; margin-bottom: 12px; }
+        .welcome-logo { width: 96px; height: 96px; object-fit: contain; background: #ffffff; border-radius: 24px; padding: 10px; margin-bottom: 16px; box-shadow: 0 12px 28px rgba(0,0,0,0.16); }
         .welcome-card h2 { font-size: clamp(34px, 7vw, 62px); margin-bottom: 10px; line-height: 0.95; }
         .welcome-card p { color: #fff7ed; font-size: 18px; margin-bottom: 24px; }
         .welcome-button { display: inline-flex; justify-content: center; align-items: center; width: min(100%, 420px); border: 0; background: #ffffff; color: #c2410c; padding: 18px 22px; border-radius: 22px; font-size: 22px; font-weight: 900; text-decoration: none; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
@@ -1185,7 +1185,7 @@ export default function App() {
           {!cargando && vista === "inicio" && (
             <main className="welcome">
               <section className="welcome-card">
-                <div className="welcome-icon">🍽️</div>
+                <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="welcome-logo" />
                 <h2>Bienvenido a Rafiki</h2>
                 <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
                 <button type="button" onClick={() => setVista("cliente")} className="welcome-button">
@@ -1426,9 +1426,7 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <p className="muted">
-                      Revisa tu pedido antes de finalizar.
-                    </p>
+                    <p className="muted">Revisa tu pedido antes de finalizar.</p>
 
                     <div className="box soft" style={{ marginBottom: 12 }}>
                       <h3>Resumen del pedido</h3>
@@ -1464,11 +1462,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={reiniciarPedido}
-                      className="button light small-reset"
-                    >
+                    <button type="button" onClick={reiniciarPedido} className="button light small-reset">
                       Borrar y volver a empezar
                     </button>
 
@@ -1586,11 +1580,7 @@ export default function App() {
                       Hacer otro pedido
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setVista("inicio")}
-                      className="button light"
-                    >
+                    <button type="button" onClick={() => setVista("inicio")} className="button light">
                       Volver al inicio
                     </button>
                   </div>
@@ -1624,9 +1614,7 @@ export default function App() {
                   <div className="row">
                     <div>
                       <h2>📋 {tituloPedidos}</h2>
-                      <p className="muted">
-                        Vista organizada para preparar pedidos y revisar historial.
-                      </p>
+                      <p className="muted">Vista organizada para preparar pedidos y revisar historial.</p>
                     </div>
                   </div>
 
@@ -1788,9 +1776,7 @@ export default function App() {
                     etiqueta="Acompañantes del día"
                     value={acompanantesTexto}
                     onChange={setAcompanantesTexto}
-                    placeholder={
-                      "Arroz con coco\nEnsalada verde\nPuré de papa\nTajadas maduras\nYuca cocida"
-                    }
+                    placeholder={"Arroz con coco\nEnsalada verde\nPuré de papa\nTajadas maduras\nYuca cocida"}
                     multiline
                     rows={7}
                   />
