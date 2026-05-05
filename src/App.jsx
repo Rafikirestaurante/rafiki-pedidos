@@ -5,6 +5,7 @@ const VALOR_PARA_LLEVAR = 1500;
 const MAX_ACOMPANANTES_CLIENTE = 3;
 const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
+const CLAVE_ADMIN = "rafiki1234";
 
 const estadosPedido = ["Pendiente", "Finalizado"];
 
@@ -600,6 +601,9 @@ function PedidoCocina({ pedido, onCambiarEstado }) {
 export default function App() {
   const [vista, setVista] = useState("inicio");
   const [adminTab, setAdminTab] = useState("pedidos");
+  const [adminAutenticado, setAdminAutenticado] = useState(false);
+  const [claveAdmin, setClaveAdmin] = useState("");
+  const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
@@ -1063,6 +1067,38 @@ export default function App() {
     mostrarMensaje(`Pedido marcado como ${estadoNuevo}.`, "success");
   }
 
+  function abrirPanelAdmin() {
+    setErrorClaveAdmin("");
+
+    if (adminAutenticado) {
+      setVista("admin");
+      return;
+    }
+
+    setVista("adminLogin");
+  }
+
+  function validarClaveAdmin(e) {
+    e.preventDefault();
+
+    if (claveAdmin.trim() === CLAVE_ADMIN) {
+      setAdminAutenticado(true);
+      setClaveAdmin("");
+      setErrorClaveAdmin("");
+      setVista("admin");
+      return;
+    }
+
+    setErrorClaveAdmin("Clave incorrecta. Inténtalo nuevamente.");
+  }
+
+  function cerrarPanelAdmin() {
+    setAdminAutenticado(false);
+    setClaveAdmin("");
+    setErrorClaveAdmin("");
+    setVista("inicio");
+  }
+
   function nuevoPedidoCliente() {
     reiniciarPedido();
     setVista("cliente");
@@ -1288,9 +1324,58 @@ export default function App() {
                 </button>
               </section>
 
-              <button type="button" onClick={() => setVista("admin")} className="admin-small">
+              <button type="button" onClick={abrirPanelAdmin} className="admin-small">
                 Panel administrativo
               </button>
+            </main>
+          )}
+
+          {!cargando && vista === "adminLogin" && (
+            <main style={{ maxWidth: 520, margin: "0 auto" }}>
+              <section className="card card-pad">
+                <div style={{ textAlign: "center", marginBottom: 20 }}>
+                  <div className="brand">🔐 Panel Rafiki</div>
+                  <h2>Acceso administrativo</h2>
+                  <p className="muted">Ingresa la clave para ver pedidos y editar el menú diario.</p>
+                </div>
+
+                {errorClaveAdmin && (
+                  <div className="alert alert-error">{errorClaveAdmin}</div>
+                )}
+
+                <form onSubmit={validarClaveAdmin}>
+                  <label className="field">
+                    <span>Clave del panel</span>
+                    <input
+                      type="password"
+                      value={claveAdmin}
+                      onChange={(e) => {
+                        setClaveAdmin(e.target.value);
+                        setErrorClaveAdmin("");
+                      }}
+                      placeholder="Escribe la clave"
+                      autoFocus
+                    />
+                  </label>
+
+                  <button type="submit" className="button" style={{ width: "100%" }}>
+                    Entrar al panel
+                  </button>
+                </form>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClaveAdmin("");
+                    setErrorClaveAdmin("");
+                    setVista("inicio");
+                  }}
+                  className="button light"
+                  style={{ width: "100%", marginTop: 12 }}
+                >
+                  Volver al inicio
+                </button>
+              </section>
             </main>
           )}
 
@@ -1709,7 +1794,7 @@ export default function App() {
             </main>
           )}
 
-          {!cargando && vista === "admin" && (
+          {!cargando && vista === "admin" && adminAutenticado && (
             <main className="admin-layout">
               <div className="admin-tabs">
                 <button
@@ -1726,6 +1811,14 @@ export default function App() {
                   className={adminTab === "menu" ? "active" : ""}
                 >
                   Editar menú diario
+                </button>
+
+                <button
+                  type="button"
+                  onClick={cerrarPanelAdmin}
+                  className="button light"
+                >
+                  Cerrar panel
                 </button>
               </div>
 
