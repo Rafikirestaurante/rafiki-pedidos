@@ -586,11 +586,13 @@ export default function App() {
   const [filtroPedidos, setFiltroPedidos] = useState("hoy");
   const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaISOColombia());
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
+  const [mensajeMenu, setMensajeMenu] = useState({ texto: "", tipo: "info" });
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
+  const mensajeMenuTimer = useRef(null);
 
   function mostrarMensaje(texto, tipo = "info") {
     if (mensajeTimer.current) {
@@ -602,6 +604,18 @@ export default function App() {
     mensajeTimer.current = setTimeout(() => {
       setMensaje({ texto: "", tipo: "info" });
     }, 5000);
+  }
+
+  function mostrarMensajeMenu(texto, tipo = "info") {
+    if (mensajeMenuTimer.current) {
+      clearTimeout(mensajeMenuTimer.current);
+    }
+
+    setMensajeMenu({ texto, tipo });
+
+    mensajeMenuTimer.current = setTimeout(() => {
+      setMensajeMenu({ texto: "", tipo: "info" });
+    }, 6000);
   }
 
   function irAElemento(id) {
@@ -617,6 +631,10 @@ export default function App() {
     return () => {
       if (mensajeTimer.current) {
         clearTimeout(mensajeTimer.current);
+      }
+
+      if (mensajeMenuTimer.current) {
+        clearTimeout(mensajeMenuTimer.current);
       }
     };
   }, []);
@@ -894,11 +912,13 @@ export default function App() {
   }
 
   async function guardarMenu() {
+    setMensajeMenu({ texto: "", tipo: "info" });
+
     const resultadoPlatos = textoAPlatosDetalle(platosTexto, { estricto: true });
     const acompanantes = limpiarAcompanantesMenu(listaPorLineas(acompanantesTexto));
 
     if (resultadoPlatos.errores.length > 0) {
-      mostrarMensaje(
+      mostrarMensajeMenu(
         `No se puede guardar el menú. Corrige:\n${resultadoPlatos.errores.slice(0, 5).join("\n")}`,
         "error"
       );
@@ -906,7 +926,7 @@ export default function App() {
     }
 
     if (resultadoPlatos.platos.length === 0) {
-      mostrarMensaje(
+      mostrarMensajeMenu(
         "Debes agregar al menos un plato del día con el formato Categoría | Plato:Precio.",
         "warning"
       );
@@ -935,7 +955,7 @@ export default function App() {
       .neq("id", idActual);
 
     if (errorDesactivar) {
-      mostrarMensaje(`Error desactivando menús anteriores: ${errorDesactivar.message}`, "error");
+      mostrarMensajeMenu(`Error desactivando menús anteriores: ${errorDesactivar.message}`, "error");
       return;
     }
 
@@ -948,7 +968,7 @@ export default function App() {
         .single();
 
       if (error) {
-        mostrarMensaje(`Error guardando menú: ${error.message}`, "error");
+        mostrarMensajeMenu(`Error guardando menú: ${error.message}`, "error");
         return;
       }
 
@@ -957,8 +977,7 @@ export default function App() {
       setItemsPedido([crearItemNuevo()]);
       setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
       setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
-      mostrarMensaje("Menú actualizado correctamente.", "success");
-      setAdminTab("pedidos");
+      mostrarMensajeMenu("Menú actualizado correctamente.", "success");
       return;
     }
 
@@ -969,7 +988,7 @@ export default function App() {
       .single();
 
     if (error) {
-      mostrarMensaje(`Error creando menú: ${error.message}`, "error");
+      mostrarMensajeMenu(`Error creando menú: ${error.message}`, "error");
       return;
     }
 
@@ -978,8 +997,7 @@ export default function App() {
     setItemsPedido([crearItemNuevo()]);
     setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
     setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
-    mostrarMensaje("Menú creado correctamente.", "success");
-    setAdminTab("pedidos");
+    mostrarMensajeMenu("Menú creado correctamente.", "success");
   }
 
   async function cambiarEstadoPedido(id, estado) {
@@ -1030,6 +1048,7 @@ export default function App() {
         .alert-success { background: #ecfdf5; color: #166534; border-color: #bbf7d0; }
         .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
         .alert-error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        .menu-action-message { margin-top: 14px; margin-bottom: 0; }
         .card { background: #ffffff; border: 1px solid #fed7aa; border-radius: 32px; box-shadow: 0 18px 40px rgba(0,0,0,0.08); overflow: hidden; }
         .card-pad { padding: 24px; }
         .welcome { max-width: 820px; margin: 0 auto; text-align: center; }
@@ -1058,7 +1077,7 @@ export default function App() {
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
         .continue-button { width: 100%; margin-top: 16px; background: #22c55e; }
-        .small-reset { width: 100%; margin-top: 10px; font-size: 13px; padding: 10px 12px; border-radius: 14px; }
+        .small-reset { width: 100%; margin-top: 10px; font-size: 13px; padding: 10px 12px; border-radius: 14px; color: #b91c1c; border-color: #fecaca; }
         .link-button { display: block; text-align: center; text-decoration: none; }
         .step-title { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.08); }
         .step-title h4 { font-size: 23px; line-height: 1.1; margin-bottom: 6px; color: #c2410c; }
@@ -1799,6 +1818,12 @@ export default function App() {
                   >
                     Guardar menú del día
                   </button>
+
+                  {mensajeMenu.texto && (
+                    <div className={`alert alert-${mensajeMenu.tipo} menu-action-message`}>
+                      {mensajeMenu.texto}
+                    </div>
+                  )}
                 </section>
               )}
             </main>
