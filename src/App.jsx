@@ -291,22 +291,15 @@ function crearMensajePedidoListo(pedido) {
   ].join("\n");
 }
 
-function crearItemNuevo(menu) {
-  const menuNormalizado = normalizarMenu(menu);
-  const primerPlato = menuNormalizado.platos_detalle[0] || {
-    categoria: "",
-    nombre: "",
-    precio: 0
-  };
-
+function crearItemNuevo() {
   return {
     id: Date.now() + Math.random(),
     cantidad: 1,
-    categoria: primerPlato.categoria || "",
-    plato: primerPlato.nombre || "",
-    proteina: primerPlato.nombre || "",
-    precioPlato: Number(primerPlato.precio) || 0,
-    precioProteina: Number(primerPlato.precio) || 0,
+    categoria: "",
+    plato: "",
+    proteina: "",
+    precioPlato: 0,
+    precioProteina: 0,
     acompanantes: [],
     paraLlevar: true
   };
@@ -583,7 +576,7 @@ export default function App() {
   const [adminTab, setAdminTab] = useState("pedidos");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
-  const [itemsPedido, setItemsPedido] = useState([crearItemNuevo(menuFallback)]);
+  const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
@@ -611,6 +604,15 @@ export default function App() {
     }, 5000);
   }
 
+  function irAElemento(id) {
+    setTimeout(() => {
+      const elemento = document.getElementById(id);
+      if (elemento) {
+        elemento.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 120);
+  }
+
   useEffect(() => {
     return () => {
       if (mensajeTimer.current) {
@@ -620,6 +622,10 @@ export default function App() {
   }, []);
 
   const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
+
+  const hayProductoSeleccionado = useMemo(() => {
+    return itemsPedido.some((item) => item.plato || item.proteina);
+  }, [itemsPedido]);
 
   const pedidosOrdenados = useMemo(() => {
     return [...pedidos].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
@@ -690,7 +696,7 @@ export default function App() {
       if (menuData) {
         const menuNormalizado = normalizarMenu(menuData);
         setMenu(menuNormalizado);
-        setItemsPedido([crearItemNuevo(menuNormalizado)]);
+        setItemsPedido([crearItemNuevo()]);
         setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
         setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
       } else {
@@ -751,6 +757,14 @@ export default function App() {
         };
       })
     );
+
+    const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+
+    if (esSopa) {
+      irAElemento(`paso-cantidad-${id}`);
+    } else {
+      irAElemento(`paso-acompanantes-${id}`);
+    }
   }
 
   function cambiarAcompananteItem(id, acompanante) {
@@ -777,7 +791,7 @@ export default function App() {
 
         if (acompanantesActuales.length >= MAX_ACOMPANANTES_CLIENTE) {
           mostrarMensaje(
-            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por almuerzo. La sopa y la bebida ya están incluidas.`,
+            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por producto. La sopa y la bebida ya están incluidas.`,
             "warning"
           );
           return item;
@@ -792,7 +806,10 @@ export default function App() {
   }
 
   function agregarAlmuerzo() {
-    setItemsPedido((actual) => [...actual, crearItemNuevo(menu)]);
+    setItemsPedido((actual) => [...actual, crearItemNuevo()]);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 120);
   }
 
   function eliminarAlmuerzo(id) {
@@ -913,7 +930,7 @@ export default function App() {
 
       const nuevoMenu = normalizarMenu(data);
       setMenu(nuevoMenu);
-      setItemsPedido([crearItemNuevo(nuevoMenu)]);
+      setItemsPedido([crearItemNuevo()]);
       setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
       setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
       mostrarMensaje("Menú actualizado correctamente.", "success");
@@ -934,7 +951,7 @@ export default function App() {
 
     const nuevoMenu = normalizarMenu(data);
     setMenu(nuevoMenu);
-    setItemsPedido([crearItemNuevo(nuevoMenu)]);
+    setItemsPedido([crearItemNuevo()]);
     setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
     setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
     mostrarMensaje("Menú creado correctamente.", "success");
@@ -961,7 +978,7 @@ export default function App() {
   }
 
   function nuevoPedidoCliente() {
-    setItemsPedido([crearItemNuevo(menu)]);
+    setItemsPedido([crearItemNuevo()]);
     setCliente("");
     setTelefono("");
     setUbicacion("");
@@ -1022,6 +1039,9 @@ export default function App() {
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
         .link-button { display: block; text-align: center; text-decoration: none; }
+        .step-title { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: #f97316; color: white; font-weight: 900; }
+        .selected-dish { background: #ecfdf5; border: 1px solid #86efac; color: #166534; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px; font-weight: 900; }
         .category-block { margin-bottom: 20px; border: 1px solid #fed7aa; border-radius: 24px; padding: 16px; background: #fffaf0; }
         .category-title { font-size: 22px; margin-bottom: 12px; color: #c2410c; }
         .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1154,13 +1174,14 @@ export default function App() {
                   ) : (
                     <>
                       <div style={{ marginBottom: 18 }}>
-                        <h3>🛍️ Productos del pedido</h3>
-                        <p className="muted">Arma tu pedido. Puedes agregar otro producto al finalizar esta selección.</p>
+                        <h3>🛍️ Arma tu pedido paso a paso</h3>
+                        <p className="muted">Primero escoge el plato. Luego aparecerán los siguientes pasos.</p>
                       </div>
 
                       {itemsPedido.map((item, index) => {
                         const itemEsSopa = esCategoriaSopa(item.categoria);
                         const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+                        const tienePlato = Boolean(item.plato || item.proteina);
 
                         return (
                           <div key={item.id} className="meal-card">
@@ -1178,7 +1199,22 @@ export default function App() {
                               )}
                             </div>
 
-                            <h4>Elige tu plato</h4>
+                            <div className="step-title">
+                              <span className="step-number">1</span>
+                              <div>
+                                <h4>Primero escoge tu plato</h4>
+                                <p className="muted" style={{ marginBottom: 0 }}>
+                                  Toca una opción para continuar.
+                                </p>
+                              </div>
+                            </div>
+
+                            {tienePlato && (
+                              <div className="selected-dish">
+                                Seleccionado: {item.plato || item.proteina} —{" "}
+                                {dinero(item.precioPlato || item.precioProteina)}
+                              </div>
+                            )}
 
                             {Object.entries(platosAgrupados).map(([categoria, platos]) => (
                               <div key={categoria} className="category-block">
@@ -1200,18 +1236,17 @@ export default function App() {
                               </div>
                             ))}
 
-                            {!itemEsSopa && (
-                              <div style={{ marginTop: 18 }}>
-                                <div className="row">
-                                  <h4>Acompañantes</h4>
-                                  <strong>
-                                    {acompanantesItem.length}/{MAX_ACOMPANANTES_CLIENTE}
-                                  </strong>
+                            {tienePlato && !itemEsSopa && (
+                              <div id={`paso-acompanantes-${item.id}`} style={{ marginTop: 18 }}>
+                                <div className="step-title">
+                                  <span className="step-number">2</span>
+                                  <div>
+                                    <h4>Ahora escoge tus acompañantes</h4>
+                                    <p className="muted" style={{ marginBottom: 0 }}>
+                                      Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE}.
+                                    </p>
+                                  </div>
                                 </div>
-
-                                <p className="muted">
-                                  Puedes escoger máximo {MAX_ACOMPANANTES_CLIENTE}. La sopa y la bebida ya están incluidas.
-                                </p>
 
                                 <div className="chips">
                                   {menu.acompanantes.length === 0 ? (
@@ -1240,11 +1275,18 @@ export default function App() {
                                     })
                                   )}
                                 </div>
+
+                                <div className="box" style={{ marginTop: 18 }}>
+                                  <strong>🥣 Sopa y bebida</strong>
+                                  <p className="muted" style={{ marginBottom: 0 }}>
+                                    Incluidas automáticamente.
+                                  </p>
+                                </div>
                               </div>
                             )}
 
-                            {itemEsSopa && (
-                              <div className="box soft" style={{ marginTop: 18 }}>
+                            {tienePlato && itemEsSopa && (
+                              <div id={`paso-cantidad-${item.id}`} className="box soft" style={{ marginTop: 18 }}>
                                 <strong>🥣 Producto de sopas</strong>
                                 <p className="muted" style={{ marginBottom: 0 }}>
                                   Este producto no incluye acompañantes, sopa adicional ni bebida.
@@ -1252,51 +1294,56 @@ export default function App() {
                               </div>
                             )}
 
-                            {!itemEsSopa && (
-                              <div className="box" style={{ marginTop: 18 }}>
-                                <strong>🥣 Sopa y bebida</strong>
-                                <p className="muted" style={{ marginBottom: 0 }}>
-                                  Incluidas automáticamente en cada almuerzo.
-                                </p>
+                            {tienePlato && (
+                              <div id={`paso-cantidad-${item.id}`} style={{ marginTop: 18 }}>
+                                <div className="step-title">
+                                  <span className="step-number">{itemEsSopa ? "2" : "3"}</span>
+                                  <div>
+                                    <h4>Confirma cantidad y empaque</h4>
+                                    <p className="muted" style={{ marginBottom: 0 }}>
+                                      Puedes cambiar la cantidad o desmarcar para llevar.
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="grid-2">
+                                  <div className="box">
+                                    <strong>Cantidad</strong>
+                                    <div style={{ marginTop: 10 }}>
+                                      <SelectorCantidad
+                                        cantidad={item.cantidad}
+                                        onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <label className="box row">
+                                    <div>
+                                      <strong>🥡 Para llevar</strong>
+                                      <p className="muted" style={{ marginBottom: 0 }}>
+                                        {valorParaLlevarItem(item) === 0 && item.paraLlevar
+                                          ? "Sin costo adicional"
+                                          : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
+                                      </p>
+                                    </div>
+
+                                    <input
+                                      type="checkbox"
+                                      checked={item.paraLlevar}
+                                      onChange={(e) =>
+                                        actualizarItem(item.id, { paraLlevar: e.target.checked })
+                                      }
+                                      style={{ width: 24, height: 24 }}
+                                    />
+                                  </label>
+                                </div>
+
+                                <div className="total-row">
+                                  <span>Subtotal</span>
+                                  <strong>{dinero(calcularTotalItem(item))}</strong>
+                                </div>
                               </div>
                             )}
-
-                            <div className="grid-2" style={{ marginTop: 18 }}>
-                              <div className="box">
-                                <strong>Cantidad</strong>
-                                <div style={{ marginTop: 10 }}>
-                                  <SelectorCantidad
-                                    cantidad={item.cantidad}
-                                    onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
-                                  />
-                                </div>
-                              </div>
-
-                              <label className="box row">
-                                <div>
-                                  <strong>🥡 Para llevar</strong>
-                                  <p className="muted" style={{ marginBottom: 0 }}>
-                                    {valorParaLlevarItem(item) === 0 && item.paraLlevar
-                                      ? "Sin costo adicional"
-                                      : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
-                                  </p>
-                                </div>
-
-                                <input
-                                  type="checkbox"
-                                  checked={item.paraLlevar}
-                                  onChange={(e) =>
-                                    actualizarItem(item.id, { paraLlevar: e.target.checked })
-                                  }
-                                  style={{ width: 24, height: 24 }}
-                                />
-                              </label>
-                            </div>
-
-                            <div className="total-row">
-                              <span>Subtotal</span>
-                              <strong>{dinero(calcularTotalItem(item))}</strong>
-                            </div>
                           </div>
                         );
                       })}
@@ -1310,99 +1357,116 @@ export default function App() {
               </section>
 
               <aside className="card card-pad">
-                <h2>Datos de entrega</h2>
-                <p className="muted">
-                  Estos datos se guardan y luego el cliente puede enviar el consolidado por WhatsApp.
-                </p>
+                <h2>{hayProductoSeleccionado ? "Datos de entrega" : "Resumen"}</h2>
 
-                <div className="box soft" style={{ marginBottom: 18 }}>
-                  <strong>🥡 Para llevar activado</strong>
-                  <p className="muted" style={{ marginBottom: 0 }}>
-                    Para almuerzos suma {dinero(VALOR_PARA_LLEVAR)}. Para las sopas indicadas no tiene costo adicional.
-                  </p>
-                </div>
-
-                <div className="box soft" style={{ marginBottom: 18 }}>
-                  <h3>Resumen</h3>
-
-                  {itemsPedido.map((item, index) => {
-                    const itemEsSopa = esCategoriaSopa(item.categoria);
-                    const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
-
-                    return (
-                      <div key={item.id} className="summary-item">
-                        <p>
-                          #{index + 1} {item.cantidad} {item.plato || item.proteina || "Sin plato"} -{" "}
-                          {dinero(item.precioPlato || item.precioProteina)}
-                        </p>
-
-                        {item.categoria && <p>Categoría: {item.categoria}</p>}
-
-                        {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
-                        {itemEsSopa && <p>Acompañantes: No aplica</p>}
-
-                        {!itemEsSopa && <p>Sopa + bebida incluida</p>}
-
-                        <p>{textoParaLlevarItem(item)}</p>
-                      </div>
-                    );
-                  })}
-
-                  <div className="total-row">
-                    <span>Total</span>
-                    <strong>{dinero(totalPedido)}</strong>
+                {!hayProductoSeleccionado ? (
+                  <div className="box soft">
+                    <strong>👈 Empieza escogiendo un plato</strong>
+                    <p className="muted" style={{ marginBottom: 0 }}>
+                      Cuando selecciones un producto, aquí aparecerá el resumen y los datos de entrega.
+                    </p>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <p className="muted">
+                      Revisa tu pedido y completa los datos para finalizar.
+                    </p>
 
-                <CampoTexto
-                  etiqueta="👤 Nombre"
-                  value={cliente}
-                  onChange={setCliente}
-                  placeholder="Ej: Laura Pérez"
-                />
+                    <div className="box soft" style={{ marginBottom: 18 }}>
+                      <h3>Resumen</h3>
 
-                <CampoTexto
-                  etiqueta="📞 Teléfono"
-                  value={telefono}
-                  onChange={setTelefono}
-                  placeholder="Ej: 300 123 4567"
-                />
+                      {itemsPedido
+                        .filter((item) => item.plato || item.proteina)
+                        .map((item, index) => {
+                          const itemEsSopa = esCategoriaSopa(item.categoria);
+                          const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
-                <CampoTexto
-                  etiqueta="📍 Ubicación"
-                  value={ubicacion}
-                  onChange={setUbicacion}
-                  placeholder="Ej: Edificio, oficina o barrio"
-                />
+                          return (
+                            <div key={item.id} className="summary-item">
+                              <p>
+                                #{index + 1} {item.cantidad} {item.plato || item.proteina} -{" "}
+                                {dinero(item.precioPlato || item.precioProteina)}
+                              </p>
 
-                <label className="field">
-                  <span>💳 Tipo de pago</span>
-                  <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)}>
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Transferencia">Transferencia</option>
-                  </select>
-                </label>
+                              {item.categoria && <p>Categoría: {item.categoria}</p>}
 
-                <CampoTexto
-                  etiqueta="Observaciones generales"
-                  value={observaciones}
-                  onChange={setObservaciones}
-                  placeholder="Ej: llevar a recepción, sin cubiertos, pago en efectivo..."
-                  multiline
-                />
+                              {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                              {itemEsSopa && <p>Acompañantes: No aplica</p>}
 
-                <button
-                  type="button"
-                  onClick={registrarPedido}
-                  disabled={
-                    menu.platos_detalle.length === 0 ||
-                    itemsPedido.every((item) => !(item.plato || item.proteina))
-                  }
-                  className="button"
-                  style={{ width: "100%", marginTop: 10 }}
-                >
-                  Revisar y finalizar pedido
-                </button>
+                              {!itemEsSopa && <p>Sopa + bebida incluida</p>}
+
+                              <p>{textoParaLlevarItem(item)}</p>
+                            </div>
+                          );
+                        })}
+
+                      <div className="total-row">
+                        <span>Total</span>
+                        <strong>{dinero(totalPedido)}</strong>
+                      </div>
+                    </div>
+
+                    <div className="step-title">
+                      <span className="step-number">4</span>
+                      <div>
+                        <h4>Completa tus datos</h4>
+                        <p className="muted" style={{ marginBottom: 0 }}>
+                          Así sabremos a dónde llevar tu pedido.
+                        </p>
+                      </div>
+                    </div>
+
+                    <CampoTexto
+                      etiqueta="👤 Nombre"
+                      value={cliente}
+                      onChange={setCliente}
+                      placeholder="Ej: Laura Pérez"
+                    />
+
+                    <CampoTexto
+                      etiqueta="📞 Teléfono"
+                      value={telefono}
+                      onChange={setTelefono}
+                      placeholder="Ej: 300 123 4567"
+                    />
+
+                    <CampoTexto
+                      etiqueta="📍 Ubicación"
+                      value={ubicacion}
+                      onChange={setUbicacion}
+                      placeholder="Ej: Edificio, oficina o barrio"
+                    />
+
+                    <label className="field">
+                      <span>💳 Tipo de pago</span>
+                      <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)}>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Transferencia">Transferencia</option>
+                      </select>
+                    </label>
+
+                    <CampoTexto
+                      etiqueta="Observaciones generales"
+                      value={observaciones}
+                      onChange={setObservaciones}
+                      placeholder="Ej: llevar a recepción, sin cubiertos, pago en efectivo..."
+                      multiline
+                    />
+
+                    <button
+                      type="button"
+                      onClick={registrarPedido}
+                      disabled={
+                        menu.platos_detalle.length === 0 ||
+                        itemsPedido.every((item) => !(item.plato || item.proteina))
+                      }
+                      className="button"
+                      style={{ width: "100%", marginTop: 10 }}
+                    >
+                      Revisar y finalizar pedido
+                    </button>
+                  </>
+                )}
               </aside>
             </main>
           )}
