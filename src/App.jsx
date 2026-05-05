@@ -934,12 +934,21 @@ export default function App() {
       enviado_whatsapp: false
     };
 
+    let ventanaWhatsApp = null;
+
+    try {
+      ventanaWhatsApp = window.open("", "_blank");
+    } catch (errorVentana) {
+      ventanaWhatsApp = null;
+    }
+
     setGuardandoPedido(true);
 
     try {
       const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
 
       if (error) {
+        if (ventanaWhatsApp) ventanaWhatsApp.close();
         mostrarMensaje(`Error guardando pedido: ${error.message}`, "error");
         return;
       }
@@ -948,8 +957,19 @@ export default function App() {
         setPedidos((actual) => [...actual, data]);
       }
 
+      const linkWhatsAppPedido = crearLinkWhatsApp(
+        WHATSAPP_RAFIKI,
+        crearMensajeWhatsAppPedido(data)
+      );
+
+      if (ventanaWhatsApp) {
+        ventanaWhatsApp.location.href = linkWhatsAppPedido;
+      } else {
+        window.open(linkWhatsAppPedido, "_blank");
+      }
+
       setPedidoFinalizado(data);
-      mostrarMensaje("Pedido guardado. Ahora puedes enviar el consolidado por WhatsApp.", "success");
+      mostrarMensaje("Pedido guardado. Se abrió WhatsApp con el consolidado listo para enviar.", "success");
       setVista("confirmacion");
     } finally {
       setGuardandoPedido(false);
@@ -1736,7 +1756,7 @@ export default function App() {
                           className="button"
                           style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
                         >
-                          {guardandoPedido ? "Guardando..." : "Finalizar →"}
+                          {guardandoPedido ? "Guardando..." : "Finalizar y abrir WhatsApp →"}
                         </button>
                       </div>
                     )}
@@ -1790,7 +1810,7 @@ export default function App() {
                     rel="noreferrer"
                     className="button green link-button"
                   >
-                    🟢 Enviar consolidado por WhatsApp
+                    🟢 Abrir WhatsApp nuevamente
                   </a>
 
                   <div className="grid-2" style={{ marginTop: 14 }}>
