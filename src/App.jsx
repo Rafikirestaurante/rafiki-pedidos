@@ -926,7 +926,14 @@ export default function App() {
 
     if (camposFaltantes.length > 0) {
       const textoError = `Falta ingresar: ${camposFaltantes.join(", ")}.`;
+      const posicionActual = window.scrollY;
+
       setErrorDatosPedido(textoError);
+
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: posicionActual, behavior: "auto" });
+      });
+
       return;
     }
 
@@ -1211,7 +1218,8 @@ export default function App() {
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
         .continue-button { width: 100%; margin-top: 16px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
-        .small-reset { width: 100%; margin-top: 10px; font-size: 13px; padding: 10px 12px; border-radius: 14px; color: #b91c1c; border-color: #fecaca; }
+        .summary-continue { width: 100%; margin: 12px 0 6px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.22); }
+        .small-reset { display: block; width: fit-content; margin: 8px auto 0; font-size: 12px; padding: 8px 12px; border-radius: 999px; color: #b91c1c; border-color: #fecaca; box-shadow: none; background: #fff; }
         .link-button { display: block; text-align: center; text-decoration: none; }
         .step-title { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px; box-shadow: 0 8px 18px rgba(249,115,22,0.08); }
         .step-title h4 { font-size: 21px; line-height: 1.1; margin-bottom: 6px; color: #c2410c; font-family: 'Fraunces', serif; }
@@ -1682,11 +1690,19 @@ export default function App() {
                       </div>
                     </div>
 
+                    <button
+                      type="button"
+                      onClick={() => irAElemento("paso-datos-entrega")}
+                      className="button summary-continue"
+                    >
+                      Continuar
+                    </button>
+
                     <button type="button" onClick={reiniciarPedido} className="button light small-reset">
                       Borrar y volver a empezar
                     </button>
 
-                    <div className="step-title" style={{ marginTop: 18 }}>
+                    <div id="paso-datos-entrega" className="step-title" style={{ marginTop: 18 }}>
                       <span className="step-number">3</span>
                       <div>
                         <h4>Datos de entrega</h4>
