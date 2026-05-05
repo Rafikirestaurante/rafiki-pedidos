@@ -816,7 +816,7 @@ export default function App() {
     const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
 
     if (esSopa) {
-      irAElemento("resumen-pedido");
+      irAElemento(`paso-cantidad-${id}`);
     } else {
       irAElemento(`paso-acompanantes-${id}`);
     }
@@ -855,7 +855,7 @@ export default function App() {
         const nuevosAcompanantes = [...acompanantesActuales, acompanante];
 
         if (nuevosAcompanantes.length === MAX_ACOMPANANTES_CLIENTE) {
-          irAElemento("resumen-pedido");
+          irAElemento(`paso-cantidad-${id}`);
         }
 
         return {
@@ -916,8 +916,14 @@ export default function App() {
       return;
     }
 
-    if (!cliente.trim() || !telefono.trim() || !ubicacion.trim()) {
-      mostrarMensaje("Debes ingresar nombre, teléfono y ubicación para finalizar el pedido.", "warning");
+    const camposFaltantes = [];
+
+    if (!cliente.trim()) camposFaltantes.push("nombre");
+    if (!telefono.trim()) camposFaltantes.push("teléfono");
+    if (!ubicacion.trim()) camposFaltantes.push("ubicación");
+
+    if (camposFaltantes.length > 0) {
+      mostrarMensaje(`Para finalizar el pedido falta llenar: ${camposFaltantes.join(", ")}.`, "warning");
       irAElemento("datos-entrega");
       return;
     }
@@ -1428,7 +1434,7 @@ export default function App() {
                         const pasos = itemEsSopa
                           ? ["Plato", "Datos"]
                           : ["Plato", "Acomp.", "Datos"];
-                        const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
+                        const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : 2;
 
                         return (
                           <div key={item.id} id={`producto-${item.id}`} className="meal-card">
@@ -1537,7 +1543,7 @@ export default function App() {
                                 <button
                                   type="button"
                                   className="button continue-button"
-                                  onClick={() => irAElemento("resumen-pedido")}
+                                  onClick={() => irAElemento(`paso-cantidad-${item.id}`)}
                                 >
                                   Continuar
                                 </button>
@@ -1560,6 +1566,54 @@ export default function App() {
                               </div>
                             )}
 
+                            {tienePlato && (
+                              <div id={`paso-cantidad-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
+                                <div className="grid-2">
+                                  <div className="box">
+                                    <strong>Cantidad</strong>
+                                    <div style={{ marginTop: 10 }}>
+                                      <SelectorCantidad
+                                        cantidad={item.cantidad}
+                                        onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <label className="box row">
+                                    <div>
+                                      <strong>🥡 Para llevar</strong>
+                                      <p className="muted" style={{ marginBottom: 0 }}>
+                                        {valorParaLlevarItem(item) === 0 && item.paraLlevar
+                                          ? "Sin costo adicional"
+                                          : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
+                                      </p>
+                                    </div>
+
+                                    <input
+                                      type="checkbox"
+                                      checked={item.paraLlevar}
+                                      onChange={(e) =>
+                                        actualizarItem(item.id, { paraLlevar: e.target.checked })
+                                      }
+                                      style={{ width: 24, height: 24 }}
+                                    />
+                                  </label>
+                                </div>
+
+                                <div className="total-row">
+                                  <span>Subtotal</span>
+                                  <strong>{dinero(calcularTotalItem(item))}</strong>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  className="button continue-button"
+                                  onClick={() => irAElemento("resumen-pedido")}
+                                >
+                                  Continuar
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -1624,7 +1678,7 @@ export default function App() {
                       Borrar y volver a empezar
                     </button>
 
-                    <div id="datos-entrega" className="step-title" style={{ marginTop: 18 }}>
+                    <div className="step-title" id="datos-entrega" style={{ marginTop: 18 }}>
                       <span className="step-number">3</span>
                       <div>
                         <h4>Datos de entrega</h4>
@@ -1635,21 +1689,21 @@ export default function App() {
                     </div>
 
                     <CampoTexto
-                      etiqueta="👤 Nombre *"
+                      etiqueta="👤 Nombre"
                       value={cliente}
                       onChange={setCliente}
                       placeholder="Ej: Laura Pérez"
                     />
 
                     <CampoTexto
-                      etiqueta="📞 Teléfono *"
+                      etiqueta="📞 Teléfono"
                       value={telefono}
                       onChange={setTelefono}
                       placeholder="Ej: 300 123 4567"
                     />
 
                     <CampoTexto
-                      etiqueta="📍 Ubicación *"
+                      etiqueta="📍 Ubicación"
                       value={ubicacion}
                       onChange={setUbicacion}
                       placeholder="Ej: Edificio, oficina o barrio"
