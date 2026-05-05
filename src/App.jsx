@@ -1625,20 +1625,6 @@ export default function App() {
                       multiline
                     />
 
-                    <button
-                      type="button"
-                      onClick={registrarPedido}
-                      disabled={
-                        guardandoPedido ||
-                        menu.platos_detalle.length === 0 ||
-                        itemsPedido.every((item) => !(item.plato || item.proteina))
-                      }
-                      className="button"
-                      style={{ width: "100%", marginTop: 10 }}
-                    >
-                      {guardandoPedido ? "Guardando pedido..." : "Revisar y finalizar pedido"}
-                    </button>
-
                     {hayProductoSeleccionado && (
                       <div className="sticky-total">
                         <div>
@@ -1758,23 +1744,6 @@ export default function App() {
                     >
                       🔄 Actualizar pedidos
                     </button>
-                  </div>
-
-                  <div className="admin-stats">
-                    <div className="summary-card compact">
-                      <span>Pendientes</span>
-                      <strong>{pedidosPendientes.length}</strong>
-                    </div>
-
-                    <div className="summary-card compact">
-                      <span>Finalizados</span>
-                      <strong>{pedidosFinalizados.length}</strong>
-                    </div>
-
-                    <div className="summary-card compact">
-                      <span>Total vendido</span>
-                      <strong>{dinero(totalVendido)}</strong>
-                    </div>
                   </div>
 
                   <div className="filtros-historial">
