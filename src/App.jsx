@@ -610,7 +610,7 @@ export default function App() {
       if (elemento) {
         elemento.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    }, 150);
+    }, 160);
   }
 
   useEffect(() => {
@@ -821,13 +821,25 @@ export default function App() {
       if (elemento) {
         elemento.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    }, 150);
+    }, 160);
   }
 
   function eliminarAlmuerzo(id) {
     setItemsPedido((actual) =>
       actual.length === 1 ? actual : actual.filter((item) => item.id !== id)
     );
+  }
+
+  function reiniciarPedido() {
+    setItemsPedido([crearItemNuevo()]);
+    setCliente("");
+    setTelefono("");
+    setUbicacion("");
+    setTipoPago("Efectivo");
+    setObservaciones("");
+    setPedidoFinalizado(null);
+    setMensaje({ texto: "", tipo: "info" });
+    irAElemento("inicio-pedido-cliente");
   }
 
   async function registrarPedido() {
@@ -990,14 +1002,7 @@ export default function App() {
   }
 
   function nuevoPedidoCliente() {
-    setItemsPedido([crearItemNuevo()]);
-    setCliente("");
-    setTelefono("");
-    setUbicacion("");
-    setTipoPago("Efectivo");
-    setObservaciones("");
-    setPedidoFinalizado(null);
-    setMensaje({ texto: "", tipo: "info" });
+    reiniciarPedido();
     setVista("cliente");
   }
 
@@ -1043,7 +1048,9 @@ export default function App() {
         .admin-tabs button.active { background: #f97316; color: #fff; }
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .section { padding: 24px; }
-        .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; scroll-margin-top: 18px; }
+        .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; scroll-margin-top: 18px; animation: fadeInUp 0.28s ease; }
+        .fade-step { animation: fadeInUp 0.25s ease; scroll-margin-top: 18px; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
         .button { border: 0; background: #f97316; color: white; font-weight: 900; padding: 14px 18px; border-radius: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25); }
         .button.green { background: #22c55e; }
@@ -1051,14 +1058,13 @@ export default function App() {
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
         .continue-button { width: 100%; margin-top: 16px; background: #22c55e; }
+        .small-reset { width: 100%; margin-top: 10px; font-size: 13px; padding: 10px 12px; border-radius: 14px; }
         .link-button { display: block; text-align: center; text-decoration: none; }
         .step-title { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.08); }
         .step-title h4 { font-size: 23px; line-height: 1.1; margin-bottom: 6px; color: #c2410c; }
         .step-title p { font-size: 15px; }
         .step-number { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 999px; background: linear-gradient(135deg, #f97316, #f59e0b); color: white; font-weight: 900; font-size: 20px; flex: 0 0 auto; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25); }
         .selected-dish { background: #ecfdf5; border: 1px solid #86efac; color: #166534; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px; font-weight: 900; }
-        .contador-acompanantes { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #fed7aa; color: #c2410c; border-radius: 999px; padding: 10px 14px; font-weight: 900; margin: 10px 0 14px; }
-        .contador-acompanantes strong { background: #f97316; color: #fff; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; }
         .category-block { margin-bottom: 20px; border: 1px solid #fed7aa; border-radius: 24px; padding: 16px; background: #fffaf0; }
         .category-title { font-size: 22px; margin-bottom: 12px; color: #c2410c; }
         .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1176,7 +1182,7 @@ export default function App() {
 
           {!cargando && vista === "cliente" && (
             <main className="layout">
-              <section className="card">
+              <section className="card" id="inicio-pedido-cliente">
                 <div className="hero">
                   <p>{menu.fecha}</p>
                   <h2>{menu.titulo}</h2>
@@ -1254,7 +1260,7 @@ export default function App() {
                             ))}
 
                             {tienePlato && !itemEsSopa && (
-                              <div id={`paso-acompanantes-${item.id}`} style={{ marginTop: 18 }}>
+                              <div id={`paso-acompanantes-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
                                 <div className="step-title">
                                   <span className="step-number">2</span>
                                   <div>
@@ -1263,11 +1269,6 @@ export default function App() {
                                       Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones para completar tu almuerzo.
                                     </p>
                                   </div>
-                                </div>
-
-                                <div className="contador-acompanantes">
-                                  <strong>{acompanantesItem.length}</strong>
-                                  <span>de {MAX_ACOMPANANTES_CLIENTE} seleccionados</span>
                                 </div>
 
                                 <div className="chips">
@@ -1303,7 +1304,7 @@ export default function App() {
                                   className="button continue-button"
                                   onClick={() => irAElemento(`paso-cantidad-${item.id}`)}
                                 >
-                                  Continuar con cantidad y empaque →
+                                  Continuar
                                 </button>
 
                                 <div className="box" style={{ marginTop: 18 }}>
@@ -1316,7 +1317,7 @@ export default function App() {
                             )}
 
                             {tienePlato && itemEsSopa && (
-                              <div className="box soft" style={{ marginTop: 18 }}>
+                              <div className="box soft fade-step" style={{ marginTop: 18 }}>
                                 <strong>🥣 Producto de sopas</strong>
                                 <p className="muted" style={{ marginBottom: 0 }}>
                                   Este producto no incluye acompañantes, sopa adicional ni bebida.
@@ -1325,7 +1326,7 @@ export default function App() {
                             )}
 
                             {tienePlato && (
-                              <div id={`paso-cantidad-${item.id}`} style={{ marginTop: 18 }}>
+                              <div id={`paso-cantidad-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
                                 <div className="step-title">
                                   <span className="step-number">{itemEsSopa ? "2" : "3"}</span>
                                   <div>
@@ -1372,6 +1373,14 @@ export default function App() {
                                   <span>Subtotal</span>
                                   <strong>{dinero(calcularTotalItem(item))}</strong>
                                 </div>
+
+                                <button
+                                  type="button"
+                                  className="button continue-button"
+                                  onClick={() => irAElemento("resumen-pedido")}
+                                >
+                                  Continuar
+                                </button>
                               </div>
                             )}
                           </div>
@@ -1386,8 +1395,8 @@ export default function App() {
                 </div>
               </section>
 
-              <aside className="card card-pad">
-                <h2>{hayProductoSeleccionado ? "Datos de entrega" : "Resumen"}</h2>
+              <aside className="card card-pad fade-step" id="resumen-pedido">
+                <h2>{hayProductoSeleccionado ? "Resumen del pedido" : "Resumen"}</h2>
 
                 {!hayProductoSeleccionado ? (
                   <div className="box soft">
@@ -1399,11 +1408,11 @@ export default function App() {
                 ) : (
                   <>
                     <p className="muted">
-                      Revisa tu pedido y completa los datos para finalizar.
+                      Revisa tu pedido antes de finalizar.
                     </p>
 
-                    <div className="box soft" style={{ marginBottom: 18 }}>
-                      <h3>Resumen</h3>
+                    <div className="box soft" style={{ marginBottom: 12 }}>
+                      <h3>Resumen del pedido</h3>
 
                       {itemsPedido
                         .filter((item) => item.plato || item.proteina)
@@ -1436,10 +1445,18 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="step-title">
+                    <button
+                      type="button"
+                      onClick={reiniciarPedido}
+                      className="button light small-reset"
+                    >
+                      Borrar y volver a empezar
+                    </button>
+
+                    <div className="step-title" style={{ marginTop: 18 }}>
                       <span className="step-number">4</span>
                       <div>
-                        <h4>Completa tus datos</h4>
+                        <h4>Datos de entrega</h4>
                         <p className="muted" style={{ marginBottom: 0 }}>
                           Así sabremos a dónde llevar tu pedido.
                         </p>
