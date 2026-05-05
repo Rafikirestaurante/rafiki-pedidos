@@ -455,25 +455,28 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
 
   return (
     <article className={`pedido-cocina ${estadoNormalizado === "Finalizado" ? "pedido-finalizado" : ""}`}>
-      <div className="pedido-top">
-        <div>
-          <div className="pedido-linea">
-            <EstadoBadge estado={pedido.estado} />
-            <span className="pedido-id">Pedido #{numeroVisual}</span>
-          </div>
-
-          <h3>{obtenerCliente(pedido)}</h3>
-          <p className="muted">🕒 {formatearFechaHora(pedido.created_at)}</p>
-          <p className="muted">📍 {pedido.ubicacion || "Sin ubicación"}</p>
-          <p className="muted">📞 {pedido.telefono || "Sin teléfono"}</p>
-          <p className="muted">💳 {pedido.tipo_pago || "Pago no especificado"}</p>
+      <div className={`pedido-header ${estadoNormalizado === "Finalizado" ? "pedido-header-finalizado" : "pedido-header-pending"}`}>
+        <div className="pedido-header-title">
+          Pedido #{numeroVisual}
         </div>
-
-        <div className="pedido-total">
-          <span>Total</span>
-          <strong>{dinero(pedido.total)}</strong>
+        <div className="pedido-header-right">
+          <EstadoBadge estado={pedido.estado} />
+          <strong style={{ color: "white", fontSize: 20, fontFamily: "'Fraunces', serif" }}>{dinero(pedido.total)}</strong>
         </div>
       </div>
+
+      <div className="pedido-body">
+        <div className="pedido-top">
+          <div>
+            <p className="pedido-cliente-nombre">{obtenerCliente(pedido)}</p>
+            <div className="pedido-meta">
+              <span>🕒 {formatearFechaHora(pedido.created_at)}</span>
+              <span>📍 {pedido.ubicacion || "Sin ubicación"}</span>
+              <span>📞 {pedido.telefono || "Sin teléfono"}</span>
+              <span>💳 {pedido.tipo_pago || "Pago no especificado"}</span>
+            </div>
+          </div>
+        </div>
 
       <div className="items-cocina">
         {items.length === 0 ? (
@@ -566,6 +569,7 @@ function PedidoCocina({ pedido, numeroVisual, onCambiarEstado }) {
             Sin teléfono
           </button>
         )}
+      </div>
       </div>
     </article>
   );
@@ -1045,23 +1049,25 @@ export default function App() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,400&display=swap');
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fff7ed; color: #292524; }
+        body { margin: 0; font-family: 'Nunito', Arial, sans-serif; background: #fff7ed; color: #292524; }
         button, input, textarea, select { font-family: inherit; }
-        button { cursor: pointer; }
+        button { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+        button:active:not(:disabled) { transform: scale(0.97); }
         button:disabled { cursor: not-allowed; opacity: 0.6; }
-        .app { min-height: 100vh; background: radial-gradient(circle at top left, #fed7aa 0, transparent 32%), linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%); padding: 24px; }
+        .app { min-height: 100vh; background: radial-gradient(ellipse at top left, #fed7aa 0, transparent 40%), radial-gradient(ellipse at bottom right, #fde68a 0, transparent 35%), linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%); padding: 24px; }
         .container { max-width: 1200px; margin: 0 auto; }
         .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
-        .brand { display: inline-flex; background: #ffedd5; color: #c2410c; padding: 8px 14px; border-radius: 999px; font-weight: 800; margin-bottom: 10px; }
-        h1 { margin: 0; font-size: clamp(30px, 5vw, 52px); line-height: 1; letter-spacing: -1.5px; }
+        .brand { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg,#f97316,#f59e0b); color: white; padding: 8px 16px; border-radius: 999px; font-weight: 900; margin-bottom: 10px; font-size: 15px; box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
+        h1 { margin: 0; font-family: 'Fraunces', serif; font-size: clamp(30px, 5vw, 52px); line-height: 1; letter-spacing: -1.5px; }
         h2, h3, h4, h5, p { margin-top: 0; }
         .muted { color: #78716c; }
         .small { font-size: 13px; }
         .nav { display: flex; gap: 6px; background: #ffffff; border: 1px solid #fed7aa; padding: 6px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
         .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; }
-        .nav button.active { background: #f97316; color: #fff; }
-        .alert { white-space: pre-line; padding: 14px 18px; border-radius: 18px; margin-bottom: 18px; font-weight: 700; border: 1px solid transparent; }
+        .nav button.active { background: #f97316; color: #fff; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
+        .alert { white-space: pre-line; padding: 14px 18px; border-radius: 18px; margin-bottom: 18px; font-weight: 700; border: 1px solid transparent; animation: fadeInUp 0.3s ease; }
         .alert-info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .alert-success { background: #ecfdf5; color: #166534; border-color: #bbf7d0; }
         .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
@@ -1070,19 +1076,29 @@ export default function App() {
         .card { background: #ffffff; border: 1px solid #fed7aa; border-radius: 32px; box-shadow: 0 18px 40px rgba(0,0,0,0.08); overflow: hidden; }
         .card-pad { padding: 24px; }
         .welcome { max-width: 820px; margin: 0 auto; text-align: center; }
-        .welcome-card { background: linear-gradient(135deg, #f97316, #f59e0b); color: white; border-radius: 36px; padding: 44px 28px; box-shadow: 0 25px 60px rgba(249, 115, 22, 0.25); }
-        .welcome-logo { width: 96px; height: 96px; object-fit: contain; background: #ffffff; border-radius: 24px; padding: 10px; margin-bottom: 16px; box-shadow: 0 12px 28px rgba(0,0,0,0.16); }
-        .welcome-card h2 { font-size: clamp(34px, 7vw, 62px); margin-bottom: 10px; line-height: 0.95; }
-        .welcome-card p { color: #fff7ed; font-size: 18px; margin-bottom: 24px; }
-        .welcome-button { display: inline-flex; justify-content: center; align-items: center; width: min(100%, 420px); border: 0; background: #ffffff; color: #c2410c; padding: 18px 22px; border-radius: 22px; font-size: 22px; font-weight: 900; text-decoration: none; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+        .welcome-card { background: linear-gradient(145deg, #ea580c, #f97316 40%, #f59e0b); color: white; border-radius: 36px; padding: 48px 32px 40px; box-shadow: 0 32px 80px rgba(249,115,22,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset; position: relative; overflow: hidden; }
+        .welcome-card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: rgba(255,255,255,0.07); border-radius: 50%; }
+        .welcome-card::after { content: ''; position: absolute; bottom: -60px; left: -30px; width: 260px; height: 260px; background: rgba(255,255,255,0.05); border-radius: 50%; }
+        .welcome-logo { width: 96px; height: 96px; object-fit: contain; background: #ffffff; border-radius: 24px; padding: 10px; margin-bottom: 20px; box-shadow: 0 16px 36px rgba(0,0,0,0.2); position: relative; z-index: 1; }
+        .welcome-card h2 { font-family: 'Fraunces', serif; font-size: clamp(36px, 7vw, 66px); margin-bottom: 12px; line-height: 0.92; position: relative; z-index: 1; }
+        .welcome-card p { color: rgba(255,255,255,0.88); font-size: 17px; margin-bottom: 8px; position: relative; z-index: 1; }
+        .welcome-menu-preview { background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.25); border-radius: 18px; padding: 14px 20px; margin: 20px 0 28px; display: inline-block; text-align: left; position: relative; z-index: 1; }
+        .welcome-menu-preview .label { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px; }
+        .welcome-menu-preview .menu-name { font-size: 18px; font-weight: 900; }
+        .welcome-menu-preview .menu-price { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+        .welcome-button { display: inline-flex; justify-content: center; align-items: center; gap: 10px; width: min(100%, 420px); border: 0; background: #ffffff; color: #c2410c; padding: 20px 28px; border-radius: 22px; font-size: 20px; font-weight: 900; text-decoration: none; box-shadow: 0 16px 36px rgba(0,0,0,0.18); position: relative; z-index: 1; letter-spacing: -0.3px; }
+        .welcome-button:hover { transform: translateY(-2px); box-shadow: 0 22px 44px rgba(0,0,0,0.22); }
         .admin-small { margin-top: 18px; border: 0; background: transparent; color: #78716c; font-weight: 800; text-decoration: underline; font-size: 13px; }
-        .hero { background: linear-gradient(135deg, #f97316, #f59e0b); color: white; padding: 32px; }
-        .hero.green { background: linear-gradient(135deg, #22c55e, #10b981); }
+        .hero { background: linear-gradient(145deg, #ea580c, #f97316 50%, #f59e0b); color: white; padding: 36px 32px; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: -30px; right: -30px; width: 160px; height: 160px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+        .hero.green { background: linear-gradient(145deg, #16a34a, #22c55e 50%, #4ade80); }
+        .hero p:first-child { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; opacity: 0.75; margin-bottom: 8px; }
+        .hero h2 { font-family: 'Fraunces', serif; font-size: clamp(26px, 4vw, 40px); margin-bottom: 8px; line-height: 1.05; }
         .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
         .layout { display: grid; grid-template-columns: 1fr 400px; gap: 22px; align-items: start; }
         .admin-tabs { display: flex; gap: 8px; margin-bottom: 18px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 8px; }
         .admin-tabs button { flex: 1; border: 0; border-radius: 16px; padding: 14px 16px; background: transparent; font-weight: 900; color: #57534e; }
-        .admin-tabs button.active { background: #f97316; color: #fff; }
+        .admin-tabs button.active { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .admin-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
         .admin-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 12px 0 16px; }
@@ -1090,38 +1106,44 @@ export default function App() {
         .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; scroll-margin-top: 18px; animation: fadeInUp 0.28s ease; }
         .fade-step { animation: fadeInUp 0.25s ease; scroll-margin-top: 18px; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
         .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-        .button { border: 0; background: #f97316; color: white; font-weight: 900; padding: 14px 18px; border-radius: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25); }
-        .button.green { background: #22c55e; }
+        .button { border: 0; background: linear-gradient(135deg, #f97316, #fb923c); color: white; font-weight: 900; padding: 14px 18px; border-radius: 16px; box-shadow: 0 6px 16px rgba(249,115,22,0.28); letter-spacing: -0.2px; }
+        .button.green { background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
         .button.light { background: #fff; color: #44403c; border: 1px solid #e7e5e4; box-shadow: none; }
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
-        .continue-button { width: 100%; margin-top: 16px; background: #22c55e; }
+        .continue-button { width: 100%; margin-top: 16px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
         .small-reset { width: 100%; margin-top: 10px; font-size: 13px; padding: 10px 12px; border-radius: 14px; color: #b91c1c; border-color: #fecaca; }
         .link-button { display: block; text-align: center; text-decoration: none; }
-        .step-title { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.08); }
-        .step-title h4 { font-size: 23px; line-height: 1.1; margin-bottom: 6px; color: #c2410c; }
+        .step-title { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px; box-shadow: 0 8px 18px rgba(249,115,22,0.08); }
+        .step-title h4 { font-size: 21px; line-height: 1.1; margin-bottom: 6px; color: #c2410c; font-family: 'Fraunces', serif; }
         .step-title p { font-size: 15px; }
-        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 999px; background: linear-gradient(135deg, #f97316, #f59e0b); color: white; font-weight: 900; font-size: 20px; flex: 0 0 auto; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.25); }
-        .selected-dish { background: #ecfdf5; border: 1px solid #86efac; color: #166534; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px; font-weight: 900; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 999px; background: linear-gradient(135deg, #f97316, #f59e0b); color: white; font-weight: 900; font-size: 20px; flex: 0 0 auto; box-shadow: 0 8px 18px rgba(249,115,22,0.25); }
+        .selected-dish { background: #ecfdf5; border: 1px solid #86efac; color: #166534; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+        .selected-dish::before { content: '✓'; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #22c55e; color: white; border-radius: 50%; font-size: 13px; flex-shrink: 0; }
         .category-block { margin-bottom: 20px; border: 1px solid #fed7aa; border-radius: 24px; padding: 16px; background: #fffaf0; }
-        .category-title { font-size: 22px; margin-bottom: 12px; color: #c2410c; }
+        .category-title { font-size: 20px; margin-bottom: 12px; color: #c2410c; font-weight: 900; display: flex; align-items: center; gap: 8px; }
         .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        .option { text-align: left; border: 1px solid #e7e5e4; background: #fff; border-radius: 18px; padding: 14px; font-weight: 900; }
-        .option small { display: block; margin-top: 5px; color: #ea580c; font-size: 15px; }
-        .option.selected { border-color: #f97316; color: #c2410c; background: #fff7ed; }
+        .option { text-align: left; border: 1.5px solid #e7e5e4; background: #fff; border-radius: 18px; padding: 14px; font-weight: 900; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
+        .option:hover { border-color: #fdba74; background: #fff7ed; }
+        .option small { display: block; margin-top: 6px; color: #ea580c; font-size: 16px; font-weight: 900; }
+        .option.selected { border-color: #f97316; color: #c2410c; background: #fff7ed; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+        .option.selected::after { content: '✓'; float: right; color: #f97316; font-size: 18px; }
         .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-        .chip { border: 1px solid #e7e5e4; background: #fff; border-radius: 999px; padding: 12px 14px; font-weight: 900; }
-        .chip.selected { border-color: #86efac; background: #dcfce7; color: #15803d; }
+        .chip { border: 1.5px solid #e7e5e4; background: #fff; border-radius: 999px; padding: 10px 16px; font-weight: 900; transition: all 0.15s; }
+        .chip:hover:not(:disabled) { border-color: #86efac; background: #f0fdf4; }
+        .chip.selected { border-color: #22c55e; background: #dcfce7; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
         .chip.blocked { background: #f5f5f4; color: #a8a29e; }
         .box { background: #fff; border: 1px solid #e7e5e4; border-radius: 18px; padding: 14px; }
         .box.soft { background: #fafaf9; }
         .field { display: block; margin-bottom: 14px; }
-        .field span { display: block; font-weight: 900; margin-bottom: 8px; }
-        .field input, .field textarea, .field select, select.box { width: 100%; border: 1px solid #e7e5e4; background: #fafaf9; border-radius: 16px; padding: 13px 14px; outline: none; }
-        .field input:focus, .field textarea:focus { border-color: #f97316; }
+        .field span { display: block; font-weight: 900; margin-bottom: 8px; font-size: 15px; }
+        .field input, .field textarea, .field select, select.box { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 16px; padding: 13px 14px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+        .field input:focus, .field textarea:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.12); background: #fff; }
         .quantity { display: flex; align-items: center; gap: 12px; }
-        .quantity button { width: 40px; height: 40px; border-radius: 999px; border: 1px solid #e7e5e4; background: #fff; font-size: 22px; font-weight: 900; }
+        .quantity button { width: 40px; height: 40px; border-radius: 999px; border: 1.5px solid #e7e5e4; background: #fff; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+        .quantity button:hover { border-color: #f97316; color: #f97316; }
         .summary-item { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; margin-bottom: 10px; font-weight: 700; }
         .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }
         .total-row strong { color: #ea580c; font-size: 26px; }
@@ -1129,41 +1151,60 @@ export default function App() {
         .mini-pending strong { background: #f97316; color: #fff; min-width: 28px; height: 28px; border-radius: 999px; display: inline-flex; justify-content: center; align-items: center; }
         .filtros-historial { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 6px; align-items: center; }
         .filtros-historial button { border: 1px solid #fed7aa; background: #fff; color: #c2410c; padding: 10px 14px; border-radius: 999px; font-weight: 900; }
-        .filtros-historial button.active { background: #f97316; color: #fff; }
+        .filtros-historial button.active { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; box-shadow: 0 4px 10px rgba(249,115,22,0.25); }
         .calendario-filtro { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #fed7aa; border-radius: 999px; padding: 8px 12px; color: #c2410c; font-weight: 900; }
         .calendario-filtro span { font-size: 13px; }
         .calendario-filtro input { border: 0; outline: none; background: transparent; color: #44403c; font-weight: 800; padding: 0; }
         .pedido-seccion { margin-bottom: 26px; }
         .section-heading { display: flex; justify-content: space-between; align-items: center; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px 18px; margin-bottom: 14px; }
-        .section-heading h3 { margin: 0; color: #c2410c; }
-        .section-heading span { background: #f97316; color: #fff; min-width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; }
+        .section-heading h3 { margin: 0; color: #c2410c; font-family: 'Fraunces', serif; }
+        .section-heading span { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; min-width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
         .bottom-summary { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 18px; }
         .summary-cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
-        .summary-card { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; }
+        .summary-card { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; transition: box-shadow 0.15s; }
+        .summary-card:hover { box-shadow: 0 8px 24px rgba(249,115,22,0.1); }
         .summary-card.compact { padding: 15px; }
-        .summary-card span { color: #78716c; font-weight: 800; }
-        .summary-card strong { display: block; color: #ea580c; font-size: 30px; margin-top: 6px; }
-        .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; padding: 20px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
-        .pedido-finalizado { opacity: 0.75; background: #f8fafc; }
+        .summary-card span { color: #78716c; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-card strong { display: block; color: #ea580c; font-size: 28px; margin-top: 6px; font-family: 'Fraunces', serif; }
+        .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
+        .pedido-finalizado { opacity: 0.7; }
+        .pedido-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
+        .pedido-header-pending { background: linear-gradient(135deg, #f97316, #fb923c); }
+        .pedido-header-finalizado { background: linear-gradient(135deg, #16a34a, #22c55e); }
+        .pedido-header-title { font-weight: 900; color: white; font-size: 15px; }
+        .pedido-header-right { display: flex; align-items: center; gap: 8px; }
+        .pedido-body { padding: 16px 18px; }
         .pedido-top { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; border-bottom: 1px solid #f5f5f4; padding-bottom: 14px; margin-bottom: 14px; }
         .pedido-linea { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .pedido-id { font-weight: 900; color: #78716c; font-size: 13px; }
         .pedido-total { text-align: right; }
-        .pedido-total span { display: block; color: #78716c; font-weight: 800; }
-        .pedido-total strong { color: #ea580c; font-size: 28px; }
+        .pedido-total span { display: block; color: #78716c; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .pedido-total strong { color: #ea580c; font-size: 26px; font-family: 'Fraunces', serif; }
+        .pedido-cliente-nombre { font-size: 20px; font-weight: 900; color: #292524; margin: 0 0 6px; font-family: 'Fraunces', serif; }
+        .pedido-meta { font-size: 13px; color: #78716c; display: flex; flex-direction: column; gap: 2px; }
         .items-cocina { display: grid; gap: 12px; }
         .item-cocina { display: grid; grid-template-columns: 48px 1fr; gap: 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 14px; }
-        .item-numero { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: #f97316; color: #fff; border-radius: 14px; font-weight: 900; }
-        .item-detalle h4 { margin-bottom: 8px; font-size: 19px; }
-        .item-detalle p { margin-bottom: 5px; }
+        .item-numero { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; border-radius: 14px; font-weight: 900; box-shadow: 0 4px 10px rgba(249,115,22,0.25); }
+        .item-detalle h4 { margin-bottom: 8px; font-size: 18px; color: #c2410c; }
+        .item-detalle p { margin-bottom: 5px; font-size: 14px; }
         .nota-cocina { margin-top: 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 16px; padding: 12px; }
         .pedido-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
-        .pedido-actions select { border: 1px solid #e7e5e4; border-radius: 16px; padding: 13px 14px; background: #fafaf9; font-weight: 800; }
+        .pedido-actions select { border: 1.5px solid #e7e5e4; border-radius: 16px; padding: 13px 14px; background: #fafaf9; font-weight: 800; outline: none; }
         .pedido-text { white-space: pre-line; background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; font-weight: 700; margin-top: 12px; }
-        .badge { border: 1px solid #e7e5e4; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 900; }
-        .badge-pendiente { background: #fef3c7; color: #92400e; }
-        .badge-finalizado { background: #dcfce7; color: #15803d; }
-        pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; }
+        .badge { border: 1px solid transparent; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 900; }
+        .badge-pendiente { background: rgba(254,243,199,0.6); color: #fff; border-color: rgba(253,230,138,0.4); }
+        .badge-finalizado { background: rgba(220,252,231,0.6); color: #fff; border-color: rgba(134,239,172,0.4); }
+        .progress-bar-wrap { display: flex; gap: 4px; margin-bottom: 18px; }
+        .progress-step { flex: 1; height: 4px; background: #fed7aa; border-radius: 4px; transition: background 0.3s; }
+        .progress-step.done { background: linear-gradient(90deg, #f97316, #f59e0b); }
+        .progress-labels { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .progress-label { font-size: 11px; font-weight: 900; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.5px; }
+        .progress-label.done { color: #f97316; }
+        .sticky-total { position: sticky; bottom: 0; background: #1c1917; border-radius: 20px 20px 0 0; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; margin: 20px -24px -24px; box-shadow: 0 -8px 24px rgba(0,0,0,0.15); }
+        .sticky-total-label { font-size: 12px; color: #a8a29e; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sticky-total-amount { font-size: 24px; font-weight: 900; color: #fb923c; font-family: 'Fraunces', serif; }
+        .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
         @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
@@ -1209,8 +1250,19 @@ export default function App() {
                 <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="welcome-logo" />
                 <h2>Bienvenido a Rafiki</h2>
                 <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
+
+                {menu.platos_detalle.length > 0 && (
+                  <div className="welcome-menu-preview">
+                    <div className="label">🍽️ Menú de hoy</div>
+                    <div className="menu-name">{menu.titulo}</div>
+                    <div className="menu-price">
+                      Desde {dinero(Math.min(...menu.platos_detalle.map(p => p.precio).filter(p => p > 0)))} · {menu.platos_detalle.length} platos disponibles
+                    </div>
+                  </div>
+                )}
+
                 <button type="button" onClick={() => setVista("cliente")} className="welcome-button">
-                  Haz tu pedido aquí
+                  🛍️ Haz tu pedido aquí
                 </button>
               </section>
 
@@ -1235,7 +1287,7 @@ export default function App() {
                       Todavía no hay platos configurados para el menú de hoy. Entra al panel administrativo y agrega los platos del día.
                     </div>
                   ) : (
-                    <>
+                  <>
                       <div style={{ marginBottom: 18 }}>
                         <h3>🛍️ Arma tu pedido paso a paso</h3>
                         <p className="muted">Primero escoge el plato. Luego aparecerán los siguientes pasos.</p>
@@ -1245,6 +1297,12 @@ export default function App() {
                         const itemEsSopa = esCategoriaSopa(item.categoria);
                         const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
                         const tienePlato = Boolean(item.plato || item.proteina);
+                        const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
+
+                        const pasos = itemEsSopa
+                          ? ["Plato", "Cantidad", "Resumen", "Datos"]
+                          : ["Plato", "Acomp.", "Cantidad", "Datos"];
+                        const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : 2;
 
                         return (
                           <div key={item.id} id={`producto-${item.id}`} className="meal-card">
@@ -1260,6 +1318,17 @@ export default function App() {
                                   Eliminar
                                 </button>
                               )}
+                            </div>
+
+                            <div className="progress-bar-wrap">
+                              {pasos.map((_, i) => (
+                                <div key={i} className={`progress-step ${i <= pasoActual ? "done" : ""}`} />
+                              ))}
+                            </div>
+                            <div className="progress-labels">
+                              {pasos.map((nombre, i) => (
+                                <span key={i} className={`progress-label ${i <= pasoActual ? "done" : ""}`}>{nombre}</span>
+                              ))}
                             </div>
 
                             <div className="step-title">
@@ -1547,6 +1616,24 @@ export default function App() {
                     >
                       {guardandoPedido ? "Guardando pedido..." : "Revisar y finalizar pedido"}
                     </button>
+
+                    {hayProductoSeleccionado && (
+                      <div className="sticky-total">
+                        <div>
+                          <div className="sticky-total-label">Total</div>
+                          <div className="sticky-total-amount">{dinero(totalPedido)}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={registrarPedido}
+                          disabled={guardandoPedido || menu.platos_detalle.length === 0}
+                          className="button"
+                          style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
+                        >
+                          {guardandoPedido ? "Guardando..." : "Finalizar →"}
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </aside>
@@ -1556,9 +1643,9 @@ export default function App() {
           {!cargando && vista === "confirmacion" && pedidoFinalizado && (
             <main style={{ maxWidth: 760, margin: "0 auto" }}>
               <section className="card">
-                <div className="hero green">
-                  <p style={{ fontSize: 48 }}>✅</p>
-                  <h2>Pedido finalizado</h2>
+                <div className="hero green" style={{ textAlign: "center" }}>
+                  <div className="confirmacion-check">✓</div>
+                  <h2 style={{ fontFamily: "'Fraunces', serif" }}>¡Pedido confirmado!</h2>
                   <p>Revisa el consolidado y envíalo a Rafiki por WhatsApp.</p>
                 </div>
 
