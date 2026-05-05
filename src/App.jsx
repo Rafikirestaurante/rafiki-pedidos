@@ -293,7 +293,7 @@ function crearMensajePedidoListo(pedido) {
 
 function crearItemNuevo() {
   return {
-    id: Date.now() + Math.random(),
+    id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
     cantidad: 1,
     categoria: "",
     plato: "",
@@ -589,6 +589,8 @@ export default function App() {
   const [mensajeMenu, setMensajeMenu] = useState({ texto: "", tipo: "info" });
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [guardandoPedido, setGuardandoPedido] = useState(false);
+  const [guardandoMenu, setGuardandoMenu] = useState(false);
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
@@ -861,6 +863,8 @@ export default function App() {
   }
 
   async function registrarPedido() {
+    if (guardandoPedido) return;
+
     const itemsValidos = itemsPedido
       .filter((item) => item.plato || item.proteina)
       .map((item) => {
@@ -895,23 +899,31 @@ export default function App() {
       enviado_whatsapp: false
     };
 
-    const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+    setGuardandoPedido(true);
 
-    if (error) {
-      mostrarMensaje(`Error guardando pedido: ${error.message}`, "error");
-      return;
+    try {
+      const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+
+      if (error) {
+        mostrarMensaje(`Error guardando pedido: ${error.message}`, "error");
+        return;
+      }
+
+      if (filtroPedidos === "hoy" || filtroPedidos === "dia") {
+        setPedidos((actual) => [...actual, data]);
+      }
+
+      setPedidoFinalizado(data);
+      mostrarMensaje("Pedido guardado. Ahora puedes enviar el consolidado por WhatsApp.", "success");
+      setVista("confirmacion");
+    } finally {
+      setGuardandoPedido(false);
     }
-
-    if (filtroPedidos === "hoy" || filtroPedidos === "dia") {
-      setPedidos((actual) => [...actual, data]);
-    }
-
-    setPedidoFinalizado(data);
-    mostrarMensaje("Pedido guardado. Ahora puedes enviar el consolidado por WhatsApp.", "success");
-    setVista("confirmacion");
   }
 
   async function guardarMenu() {
+    if (guardandoMenu) return;
+
     setMensajeMenu({ texto: "", tipo: "info" });
 
     const resultadoPlatos = textoAPlatosDetalle(platosTexto, { estricto: true });
@@ -948,28 +960,48 @@ export default function App() {
       activo: true
     };
 
-    const idActual = menu.id || 0;
-    const { error: errorDesactivar } = await supabase
-      .from("menu_diario")
-      .update({ activo: false })
-      .neq("id", idActual);
+    setGuardandoMenu(true);
 
-    if (errorDesactivar) {
-      mostrarMensajeMenu(`Error desactivando menús anteriores: ${errorDesactivar.message}`, "error");
-      return;
-    }
+    try {
+      let data;
 
-    if (menu.id) {
-      const { data, error } = await supabase
+      if (menu.id) {
+        const respuesta = await supabase
+          .from("menu_diario")
+          .update(menuActualizado)
+          .eq("id", menu.id)
+          .select()
+          .single();
+
+        if (respuesta.error) {
+          mostrarMensajeMenu(`Error guardando menú: ${respuesta.error.message}`, "error");
+          return;
+        }
+
+        data = respuesta.data;
+      } else {
+        const respuesta = await supabase
+          .from("menu_diario")
+          .insert(menuActualizado)
+          .select()
+          .single();
+
+        if (respuesta.error) {
+          mostrarMensajeMenu(`Error creando menú: ${respuesta.error.message}`, "error");
+          return;
+        }
+
+        data = respuesta.data;
+      }
+
+      const { error: errorDesactivar } = await supabase
         .from("menu_diario")
-        .update(menuActualizado)
-        .eq("id", menu.id)
-        .select()
-        .single();
+        .update({ activo: false })
+        .eq("activo", true)
+        .neq("id", data.id);
 
-      if (error) {
-        mostrarMensajeMenu(`Error guardando menú: ${error.message}`, "error");
-        return;
+      if (errorDesactivar) {
+        mostrarMensajeMenu(`El menú se guardó, pero no se pudieron desactivar menús anteriores: ${errorDesactivar.message}`, "warning");
       }
 
       const nuevoMenu = normalizarMenu(data);
@@ -977,27 +1009,10 @@ export default function App() {
       setItemsPedido([crearItemNuevo()]);
       setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
       setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
-      mostrarMensajeMenu("Menú actualizado correctamente.", "success");
-      return;
+      mostrarMensajeMenu(menu.id ? "Menú actualizado correctamente." : "Menú creado correctamente.", "success");
+    } finally {
+      setGuardandoMenu(false);
     }
-
-    const { data, error } = await supabase
-      .from("menu_diario")
-      .insert(menuActualizado)
-      .select()
-      .single();
-
-    if (error) {
-      mostrarMensajeMenu(`Error creando menú: ${error.message}`, "error");
-      return;
-    }
-
-    const nuevoMenu = normalizarMenu(data);
-    setMenu(nuevoMenu);
-    setItemsPedido([crearItemNuevo()]);
-    setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
-    setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
-    mostrarMensajeMenu("Menú creado correctamente.", "success");
   }
 
   async function cambiarEstadoPedido(id, estado) {
@@ -1517,13 +1532,14 @@ export default function App() {
                       type="button"
                       onClick={registrarPedido}
                       disabled={
+                        guardandoPedido ||
                         menu.platos_detalle.length === 0 ||
                         itemsPedido.every((item) => !(item.plato || item.proteina))
                       }
                       className="button"
                       style={{ width: "100%", marginTop: 10 }}
                     >
-                      Revisar y finalizar pedido
+                      {guardandoPedido ? "Guardando pedido..." : "Revisar y finalizar pedido"}
                     </button>
                   </>
                 )}
@@ -1799,10 +1815,11 @@ export default function App() {
                   <button
                     type="button"
                     onClick={guardarMenu}
+                    disabled={guardandoMenu}
                     className="button"
                     style={{ width: "100%", marginTop: 14 }}
                   >
-                    Guardar menú del día
+                    {guardandoMenu ? "Guardando menú..." : "Guardar menú del día"}
                   </button>
 
                   {mensajeMenu.texto && (
