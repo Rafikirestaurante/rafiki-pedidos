@@ -591,6 +591,7 @@ export default function App() {
   const [cargando, setCargando] = useState(true);
   const [guardandoPedido, setGuardandoPedido] = useState(false);
   const [guardandoMenu, setGuardandoMenu] = useState(false);
+  const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
@@ -687,6 +688,8 @@ export default function App() {
     return "Pedidos de hoy";
   }, [filtroPedidos, fechaSeleccionada]);
 
+  const hayBusquedaPedidos = busqueda.trim().length > 0;
+
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
 
   const linkWhatsAppFinal = pedidoFinalizado
@@ -751,7 +754,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [filtroPedidos, fechaSeleccionada]);
+  }, [filtroPedidos, fechaSeleccionada, recargaPedidos]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -1081,6 +1084,8 @@ export default function App() {
         .admin-tabs button { flex: 1; border: 0; border-radius: 16px; padding: 14px 16px; background: transparent; font-weight: 900; color: #57534e; }
         .admin-tabs button.active { background: #f97316; color: #fff; }
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
+        .admin-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+        .admin-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 12px 0 16px; }
         .section { padding: 24px; }
         .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; scroll-margin-top: 18px; animation: fadeInUp 0.28s ease; }
         .fade-step { animation: fadeInUp 0.25s ease; scroll-margin-top: 18px; }
@@ -1135,6 +1140,7 @@ export default function App() {
         .bottom-summary { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 18px; }
         .summary-cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
         .summary-card { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; }
+        .summary-card.compact { padding: 15px; }
         .summary-card span { color: #78716c; font-weight: 800; }
         .summary-card strong { display: block; color: #ea580c; font-size: 30px; margin-top: 6px; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; padding: 20px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
@@ -1159,7 +1165,7 @@ export default function App() {
         .badge-finalizado { background: #dcfce7; color: #15803d; }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; }
         @media (max-width: 900px) {
-          .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary { grid-template-columns: 1fr; display: grid; }
+          .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
           .option-grid { grid-template-columns: 1fr; }
@@ -1627,10 +1633,35 @@ export default function App() {
 
               {adminTab === "pedidos" && (
                 <section className="card card-pad">
-                  <div className="row">
+                  <div className="admin-top-row">
                     <div>
                       <h2>📋 {tituloPedidos}</h2>
                       <p className="muted">Vista organizada para preparar pedidos y revisar historial.</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="button light"
+                      onClick={() => setRecargaPedidos((actual) => actual + 1)}
+                    >
+                      🔄 Actualizar pedidos
+                    </button>
+                  </div>
+
+                  <div className="admin-stats">
+                    <div className="summary-card compact">
+                      <span>Pendientes</span>
+                      <strong>{pedidosPendientes.length}</strong>
+                    </div>
+
+                    <div className="summary-card compact">
+                      <span>Finalizados</span>
+                      <strong>{pedidosFinalizados.length}</strong>
+                    </div>
+
+                    <div className="summary-card compact">
+                      <span>Total vendido</span>
+                      <strong>{dinero(totalVendido)}</strong>
                     </div>
                   </div>
 
@@ -1657,11 +1688,12 @@ export default function App() {
                         }}
                       />
                     </label>
-                  </div>
 
-                  <div className="mini-pending">
-                    <span>Pedidos pendientes</span>
-                    <strong>{pedidosPendientes.length}</strong>
+                    {hayBusquedaPedidos && (
+                      <button type="button" onClick={() => setBusqueda("")}>
+                        Limpiar búsqueda
+                      </button>
+                    )}
                   </div>
 
                   <CampoTexto
@@ -1670,6 +1702,10 @@ export default function App() {
                     onChange={setBusqueda}
                     placeholder="Buscar por cliente, ubicación, pago o estado..."
                   />
+
+                  <p className="muted small">
+                    Mostrando {pedidosFiltrados.length} de {pedidos.length} pedidos cargados.
+                  </p>
 
                   <div className="pedido-seccion">
                     <div className="section-heading">
