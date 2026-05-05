@@ -468,7 +468,7 @@ function SelectorCantidad({ cantidad, onChange }) {
   );
 }
 
-function PedidoCocina({ pedido, onCambiarEstado }) {
+function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
@@ -570,6 +570,7 @@ function PedidoCocina({ pedido, onCambiarEstado }) {
         <select
           value={estadoNormalizado}
           onChange={(e) => onCambiarEstado(pedido.id, e.target.value)}
+          disabled={guardandoEstado}
         >
           {estadosPedido.map((estado) => (
             <option key={estado} value={estado}>
@@ -621,6 +622,7 @@ export default function App() {
   const [cargando, setCargando] = useState(true);
   const [guardandoPedido, setGuardandoPedido] = useState(false);
   const [guardandoMenu, setGuardandoMenu] = useState(false);
+  const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
   const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
@@ -1049,22 +1051,43 @@ export default function App() {
   }
 
   async function cambiarEstadoPedido(id, estado) {
+    if (guardandoEstadoPedidoId) return;
+
     const estadoNuevo = estado === "Finalizado" ? "Finalizado" : "Pendiente";
+    const pedidoActual = pedidos.find((pedido) => pedido.id === id);
+    const estadoActual = obtenerEstadoPedido(pedidoActual || {});
 
-    const { data, error } = await supabase
-      .from("pedidos")
-      .update({ estado: estadoNuevo })
-      .eq("id", id)
-      .select()
-      .single();
+    if (estadoNuevo === estadoActual) return;
 
-    if (error) {
-      mostrarMensaje(`Error cambiando estado: ${error.message}`, "error");
-      return;
+    if (estadoNuevo === "Finalizado") {
+      const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : "";
+      const confirmar = window.confirm(
+        `¿Marcar el pedido #${codigoPedido} como finalizado?`
+      );
+
+      if (!confirmar) return;
     }
 
-    setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
-    mostrarMensaje(`Pedido marcado como ${estadoNuevo}.`, "success");
+    setGuardandoEstadoPedidoId(id);
+
+    try {
+      const { data, error } = await supabase
+        .from("pedidos")
+        .update({ estado: estadoNuevo })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        mostrarMensaje(`Error cambiando estado: ${error.message}`, "error");
+        return;
+      }
+
+      setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como ${estadoNuevo}.`, "success");
+    } finally {
+      setGuardandoEstadoPedidoId(null);
+    }
   }
 
   function abrirPanelAdmin() {
@@ -1895,6 +1918,7 @@ export default function App() {
                           key={pedido.id}
                           pedido={pedido}
                           onCambiarEstado={cambiarEstadoPedido}
+                          guardandoEstado={guardandoEstadoPedidoId === pedido.id}
                         />
                       ))
                     )}
@@ -1914,6 +1938,7 @@ export default function App() {
                           key={pedido.id}
                           pedido={pedido}
                           onCambiarEstado={cambiarEstadoPedido}
+                          guardandoEstado={guardandoEstadoPedidoId === pedido.id}
                         />
                       ))
                     )}
