@@ -618,6 +618,7 @@ export default function App() {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaISOColombia());
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [mensajeMenu, setMensajeMenu] = useState({ texto: "", tipo: "info" });
+  const [errorDatosPedido, setErrorDatosPedido] = useState("");
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [guardandoPedido, setGuardandoPedido] = useState(false);
@@ -893,6 +894,7 @@ export default function App() {
     setTipoPago("Efectivo");
     setObservaciones("");
     setPedidoFinalizado(null);
+    setErrorDatosPedido("");
     setMensaje({ texto: "", tipo: "info" });
     irAElemento("inicio-pedido-cliente");
   }
@@ -923,10 +925,13 @@ export default function App() {
     if (!ubicacion.trim()) camposFaltantes.push("ubicación");
 
     if (camposFaltantes.length > 0) {
-      mostrarMensaje(`Para finalizar el pedido falta llenar: ${camposFaltantes.join(", ")}.`, "warning");
-      irAElemento("datos-entrega");
+      const textoError = `Falta ingresar: ${camposFaltantes.join(", ")}.`;
+      setErrorDatosPedido(textoError);
+      irAElemento("resumen-pedido");
       return;
     }
+
+    setErrorDatosPedido("");
 
     const clienteNombre = cliente.trim();
     const pedidoTexto = crearTextoPedido(itemsValidos, observaciones.trim());
@@ -936,7 +941,7 @@ export default function App() {
       cliente: clienteNombre,
       cliente_nombre: clienteNombre,
       telefono: telefono.trim(),
-      ubicacion: ubicacion.trim(),
+      ubicacion: ubicacion.trim() || "Ubicación pendiente",
       tipo_pago: tipoPago,
       observaciones: observaciones.trim(),
       items: itemsValidos,
@@ -1164,7 +1169,7 @@ export default function App() {
         .alert-info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .alert-success { background: #ecfdf5; color: #166534; border-color: #bbf7d0; }
         .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
-        .alert-error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        .alert-error { background: #fef2f2; color: #991b1b; border-color: #991b1b; }
         .menu-action-message { margin-top: 14px; margin-bottom: 0; }
         .card { background: #ffffff; border: 1px solid #fed7aa; border-radius: 32px; box-shadow: 0 18px 40px rgba(0,0,0,0.08); overflow: hidden; }
         .card-pad { padding: 24px; }
@@ -1296,6 +1301,8 @@ export default function App() {
         .sticky-total { position: sticky; bottom: 0; background: #1c1917; border-radius: 20px 20px 0 0; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; margin: 20px -24px -24px; box-shadow: 0 -8px 24px rgba(0,0,0,0.15); }
         .sticky-total-label { font-size: 12px; color: #a8a29e; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
         .sticky-total-amount { font-size: 24px; font-weight: 900; color: #fb923c; font-family: 'Fraunces', serif; }
+        .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
+        .finalizar-error { background: #fef2f2; color: #fecaca; border: 1px solid rgba(254,202,202,0.45); border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
         @media (max-width: 900px) {
@@ -1305,6 +1312,8 @@ export default function App() {
           .option-grid { grid-template-columns: 1fr; }
           .app { padding: 14px; }
           .pedido-total { text-align: left; }
+          .sticky-total { align-items: flex-start; gap: 12px; }
+          .finalizar-area { max-width: 190px; }
         }
       `}</style>
 
@@ -1432,8 +1441,8 @@ export default function App() {
                         const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
 
                         const pasos = itemEsSopa
-                          ? ["Plato", "Datos"]
-                          : ["Plato", "Acomp.", "Datos"];
+                          ? ["Plato", "Cantidad", "Resumen", "Datos"]
+                          : ["Plato", "Acomp.", "Cantidad", "Datos"];
                         const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : 2;
 
                         return (
@@ -1678,7 +1687,7 @@ export default function App() {
                       Borrar y volver a empezar
                     </button>
 
-                    <div className="step-title" id="datos-entrega" style={{ marginTop: 18 }}>
+                    <div className="step-title" style={{ marginTop: 18 }}>
                       <span className="step-number">3</span>
                       <div>
                         <h4>Datos de entrega</h4>
@@ -1691,21 +1700,30 @@ export default function App() {
                     <CampoTexto
                       etiqueta="👤 Nombre"
                       value={cliente}
-                      onChange={setCliente}
+                      onChange={(valor) => {
+                        setCliente(valor);
+                        if (errorDatosPedido) setErrorDatosPedido("");
+                      }}
                       placeholder="Ej: Laura Pérez"
                     />
 
                     <CampoTexto
                       etiqueta="📞 Teléfono"
                       value={telefono}
-                      onChange={setTelefono}
+                      onChange={(valor) => {
+                        setTelefono(valor);
+                        if (errorDatosPedido) setErrorDatosPedido("");
+                      }}
                       placeholder="Ej: 300 123 4567"
                     />
 
                     <CampoTexto
                       etiqueta="📍 Ubicación"
                       value={ubicacion}
-                      onChange={setUbicacion}
+                      onChange={(valor) => {
+                        setUbicacion(valor);
+                        if (errorDatosPedido) setErrorDatosPedido("");
+                      }}
                       placeholder="Ej: Edificio, oficina o barrio"
                     />
 
@@ -1731,15 +1749,21 @@ export default function App() {
                           <div className="sticky-total-label">Total</div>
                           <div className="sticky-total-amount">{dinero(totalPedido)}</div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={registrarPedido}
-                          disabled={guardandoPedido || menu.platos_detalle.length === 0}
-                          className="button"
-                          style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
-                        >
-                          {guardandoPedido ? "Guardando..." : "Finalizar →"}
-                        </button>
+                        <div className="finalizar-area">
+                          {errorDatosPedido && (
+                            <div className="finalizar-error">{errorDatosPedido}</div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={registrarPedido}
+                            disabled={guardandoPedido || menu.platos_detalle.length === 0}
+                            className="button"
+                            style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
+                          >
+                            {guardandoPedido ? "Guardando..." : "Finalizar →"}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </>
