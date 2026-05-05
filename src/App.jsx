@@ -1756,7 +1756,7 @@ export default function App() {
                           className="button"
                           style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
                         >
-                          {guardandoPedido ? "Guardando..." : "Finalizar y abrir WhatsApp →"}
+                          {guardandoPedido ? "Guardando..." : "Finalizar"}
                         </button>
                       </div>
                     )}
