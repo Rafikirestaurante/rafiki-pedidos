@@ -1916,51 +1916,25 @@ export default function App() {
         .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .menu-publico { max-width: 920px; margin: 0 auto; }
-        .menu-folleto { width: min(100%, 816px); min-height: 1056px; margin: 0 auto; background: #fffaf0; border-radius: 22px; overflow: hidden; box-shadow: 0 28px 80px rgba(67,20,7,0.18); border: 1px solid #fed7aa; position: relative; color: #431407; }
-        .menu-folleto::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 88% 6%, rgba(249,115,22,0.20), transparent 23%), radial-gradient(circle at 8% 92%, rgba(101,163,13,0.12), transparent 28%), linear-gradient(180deg, rgba(255,247,237,0.88), rgba(255,251,235,0.95)); pointer-events: none; }
-        .menu-folleto::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 28px; background: repeating-linear-gradient(45deg, #ea580c 0 12px, #f97316 12px 24px, #fb923c 24px 36px); opacity: 0.95; }
-        .menu-folleto-hero { position: relative; z-index: 1; padding: 28px 34px 12px; }
-        .menu-flyer-top { display: grid; grid-template-columns: 118px 1fr auto; gap: 18px; align-items: center; }
-        .menu-folleto-logo { width: 116px; height: 116px; object-fit: contain; background: #fff; border-radius: 28px; padding: 9px; box-shadow: 0 14px 34px rgba(249,115,22,0.20); border: 1px solid #fed7aa; }
-        .menu-flyer-brand { color: #166534; font-size: 13px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 6px; }
-        .menu-folleto-hero h2 { font-family: 'Fraunces', serif; font-size: clamp(44px, 8vw, 74px); line-height: 0.86; margin-bottom: 6px; color: #ea580c; letter-spacing: -2px; text-transform: uppercase; text-shadow: 0 2px 0 rgba(254,215,170,0.8); }
-        .menu-folleto-hero p { color: #166534; font-size: 22px; font-weight: 900; margin: 0; font-family: 'Fraunces', serif; }
-        .menu-fecha-pill { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 140px; background: rgba(255,255,255,0.94); border: 1px solid #fed7aa; border-radius: 24px; padding: 13px 16px; color: #292524; font-weight: 900; box-shadow: 0 10px 24px rgba(249,115,22,0.13); }
-        .menu-fecha-pill span:first-child { color: #ea580c; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-        .menu-fecha-pill span:last-child { font-size: 15px; }
-        .menu-folleto-body { position: relative; z-index: 1; padding: 8px 34px 48px; }
-        .menu-folleto-intro { text-align: center; margin-bottom: 14px; }
-        .menu-folleto-intro h3 { font-family: 'Fraunces', serif; font-size: 28px; color: #431407; margin-bottom: 4px; }
-        .menu-folleto-intro p { color: #78716c; font-weight: 900; margin-bottom: 0; }
-        .menu-main-card { background: rgba(255,255,255,0.94); border: 2px solid #fed7aa; border-radius: 28px; padding: 20px 22px; box-shadow: 0 14px 34px rgba(249,115,22,0.08); margin-bottom: 16px; }
-        .menu-section-pill { display: inline-flex; align-items: center; gap: 9px; color: #fff; background: linear-gradient(135deg, #ea580c, #f97316); border-radius: 999px; padding: 9px 20px; font-size: 16px; font-weight: 900; margin: -2px 0 13px; text-transform: uppercase; letter-spacing: 0.4px; box-shadow: 0 8px 18px rgba(249,115,22,0.22); }
-        .menu-categoria-bloque { margin-bottom: 12px; }
-        .menu-categoria-bloque:last-child { margin-bottom: 0; }
-        .menu-categoria-title { color: #166534; font-weight: 900; font-size: 15px; text-transform: uppercase; letter-spacing: 0.7px; margin: 2px 0 5px; }
-        .menu-plato-row { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: baseline; padding: 7px 0; border-bottom: 1px dashed #fdba74; }
+        .menu-publico { max-width: 880px; margin: 0 auto; }
+        .menu-folleto { background: #fff; border-radius: 36px; overflow: hidden; box-shadow: 0 28px 70px rgba(0,0,0,0.12); border: 1px solid #fed7aa; }
+        .menu-folleto-hero { background: linear-gradient(145deg, #ea580c, #f97316 50%, #f59e0b); color: #fff; text-align: center; padding: 38px 28px 34px; position: relative; overflow: hidden; }
+        .menu-folleto-hero::before { content: ''; position: absolute; top: -70px; right: -50px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+        .menu-folleto-hero::after { content: ''; position: absolute; bottom: -90px; left: -40px; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+        .menu-folleto-logo { width: 135px; height: 135px; object-fit: contain; background: #fff; border-radius: 28px; padding: 10px; margin-bottom: 18px; box-shadow: 0 18px 40px rgba(0,0,0,0.22); position: relative; z-index: 1; }
+        .menu-folleto-hero h2 { font-family: 'Fraunces', serif; font-size: clamp(36px, 7vw, 62px); line-height: 0.95; margin-bottom: 10px; position: relative; z-index: 1; }
+        .menu-folleto-hero p { color: rgba(255,255,255,0.9); position: relative; z-index: 1; }
+        .menu-fecha-pill { display: inline-flex; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 8px 14px; font-weight: 900; margin-bottom: 14px; position: relative; z-index: 1; }
+        .menu-folleto-body { padding: 26px; background: linear-gradient(180deg, #fff 0%, #fff7ed 100%); }
+        .menu-folleto-section { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; margin-bottom: 16px; }
+        .menu-folleto-section h3 { color: #c2410c; font-family: 'Fraunces', serif; margin-bottom: 12px; font-size: 24px; }
+        .menu-plato-row { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px dashed #fed7aa; }
         .menu-plato-row:last-child { border-bottom: 0; }
-        .menu-plato-nombre { font-weight: 900; color: #292524; font-size: 19px; }
-        .menu-plato-precio { font-weight: 900; color: #ea580c; white-space: nowrap; font-size: 21px; font-family: 'Fraunces', serif; }
-        .menu-acomp-card { background: rgba(255,255,255,0.92); border: 2px solid #d9f99d; border-radius: 26px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 10px 26px rgba(101,163,13,0.08); }
-        .menu-acomp-card .menu-section-pill { background: linear-gradient(135deg, #3f6212, #65a30d); margin-bottom: 12px; }
+        .menu-plato-nombre { font-weight: 900; color: #292524; }
+        .menu-plato-precio { font-weight: 900; color: #ea580c; white-space: nowrap; }
         .menu-acompanantes { display: flex; flex-wrap: wrap; gap: 9px; }
-        .menu-acompanante { background: #f7fee7; border: 1px solid #bbf7d0; color: #166534; border-radius: 999px; padding: 8px 13px; font-weight: 900; font-size: 14px; }
-        .menu-incluye-banner { display: flex; align-items: center; justify-content: center; gap: 12px; background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 2px solid #fb923c; border-radius: 24px; padding: 14px 16px; color: #431407; font-size: 23px; font-weight: 900; margin: 14px 0; text-align: center; box-shadow: 0 8px 22px rgba(249,115,22,0.10); }
-        .menu-folleto-cta { display: flex; justify-content: center; margin-top: 12px; }
-        .menu-folleto-cta .button { font-size: 22px; padding: 17px 38px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .menu-folleto-footer { text-align: center; color: #78716c; font-size: 13px; font-weight: 900; margin-top: 13px; }
-        .menu-folleto-web-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(100%, 816px); margin: 16px auto 0; }
-        .menu-empty-box { background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 18px; text-align: center; font-weight: 900; color: #78716c; }
-        @media print {
-          @page { size: letter portrait; margin: 0.25in; }
-          body { background: #fff !important; }
-          .app { background: #fff !important; padding: 0 !important; }
-          .container { max-width: none !important; }
-          .alert, .menu-folleto-web-actions { display: none !important; }
-          .menu-publico { max-width: none !important; }
-          .menu-folleto { width: 100% !important; min-height: 10.5in !important; box-shadow: none !important; border-radius: 0 !important; border: 1px solid #fed7aa !important; break-inside: avoid; }
-        }
+        .menu-acompanante { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 999px; padding: 8px 12px; font-weight: 900; font-size: 14px; }
+        .menu-folleto-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
         @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
@@ -2023,54 +1997,38 @@ export default function App() {
             <main className="menu-publico">
               <section className="menu-folleto">
                 <div className="menu-folleto-hero">
-                  <div className="menu-flyer-top">
-                    <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="menu-folleto-logo" />
-
-                    <div>
-                      <div className="menu-flyer-brand">Sabor que une</div>
-                      <h2>Menú<br />del día</h2>
-                      <p>Escoge tu almuerzo del día</p>
-                    </div>
-
-                    <div className="menu-fecha-pill">
-                      <span>Hoy</span>
-                      <span>{menu.fecha || fechaISOColombia()}</span>
-                    </div>
-                  </div>
+                  <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="menu-folleto-logo" />
+                  <div className="menu-fecha-pill">🍽️ {menu.fecha || fechaISOColombia()}</div>
+                  <h2>{menu.titulo || "Menú del día"}</h2>
+                  <p>{menu.descripcion || "Consulta nuestro menú disponible para hoy."}</p>
                 </div>
 
                 <div className="menu-folleto-body">
-                  <div className="menu-folleto-intro">
-                    <h3>{menu.titulo || "Almuerzo ejecutivo Rafiki"}</h3>
-                    <p>{menu.descripcion || "Consulta nuestro menú disponible para hoy."}</p>
-                  </div>
-
                   {menu.platos_detalle.length === 0 ? (
-                    <div className="menu-empty-box">
-                      Todavía no hay platos configurados para el menú de hoy.
+                    <div className="menu-folleto-section">
+                      <h3>Menú no disponible</h3>
+                      <p className="muted" style={{ marginBottom: 0 }}>
+                        Todavía no hay platos configurados para el menú de hoy.
+                      </p>
                     </div>
                   ) : (
                     <>
-                      <div className="menu-main-card">
-                        <div className="menu-section-pill">🍽️ Proteínas / opciones principales</div>
+                      {Object.entries(platosAgrupados).map(([categoria, platos]) => (
+                        <div key={categoria} className="menu-folleto-section">
+                          <h3>{categoria}</h3>
 
-                        {Object.entries(platosAgrupados).map(([categoria, platos]) => (
-                          <div key={categoria} className="menu-categoria-bloque">
-                            <div className="menu-categoria-title">{categoria}</div>
-
-                            {platos.map((plato) => (
-                              <div key={`${plato.categoria}-${plato.nombre}`} className="menu-plato-row">
-                                <span className="menu-plato-nombre">{plato.nombre}</span>
-                                <span className="menu-plato-precio">{dinero(plato.precio)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
+                          {platos.map((plato) => (
+                            <div key={`${plato.categoria}-${plato.nombre}`} className="menu-plato-row">
+                              <span className="menu-plato-nombre">{plato.nombre}</span>
+                              <span className="menu-plato-precio">{dinero(plato.precio)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
 
                       {menu.acompanantes.length > 0 && (
-                        <div className="menu-acomp-card">
-                          <div className="menu-section-pill">🌿 Acompañantes</div>
+                        <div className="menu-folleto-section">
+                          <h3>Acompañantes</h3>
                           <div className="menu-acompanantes">
                             {menu.acompanantes.map((acompanante) => (
                               <span key={acompanante} className="menu-acompanante">
@@ -2081,35 +2039,26 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className="menu-incluye-banner">
-                        <span>🥣</span>
-                        <span>Incluye sopa + bebida</span>
-                        <span>🥤</span>
+                      <div className="menu-folleto-section">
+                        <h3>Incluye</h3>
+                        <p className="muted" style={{ marginBottom: 0 }}>
+                          Los almuerzos incluyen sopa + bebida. Los productos de sopas no incluyen acompañantes adicionales.
+                        </p>
                       </div>
                     </>
                   )}
 
-                  <div className="menu-folleto-cta">
+                  <div className="menu-folleto-actions">
                     <button type="button" onClick={() => navegar("/", "cliente")} className="button green">
-                      🛍️ Haz tu pedido
+                      🛍️ Hacer pedido
                     </button>
-                  </div>
 
-                  <div className="menu-folleto-footer">
-                    Rafiki Pedidos · Menú actualizado desde el panel administrativo
+                    <button type="button" onClick={() => window.print()} className="button light">
+                      Imprimir / guardar
+                    </button>
                   </div>
                 </div>
               </section>
-
-              <div className="menu-folleto-web-actions">
-                <button type="button" onClick={() => navegar("/", "cliente")} className="button green">
-                  Hacer pedido
-                </button>
-
-                <button type="button" onClick={() => window.print()} className="button light">
-                  Imprimir / guardar
-                </button>
-              </div>
             </main>
           )}
 
