@@ -744,6 +744,8 @@ export default function App() {
   const [mensajeSolicitud, setMensajeSolicitud] = useState({ texto: "", tipo: "info" });
   const [guardandoSolicitud, setGuardandoSolicitud] = useState(false);
   const [solicitudFinalizada, setSolicitudFinalizada] = useState(null);
+  const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState("");
+  const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState("Varios");
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -1374,10 +1376,139 @@ export default function App() {
     setSolicitudFinalizada(null);
   }
 
+  function alternarProductoSolicitud(id) {
+    setProductosSolicitud((actual) =>
+      actual.map((producto) => {
+        if (producto.id !== id) return producto;
+
+        const seleccionado = String(producto.cantidad || "").trim().length > 0;
+
+        return {
+          ...producto,
+          cantidad: seleccionado ? "" : "1",
+          nota: seleccionado ? "" : producto.nota
+        };
+      })
+    );
+    setMensajeSolicitud({ texto: "", tipo: "info" });
+    setSolicitudFinalizada(null);
+  }
+
+  function agregarProductoSolicitudALista() {
+    const nombre = nuevoProductoSolicitudNombre.trim();
+    const categoria = nuevoProductoSolicitudCategoria.trim() || "Varios";
+
+    if (!nombre) {
+      setMensajeSolicitud({ texto: "Escribe el nombre del producto que quieres agregar.", tipo: "warning" });
+      return;
+    }
+
+    const yaExiste = productosSolicitud.some(
+      (producto) => normalizarTexto(producto.nombre) === normalizarTexto(nombre)
+    );
+
+    if (yaExiste) {
+      setMensajeSolicitud({ texto: "Ese producto ya está en la lista.", tipo: "warning" });
+      return;
+    }
+
+    const nuevoProducto = {
+      id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      categoria,
+      nombre,
+      cantidad: "1",
+      unidad: "und",
+      nota: ""
+    };
+
+    setProductosSolicitud((actual) => [...actual, nuevoProducto]);
+    setNuevoProductoSolicitudNombre("");
+    setNuevoProductoSolicitudCategoria(categoria);
+    setSolicitudFinalizada(null);
+    setMensajeSolicitud({ texto: "Producto agregado a la lista.", tipo: "success" });
+  }
+
+  function quitarProductoSolicitudDeLista(id) {
+    const confirmar = window.confirm("¿Quitar este producto de la lista?");
+
+    if (!confirmar) return;
+
+    setProductosSolicitud((actual) => actual.filter((producto) => producto.id !== id));
+    setSolicitudFinalizada(null);
+    setMensajeSolicitud({ texto: "Producto quitado de la lista.", tipo: "info" });
+  }
+
+  async function guardarSolicitudProductosYAbrirWhatsApp() {
+    if (guardandoSolicitud) return;
+
+    const productos = obtenerProductosSolicitudSeleccionados(productosSolicitud);
+
+    if (productos.length === 0) {
+      setMensajeSolicitud({
+        texto: "Selecciona al menos un producto y escribe la cantidad solicitada.",
+        tipo: "warning"
+      });
+      return;
+    }
+
+    const fechaSolicitud = fechaISOColombia();
+    const mensajeFinal = crearMensajeSolicitudProductos({
+      fechaSolicitud,
+      fechaPara: fechaParaSolicitud,
+      productos,
+      observaciones: observacionesSolicitud.trim()
+    });
+
+    const nuevaSolicitud = {
+      fecha_solicitud: fechaSolicitud,
+      fecha_para: fechaParaSolicitud,
+      productos,
+      observaciones: observacionesSolicitud.trim(),
+      mensaje: mensajeFinal
+    };
+
+    const ventanaWhatsapp = window.open("about:blank", "_blank");
+
+    setGuardandoSolicitud(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("solicitudes_productos")
+        .insert(nuevaSolicitud)
+        .select()
+        .single();
+
+      if (error) {
+        if (ventanaWhatsapp) ventanaWhatsapp.close();
+        setMensajeSolicitud({ texto: `Error guardando solicitud: ${error.message}`, tipo: "error" });
+        return;
+      }
+
+      const solicitudGuardada = data || nuevaSolicitud;
+      setSolicitudFinalizada(solicitudGuardada);
+      setMensajeSolicitud({
+        texto: "Solicitud guardada. Se abrirá WhatsApp con el consolidado.",
+        tipo: "success"
+      });
+
+      const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_PRODUCTOS, solicitudGuardada.mensaje || mensajeFinal);
+
+      if (ventanaWhatsapp) {
+        ventanaWhatsapp.location.href = link;
+      } else {
+        window.location.href = link;
+      }
+    } finally {
+      setGuardandoSolicitud(false);
+    }
+  }
+
   function limpiarSolicitudProductos() {
     setProductosSolicitud(crearProductosSolicitudInicial());
     setFechaParaSolicitud(fechaMananaColombia());
     setObservacionesSolicitud("");
+    setNuevoProductoSolicitudNombre("");
+    setNuevoProductoSolicitudCategoria("Varios");
     setMensajeSolicitud({ texto: "", tipo: "info" });
     setSolicitudFinalizada(null);
   }
@@ -1600,6 +1731,19 @@ export default function App() {
         .producto-controls { display: grid; grid-template-columns: 1fr 120px; gap: 8px; margin-bottom: 8px; }
         .producto-controls input, .producto-controls select, .producto-solicitud textarea { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 14px; padding: 11px 12px; outline: none; font-family: inherit; }
         .producto-solicitud textarea { min-height: 42px; resize: vertical; }
+        .productos-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+        .producto-chip { border: 1.5px solid #e7e5e4; background: #fff; border-radius: 999px; padding: 10px 14px; font-weight: 900; color: #44403c; box-shadow: none; }
+        .producto-chip:hover { border-color: #fdba74; background: #fff7ed; }
+        .producto-chip.selected { border-color: #22c55e; background: #dcfce7; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,0.12); }
+        .producto-chip-wrap { display: inline-flex; align-items: center; gap: 4px; }
+        .producto-remove-mini { border: 1px solid #fecaca; background: #fff; color: #b91c1c; width: 30px; height: 30px; border-radius: 999px; font-weight: 900; box-shadow: none; padding: 0; }
+        .producto-add-row { display: grid; grid-template-columns: minmax(180px, 1fr) 170px auto; gap: 8px; align-items: center; margin: 10px 0 18px; }
+        .producto-add-row input, .producto-add-row select { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 14px; padding: 11px 12px; outline: none; font-family: inherit; }
+        .productos-seleccionados-lista { display: grid; gap: 10px; margin: 14px 0; }
+        .producto-seleccionado-row { display: grid; grid-template-columns: minmax(150px, 1fr) 90px 105px minmax(140px, 1fr) auto; gap: 8px; align-items: center; background: #fff; border: 1px solid #fed7aa; border-radius: 18px; padding: 10px; }
+        .producto-seleccionado-row strong { color: #292524; }
+        .producto-seleccionado-row input, .producto-seleccionado-row select { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 14px; padding: 10px 11px; outline: none; font-family: inherit; }
+        .producto-seleccionado-row input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.12); background: #fff; }
         .solicitud-preview { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; font-size: 14px; margin-top: 14px; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-finalizado { opacity: 0.7; }
@@ -2356,12 +2500,12 @@ export default function App() {
                     <div>
                       <h2>🧺 Solicitud de productos</h2>
                       <p className="muted">
-                        Selecciona los productos que se necesitan para el día siguiente, guarda el registro y envía el consolidado por WhatsApp.
+                        Selecciona lo que necesitan para el día siguiente. La lista queda guardada y se envía por WhatsApp.
                       </p>
                     </div>
 
                     <button type="button" onClick={limpiarSolicitudProductos} className="button light">
-                      Limpiar solicitud
+                      Limpiar
                     </button>
                   </div>
 
@@ -2370,14 +2514,55 @@ export default function App() {
                       etiqueta="Fecha para la que se necesitan"
                       type="date"
                       value={fechaParaSolicitud}
-                      onChange={setFechaParaSolicitud}
+                      onChange={(valor) => {
+                        setFechaParaSolicitud(valor);
+                        setSolicitudFinalizada(null);
+                        setMensajeSolicitud({ texto: "", tipo: "info" });
+                      }}
                     />
 
                     <div className="box soft">
-                      <strong>Productos seleccionados</strong>
+                      <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong>
                       <p className="muted" style={{ marginBottom: 0 }}>
-                        {productosSolicitudSeleccionados.length} productos agregados a la solicitud.
+                        Toca un producto para agregarlo. Toca la X para quitarlo de la lista.
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="box soft" style={{ marginBottom: 18 }}>
+                    <strong>Agregar producto a la lista</strong>
+                    <div className="producto-add-row">
+                      <input
+                        type="text"
+                        value={nuevoProductoSolicitudNombre}
+                        onChange={(e) => setNuevoProductoSolicitudNombre(e.target.value)}
+                        placeholder="Ej: Maíz tierno"
+                      />
+
+                      <select
+                        value={nuevoProductoSolicitudCategoria}
+                        onChange={(e) => setNuevoProductoSolicitudCategoria(e.target.value)}
+                      >
+                        {[
+                          "Proteínas",
+                          "Verduras y ensaladas",
+                          "Tubérculos y acompañantes",
+                          "Granos y básicos",
+                          "Lácteos y varios",
+                          "Despensa",
+                          "Empaques",
+                          "Bebidas",
+                          "Varios"
+                        ].map((categoria) => (
+                          <option key={categoria} value={categoria}>
+                            {categoria}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button type="button" className="button green" onClick={agregarProductoSolicitudALista}>
+                        Agregar
+                      </button>
                     </div>
                   </div>
 
@@ -2391,12 +2576,50 @@ export default function App() {
                     <div key={categoria} className="category-block">
                       <h3 className="category-title">{categoria}</h3>
 
-                      <div className="productos-grid">
-                        {productos.map((producto) => (
-                          <div key={producto.id} className="producto-solicitud">
-                            <strong>{producto.nombre}</strong>
+                      <div className="productos-chips">
+                        {productos.map((producto) => {
+                          const seleccionado = String(producto.cantidad || "").trim().length > 0;
 
-                            <div className="producto-controls">
+                          return (
+                            <span key={producto.id} className="producto-chip-wrap">
+                              <button
+                                type="button"
+                                onClick={() => alternarProductoSolicitud(producto.id)}
+                                className={`producto-chip ${seleccionado ? "selected" : ""}`}
+                              >
+                                {seleccionado ? "✓ " : "+ "}
+                                {producto.nombre}
+                              </button>
+
+                              <button
+                                type="button"
+                                className="producto-remove-mini"
+                                onClick={() => quitarProductoSolicitudDeLista(producto.id)}
+                                title="Quitar de la lista"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {productosSolicitudSeleccionados.length > 0 && (
+                    <div className="box soft">
+                      <strong>Productos seleccionados</strong>
+                      <p className="muted small" style={{ marginBottom: 10 }}>
+                        Ajusta cantidad, unidad y nota si hace falta.
+                      </p>
+
+                      <div className="productos-seleccionados-lista">
+                        {productosSolicitud
+                          .filter((producto) => String(producto.cantidad || "").trim().length > 0)
+                          .map((producto) => (
+                            <div key={producto.id} className="producto-seleccionado-row">
+                              <strong>{producto.nombre}</strong>
+
                               <input
                                 type="text"
                                 inputMode="decimal"
@@ -2404,7 +2627,7 @@ export default function App() {
                                 onChange={(e) =>
                                   actualizarProductoSolicitud(producto.id, { cantidad: e.target.value })
                                 }
-                                placeholder="Cantidad"
+                                placeholder="Cant."
                               />
 
                               <select
@@ -2419,20 +2642,29 @@ export default function App() {
                                   </option>
                                 ))}
                               </select>
-                            </div>
 
-                            <textarea
-                              value={producto.nota}
-                              onChange={(e) =>
-                                actualizarProductoSolicitud(producto.id, { nota: e.target.value })
-                              }
-                              placeholder="Nota opcional"
-                            />
-                          </div>
-                        ))}
+                              <input
+                                type="text"
+                                value={producto.nota}
+                                onChange={(e) =>
+                                  actualizarProductoSolicitud(producto.id, { nota: e.target.value })
+                                }
+                                placeholder="Nota opcional"
+                              />
+
+                              <button
+                                type="button"
+                                className="button light"
+                                onClick={() => actualizarProductoSolicitud(producto.id, { cantidad: "", nota: "" })}
+                                style={{ padding: "10px 12px" }}
+                              >
+                                Quitar
+                              </button>
+                            </div>
+                          ))}
                       </div>
                     </div>
-                  ))}
+                  )}
 
                   <CampoTexto
                     etiqueta="Observaciones generales"
@@ -2444,55 +2676,25 @@ export default function App() {
                     }}
                     placeholder="Ej: comprar temprano, revisar calidad, priorizar verduras frescas..."
                     multiline
-                    rows={3}
+                    rows={2}
                   />
 
-                  <div className="box soft">
-                    <strong>Vista previa del mensaje</strong>
-                    <div className="solicitud-preview">
-                      {productosSolicitudSeleccionados.length === 0
-                        ? "Agrega cantidades para ver el consolidado."
-                        : mensajeWhatsAppSolicitud}
+                  {productosSolicitudSeleccionados.length > 0 && (
+                    <div className="box soft">
+                      <strong>Vista previa del mensaje</strong>
+                      <div className="solicitud-preview">{mensajeWhatsAppSolicitud}</div>
                     </div>
-                  </div>
-
-                  <div className="grid-2" style={{ marginTop: 14 }}>
-                    <button
-                      type="button"
-                      onClick={guardarSolicitudProductos}
-                      disabled={guardandoSolicitud}
-                      className="button"
-                    >
-                      {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud"}
-                    </button>
-
-                    <a
-                      href={solicitudFinalizada ? linkWhatsAppSolicitud : "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`button green link-button ${!solicitudFinalizada ? "disabled" : ""}`}
-                      onClick={(e) => {
-                        if (!solicitudFinalizada) {
-                          e.preventDefault();
-                          setMensajeSolicitud({
-                            texto:
-                              productosSolicitudSeleccionados.length === 0
-                                ? "Primero selecciona al menos un producto y escribe la cantidad."
-                                : "Primero guarda la solicitud para que quede registrada; después podrás enviarla por WhatsApp.",
-                            tipo: "warning"
-                          });
-                        }
-                      }}
-                    >
-                      🟢 Enviar por WhatsApp
-                    </a>
-                  </div>
-
-                  {!solicitudFinalizada && productosSolicitudSeleccionados.length > 0 && (
-                    <p className="muted small" style={{ marginTop: 10 }}>
-                      Primero guarda la solicitud para que quede registrada; luego se habilita el envío por WhatsApp.
-                    </p>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={guardarSolicitudProductosYAbrirWhatsApp}
+                    disabled={guardandoSolicitud}
+                    className="button green"
+                    style={{ width: "100%", marginTop: 14 }}
+                  >
+                    {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud y enviar por WhatsApp"}
+                  </button>
                 </section>
               )}
 
