@@ -599,8 +599,28 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
   );
 }
 
+function obtenerVistaInicial() {
+  const ruta = window.location.pathname.replace(/\/$/, "") || "/";
+
+  if (ruta === "/admin") {
+    return "adminLogin";
+  }
+
+  if (ruta === "/pedido" || ruta === "/cliente") {
+    return "cliente";
+  }
+
+  return "inicio";
+}
+
+function actualizarRuta(ruta) {
+  if (window.location.pathname !== ruta) {
+    window.history.pushState({}, "", ruta);
+  }
+}
+
 export default function App() {
-  const [vista, setVista] = useState("inicio");
+  const [vista, setVista] = useState(obtenerVistaInicial);
   const [adminTab, setAdminTab] = useState("pedidos");
   const [adminAutenticado, setAdminAutenticado] = useState(false);
   const [claveAdmin, setClaveAdmin] = useState("");
@@ -632,6 +652,11 @@ export default function App() {
   const mensajeTimer = useRef(null);
   const mensajeMenuTimer = useRef(null);
   const menuHashRef = useRef("");
+
+  function navegar(ruta, nuevaVista) {
+    actualizarRuta(ruta);
+    setVista(nuevaVista);
+  }
 
   function mostrarMensaje(texto, tipo = "info") {
     if (mensajeTimer.current) {
@@ -677,6 +702,22 @@ export default function App() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    function manejarCambioRuta() {
+      const vistaRuta = obtenerVistaInicial();
+      setVista((vistaActual) => {
+        if (vistaRuta === "adminLogin" && adminAutenticado && vistaActual === "admin") {
+          return "admin";
+        }
+
+        return vistaRuta;
+      });
+    }
+
+    window.addEventListener("popstate", manejarCambioRuta);
+    return () => window.removeEventListener("popstate", manejarCambioRuta);
+  }, [adminAutenticado]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1186,11 +1227,11 @@ export default function App() {
     setErrorClaveAdmin("");
 
     if (adminAutenticado) {
-      setVista("admin");
+      navegar("/admin", "admin");
       return;
     }
 
-    setVista("adminLogin");
+    navegar("/admin", "adminLogin");
   }
 
   function validarClaveAdmin(e) {
@@ -1200,7 +1241,7 @@ export default function App() {
       setAdminAutenticado(true);
       setClaveAdmin("");
       setErrorClaveAdmin("");
-      setVista("admin");
+      navegar("/admin", "admin");
       return;
     }
 
@@ -1211,12 +1252,12 @@ export default function App() {
     setAdminAutenticado(false);
     setClaveAdmin("");
     setErrorClaveAdmin("");
-    setVista("inicio");
+    navegar("/admin", "adminLogin");
   }
 
   function nuevoPedidoCliente() {
     reiniciarPedido();
-    setVista("cliente");
+    navegar("/", "cliente");
   }
 
   return (
@@ -1406,13 +1447,13 @@ export default function App() {
               <div className="nav">
                 <button
                   type="button"
-                  onClick={() => setVista("cliente")}
+                  onClick={() => navegar("/", "cliente")}
                   className={vista === "cliente" ? "active" : ""}
                 >
                   Vista cliente
                 </button>
 
-                <button type="button" onClick={() => setVista("inicio")}>
+                <button type="button" onClick={() => navegar("/", "inicio")}>
                   Inicio
                 </button>
               </div>
@@ -1429,14 +1470,10 @@ export default function App() {
                 <h2>Bienvenido a Rafiki</h2>
                 <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
 
-                <button type="button" onClick={() => setVista("cliente")} className="welcome-button">
+                <button type="button" onClick={() => navegar("/", "cliente")} className="welcome-button">
                   🛍️ Haz tu pedido aquí
                 </button>
               </section>
-
-              <button type="button" onClick={abrirPanelAdmin} className="admin-small">
-                Panel administrativo
-              </button>
             </main>
           )}
 
@@ -1478,7 +1515,7 @@ export default function App() {
                   onClick={() => {
                     setClaveAdmin("");
                     setErrorClaveAdmin("");
-                    setVista("inicio");
+                    navegar("/", "inicio");
                   }}
                   className="button light"
                   style={{ width: "100%", marginTop: 12 }}
@@ -1908,7 +1945,7 @@ export default function App() {
                       Hacer otro pedido
                     </button>
 
-                    <button type="button" onClick={() => setVista("inicio")} className="button light">
+                    <button type="button" onClick={() => navegar("/", "inicio")} className="button light">
                       Volver al inicio
                     </button>
                   </div>
