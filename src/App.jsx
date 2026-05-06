@@ -1916,25 +1916,45 @@ export default function App() {
         .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .menu-publico { max-width: 880px; margin: 0 auto; }
-        .menu-folleto { background: #fff; border-radius: 36px; overflow: hidden; box-shadow: 0 28px 70px rgba(0,0,0,0.12); border: 1px solid #fed7aa; }
-        .menu-folleto-hero { background: linear-gradient(145deg, #ea580c, #f97316 50%, #f59e0b); color: #fff; text-align: center; padding: 38px 28px 34px; position: relative; overflow: hidden; }
-        .menu-folleto-hero::before { content: ''; position: absolute; top: -70px; right: -50px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.08); }
-        .menu-folleto-hero::after { content: ''; position: absolute; bottom: -90px; left: -40px; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,0.06); }
-        .menu-folleto-logo { width: 135px; height: 135px; object-fit: contain; background: #fff; border-radius: 28px; padding: 10px; margin-bottom: 18px; box-shadow: 0 18px 40px rgba(0,0,0,0.22); position: relative; z-index: 1; }
-        .menu-folleto-hero h2 { font-family: 'Fraunces', serif; font-size: clamp(36px, 7vw, 62px); line-height: 0.95; margin-bottom: 10px; position: relative; z-index: 1; }
-        .menu-folleto-hero p { color: rgba(255,255,255,0.9); position: relative; z-index: 1; }
-        .menu-fecha-pill { display: inline-flex; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 8px 14px; font-weight: 900; margin-bottom: 14px; position: relative; z-index: 1; }
-        .menu-folleto-body { padding: 26px; background: linear-gradient(180deg, #fff 0%, #fff7ed 100%); }
-        .menu-folleto-section { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; margin-bottom: 16px; }
-        .menu-folleto-section h3 { color: #c2410c; font-family: 'Fraunces', serif; margin-bottom: 12px; font-size: 24px; }
-        .menu-plato-row { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px dashed #fed7aa; }
+        .menu-publico { max-width: 900px; margin: 0 auto; }
+        .menu-folleto { width: min(100%, 816px); min-height: 1056px; margin: 0 auto; background: #fffaf0; border-radius: 18px; overflow: hidden; box-shadow: 0 24px 65px rgba(0,0,0,0.14); border: 1px solid #fed7aa; position: relative; }
+        .menu-folleto::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, rgba(249,115,22,0.16), transparent 28%), radial-gradient(circle at bottom left, rgba(101,163,13,0.09), transparent 30%); pointer-events: none; }
+        .menu-folleto-hero { position: relative; z-index: 1; padding: 26px 34px 16px; background: linear-gradient(135deg, #fff7ed 0%, #fffaf0 60%, #ffffff 100%); border-bottom: 3px solid #f97316; }
+        .menu-flyer-top { display: grid; grid-template-columns: 110px 1fr auto; gap: 18px; align-items: center; }
+        .menu-folleto-logo { width: 108px; height: 108px; object-fit: contain; background: #fff; border-radius: 24px; padding: 8px; box-shadow: 0 12px 28px rgba(249,115,22,0.18); border: 1px solid #fed7aa; }
+        .menu-flyer-brand { color: #166534; font-size: 13px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 4px; }
+        .menu-folleto-hero h2 { font-family: 'Fraunces', serif; font-size: clamp(46px, 8vw, 76px); line-height: 0.86; margin-bottom: 8px; color: #ea580c; letter-spacing: -2px; text-transform: uppercase; }
+        .menu-folleto-hero p { color: #166534; font-size: 22px; font-weight: 900; margin: 0; font-family: 'Fraunces', serif; }
+        .menu-fecha-pill { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 132px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 13px 16px; color: #292524; font-weight: 900; box-shadow: 0 8px 20px rgba(249,115,22,0.12); }
+        .menu-fecha-pill span:first-child { color: #ea580c; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        .menu-fecha-pill span:last-child { font-size: 15px; }
+        .menu-folleto-body { position: relative; z-index: 1; padding: 22px 34px 26px; }
+        .menu-folleto-intro { text-align: center; margin-bottom: 16px; }
+        .menu-folleto-intro h3 { font-family: 'Fraunces', serif; font-size: 27px; color: #431407; margin-bottom: 4px; }
+        .menu-folleto-intro p { color: #78716c; font-weight: 800; margin-bottom: 0; }
+        .menu-folleto-section { background: rgba(255,255,255,0.9); border: 1px solid #fed7aa; border-radius: 24px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 8px 20px rgba(249,115,22,0.06); }
+        .menu-folleto-section h3 { display: inline-flex; align-items: center; gap: 8px; color: #fff; background: linear-gradient(135deg, #ea580c, #f97316); border-radius: 999px; padding: 8px 18px; font-size: 17px; font-weight: 900; margin: -4px 0 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .menu-plato-row { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: baseline; padding: 9px 0; border-bottom: 1px dashed #fed7aa; }
         .menu-plato-row:last-child { border-bottom: 0; }
-        .menu-plato-nombre { font-weight: 900; color: #292524; }
-        .menu-plato-precio { font-weight: 900; color: #ea580c; white-space: nowrap; }
-        .menu-acompanantes { display: flex; flex-wrap: wrap; gap: 9px; }
-        .menu-acompanante { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 999px; padding: 8px 12px; font-weight: 900; font-size: 14px; }
-        .menu-folleto-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+        .menu-plato-nombre { font-weight: 900; color: #292524; font-size: 20px; }
+        .menu-plato-precio { font-weight: 900; color: #ea580c; white-space: nowrap; font-size: 21px; font-family: 'Fraunces', serif; }
+        .menu-acompanantes { display: flex; flex-wrap: wrap; gap: 8px; }
+        .menu-acompanante { background: #f7fee7; border: 1px solid #bbf7d0; color: #166534; border-radius: 999px; padding: 8px 12px; font-weight: 900; font-size: 14px; }
+        .menu-incluye-banner { display: flex; align-items: center; justify-content: center; gap: 12px; background: #fff7ed; border: 2px solid #fdba74; border-radius: 22px; padding: 14px 16px; color: #431407; font-size: 22px; font-weight: 900; margin: 16px 0; text-align: center; }
+        .menu-folleto-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+        .menu-folleto-cta { display: flex; justify-content: center; margin-top: 10px; }
+        .menu-folleto-cta .button { font-size: 22px; padding: 17px 34px; border-radius: 999px; }
+        .menu-folleto-footer { text-align: center; color: #78716c; font-size: 13px; font-weight: 800; margin-top: 14px; }
+        .menu-folleto-web-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(100%, 816px); margin: 16px auto 0; }
+        @media print {
+          @page { size: letter portrait; margin: 0.35in; }
+          body { background: #fff !important; }
+          .app { background: #fff !important; padding: 0 !important; }
+          .container { max-width: none !important; }
+          .alert, .menu-folleto-web-actions { display: none !important; }
+          .menu-publico { max-width: none !important; }
+          .menu-folleto { width: 100% !important; min-height: auto !important; box-shadow: none !important; border-radius: 0 !important; border: 1px solid #fed7aa !important; break-inside: avoid; }
+        }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
         @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
@@ -1997,13 +2017,28 @@ export default function App() {
             <main className="menu-publico">
               <section className="menu-folleto">
                 <div className="menu-folleto-hero">
-                  <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="menu-folleto-logo" />
-                  <div className="menu-fecha-pill">🍽️ {menu.fecha || fechaISOColombia()}</div>
-                  <h2>{menu.titulo || "Menú del día"}</h2>
-                  <p>{menu.descripcion || "Consulta nuestro menú disponible para hoy."}</p>
+                  <div className="menu-flyer-top">
+                    <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="menu-folleto-logo" />
+
+                    <div>
+                      <div className="menu-flyer-brand">Sabor que une</div>
+                      <h2>Menú<br />del día</h2>
+                      <p>Escoge tu almuerzo del día</p>
+                    </div>
+
+                    <div className="menu-fecha-pill">
+                      <span>Hoy</span>
+                      <span>{menu.fecha || fechaISOColombia()}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="menu-folleto-body">
+                  <div className="menu-folleto-intro">
+                    <h3>{menu.titulo || "Almuerzo ejecutivo Rafiki"}</h3>
+                    <p>{menu.descripcion || "Consulta nuestro menú disponible para hoy."}</p>
+                  </div>
+
                   {menu.platos_detalle.length === 0 ? (
                     <div className="menu-folleto-section">
                       <h3>Menú no disponible</h3>
@@ -2015,7 +2050,7 @@ export default function App() {
                     <>
                       {Object.entries(platosAgrupados).map(([categoria, platos]) => (
                         <div key={categoria} className="menu-folleto-section">
-                          <h3>{categoria}</h3>
+                          <h3>🍽️ {categoria}</h3>
 
                           {platos.map((plato) => (
                             <div key={`${plato.categoria}-${plato.nombre}`} className="menu-plato-row">
@@ -2028,7 +2063,7 @@ export default function App() {
 
                       {menu.acompanantes.length > 0 && (
                         <div className="menu-folleto-section">
-                          <h3>Acompañantes</h3>
+                          <h3>🌿 Acompañantes</h3>
                           <div className="menu-acompanantes">
                             {menu.acompanantes.map((acompanante) => (
                               <span key={acompanante} className="menu-acompanante">
@@ -2039,26 +2074,35 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className="menu-folleto-section">
-                        <h3>Incluye</h3>
-                        <p className="muted" style={{ marginBottom: 0 }}>
-                          Los almuerzos incluyen sopa + bebida. Los productos de sopas no incluyen acompañantes adicionales.
-                        </p>
+                      <div className="menu-incluye-banner">
+                        <span>🥣</span>
+                        <span>Incluye sopa + bebida</span>
+                        <span>🥤</span>
                       </div>
                     </>
                   )}
 
-                  <div className="menu-folleto-actions">
+                  <div className="menu-folleto-cta">
                     <button type="button" onClick={() => navegar("/", "cliente")} className="button green">
-                      🛍️ Hacer pedido
+                      🛍️ Haz tu pedido
                     </button>
+                  </div>
 
-                    <button type="button" onClick={() => window.print()} className="button light">
-                      Imprimir / guardar
-                    </button>
+                  <div className="menu-folleto-footer">
+                    Rafiki Pedidos · Menú actualizado desde el panel administrativo
                   </div>
                 </div>
               </section>
+
+              <div className="menu-folleto-web-actions">
+                <button type="button" onClick={() => navegar("/", "cliente")} className="button green">
+                  Hacer pedido
+                </button>
+
+                <button type="button" onClick={() => window.print()} className="button light">
+                  Imprimir / guardar
+                </button>
+              </div>
             </main>
           )}
 
