@@ -859,6 +859,10 @@ function obtenerVistaInicial() {
     return "adminLogin";
   }
 
+  if (ruta === "/menu") {
+    return "menuPublico";
+  }
+
   if (ruta === "/pedido" || ruta === "/cliente") {
     return "cliente";
   }
@@ -1912,12 +1916,31 @@ export default function App() {
         .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .menu-publico { max-width: 880px; margin: 0 auto; }
+        .menu-folleto { background: #fff; border-radius: 36px; overflow: hidden; box-shadow: 0 28px 70px rgba(0,0,0,0.12); border: 1px solid #fed7aa; }
+        .menu-folleto-hero { background: linear-gradient(145deg, #ea580c, #f97316 50%, #f59e0b); color: #fff; text-align: center; padding: 38px 28px 34px; position: relative; overflow: hidden; }
+        .menu-folleto-hero::before { content: ''; position: absolute; top: -70px; right: -50px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+        .menu-folleto-hero::after { content: ''; position: absolute; bottom: -90px; left: -40px; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+        .menu-folleto-logo { width: 135px; height: 135px; object-fit: contain; background: #fff; border-radius: 28px; padding: 10px; margin-bottom: 18px; box-shadow: 0 18px 40px rgba(0,0,0,0.22); position: relative; z-index: 1; }
+        .menu-folleto-hero h2 { font-family: 'Fraunces', serif; font-size: clamp(36px, 7vw, 62px); line-height: 0.95; margin-bottom: 10px; position: relative; z-index: 1; }
+        .menu-folleto-hero p { color: rgba(255,255,255,0.9); position: relative; z-index: 1; }
+        .menu-fecha-pill { display: inline-flex; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 8px 14px; font-weight: 900; margin-bottom: 14px; position: relative; z-index: 1; }
+        .menu-folleto-body { padding: 26px; background: linear-gradient(180deg, #fff 0%, #fff7ed 100%); }
+        .menu-folleto-section { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; margin-bottom: 16px; }
+        .menu-folleto-section h3 { color: #c2410c; font-family: 'Fraunces', serif; margin-bottom: 12px; font-size: 24px; }
+        .menu-plato-row { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px dashed #fed7aa; }
+        .menu-plato-row:last-child { border-bottom: 0; }
+        .menu-plato-nombre { font-weight: 900; color: #292524; }
+        .menu-plato-precio { font-weight: 900; color: #ea580c; white-space: nowrap; }
+        .menu-acompanantes { display: flex; flex-wrap: wrap; gap: 9px; }
+        .menu-acompanante { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 999px; padding: 8px 12px; font-weight: 900; font-size: 14px; }
+        .menu-folleto-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
         @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
-          .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row { grid-template-columns: 1fr; }
+          .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row, .menu-folleto-actions { grid-template-columns: 1fr; }
           .app { padding: 14px; }
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
@@ -1927,7 +1950,7 @@ export default function App() {
 
       <div className="app">
         <div className="container">
-          {vista !== "inicio" && (
+          {vista !== "inicio" && vista !== "menuPublico" && (
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
@@ -1966,6 +1989,75 @@ export default function App() {
                 <button type="button" onClick={() => navegar("/", "cliente")} className="welcome-button">
                   🛍️ Haz tu pedido aquí
                 </button>
+              </section>
+            </main>
+          )}
+
+          {!cargando && vista === "menuPublico" && (
+            <main className="menu-publico">
+              <section className="menu-folleto">
+                <div className="menu-folleto-hero">
+                  <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="menu-folleto-logo" />
+                  <div className="menu-fecha-pill">🍽️ {menu.fecha || fechaISOColombia()}</div>
+                  <h2>{menu.titulo || "Menú del día"}</h2>
+                  <p>{menu.descripcion || "Consulta nuestro menú disponible para hoy."}</p>
+                </div>
+
+                <div className="menu-folleto-body">
+                  {menu.platos_detalle.length === 0 ? (
+                    <div className="menu-folleto-section">
+                      <h3>Menú no disponible</h3>
+                      <p className="muted" style={{ marginBottom: 0 }}>
+                        Todavía no hay platos configurados para el menú de hoy.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {Object.entries(platosAgrupados).map(([categoria, platos]) => (
+                        <div key={categoria} className="menu-folleto-section">
+                          <h3>{categoria}</h3>
+
+                          {platos.map((plato) => (
+                            <div key={`${plato.categoria}-${plato.nombre}`} className="menu-plato-row">
+                              <span className="menu-plato-nombre">{plato.nombre}</span>
+                              <span className="menu-plato-precio">{dinero(plato.precio)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+
+                      {menu.acompanantes.length > 0 && (
+                        <div className="menu-folleto-section">
+                          <h3>Acompañantes</h3>
+                          <div className="menu-acompanantes">
+                            {menu.acompanantes.map((acompanante) => (
+                              <span key={acompanante} className="menu-acompanante">
+                                {acompanante}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="menu-folleto-section">
+                        <h3>Incluye</h3>
+                        <p className="muted" style={{ marginBottom: 0 }}>
+                          Los almuerzos incluyen sopa + bebida. Los productos de sopas no incluyen acompañantes adicionales.
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="menu-folleto-actions">
+                    <button type="button" onClick={() => navegar("/", "cliente")} className="button green">
+                      🛍️ Hacer pedido
+                    </button>
+
+                    <button type="button" onClick={() => window.print()} className="button light">
+                      Imprimir / guardar
+                    </button>
+                  </div>
+                </div>
               </section>
             </main>
           )}
