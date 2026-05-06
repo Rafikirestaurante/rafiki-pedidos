@@ -9,43 +9,143 @@ const CLAVE_ADMIN = "rafiki1234";
 const WHATSAPP_SOLICITUD_PRODUCTOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_PRODUCTOS || "573013707032";
 
 const productosRestauranteBase = [
-  { categoria: "Proteínas", nombre: "Pechuga" },
-  { categoria: "Proteínas", nombre: "Pollo" },
-  { categoria: "Proteínas", nombre: "Carne de res" },
-  { categoria: "Proteínas", nombre: "Cerdo" },
-  { categoria: "Proteínas", nombre: "Hígado" },
-  { categoria: "Proteínas", nombre: "Sobrebarriga" },
-  { categoria: "Verduras y ensaladas", nombre: "Tomate" },
-  { categoria: "Verduras y ensaladas", nombre: "Cebolla roja" },
-  { categoria: "Verduras y ensaladas", nombre: "Cebolla blanca" },
-  { categoria: "Verduras y ensaladas", nombre: "Lechuga" },
-  { categoria: "Verduras y ensaladas", nombre: "Zanahoria" },
-  { categoria: "Verduras y ensaladas", nombre: "Pepino" },
-  { categoria: "Verduras y ensaladas", nombre: "Cilantro" },
-  { categoria: "Verduras y ensaladas", nombre: "Ají" },
-  { categoria: "Tubérculos y acompañantes", nombre: "Papa" },
-  { categoria: "Tubérculos y acompañantes", nombre: "Yuca" },
-  { categoria: "Tubérculos y acompañantes", nombre: "Plátano maduro" },
-  { categoria: "Tubérculos y acompañantes", nombre: "Plátano verde" },
-  { categoria: "Granos y básicos", nombre: "Arroz" },
-  { categoria: "Granos y básicos", nombre: "Fríjol" },
-  { categoria: "Granos y básicos", nombre: "Lenteja" },
-  { categoria: "Granos y básicos", nombre: "Pasta" },
-  { categoria: "Lácteos y varios", nombre: "Queso costeño" },
-  { categoria: "Lácteos y varios", nombre: "Crema de leche" },
-  { categoria: "Lácteos y varios", nombre: "Huevos" },
-  { categoria: "Despensa", nombre: "Aceite" },
-  { categoria: "Despensa", nombre: "Sal" },
-  { categoria: "Despensa", nombre: "Azúcar" },
-  { categoria: "Despensa", nombre: "Ajo" },
-  { categoria: "Despensa", nombre: "Caldo / condimentos" },
-  { categoria: "Empaques", nombre: "Contenedores para almuerzo" },
-  { categoria: "Empaques", nombre: "Contenedores de sopa" },
-  { categoria: "Empaques", nombre: "Cubiertos" },
-  { categoria: "Empaques", nombre: "Bolsas" },
-  { categoria: "Bebidas", nombre: "Bebida refrescante 12 oz" },
-  { categoria: "Bebidas", nombre: "Bebida refrescante 16 oz" },
-  { categoria: "Bebidas", nombre: "Agua" }
+  { categoria: "Proteínas y carnes", nombre: "Pollo" },
+  { categoria: "Proteínas y carnes", nombre: "Pechuga" },
+  { categoria: "Proteínas y carnes", nombre: "Carne" },
+  { categoria: "Proteínas y carnes", nombre: "Cerdo" },
+  { categoria: "Proteínas y carnes", nombre: "Chuleta" },
+  { categoria: "Proteínas y carnes", nombre: "Atún" },
+  { categoria: "Proteínas y carnes", nombre: "Carne para guisar" },
+  { categoria: "Proteínas y carnes", nombre: "Carne para posta" },
+  { categoria: "Proteínas y carnes", nombre: "Costilla" },
+  { categoria: "Proteínas y carnes", nombre: "Gallina" },
+  { categoria: "Proteínas y carnes", nombre: "Panza" },
+  { categoria: "Proteínas y carnes", nombre: "Pata de cerdo" },
+  { categoria: "Proteínas y carnes", nombre: "Pata de res" },
+  { categoria: "Proteínas y carnes", nombre: "Sobrebarriga" },
+  { categoria: "Proteínas y carnes", nombre: "Tocineta" },
+  { categoria: "Proteínas y carnes", nombre: "Jamón" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Leche" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Suero" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Queso mozzarella" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Queso parmesano" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Queso duro" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Mantequilla" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Crema de leche" },
+  { categoria: "Lácteos, quesos y refrigerados", nombre: "Huevos" },
+  { categoria: "Frutas", nombre: "Mango" },
+  { categoria: "Frutas", nombre: "Arándanos" },
+  { categoria: "Frutas", nombre: "Uva" },
+  { categoria: "Frutas", nombre: "Fresa" },
+  { categoria: "Frutas", nombre: "Kiwi" },
+  { categoria: "Frutas", nombre: "Piña" },
+  { categoria: "Frutas", nombre: "Banano" },
+  { categoria: "Frutas", nombre: "Mora" },
+  { categoria: "Frutas", nombre: "Melón" },
+  { categoria: "Frutas", nombre: "Tomate de árbol" },
+  { categoria: "Frutas", nombre: "Papaya" },
+  { categoria: "Frutas", nombre: "Limón" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ahuyama" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ajo" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Albahaca" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Apio" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla blanca" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla larga" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla puerro" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla roja" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cilantro" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Espinaca" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Guineo verde" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Habichuela corta" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Lechuga batavia" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Lechuga crespa" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Lechuga romana" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ñame" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Papa sucia" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Papa amarilla" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pepino" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Perejil" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pimentón amarillo" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pimentón rojo" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pimentón verde" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Plátano amarillo" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Plátano verde" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ají topito" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Remolacha" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Yuca" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Zanahoria" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Tomate" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Mazorcas" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Guascas" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Champiñones" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Mix de verduras" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Maíz" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Orégano" },
+  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Finas hierbas" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Pasta" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Arroz" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Zaragoza" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Garbanzo" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Lentejas" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Harina de trigo" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Harina amarilla" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Fideos" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Avena" },
+  { categoria: "Granos, cereales, harinas y pastas", nombre: "Granola y tostadas" },
+  { categoria: "Panadería y productos preparados", nombre: "Pan" },
+  { categoria: "Panadería y productos preparados", nombre: "Tostadas" },
+  { categoria: "Panadería y productos preparados", nombre: "Arepas" },
+  { categoria: "Panadería y productos preparados", nombre: "Papas fritas" },
+  { categoria: "Panadería y productos preparados", nombre: "Fresas para congelar" },
+  { categoria: "Panadería y productos preparados", nombre: "Fresas para parfait" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Stevia" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Azúcar" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Azúcar en tubitos" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Panela" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Aceite" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Sal" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Mayonesa" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Salsa de tomate" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Picante" },
+  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Polvo chantillí" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Jugo de naranja" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Jugo de mandarina" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de guanábana" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de zapote" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de níspero" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de maracuyá" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de mango" },
+  { categoria: "Jugos, pulpas y bebidas", nombre: "Ingredientes pulpa de café" },
+  { categoria: "Empaques y desechables", nombre: "Sopero 12 oz" },
+  { categoria: "Empaques y desechables", nombre: "Sopero 24 oz" },
+  { categoria: "Empaques y desechables", nombre: "Sopero 32 oz" },
+  { categoria: "Empaques y desechables", nombre: "Contenedor 3 divisiones negro" },
+  { categoria: "Empaques y desechables", nombre: "Contenedor C1" },
+  { categoria: "Empaques y desechables", nombre: "Contenedor J1 dorado" },
+  { categoria: "Empaques y desechables", nombre: "Tarinas 12 oz" },
+  { categoria: "Empaques y desechables", nombre: "Vasos Darnel 12 oz" },
+  { categoria: "Empaques y desechables", nombre: "Vasos Darnel 16 oz" },
+  { categoria: "Empaques y desechables", nombre: "Vasos Gold Carvajal 22 oz" },
+  { categoria: "Empaques y desechables", nombre: "Vasos de tinto 9 oz" },
+  { categoria: "Empaques y desechables", nombre: "Tapa Darnel plana" },
+  { categoria: "Empaques y desechables", nombre: "Tapas Darnel domo" },
+  { categoria: "Empaques y desechables", nombre: "Tapas verdes" },
+  { categoria: "Empaques y desechables", nombre: "Pitillos batido 7 mm" },
+  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 3K" },
+  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 10K" },
+  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 15K" },
+  { categoria: "Empaques y desechables", nombre: "Bolsas para cubiertos" },
+  { categoria: "Empaques y desechables", nombre: "Bolsas de porcionar" },
+  { categoria: "Empaques y desechables", nombre: "Papel para sándwich" },
+  { categoria: "Empaques y desechables", nombre: "Servilletas" },
+  { categoria: "Empaques y desechables", nombre: "Comandas" },
+  { categoria: "Aseo, limpieza y varios", nombre: "Cloro" },
+  { categoria: "Aseo, limpieza y varios", nombre: "Detergente FAB" },
+  { categoria: "Aseo, limpieza y varios", nombre: "Desinfectante" },
+  { categoria: "Aseo, limpieza y varios", nombre: "Bolsas de basura normales" },
+  { categoria: "Aseo, limpieza y varios", nombre: "Bolsas de basura grandes" },
+  { categoria: "Aseo, limpieza y varios", nombre: "Papel higiénico" },
+  { categoria: "Aseo, limpieza y varios", nombre: "Cinta pegante" }
 ];
 
 const unidadesSolicitud = ["und", "kg", "g", "lb", "paquete", "bolsa", "caja", "litro", "botella"];
@@ -746,6 +846,7 @@ export default function App() {
   const [solicitudFinalizada, setSolicitudFinalizada] = useState(null);
   const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState("");
   const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState("Varios");
+  const [productoSolicitudEliminarId, setProductoSolicitudEliminarId] = useState("");
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -1422,6 +1523,7 @@ export default function App() {
     };
 
     setProductosSolicitud((actual) => [...actual, nuevoProducto]);
+    setProductoSolicitudEliminarId(nuevoProducto.id);
     setNuevoProductoSolicitudNombre("");
     setNuevoProductoSolicitudCategoria(categoria);
     setSolicitudFinalizada(null);
@@ -1429,13 +1531,21 @@ export default function App() {
   }
 
   function quitarProductoSolicitudDeLista(id) {
-    const confirmar = window.confirm("¿Quitar este producto de la lista?");
+    if (!id) {
+      setMensajeSolicitud({ texto: "Selecciona el producto que quieres eliminar de la lista.", tipo: "warning" });
+      return;
+    }
+
+    const producto = productosSolicitud.find((item) => item.id === id);
+    const nombre = producto?.nombre || "este producto";
+    const confirmar = window.confirm(`¿Eliminar ${nombre} de la lista principal? Esta acción solo afecta esta lista de solicitud.`);
 
     if (!confirmar) return;
 
-    setProductosSolicitud((actual) => actual.filter((producto) => producto.id !== id));
+    setProductosSolicitud((actual) => actual.filter((item) => item.id !== id));
+    setProductoSolicitudEliminarId("");
     setSolicitudFinalizada(null);
-    setMensajeSolicitud({ texto: "Producto quitado de la lista.", tipo: "info" });
+    setMensajeSolicitud({ texto: "Producto eliminado de la lista principal.", tipo: "info" });
   }
 
   async function guardarSolicitudProductosYAbrirWhatsApp() {
@@ -1509,6 +1619,7 @@ export default function App() {
     setObservacionesSolicitud("");
     setNuevoProductoSolicitudNombre("");
     setNuevoProductoSolicitudCategoria("Varios");
+    setProductoSolicitudEliminarId("");
     setMensajeSolicitud({ texto: "", tipo: "info" });
     setSolicitudFinalizada(null);
   }
@@ -1736,14 +1847,15 @@ export default function App() {
         .producto-chip:hover { border-color: #fdba74; background: #fff7ed; }
         .producto-chip.selected { border-color: #22c55e; background: #dcfce7; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,0.12); }
         .producto-chip-wrap { display: inline-flex; align-items: center; gap: 4px; }
-        .producto-remove-mini { border: 1px solid #fecaca; background: #fff; color: #b91c1c; width: 30px; height: 30px; border-radius: 999px; font-weight: 900; box-shadow: none; padding: 0; }
-        .producto-add-row { display: grid; grid-template-columns: minmax(180px, 1fr) 170px auto; gap: 8px; align-items: center; margin: 10px 0 18px; }
-        .producto-add-row input, .producto-add-row select { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 14px; padding: 11px 12px; outline: none; font-family: inherit; }
-        .productos-seleccionados-lista { display: grid; gap: 10px; margin: 14px 0; }
-        .producto-seleccionado-row { display: grid; grid-template-columns: minmax(150px, 1fr) 90px 105px minmax(140px, 1fr) auto; gap: 8px; align-items: center; background: #fff; border: 1px solid #fed7aa; border-radius: 18px; padding: 10px; }
-        .producto-seleccionado-row strong { color: #292524; }
-        .producto-seleccionado-row input, .producto-seleccionado-row select { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 14px; padding: 10px 11px; outline: none; font-family: inherit; }
+        .producto-add-row, .producto-delete-row { display: grid; grid-template-columns: minmax(180px, 1fr) 170px auto; gap: 8px; align-items: center; margin-top: 10px; }
+        .producto-delete-row { grid-template-columns: minmax(220px, 1fr) auto; }
+        .producto-add-row input, .producto-add-row select, .producto-delete-row select { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 14px; padding: 11px 12px; outline: none; font-family: inherit; }
+        .productos-seleccionados-lista { display: grid; gap: 7px; margin: 10px 0; }
+        .producto-seleccionado-row { display: grid; grid-template-columns: minmax(120px, 1.1fr) 70px 88px minmax(110px, 1fr) auto; gap: 6px; align-items: center; background: #fff; border: 1px solid #fed7aa; border-radius: 15px; padding: 7px; }
+        .producto-seleccionado-row strong { color: #292524; font-size: 14px; line-height: 1.1; }
+        .producto-seleccionado-row input, .producto-seleccionado-row select { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 12px; padding: 8px 9px; outline: none; font-family: inherit; font-size: 13px; }
         .producto-seleccionado-row input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.12); background: #fff; }
+        .producto-seleccionado-row .button { padding: 8px 10px; font-size: 12px; border-radius: 12px; }
         .solicitud-preview { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; font-size: 14px; margin-top: 14px; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-finalizado { opacity: 0.7; }
@@ -1790,7 +1902,7 @@ export default function App() {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
-          .option-grid, .productos-grid, .producto-controls { grid-template-columns: 1fr; }
+          .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row { grid-template-columns: 1fr; }
           .app { padding: 14px; }
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
@@ -2499,9 +2611,6 @@ export default function App() {
                   <div className="admin-top-row">
                     <div>
                       <h2>🧺 Solicitud de productos</h2>
-                      <p className="muted">
-                        Selecciona lo que necesitan para el día siguiente. La lista queda guardada y se envía por WhatsApp.
-                      </p>
                     </div>
 
                     <button type="button" onClick={limpiarSolicitudProductos} className="button light">
@@ -2523,46 +2632,6 @@ export default function App() {
 
                     <div className="box soft">
                       <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong>
-                      <p className="muted" style={{ marginBottom: 0 }}>
-                        Toca un producto para agregarlo. Toca la X para quitarlo de la lista.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="box soft" style={{ marginBottom: 18 }}>
-                    <strong>Agregar producto a la lista</strong>
-                    <div className="producto-add-row">
-                      <input
-                        type="text"
-                        value={nuevoProductoSolicitudNombre}
-                        onChange={(e) => setNuevoProductoSolicitudNombre(e.target.value)}
-                        placeholder="Ej: Maíz tierno"
-                      />
-
-                      <select
-                        value={nuevoProductoSolicitudCategoria}
-                        onChange={(e) => setNuevoProductoSolicitudCategoria(e.target.value)}
-                      >
-                        {[
-                          "Proteínas",
-                          "Verduras y ensaladas",
-                          "Tubérculos y acompañantes",
-                          "Granos y básicos",
-                          "Lácteos y varios",
-                          "Despensa",
-                          "Empaques",
-                          "Bebidas",
-                          "Varios"
-                        ].map((categoria) => (
-                          <option key={categoria} value={categoria}>
-                            {categoria}
-                          </option>
-                        ))}
-                      </select>
-
-                      <button type="button" className="button green" onClick={agregarProductoSolicitudALista}>
-                        Agregar
-                      </button>
                     </div>
                   </div>
 
@@ -2590,15 +2659,6 @@ export default function App() {
                                 {seleccionado ? "✓ " : "+ "}
                                 {producto.nombre}
                               </button>
-
-                              <button
-                                type="button"
-                                className="producto-remove-mini"
-                                onClick={() => quitarProductoSolicitudDeLista(producto.id)}
-                                title="Quitar de la lista"
-                              >
-                                ×
-                              </button>
                             </span>
                           );
                         })}
@@ -2609,9 +2669,6 @@ export default function App() {
                   {productosSolicitudSeleccionados.length > 0 && (
                     <div className="box soft">
                       <strong>Productos seleccionados</strong>
-                      <p className="muted small" style={{ marginBottom: 10 }}>
-                        Ajusta cantidad, unidad y nota si hace falta.
-                      </p>
 
                       <div className="productos-seleccionados-lista">
                         {productosSolicitud
@@ -2649,14 +2706,13 @@ export default function App() {
                                 onChange={(e) =>
                                   actualizarProductoSolicitud(producto.id, { nota: e.target.value })
                                 }
-                                placeholder="Nota opcional"
+                                placeholder="Nota"
                               />
 
                               <button
                                 type="button"
                                 className="button light"
                                 onClick={() => actualizarProductoSolicitud(producto.id, { cantidad: "", nota: "" })}
-                                style={{ padding: "10px 12px" }}
                               >
                                 Quitar
                               </button>
@@ -2695,6 +2751,71 @@ export default function App() {
                   >
                     {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud y enviar por WhatsApp"}
                   </button>
+
+                  <div className="box soft" style={{ marginTop: 18 }}>
+                    <strong>Agregar producto a la lista</strong>
+                    <div className="producto-add-row">
+                      <input
+                        type="text"
+                        value={nuevoProductoSolicitudNombre}
+                        onChange={(e) => setNuevoProductoSolicitudNombre(e.target.value)}
+                        placeholder="Ej: Maíz tierno"
+                      />
+
+                      <select
+                        value={nuevoProductoSolicitudCategoria}
+                        onChange={(e) => setNuevoProductoSolicitudCategoria(e.target.value)}
+                      >
+                        {[
+                          "Proteínas",
+                          "Verduras y ensaladas",
+                          "Tubérculos y acompañantes",
+                          "Granos y básicos",
+                          "Lácteos y varios",
+                          "Despensa",
+                          "Empaques",
+                          "Bebidas",
+                          "Varios"
+                        ].map((categoria) => (
+                          <option key={categoria} value={categoria}>
+                            {categoria}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button type="button" className="button green" onClick={agregarProductoSolicitudALista}>
+                        Agregar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="box soft" style={{ marginTop: 12 }}>
+                    <strong>Eliminar producto de la lista</strong>
+                    <p className="muted small" style={{ marginBottom: 8 }}>
+                      Esta opción es solo para administrar el listado principal.
+                    </p>
+                    <div className="producto-delete-row">
+                      <select
+                        value={productoSolicitudEliminarId}
+                        onChange={(e) => setProductoSolicitudEliminarId(e.target.value)}
+                      >
+                        <option value="">Selecciona un producto</option>
+                        {productosSolicitud.map((producto) => (
+                          <option key={producto.id} value={producto.id}>
+                            {producto.categoria} - {producto.nombre}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        className="button danger"
+                        onClick={() => quitarProductoSolicitudDeLista(productoSolicitudEliminarId)}
+                      >
+                        Eliminar de la lista
+                      </button>
+                    </div>
+                  </div>
                 </section>
               )}
 
