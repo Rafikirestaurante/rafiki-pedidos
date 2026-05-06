@@ -229,8 +229,16 @@ function formatearFechaHora(fecha) {
   }).format(new Date(fecha));
 }
 
-function obtenerRangoPedidos(filtro, fechaManual = fechaISOColombia()) {
-  const baseTexto = filtro === "dia" ? fechaManual : fechaISOColombia();
+function obtenerRangoPedidos(filtro = "hoy", fechaManual = fechaISOColombia()) {
+  let baseTexto;
+
+  if (filtro === "dia") {
+    baseTexto = fechaManual || fechaISOColombia();
+  } else {
+    // Cualquier filtro distinto a "dia" se interpreta explícitamente como "hoy".
+    baseTexto = fechaISOColombia();
+  }
+
   const base = new Date(`${baseTexto}T00:00:00-05:00`);
 
   const inicio = new Date(base);
@@ -1028,9 +1036,13 @@ export default function App() {
     [fechaParaSolicitud, productosSolicitudSeleccionados, observacionesSolicitud]
   );
 
-  const linkWhatsAppSolicitud = crearLinkWhatsApp(
-    WHATSAPP_SOLICITUD_PRODUCTOS,
-    solicitudFinalizada?.mensaje || mensajeWhatsAppSolicitud
+  const linkWhatsAppSolicitud = useMemo(
+    () =>
+      crearLinkWhatsApp(
+        WHATSAPP_SOLICITUD_PRODUCTOS,
+        solicitudFinalizada?.mensaje || mensajeWhatsAppSolicitud
+      ),
+    [solicitudFinalizada, mensajeWhatsAppSolicitud]
   );
 
   const platosAgrupados = useMemo(
@@ -1572,17 +1584,13 @@ export default function App() {
     setMensajeSolicitud({ texto: "Producto eliminado de la lista principal.", tipo: "info" });
   }
 
-  async function guardarSolicitudProductosYAbrirWhatsApp() {
-    if (guardandoSolicitud) return;
-
+  function construirSolicitudProductos() {
     const productos = obtenerProductosSolicitudSeleccionados(productosSolicitud);
 
     if (productos.length === 0) {
-      setMensajeSolicitud({
-        texto: "Selecciona al menos un producto para guardar la solicitud.",
-        tipo: "warning"
-      });
-      return;
+      return {
+        error: "Selecciona al menos un producto para guardar la solicitud."
+      };
     }
 
     const fechaSolicitud = fechaISOColombia();
@@ -1601,7 +1609,20 @@ export default function App() {
       mensaje: mensajeFinal
     };
 
-    const ventanaWhatsapp = window.open("about:blank", "_blank");
+    return { nuevaSolicitud, mensajeFinal };
+  }
+
+  async function guardarSolicitudProductos({ abrirWhatsApp = false } = {}) {
+    if (guardandoSolicitud) return;
+
+    const { nuevaSolicitud, mensajeFinal, error: errorValidacion } = construirSolicitudProductos();
+
+    if (errorValidacion) {
+      setMensajeSolicitud({ texto: errorValidacion, tipo: "warning" });
+      return;
+    }
+
+    const ventanaWhatsapp = abrirWhatsApp ? window.open("about:blank", "_blank") : null;
 
     setGuardandoSolicitud(true);
 
@@ -1613,25 +1634,53 @@ export default function App() {
         .single();
 
       if (error) {
-        if (ventanaWhatsapp) ventanaWhatsapp.close();
+        if (ventanaWhatsapp) {
+          try {
+            ventanaWhatsapp.close();
+          } catch (_) {
+            // En algunos móviles el navegador no permite cerrar la pestaña temporal.
+          }
+        }
+
         setMensajeSolicitud({ texto: `Error guardando solicitud: ${error.message}`, tipo: "error" });
         return;
       }
 
       const solicitudGuardada = data || nuevaSolicitud;
       setSolicitudFinalizada(solicitudGuardada);
-      setMensajeSolicitud({
-        texto: "Solicitud guardada. Se abrirá WhatsApp con el consolidado.",
-        tipo: "success"
-      });
 
-      const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_PRODUCTOS, solicitudGuardada.mensaje || mensajeFinal);
+      if (abrirWhatsApp) {
+        const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_PRODUCTOS, solicitudGuardada.mensaje || mensajeFinal);
 
-      if (ventanaWhatsapp) {
-        ventanaWhatsapp.location.href = link;
+        setMensajeSolicitud({
+          texto: "Solicitud guardada. Se abrirá WhatsApp con el consolidado.",
+          tipo: "success"
+        });
+
+        if (ventanaWhatsapp) {
+          ventanaWhatsapp.location.href = link;
+        } else {
+          window.location.href = link;
+        }
       } else {
-        window.location.href = link;
+        setMensajeSolicitud({
+          texto: "Solicitud guardada. Ahora puedes enviar el consolidado por WhatsApp.",
+          tipo: "success"
+        });
       }
+    } catch (error) {
+      if (ventanaWhatsapp) {
+        try {
+          ventanaWhatsapp.close();
+        } catch (_) {
+          // En algunos móviles el navegador no permite cerrar la pestaña temporal.
+        }
+      }
+
+      setMensajeSolicitud({
+        texto: `Error inesperado guardando solicitud: ${error.message || "revisa la conexión e intenta nuevamente."}`,
+        tipo: "error"
+      });
     } finally {
       setGuardandoSolicitud(false);
     }
@@ -1646,59 +1695,6 @@ export default function App() {
     setProductoSolicitudEliminarId("");
     setMensajeSolicitud({ texto: "", tipo: "info" });
     setSolicitudFinalizada(null);
-  }
-
-  async function guardarSolicitudProductos() {
-    if (guardandoSolicitud) return;
-
-    const productos = obtenerProductosSolicitudSeleccionados(productosSolicitud);
-
-    if (productos.length === 0) {
-      setMensajeSolicitud({
-        texto: "Selecciona al menos un producto para guardar la solicitud.",
-        tipo: "warning"
-      });
-      return;
-    }
-
-    const fechaSolicitud = fechaISOColombia();
-    const mensajeFinal = crearMensajeSolicitudProductos({
-      fechaSolicitud,
-      fechaPara: fechaParaSolicitud,
-      productos,
-      observaciones: observacionesSolicitud.trim()
-    });
-
-    const nuevaSolicitud = {
-      fecha_solicitud: fechaSolicitud,
-      fecha_para: fechaParaSolicitud,
-      productos,
-      observaciones: observacionesSolicitud.trim(),
-      mensaje: mensajeFinal
-    };
-
-    setGuardandoSolicitud(true);
-
-    try {
-      const { data, error } = await supabase
-        .from("solicitudes_productos")
-        .insert(nuevaSolicitud)
-        .select()
-        .single();
-
-      if (error) {
-        setMensajeSolicitud({ texto: `Error guardando solicitud: ${error.message}`, tipo: "error" });
-        return;
-      }
-
-      setSolicitudFinalizada(data || nuevaSolicitud);
-      setMensajeSolicitud({
-        texto: "Solicitud guardada. Ahora puedes enviar el consolidado por WhatsApp.",
-        tipo: "success"
-      });
-    } finally {
-      setGuardandoSolicitud(false);
-    }
   }
 
   function abrirPanelAdmin() {
@@ -2768,7 +2764,7 @@ export default function App() {
 
                   <button
                     type="button"
-                    onClick={guardarSolicitudProductosYAbrirWhatsApp}
+                    onClick={() => guardarSolicitudProductos({ abrirWhatsApp: true })}
                     disabled={guardandoSolicitud}
                     className="button green"
                     style={{ width: "100%", marginTop: 14 }}
