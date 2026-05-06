@@ -629,8 +629,24 @@ function crearMensajeWhatsAppPedido(pedido) {
   ].join("\n");
 }
 
-function crearLinkWhatsApp(numero, mensaje) {
-  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+function esDispositivoMovil() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
+}
+
+function crearLinkWhatsApp(numero, mensaje, { abrirApp = false } = {}) {
+  const telefono = limpiarTelefonoWhatsApp(numero);
+  const texto = encodeURIComponent(mensaje || "");
+
+  if (abrirApp && esDispositivoMovil()) {
+    return `whatsapp://send?phone=${telefono}&text=${texto}`;
+  }
+
+  if (abrirApp) {
+    return `https://web.whatsapp.com/send?phone=${telefono}&text=${texto}`;
+  }
+
+  return `https://api.whatsapp.com/send?phone=${telefono}&text=${texto}`;
 }
 
 function obtenerCliente(pedido) {
@@ -1040,7 +1056,8 @@ export default function App() {
     () =>
       crearLinkWhatsApp(
         WHATSAPP_SOLICITUD_PRODUCTOS,
-        solicitudFinalizada?.mensaje || mensajeWhatsAppSolicitud
+        solicitudFinalizada?.mensaje || mensajeWhatsAppSolicitud,
+        { abrirApp: true }
       ),
     [solicitudFinalizada, mensajeWhatsAppSolicitud]
   );
@@ -1650,7 +1667,11 @@ export default function App() {
       setSolicitudFinalizada(solicitudGuardada);
 
       if (abrirWhatsApp) {
-        const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_PRODUCTOS, solicitudGuardada.mensaje || mensajeFinal);
+        const link = crearLinkWhatsApp(
+          WHATSAPP_SOLICITUD_PRODUCTOS,
+          solicitudGuardada.mensaje || mensajeFinal,
+          { abrirApp: true }
+        );
 
         setMensajeSolicitud({
           texto: "Solicitud guardada. Se abrirá WhatsApp con el consolidado.",
