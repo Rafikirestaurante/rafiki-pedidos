@@ -638,11 +638,7 @@ function crearLinkWhatsApp(numero, mensaje, { abrirApp = false } = {}) {
   const telefono = limpiarTelefonoWhatsApp(numero);
   const texto = encodeURIComponent(mensaje || "");
 
-  if (abrirApp && esDispositivoMovil()) {
-    return `whatsapp://send?phone=${telefono}&text=${texto}`;
-  }
-
-  if (abrirApp) {
+  if (abrirApp && !esDispositivoMovil()) {
     return `https://web.whatsapp.com/send?phone=${telefono}&text=${texto}`;
   }
 
@@ -1639,8 +1635,6 @@ export default function App() {
       return;
     }
 
-    const ventanaWhatsapp = abrirWhatsApp ? window.open("about:blank", "_blank") : null;
-
     setGuardandoSolicitud(true);
 
     try {
@@ -1651,14 +1645,6 @@ export default function App() {
         .single();
 
       if (error) {
-        if (ventanaWhatsapp) {
-          try {
-            ventanaWhatsapp.close();
-          } catch (_) {
-            // En algunos móviles el navegador no permite cerrar la pestaña temporal.
-          }
-        }
-
         setMensajeSolicitud({ texto: `Error guardando solicitud: ${error.message}`, tipo: "error" });
         return;
       }
@@ -1678,11 +1664,7 @@ export default function App() {
           tipo: "success"
         });
 
-        if (ventanaWhatsapp) {
-          ventanaWhatsapp.location.href = link;
-        } else {
-          window.location.href = link;
-        }
+        window.location.href = link;
       } else {
         setMensajeSolicitud({
           texto: "Solicitud guardada. Ahora puedes enviar el consolidado por WhatsApp.",
@@ -1690,14 +1672,6 @@ export default function App() {
         });
       }
     } catch (error) {
-      if (ventanaWhatsapp) {
-        try {
-          ventanaWhatsapp.close();
-        } catch (_) {
-          // En algunos móviles el navegador no permite cerrar la pestaña temporal.
-        }
-      }
-
       setMensajeSolicitud({
         texto: `Error inesperado guardando solicitud: ${error.message || "revisa la conexión e intenta nuevamente."}`,
         tipo: "error"
@@ -2260,7 +2234,7 @@ export default function App() {
                       })}
 
                       <button type="button" onClick={agregarAlmuerzo} className="button add-meal">
-                        + Agregar otra proteína o producto
+                        + Agregar otro almuerzo o producto
                       </button>
                     </>
                   )}
