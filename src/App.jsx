@@ -8,114 +8,129 @@ const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
 const CLAVE_ADMIN = "rafiki1234";
 const WHATSAPP_SOLICITUD_PRODUCTOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_PRODUCTOS || "573013707032";
 
+const categoriasSolicitudProductos = [
+  "Proteínas, lácteos y huevos",
+  "Frutas, pulpas y congelados",
+  "Verduras, hortalizas y tubérculos",
+  "Abarrotes, secos y condimentos",
+  "Empaques y desechables",
+  "Aseo y limpieza"
+];
+
+const CATEGORIA_SOLICITUD_DEFECTO = "Abarrotes, secos y condimentos";
+
 const productosRestauranteBase = [
-  { categoria: "Proteínas y carnes", nombre: "Pollo" },
-  { categoria: "Proteínas y carnes", nombre: "Pechuga" },
-  { categoria: "Proteínas y carnes", nombre: "Carne" },
-  { categoria: "Proteínas y carnes", nombre: "Cerdo" },
-  { categoria: "Proteínas y carnes", nombre: "Chuleta" },
-  { categoria: "Proteínas y carnes", nombre: "Atún" },
-  { categoria: "Proteínas y carnes", nombre: "Carne para guisar" },
-  { categoria: "Proteínas y carnes", nombre: "Carne para posta" },
-  { categoria: "Proteínas y carnes", nombre: "Costilla" },
-  { categoria: "Proteínas y carnes", nombre: "Gallina" },
-  { categoria: "Proteínas y carnes", nombre: "Panza" },
-  { categoria: "Proteínas y carnes", nombre: "Pata de cerdo" },
-  { categoria: "Proteínas y carnes", nombre: "Pata de res" },
-  { categoria: "Proteínas y carnes", nombre: "Sobrebarriga" },
-  { categoria: "Proteínas y carnes", nombre: "Tocineta" },
-  { categoria: "Proteínas y carnes", nombre: "Jamón" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Leche" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Suero" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Queso mozzarella" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Queso parmesano" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Queso duro" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Mantequilla" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Crema de leche" },
-  { categoria: "Lácteos, quesos y refrigerados", nombre: "Huevos" },
-  { categoria: "Frutas", nombre: "Mango" },
-  { categoria: "Frutas", nombre: "Arándanos" },
-  { categoria: "Frutas", nombre: "Uva" },
-  { categoria: "Frutas", nombre: "Fresa" },
-  { categoria: "Frutas", nombre: "Kiwi" },
-  { categoria: "Frutas", nombre: "Piña" },
-  { categoria: "Frutas", nombre: "Banano" },
-  { categoria: "Frutas", nombre: "Mora" },
-  { categoria: "Frutas", nombre: "Melón" },
-  { categoria: "Frutas", nombre: "Tomate de árbol" },
-  { categoria: "Frutas", nombre: "Papaya" },
-  { categoria: "Frutas", nombre: "Limón" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ahuyama" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ajo" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Albahaca" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Apio" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla blanca" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla larga" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla puerro" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cebolla roja" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Cilantro" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Espinaca" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Guineo verde" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Habichuela corta" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Lechuga batavia" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Lechuga crespa" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Lechuga romana" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ñame" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Papa sucia" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Papa amarilla" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pepino" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Perejil" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pimentón amarillo" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pimentón rojo" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Pimentón verde" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Plátano amarillo" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Plátano verde" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Ají topito" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Remolacha" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Yuca" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Zanahoria" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Tomate" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Mazorcas" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Guascas" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Champiñones" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Mix de verduras" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Maíz" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Orégano" },
-  { categoria: "Verduras, hortalizas, hierbas y tubérculos", nombre: "Finas hierbas" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Pasta" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Arroz" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Zaragoza" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Garbanzo" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Lentejas" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Harina de trigo" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Harina amarilla" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Fideos" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Avena" },
-  { categoria: "Granos, cereales, harinas y pastas", nombre: "Granola y tostadas" },
-  { categoria: "Panadería y productos preparados", nombre: "Pan" },
-  { categoria: "Panadería y productos preparados", nombre: "Tostadas" },
-  { categoria: "Panadería y productos preparados", nombre: "Arepas" },
-  { categoria: "Panadería y productos preparados", nombre: "Papas fritas" },
-  { categoria: "Panadería y productos preparados", nombre: "Fresas para congelar" },
-  { categoria: "Panadería y productos preparados", nombre: "Fresas para parfait" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Stevia" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Azúcar" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Azúcar en tubitos" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Panela" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Aceite" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Sal" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Mayonesa" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Salsa de tomate" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Picante" },
-  { categoria: "Endulzantes, salsas, condimentos y despensa", nombre: "Polvo chantillí" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Jugo de naranja" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Jugo de mandarina" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de guanábana" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de zapote" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de níspero" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de maracuyá" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Pulpa de mango" },
-  { categoria: "Jugos, pulpas y bebidas", nombre: "Ingredientes pulpa de café" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Pollo" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Pechuga" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Cerdo" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Chuleta" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Atún" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne para guisar" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne para posta" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Costilla" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Gallina" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Panza" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Pata de cerdo" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Pata de res" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Sobrebarriga" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Tocineta" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Leche" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Suero" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso mozzarella" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso parmesano" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso duro" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Mantequilla" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Crema de leche" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Jamón" },
+  { categoria: "Proteínas, lácteos y huevos", nombre: "Huevos" },
+
+  { categoria: "Frutas, pulpas y congelados", nombre: "Mango" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Arándanos" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Uva" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Fresa" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Kiwi" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Piña" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Banano" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Mora" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Melón" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Tomate de árbol" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Papaya" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Limón" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de guanábana" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de zapote" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de níspero" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de maracuyá" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de mango" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Fresas para congelar" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Fresas para parfait" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Polvo chantillí" },
+
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ahuyama" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ajo" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Apio" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla blanca" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla larga" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla puerro" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla roja" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cilantro" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Espinaca" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Guineo verde" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Habichuela corta" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Lechuga batavia" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Lechuga crespa" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Lechuga romana" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ñame" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Papa sucia" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Papa amarilla" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pepino" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Perejil" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pimentón amarillo" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pimentón rojo" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pimentón verde" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Plátano amarillo" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Plátano verde" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ají topito" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Remolacha" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Yuca" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Zanahoria" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Tomate" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Mazorcas" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Guascas" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Champiñones" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Mix de verduras" },
+  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Maíz" },
+
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Arroz" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Zaragosa" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Garbanzo" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Lentejas" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Pasta" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Fideos" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Harina de trigo" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Harina amarilla" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Avena" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Granola y tostadas" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Tostadas" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Pan" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Arepas" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Papas fritas" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Stevia" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Azúcar" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Azúcar en tubitos" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Panela" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Jugo de naranja" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Jugo de mandarina" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Ingredientes pulpa de café" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Aceite" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Sal" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Mayonesa" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Salsa de tomate" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Picante" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Finas hierbas" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Orégano" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Albahaca" },
+
   { categoria: "Empaques y desechables", nombre: "Sopero 12 oz" },
   { categoria: "Empaques y desechables", nombre: "Sopero 24 oz" },
   { categoria: "Empaques y desechables", nombre: "Sopero 32 oz" },
@@ -127,6 +142,7 @@ const productosRestauranteBase = [
   { categoria: "Empaques y desechables", nombre: "Vasos Darnel 16 oz" },
   { categoria: "Empaques y desechables", nombre: "Vasos Gold Carvajal 22 oz" },
   { categoria: "Empaques y desechables", nombre: "Vasos de tinto 9 oz" },
+  { categoria: "Empaques y desechables", nombre: "Vasos de capuchino 12 oz" },
   { categoria: "Empaques y desechables", nombre: "Tapa Darnel plana" },
   { categoria: "Empaques y desechables", nombre: "Tapas Darnel domo" },
   { categoria: "Empaques y desechables", nombre: "Tapas verdes" },
@@ -139,13 +155,14 @@ const productosRestauranteBase = [
   { categoria: "Empaques y desechables", nombre: "Papel para sándwich" },
   { categoria: "Empaques y desechables", nombre: "Servilletas" },
   { categoria: "Empaques y desechables", nombre: "Comandas" },
-  { categoria: "Aseo, limpieza y varios", nombre: "Cloro" },
-  { categoria: "Aseo, limpieza y varios", nombre: "Detergente FAB" },
-  { categoria: "Aseo, limpieza y varios", nombre: "Desinfectante" },
-  { categoria: "Aseo, limpieza y varios", nombre: "Bolsas de basura normales" },
-  { categoria: "Aseo, limpieza y varios", nombre: "Bolsas de basura grandes" },
-  { categoria: "Aseo, limpieza y varios", nombre: "Papel higiénico" },
-  { categoria: "Aseo, limpieza y varios", nombre: "Cinta pegante" }
+
+  { categoria: "Aseo y limpieza", nombre: "Cloro" },
+  { categoria: "Aseo y limpieza", nombre: "Detergente FAB" },
+  { categoria: "Aseo y limpieza", nombre: "Desinfectante" },
+  { categoria: "Aseo y limpieza", nombre: "Bolsas de basura normales" },
+  { categoria: "Aseo y limpieza", nombre: "Bolsas de basura grandes" },
+  { categoria: "Aseo y limpieza", nombre: "Papel higiénico" },
+  { categoria: "Aseo y limpieza", nombre: "Cinta pegante" }
 ];
 
 const unidadesSolicitud = ["und", "kg", "g", "lb", "paquete", "bolsa", "caja", "litro", "botella"];
@@ -238,7 +255,8 @@ function crearProductosSolicitudInicial() {
     nombre: producto.nombre,
     cantidad: "",
     unidad: "und",
-    nota: ""
+    nota: "",
+    seleccionada: false
   }));
 }
 
@@ -259,11 +277,12 @@ function obtenerProductosSolicitudSeleccionados(productos) {
   return (productos || [])
     .map((producto) => ({
       ...producto,
+      seleccionada: Boolean(producto.seleccionada),
       cantidad: String(producto.cantidad || "").trim(),
       unidad: String(producto.unidad || "und").trim(),
       nota: String(producto.nota || "").trim()
     }))
-    .filter((producto) => producto.cantidad);
+    .filter((producto) => producto.seleccionada);
 }
 
 function crearMensajeSolicitudProductos({ fechaSolicitud, fechaPara, productos, observaciones }) {
@@ -281,8 +300,11 @@ function crearMensajeSolicitudProductos({ fechaSolicitud, fechaPara, productos, 
     lineas.push("", `*${categoria}*`);
 
     items.forEach((item) => {
-      const nota = item.nota ? ` - ${item.nota}` : "";
-      lineas.push(`• ${item.nombre}: ${item.cantidad} ${item.unidad}${nota}`);
+      const cantidad = String(item.cantidad || "").trim();
+      const unidad = String(item.unidad || "und").trim();
+      const cantidadTexto = cantidad ? `: ${cantidad}${unidad ? ` ${unidad}` : ""}` : "";
+      const nota = item.nota ? ` — ${item.nota}` : "";
+      lineas.push(`• ${item.nombre}${cantidadTexto}${nota}`);
     });
   });
 
@@ -845,7 +867,7 @@ export default function App() {
   const [guardandoSolicitud, setGuardandoSolicitud] = useState(false);
   const [solicitudFinalizada, setSolicitudFinalizada] = useState(null);
   const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState("");
-  const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState("Varios");
+  const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState(CATEGORIA_SOLICITUD_DEFECTO);
   const [productoSolicitudEliminarId, setProductoSolicitudEliminarId] = useState("");
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
@@ -1482,11 +1504,12 @@ export default function App() {
       actual.map((producto) => {
         if (producto.id !== id) return producto;
 
-        const seleccionado = String(producto.cantidad || "").trim().length > 0;
+        const seleccionado = Boolean(producto.seleccionada);
 
         return {
           ...producto,
-          cantidad: seleccionado ? "" : "1",
+          seleccionada: !seleccionado,
+          cantidad: seleccionado ? "" : producto.cantidad || "",
           nota: seleccionado ? "" : producto.nota
         };
       })
@@ -1497,7 +1520,7 @@ export default function App() {
 
   function agregarProductoSolicitudALista() {
     const nombre = nuevoProductoSolicitudNombre.trim();
-    const categoria = nuevoProductoSolicitudCategoria.trim() || "Varios";
+    const categoria = nuevoProductoSolicitudCategoria.trim() || CATEGORIA_SOLICITUD_DEFECTO;
 
     if (!nombre) {
       setMensajeSolicitud({ texto: "Escribe el nombre del producto que quieres agregar.", tipo: "warning" });
@@ -1517,9 +1540,10 @@ export default function App() {
       id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
       categoria,
       nombre,
-      cantidad: "1",
+      cantidad: "",
       unidad: "und",
-      nota: ""
+      nota: "",
+      seleccionada: true
     };
 
     setProductosSolicitud((actual) => [...actual, nuevoProducto]);
@@ -1555,7 +1579,7 @@ export default function App() {
 
     if (productos.length === 0) {
       setMensajeSolicitud({
-        texto: "Selecciona al menos un producto y escribe la cantidad solicitada.",
+        texto: "Selecciona al menos un producto para guardar la solicitud.",
         tipo: "warning"
       });
       return;
@@ -1618,7 +1642,7 @@ export default function App() {
     setFechaParaSolicitud(fechaMananaColombia());
     setObservacionesSolicitud("");
     setNuevoProductoSolicitudNombre("");
-    setNuevoProductoSolicitudCategoria("Varios");
+    setNuevoProductoSolicitudCategoria(CATEGORIA_SOLICITUD_DEFECTO);
     setProductoSolicitudEliminarId("");
     setMensajeSolicitud({ texto: "", tipo: "info" });
     setSolicitudFinalizada(null);
@@ -1631,7 +1655,7 @@ export default function App() {
 
     if (productos.length === 0) {
       setMensajeSolicitud({
-        texto: "Selecciona al menos un producto y escribe la cantidad solicitada.",
+        texto: "Selecciona al menos un producto para guardar la solicitud.",
         tipo: "warning"
       });
       return;
@@ -2647,7 +2671,7 @@ export default function App() {
 
                       <div className="productos-chips">
                         {productos.map((producto) => {
-                          const seleccionado = String(producto.cantidad || "").trim().length > 0;
+                          const seleccionado = Boolean(producto.seleccionada);
 
                           return (
                             <span key={producto.id} className="producto-chip-wrap">
@@ -2672,7 +2696,7 @@ export default function App() {
 
                       <div className="productos-seleccionados-lista">
                         {productosSolicitud
-                          .filter((producto) => String(producto.cantidad || "").trim().length > 0)
+                          .filter((producto) => producto.seleccionada)
                           .map((producto) => (
                             <div key={producto.id} className="producto-seleccionado-row">
                               <strong>{producto.nombre}</strong>
@@ -2712,7 +2736,7 @@ export default function App() {
                               <button
                                 type="button"
                                 className="button light"
-                                onClick={() => actualizarProductoSolicitud(producto.id, { cantidad: "", nota: "" })}
+                                onClick={() => actualizarProductoSolicitud(producto.id, { seleccionada: false, cantidad: "", nota: "" })}
                               >
                                 Quitar
                               </button>
@@ -2766,17 +2790,7 @@ export default function App() {
                         value={nuevoProductoSolicitudCategoria}
                         onChange={(e) => setNuevoProductoSolicitudCategoria(e.target.value)}
                       >
-                        {[
-                          "Proteínas",
-                          "Verduras y ensaladas",
-                          "Tubérculos y acompañantes",
-                          "Granos y básicos",
-                          "Lácteos y varios",
-                          "Despensa",
-                          "Empaques",
-                          "Bebidas",
-                          "Varios"
-                        ].map((categoria) => (
+                        {categoriasSolicitudProductos.map((categoria) => (
                           <option key={categoria} value={categoria}>
                             {categoria}
                           </option>
