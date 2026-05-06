@@ -1444,19 +1444,21 @@ export default function App() {
                 <p className="muted">App real conectada a Supabase.</p>
               </div>
 
-              <div className="nav">
-                <button
-                  type="button"
-                  onClick={() => navegar("/", "cliente")}
-                  className={vista === "cliente" ? "active" : ""}
-                >
-                  Vista cliente
-                </button>
+              {(vista === "cliente" || vista === "confirmacion") && (
+                <div className="nav">
+                  <button
+                    type="button"
+                    onClick={() => navegar("/", "cliente")}
+                    className={vista === "cliente" ? "active" : ""}
+                  >
+                    Vista cliente
+                  </button>
 
-                <button type="button" onClick={() => navegar("/", "inicio")}>
-                  Inicio
-                </button>
-              </div>
+                  <button type="button" onClick={() => navegar("/", "inicio")}>
+                    Inicio
+                  </button>
+                </div>
+              )}
             </header>
           )}
 
@@ -1544,7 +1546,7 @@ export default function App() {
                   <>
                       <div style={{ marginBottom: 18 }}>
                         <h3>🛍️ Arma tu pedido paso a paso</h3>
-                        <p className="muted">Primero escoge el plato. Luego aparecerán los siguientes pasos.</p>
+                        <p className="muted">Primero selecciona tu proteína. Luego aparecerán los siguientes pasos.</p>
                       </div>
 
                       {itemsPedido.map((item, index) => {
@@ -1554,9 +1556,9 @@ export default function App() {
                         const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
 
                         const pasos = itemEsSopa
-                          ? ["Plato", "Cantidad", "Resumen", "Datos"]
-                          : ["Plato", "Acomp.", "Cantidad", "Datos"];
-                        const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : 2;
+                          ? ["Proteína", "Datos"]
+                          : ["Proteína", "Acomp.", "Datos"];
+                        const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
 
                         return (
                           <div key={item.id} id={`producto-${item.id}`} className="meal-card">
@@ -1588,7 +1590,7 @@ export default function App() {
                             <div className="step-title">
                               <span className="step-number">1</span>
                               <div>
-                                <h4>Primero escoge tu plato</h4>
+                                <h4>Primero selecciona tu proteína</h4>
                                 <p className="muted" style={{ marginBottom: 0 }}>
                                   Toca una opción para continuar.
                                 </p>
@@ -1741,7 +1743,7 @@ export default function App() {
                       })}
 
                       <button type="button" onClick={agregarAlmuerzo} className="button add-meal">
-                        + Agregar otro plato o producto
+                        + Agregar otra proteína o producto
                       </button>
                     </>
                   )}
@@ -1753,7 +1755,7 @@ export default function App() {
 
                 {!hayProductoSeleccionado ? (
                   <div className="box soft">
-                    <strong>👈 Empieza escogiendo un plato</strong>
+                    <strong>👈 Empieza seleccionando una proteína</strong>
                     <p className="muted" style={{ marginBottom: 0 }}>
                       Cuando selecciones un producto, aquí aparecerá el resumen y los datos de entrega.
                     </p>
