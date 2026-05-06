@@ -6,6 +6,49 @@ const MAX_ACOMPANANTES_CLIENTE = 3;
 const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
 const CLAVE_ADMIN = "rafiki1234";
+const WHATSAPP_SOLICITUD_PRODUCTOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_PRODUCTOS || "573013707032";
+
+const productosRestauranteBase = [
+  { categoria: "Proteínas", nombre: "Pechuga" },
+  { categoria: "Proteínas", nombre: "Pollo" },
+  { categoria: "Proteínas", nombre: "Carne de res" },
+  { categoria: "Proteínas", nombre: "Cerdo" },
+  { categoria: "Proteínas", nombre: "Hígado" },
+  { categoria: "Proteínas", nombre: "Sobrebarriga" },
+  { categoria: "Verduras y ensaladas", nombre: "Tomate" },
+  { categoria: "Verduras y ensaladas", nombre: "Cebolla roja" },
+  { categoria: "Verduras y ensaladas", nombre: "Cebolla blanca" },
+  { categoria: "Verduras y ensaladas", nombre: "Lechuga" },
+  { categoria: "Verduras y ensaladas", nombre: "Zanahoria" },
+  { categoria: "Verduras y ensaladas", nombre: "Pepino" },
+  { categoria: "Verduras y ensaladas", nombre: "Cilantro" },
+  { categoria: "Verduras y ensaladas", nombre: "Ají" },
+  { categoria: "Tubérculos y acompañantes", nombre: "Papa" },
+  { categoria: "Tubérculos y acompañantes", nombre: "Yuca" },
+  { categoria: "Tubérculos y acompañantes", nombre: "Plátano maduro" },
+  { categoria: "Tubérculos y acompañantes", nombre: "Plátano verde" },
+  { categoria: "Granos y básicos", nombre: "Arroz" },
+  { categoria: "Granos y básicos", nombre: "Fríjol" },
+  { categoria: "Granos y básicos", nombre: "Lenteja" },
+  { categoria: "Granos y básicos", nombre: "Pasta" },
+  { categoria: "Lácteos y varios", nombre: "Queso costeño" },
+  { categoria: "Lácteos y varios", nombre: "Crema de leche" },
+  { categoria: "Lácteos y varios", nombre: "Huevos" },
+  { categoria: "Despensa", nombre: "Aceite" },
+  { categoria: "Despensa", nombre: "Sal" },
+  { categoria: "Despensa", nombre: "Azúcar" },
+  { categoria: "Despensa", nombre: "Ajo" },
+  { categoria: "Despensa", nombre: "Caldo / condimentos" },
+  { categoria: "Empaques", nombre: "Contenedores para almuerzo" },
+  { categoria: "Empaques", nombre: "Contenedores de sopa" },
+  { categoria: "Empaques", nombre: "Cubiertos" },
+  { categoria: "Empaques", nombre: "Bolsas" },
+  { categoria: "Bebidas", nombre: "Bebida refrescante 12 oz" },
+  { categoria: "Bebidas", nombre: "Bebida refrescante 16 oz" },
+  { categoria: "Bebidas", nombre: "Agua" }
+];
+
+const unidadesSolicitud = ["und", "kg", "g", "lb", "paquete", "bolsa", "caja", "litro", "botella"];
 
 const estadosPedido = ["Pendiente", "Finalizado"];
 
@@ -82,6 +125,74 @@ function obtenerRangoPedidos(filtro, fechaManual = fechaISOColombia()) {
     fin: fin.toISOString()
   };
 }
+function fechaMananaColombia() {
+  const base = new Date(`${fechaISOColombia()}T00:00:00-05:00`);
+  base.setDate(base.getDate() + 1);
+  return fechaISOColombia(base);
+}
+
+function crearProductosSolicitudInicial() {
+  return productosRestauranteBase.map((producto) => ({
+    id: crypto?.randomUUID ? crypto.randomUUID() : `${producto.categoria}-${producto.nombre}-${Math.random()}`,
+    categoria: producto.categoria,
+    nombre: producto.nombre,
+    cantidad: "",
+    unidad: "und",
+    nota: ""
+  }));
+}
+
+function agruparProductosSolicitud(productos) {
+  return (productos || []).reduce((grupos, producto) => {
+    const categoria = producto.categoria || "Productos";
+
+    if (!grupos[categoria]) {
+      grupos[categoria] = [];
+    }
+
+    grupos[categoria].push(producto);
+    return grupos;
+  }, {});
+}
+
+function obtenerProductosSolicitudSeleccionados(productos) {
+  return (productos || [])
+    .map((producto) => ({
+      ...producto,
+      cantidad: String(producto.cantidad || "").trim(),
+      unidad: String(producto.unidad || "und").trim(),
+      nota: String(producto.nota || "").trim()
+    }))
+    .filter((producto) => producto.cantidad);
+}
+
+function crearMensajeSolicitudProductos({ fechaSolicitud, fechaPara, productos, observaciones }) {
+  const grupos = agruparProductosSolicitud(productos);
+  const lineas = [
+    "Hola, esta es la solicitud de productos para Rafiki:",
+    "",
+    `Fecha de solicitud: ${fechaSolicitud}`,
+    `Productos requeridos para: ${fechaPara}`,
+    "",
+    "Listado solicitado:"
+  ];
+
+  Object.entries(grupos).forEach(([categoria, items]) => {
+    lineas.push("", `*${categoria}*`);
+
+    items.forEach((item) => {
+      const nota = item.nota ? ` - ${item.nota}` : "";
+      lineas.push(`• ${item.nombre}: ${item.cantidad} ${item.unidad}${nota}`);
+    });
+  });
+
+  if (observaciones) {
+    lineas.push("", `Observaciones: ${observaciones}`);
+  }
+
+  return lineas.join("\n");
+}
+
 
 function normalizarTexto(texto) {
   return String(texto || "")
@@ -627,6 +738,12 @@ export default function App() {
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
+  const [productosSolicitud, setProductosSolicitud] = useState(crearProductosSolicitudInicial);
+  const [fechaParaSolicitud, setFechaParaSolicitud] = useState(fechaMananaColombia());
+  const [observacionesSolicitud, setObservacionesSolicitud] = useState("");
+  const [mensajeSolicitud, setMensajeSolicitud] = useState({ texto: "", tipo: "info" });
+  const [guardandoSolicitud, setGuardandoSolicitud] = useState(false);
+  const [solicitudFinalizada, setSolicitudFinalizada] = useState(null);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -764,6 +881,32 @@ export default function App() {
   const totalVendido = useMemo(() => {
     return pedidosFiltrados.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0);
   }, [pedidosFiltrados]);
+
+  const productosSolicitudSeleccionados = useMemo(
+    () => obtenerProductosSolicitudSeleccionados(productosSolicitud),
+    [productosSolicitud]
+  );
+
+  const productosSolicitudAgrupados = useMemo(
+    () => agruparProductosSolicitud(productosSolicitud),
+    [productosSolicitud]
+  );
+
+  const mensajeWhatsAppSolicitud = useMemo(
+    () =>
+      crearMensajeSolicitudProductos({
+        fechaSolicitud: fechaISOColombia(),
+        fechaPara: fechaParaSolicitud,
+        productos: productosSolicitudSeleccionados,
+        observaciones: observacionesSolicitud.trim()
+      }),
+    [fechaParaSolicitud, productosSolicitudSeleccionados, observacionesSolicitud]
+  );
+
+  const linkWhatsAppSolicitud = crearLinkWhatsApp(
+    WHATSAPP_SOLICITUD_PRODUCTOS,
+    solicitudFinalizada?.mensaje || mensajeWhatsAppSolicitud
+  );
 
   const platosAgrupados = useMemo(
     () => agruparPlatosPorCategoria(menu.platos_detalle),
@@ -1223,6 +1366,75 @@ export default function App() {
     }
   }
 
+  function actualizarProductoSolicitud(id, cambios) {
+    setProductosSolicitud((actual) =>
+      actual.map((producto) => (producto.id === id ? { ...producto, ...cambios } : producto))
+    );
+    setMensajeSolicitud({ texto: "", tipo: "info" });
+    setSolicitudFinalizada(null);
+  }
+
+  function limpiarSolicitudProductos() {
+    setProductosSolicitud(crearProductosSolicitudInicial());
+    setFechaParaSolicitud(fechaMananaColombia());
+    setObservacionesSolicitud("");
+    setMensajeSolicitud({ texto: "", tipo: "info" });
+    setSolicitudFinalizada(null);
+  }
+
+  async function guardarSolicitudProductos() {
+    if (guardandoSolicitud) return;
+
+    const productos = obtenerProductosSolicitudSeleccionados(productosSolicitud);
+
+    if (productos.length === 0) {
+      setMensajeSolicitud({
+        texto: "Selecciona al menos un producto y escribe la cantidad solicitada.",
+        tipo: "warning"
+      });
+      return;
+    }
+
+    const fechaSolicitud = fechaISOColombia();
+    const mensajeFinal = crearMensajeSolicitudProductos({
+      fechaSolicitud,
+      fechaPara: fechaParaSolicitud,
+      productos,
+      observaciones: observacionesSolicitud.trim()
+    });
+
+    const nuevaSolicitud = {
+      fecha_solicitud: fechaSolicitud,
+      fecha_para: fechaParaSolicitud,
+      productos,
+      observaciones: observacionesSolicitud.trim(),
+      mensaje: mensajeFinal
+    };
+
+    setGuardandoSolicitud(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("solicitudes_productos")
+        .insert(nuevaSolicitud)
+        .select()
+        .single();
+
+      if (error) {
+        setMensajeSolicitud({ texto: `Error guardando solicitud: ${error.message}`, tipo: "error" });
+        return;
+      }
+
+      setSolicitudFinalizada(data || nuevaSolicitud);
+      setMensajeSolicitud({
+        texto: "Solicitud guardada. Ahora puedes enviar el consolidado por WhatsApp.",
+        tipo: "success"
+      });
+    } finally {
+      setGuardandoSolicitud(false);
+    }
+  }
+
   function abrirPanelAdmin() {
     setErrorClaveAdmin("");
 
@@ -1326,6 +1538,7 @@ export default function App() {
         .button.green { background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
         .button.light { background: #fff; color: #44403c; border: 1px solid #e7e5e4; box-shadow: none; }
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
+        .button.disabled { opacity: 0.6; pointer-events: auto; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
         .continue-button { width: 100%; margin-top: 16px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
         .summary-continue { width: 100%; margin: 12px 0 6px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.22); }
@@ -1381,6 +1594,13 @@ export default function App() {
         .summary-card.compact { padding: 15px; }
         .summary-card span { color: #78716c; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
         .summary-card strong { display: block; color: #ea580c; font-size: 28px; margin-top: 6px; font-family: 'Fraunces', serif; }
+        .productos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .producto-solicitud { background: #fff; border: 1px solid #fed7aa; border-radius: 18px; padding: 14px; }
+        .producto-solicitud strong { display: block; color: #292524; margin-bottom: 10px; }
+        .producto-controls { display: grid; grid-template-columns: 1fr 120px; gap: 8px; margin-bottom: 8px; }
+        .producto-controls input, .producto-controls select, .producto-solicitud textarea { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 14px; padding: 11px 12px; outline: none; font-family: inherit; }
+        .producto-solicitud textarea { min-height: 42px; resize: vertical; }
+        .solicitud-preview { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; font-size: 14px; margin-top: 14px; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-finalizado { opacity: 0.7; }
         .pedido-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
@@ -1426,7 +1646,7 @@ export default function App() {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
-          .option-grid { grid-template-columns: 1fr; }
+          .option-grid, .productos-grid, .producto-controls { grid-template-columns: 1fr; }
           .app { padding: 14px; }
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
@@ -1977,6 +2197,14 @@ export default function App() {
 
                 <button
                   type="button"
+                  onClick={() => setAdminTab("productos")}
+                  className={adminTab === "productos" ? "active" : ""}
+                >
+                  Solicitud de productos
+                </button>
+
+                <button
+                  type="button"
                   onClick={cerrarPanelAdmin}
                   className="button light"
                 >
@@ -2119,6 +2347,152 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+                </section>
+              )}
+
+              {adminTab === "productos" && (
+                <section className="card card-pad">
+                  <div className="admin-top-row">
+                    <div>
+                      <h2>🧺 Solicitud de productos</h2>
+                      <p className="muted">
+                        Selecciona los productos que se necesitan para el día siguiente, guarda el registro y envía el consolidado por WhatsApp.
+                      </p>
+                    </div>
+
+                    <button type="button" onClick={limpiarSolicitudProductos} className="button light">
+                      Limpiar solicitud
+                    </button>
+                  </div>
+
+                  <div className="grid-2">
+                    <CampoTexto
+                      etiqueta="Fecha para la que se necesitan"
+                      type="date"
+                      value={fechaParaSolicitud}
+                      onChange={setFechaParaSolicitud}
+                    />
+
+                    <div className="box soft">
+                      <strong>Productos seleccionados</strong>
+                      <p className="muted" style={{ marginBottom: 0 }}>
+                        {productosSolicitudSeleccionados.length} productos agregados a la solicitud.
+                      </p>
+                    </div>
+                  </div>
+
+                  {mensajeSolicitud.texto && (
+                    <div className={`alert alert-${mensajeSolicitud.tipo}`}>
+                      {mensajeSolicitud.texto}
+                    </div>
+                  )}
+
+                  {Object.entries(productosSolicitudAgrupados).map(([categoria, productos]) => (
+                    <div key={categoria} className="category-block">
+                      <h3 className="category-title">{categoria}</h3>
+
+                      <div className="productos-grid">
+                        {productos.map((producto) => (
+                          <div key={producto.id} className="producto-solicitud">
+                            <strong>{producto.nombre}</strong>
+
+                            <div className="producto-controls">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={producto.cantidad}
+                                onChange={(e) =>
+                                  actualizarProductoSolicitud(producto.id, { cantidad: e.target.value })
+                                }
+                                placeholder="Cantidad"
+                              />
+
+                              <select
+                                value={producto.unidad}
+                                onChange={(e) =>
+                                  actualizarProductoSolicitud(producto.id, { unidad: e.target.value })
+                                }
+                              >
+                                {unidadesSolicitud.map((unidad) => (
+                                  <option key={unidad} value={unidad}>
+                                    {unidad}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <textarea
+                              value={producto.nota}
+                              onChange={(e) =>
+                                actualizarProductoSolicitud(producto.id, { nota: e.target.value })
+                              }
+                              placeholder="Nota opcional"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  <CampoTexto
+                    etiqueta="Observaciones generales"
+                    value={observacionesSolicitud}
+                    onChange={(valor) => {
+                      setObservacionesSolicitud(valor);
+                      setSolicitudFinalizada(null);
+                      setMensajeSolicitud({ texto: "", tipo: "info" });
+                    }}
+                    placeholder="Ej: comprar temprano, revisar calidad, priorizar verduras frescas..."
+                    multiline
+                    rows={3}
+                  />
+
+                  <div className="box soft">
+                    <strong>Vista previa del mensaje</strong>
+                    <div className="solicitud-preview">
+                      {productosSolicitudSeleccionados.length === 0
+                        ? "Agrega cantidades para ver el consolidado."
+                        : mensajeWhatsAppSolicitud}
+                    </div>
+                  </div>
+
+                  <div className="grid-2" style={{ marginTop: 14 }}>
+                    <button
+                      type="button"
+                      onClick={guardarSolicitudProductos}
+                      disabled={guardandoSolicitud}
+                      className="button"
+                    >
+                      {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud"}
+                    </button>
+
+                    <a
+                      href={solicitudFinalizada ? linkWhatsAppSolicitud : "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`button green link-button ${!solicitudFinalizada ? "disabled" : ""}`}
+                      onClick={(e) => {
+                        if (!solicitudFinalizada) {
+                          e.preventDefault();
+                          setMensajeSolicitud({
+                            texto:
+                              productosSolicitudSeleccionados.length === 0
+                                ? "Primero selecciona al menos un producto y escribe la cantidad."
+                                : "Primero guarda la solicitud para que quede registrada; después podrás enviarla por WhatsApp.",
+                            tipo: "warning"
+                          });
+                        }
+                      }}
+                    >
+                      🟢 Enviar por WhatsApp
+                    </a>
+                  </div>
+
+                  {!solicitudFinalizada && productosSolicitudSeleccionados.length > 0 && (
+                    <p className="muted small" style={{ marginTop: 10 }}>
+                      Primero guarda la solicitud para que quede registrada; luego se habilita el envío por WhatsApp.
+                    </p>
+                  )}
                 </section>
               )}
 
