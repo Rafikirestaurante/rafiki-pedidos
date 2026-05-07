@@ -470,7 +470,7 @@ export default function SolicitudProductos() {
         .from("solicitudes_productos")
         .select("*")
         .eq("fecha_solicitud", fecha)
-        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
         .limit(80);
 
       if (error) {
