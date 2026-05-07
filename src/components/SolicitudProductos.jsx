@@ -13,7 +13,7 @@ const categoriasSolicitudProductos = [
 ];
 
 const CATEGORIA_SOLICITUD_DEFECTO = "Abarrotes, secos y condimentos";
-const STORAGE_PRODUCTOS_PENDIENTES = "rafiki_productos_pendientes_compra_v1";
+const STORAGE_PRODUCTOS_PENDIENTES = "rafiki_productos_pendientes_compra_v2";
 
 const productosRestauranteBase = [
   { categoria: "Proteínas, lácteos y huevos", nombre: "Pollo" },
@@ -287,7 +287,7 @@ function guardarEstadoPendientesCompra(estado) {
   }
 }
 
-function obtenerProductosPendientesDesdeSolicitudes(solicitudes) {
+function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBase = fechaISOColombia()) {
   const mapa = new Map();
 
   (solicitudes || []).forEach((solicitud) => {
@@ -297,13 +297,16 @@ function obtenerProductosPendientesDesdeSolicitudes(solicitudes) {
       const nombre = String(producto.nombre || "").trim();
       if (!nombre) return;
 
-      const clave = crearClaveProducto(nombre);
+      const fechaSolicitudBase = String(solicitud.fecha_solicitud || solicitud.created_at || fechaBase).slice(0, 10);
+      const claveProducto = crearClaveProducto(nombre);
+      const clave = `${fechaSolicitudBase}-${claveProducto}`;
       const existente = mapa.get(clave) || {
         id: clave,
         nombre,
         categoria: producto.categoria || "Productos",
         vecesSolicitado: 0,
-        fechas: []
+        fechas: [],
+        fechaSolicitud: fechaSolicitudBase
       };
 
       existente.vecesSolicitado += 1;
@@ -320,11 +323,11 @@ function obtenerProductosPendientesDesdeSolicitudes(solicitudes) {
   return Array.from(mapa.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 }
 
-function crearMensajeCompraProveedores(productos) {
+function crearMensajeCompraProveedores(productos, fechaListado = fechaISOColombia()) {
   const lineas = [
     "Hola, esta es la lista de productos para cotizar/comprar para Rafiki:",
     "",
-    `Fecha: ${fechaISOColombia()}`,
+    `Fecha de solicitud consultada: ${fechaListado}`,
     "",
     "Productos:"
   ];
@@ -383,6 +386,8 @@ export default function SolicitudProductos() {
   const [cargandoPendientes, setCargandoPendientes] = useState(false);
   const [estadoPendientesCompra, setEstadoPendientesCompra] = useState(cargarEstadoPendientesCompra);
   const [mensajePendientes, setMensajePendientes] = useState({ texto: "", tipo: "info" });
+  const [fechaConsultaSolicitudes, setFechaConsultaSolicitudes] = useState(fechaISOColombia());
+  const [yaExisteSolicitudHoy, setYaExisteSolicitudHoy] = useState(false);
 
   const productosSolicitudSeleccionados = useMemo(
     () => obtenerProductosSolicitudSeleccionados(productosSolicitud),
@@ -395,14 +400,14 @@ export default function SolicitudProductos() {
   );
 
   const productosPendientesCompra = useMemo(() => {
-    const pendientesBase = obtenerProductosPendientesDesdeSolicitudes(solicitudesGuardadas);
+    const pendientesBase = obtenerProductosPendientesDesdeSolicitudes(solicitudesGuardadas, fechaConsultaSolicitudes);
 
     return pendientesBase.map((producto) => ({
       ...producto,
       comprado: Boolean(estadoPendientesCompra[producto.id]?.comprado),
       cantidadComprar: estadoPendientesCompra[producto.id]?.cantidadComprar || ""
     }));
-  }, [solicitudesGuardadas, estadoPendientesCompra]);
+  }, [solicitudesGuardadas, estadoPendientesCompra, fechaConsultaSolicitudes]);
 
   const productosParaEnviarProveedor = useMemo(
     () => productosPendientesCompra.filter((producto) => !producto.comprado),
@@ -425,12 +430,33 @@ export default function SolicitudProductos() {
   }, [estadoPendientesCompra]);
 
   useEffect(() => {
-    if (vistaSolicitud === "pendientes") {
-      cargarSolicitudesPendientesCompra();
-    }
-  }, [vistaSolicitud]);
+    verificarSolicitudDelDia();
+  }, []);
 
-  async function cargarSolicitudesPendientesCompra() {
+  useEffect(() => {
+    if (vistaSolicitud === "pendientes") {
+      cargarSolicitudesPendientesCompra(fechaConsultaSolicitudes);
+    }
+  }, [vistaSolicitud, fechaConsultaSolicitudes]);
+
+  async function verificarSolicitudDelDia() {
+    try {
+      const hoy = fechaISOColombia();
+      const { data, error } = await supabase
+        .from("solicitudes_productos")
+        .select("id, fecha_solicitud")
+        .eq("fecha_solicitud", hoy)
+        .limit(1);
+
+      if (!error) {
+        setYaExisteSolicitudHoy((data || []).length > 0);
+      }
+    } catch {
+      // Si no se puede verificar, no bloqueamos la app por error de conexión.
+    }
+  }
+
+  async function cargarSolicitudesPendientesCompra(fecha = fechaConsultaSolicitudes) {
     setCargandoPendientes(true);
     setMensajePendientes({ texto: "", tipo: "info" });
 
@@ -438,6 +464,8 @@ export default function SolicitudProductos() {
       const { data, error } = await supabase
         .from("solicitudes_productos")
         .select("*")
+        .eq("fecha_solicitud", fecha)
+        .order("created_at", { ascending: false })
         .limit(80);
 
       if (error) {
@@ -448,7 +476,7 @@ export default function SolicitudProductos() {
       setSolicitudesGuardadas(data || []);
 
       if (!data || data.length === 0) {
-        setMensajePendientes({ texto: "Todavía no hay solicitudes guardadas para consolidar.", tipo: "info" });
+        setMensajePendientes({ texto: `No hay solicitudes guardadas para el día ${fecha}.`, tipo: "info" });
       }
     } catch (error) {
       setMensajePendientes({
@@ -477,7 +505,7 @@ export default function SolicitudProductos() {
       return;
     }
 
-    const mensaje = crearMensajeCompraProveedores(productosParaEnviarProveedor);
+    const mensaje = crearMensajeCompraProveedores(productosParaEnviarProveedor, fechaConsultaSolicitudes);
     const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_PRODUCTOS, mensaje, { abrirApp: true });
     setMensajePendientes({ texto: "Se abrirá WhatsApp con el listado para proveedores.", tipo: "success" });
     window.location.href = link;
@@ -612,6 +640,27 @@ export default function SolicitudProductos() {
     setGuardandoSolicitud(true);
 
     try {
+      const hoy = fechaISOColombia();
+      const { data: solicitudesHoy, error: errorConsultaHoy } = await supabase
+        .from("solicitudes_productos")
+        .select("id")
+        .eq("fecha_solicitud", hoy)
+        .limit(1);
+
+      if (errorConsultaHoy) {
+        setMensajeSolicitud({ texto: `No se pudo validar el límite diario: ${errorConsultaHoy.message}`, tipo: "error" });
+        return;
+      }
+
+      if ((solicitudesHoy || []).length > 0) {
+        setYaExisteSolicitudHoy(true);
+        setMensajeSolicitud({
+          texto: "Ya se realizó una solicitud de productos el día de hoy. Solo se permite una solicitud por día.",
+          tipo: "warning"
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from("solicitudes_productos")
         .insert(nuevaSolicitud)
@@ -626,6 +675,7 @@ export default function SolicitudProductos() {
       const solicitudGuardada = data || nuevaSolicitud;
       setSolicitudFinalizada(solicitudGuardada);
       setSolicitudesGuardadas((actual) => [solicitudGuardada, ...actual]);
+      setYaExisteSolicitudHoy(true);
 
       if (abrirWhatsApp) {
         const link = crearLinkWhatsApp(
@@ -721,6 +771,12 @@ export default function SolicitudProductos() {
                           <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong>
                         </div>
                       </div>
+
+                      {yaExisteSolicitudHoy && (
+                        <div className="alert alert-warning">
+                          Ya se realizó una solicitud de productos hoy. Puedes revisar el consolidado en “Productos pendientes” o consultar días anteriores.
+                        </div>
+                      )}
 
                       {mensajeSolicitud.texto && (
                         <div className={`alert alert-${mensajeSolicitud.tipo}`}>
@@ -832,11 +888,11 @@ export default function SolicitudProductos() {
                       <button
                         type="button"
                         onClick={() => guardarSolicitudProductos({ abrirWhatsApp: true })}
-                        disabled={guardandoSolicitud}
+                        disabled={guardandoSolicitud || yaExisteSolicitudHoy}
                         className="button green"
                         style={{ width: "100%", marginTop: 14 }}
                       >
-                        {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud y enviar por WhatsApp"}
+                        {guardandoSolicitud ? "Guardando solicitud..." : yaExisteSolicitudHoy ? "Solicitud del día ya realizada" : "Guardar solicitud y enviar por WhatsApp"}
                       </button>
 
                       <div className="box soft" style={{ marginTop: 18 }}>
@@ -907,13 +963,28 @@ export default function SolicitudProductos() {
             </div>
 
             <div className="actions-inline">
-              <button type="button" onClick={cargarSolicitudesPendientesCompra} className="button light" disabled={cargandoPendientes}>
+              <button type="button" onClick={() => cargarSolicitudesPendientesCompra(fechaConsultaSolicitudes)} className="button light" disabled={cargandoPendientes}>
                 {cargandoPendientes ? "Cargando..." : "Actualizar"}
               </button>
               <button type="button" onClick={limpiarCompradosPendientes} className="button light">
                 Reiniciar marcas
               </button>
             </div>
+          </div>
+
+          <div className="box soft" style={{ marginBottom: 12 }}>
+            <CampoTexto
+              etiqueta="Ver solicitudes del día"
+              type="date"
+              value={fechaConsultaSolicitudes}
+              onChange={(valor) => {
+                setFechaConsultaSolicitudes(valor || fechaISOColombia());
+                setMensajePendientes({ texto: "", tipo: "info" });
+              }}
+            />
+            <p className="muted small" style={{ marginTop: 6 }}>
+              Cambia la fecha para consultar solicitudes anteriores y consolidar solo ese día.
+            </p>
           </div>
 
           {mensajePendientes.texto && (
@@ -923,7 +994,7 @@ export default function SolicitudProductos() {
           )}
 
           <div className="box soft" style={{ marginBottom: 12 }}>
-            <strong>{productosParaEnviarProveedor.length} productos pendientes por comprar</strong>
+            <strong>{productosParaEnviarProveedor.length} productos pendientes por comprar del día {fechaConsultaSolicitudes}</strong>
             <p className="muted small" style={{ marginTop: 6 }}>
               Los productos marcados como comprados quedan tachados y no se envían al proveedor.
             </p>
