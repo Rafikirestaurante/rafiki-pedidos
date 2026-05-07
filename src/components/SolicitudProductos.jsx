@@ -118,6 +118,7 @@ const productosRestauranteBase = [
   { categoria: "Abarrotes, secos y condimentos", nombre: "Panela" },
   { categoria: "Abarrotes, secos y condimentos", nombre: "Jugo de naranja" },
   { categoria: "Abarrotes, secos y condimentos", nombre: "Jugo de mandarina" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Jugo de uva" },
   { categoria: "Abarrotes, secos y condimentos", nombre: "Ingredientes pulpa de café" },
   { categoria: "Abarrotes, secos y condimentos", nombre: "Aceite" },
   { categoria: "Abarrotes, secos y condimentos", nombre: "Sal" },
@@ -147,7 +148,7 @@ const productosRestauranteBase = [
   { categoria: "Empaques y desechables", nombre: "Tapas Darnel domo" },
   { categoria: "Empaques y desechables", nombre: "Tapas verdes" },
   { categoria: "Empaques y desechables", nombre: "Pitillos batido 7 mm" },
-  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 3K" },
+  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 2K" },
   { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 10K" },
   { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 15K" },
   { categoria: "Empaques y desechables", nombre: "Bolsas para cubiertos" },
@@ -185,6 +186,23 @@ function normalizarTexto(texto) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function ordenarProductosPorNombre(productos) {
+  return [...(productos || [])].sort((a, b) =>
+    String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" })
+  );
+}
+
+function ordenarCategoriasPorLista(categorias) {
+  return [...categorias].sort((a, b) => {
+    const indiceA = categoriasSolicitudProductos.indexOf(a);
+    const indiceB = categoriasSolicitudProductos.indexOf(b);
+    if (indiceA !== -1 && indiceB !== -1) return indiceA - indiceB;
+    if (indiceA !== -1) return -1;
+    if (indiceB !== -1) return 1;
+    return String(a).localeCompare(String(b), "es", { sensitivity: "base" });
+  });
+}
+
 function crearLinkWhatsApp(numero, mensaje, { abrirApp = false } = {}) {
   const numeroLimpio = String(numero || "").replace(/\D/g, "");
   const texto = encodeURIComponent(mensaje || "");
@@ -204,7 +222,7 @@ function fechaMananaColombia() {
 }
 
 function crearProductosSolicitudInicial() {
-  return productosRestauranteBase.map((producto) => ({
+  return ordenarProductosPorNombre(productosRestauranteBase).map((producto) => ({
     id: crypto?.randomUUID ? crypto.randomUUID() : `${producto.categoria}-${producto.nombre}-${Math.random()}`,
     categoria: producto.categoria,
     nombre: producto.nombre,
@@ -216,17 +234,23 @@ function crearProductosSolicitudInicial() {
 }
 
 function agruparProductosSolicitud(productos) {
-  return (productos || []).reduce((grupos, producto) => {
+  const grupos = (productos || []).reduce((resultado, producto) => {
     const categoria = producto.categoria || "Productos";
 
-    if (!grupos[categoria]) {
-      grupos[categoria] = [];
+    if (!resultado[categoria]) {
+      resultado[categoria] = [];
     }
 
-    grupos[categoria].push(producto);
-    return grupos;
+    resultado[categoria].push(producto);
+    return resultado;
+  }, {});
+
+  return ordenarCategoriasPorLista(Object.keys(grupos)).reduce((ordenado, categoria) => {
+    ordenado[categoria] = ordenarProductosPorNombre(grupos[categoria]);
+    return ordenado;
   }, {});
 }
+
 
 function obtenerProductosSolicitudSeleccionados(productos) {
   return (productos || [])
@@ -325,10 +349,19 @@ function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBase = fec
     });
   });
 
-  return Array.from(mapa.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  return Array.from(mapa.values()).sort((a, b) => {
+    const categoriaA = categoriasSolicitudProductos.indexOf(a.categoria);
+    const categoriaB = categoriasSolicitudProductos.indexOf(b.categoria);
+    const ordenCategoriaA = categoriaA === -1 ? 999 : categoriaA;
+    const ordenCategoriaB = categoriaB === -1 ? 999 : categoriaB;
+
+    if (ordenCategoriaA !== ordenCategoriaB) return ordenCategoriaA - ordenCategoriaB;
+    return a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
+  });
 }
 
 function crearMensajeCompraProveedores(productos, fechaListado = fechaISOColombia()) {
+  const grupos = agruparProductosSolicitud(productos);
   const lineas = [
     "Hola, esta es la lista de productos para cotizar/comprar para Rafiki:",
     "",
@@ -337,13 +370,18 @@ function crearMensajeCompraProveedores(productos, fechaListado = fechaISOColombi
     "Productos:"
   ];
 
-  productos.forEach((producto) => {
-    const cantidad = String(producto.cantidadComprar || "").trim();
-    lineas.push(`• ${producto.nombre}${cantidad ? ` — Cantidad a comprar: ${cantidad}` : ""}`);
+  Object.entries(grupos).forEach(([categoria, items]) => {
+    lineas.push("", `*${categoria}*`);
+
+    items.forEach((producto) => {
+      const cantidad = String(producto.cantidadComprar || "").trim();
+      lineas.push(`• ${producto.nombre}${cantidad ? ` — Cantidad a comprar: ${cantidad}` : ""}`);
+    });
   });
 
   return lineas.join("\n");
 }
+
 
 function CampoTexto({
   etiqueta,
@@ -419,6 +457,11 @@ export default function SolicitudProductos() {
     [productosPendientesCompra]
   );
 
+  const productosPendientesAgrupados = useMemo(
+    () => agruparProductosSolicitud(productosPendientesCompra),
+    [productosPendientesCompra]
+  );
+
   const mensajeWhatsAppSolicitud = useMemo(
     () =>
       crearMensajeSolicitudProductos({
@@ -445,20 +488,25 @@ export default function SolicitudProductos() {
   }, [vistaSolicitud, fechaConsultaSolicitudes]);
 
   async function verificarSolicitudDelDia() {
-    try {
-      const hoy = fechaISOColombia();
-      const { data, error } = await supabase
-        .from("solicitudes_productos")
-        .select("id, fecha_solicitud")
-        .eq("fecha_solicitud", hoy)
-        .limit(1);
+    // Ya no se bloquea toda la solicitud del día.
+    // La validación se hace producto por producto al guardar.
+    setYaExisteSolicitudHoy(false);
+  }
 
-      if (!error) {
-        setYaExisteSolicitudHoy((data || []).length > 0);
-      }
-    } catch {
-      // Si no se puede verificar, no bloqueamos la app por error de conexión.
-    }
+  function obtenerProductosRepetidosDelDia(solicitudesDelDia, productosSeleccionados) {
+    const productosYaSolicitados = new Set();
+
+    (solicitudesDelDia || []).forEach((solicitud) => {
+      const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
+      productos.forEach((producto) => {
+        const nombre = normalizarTexto(producto?.nombre || "");
+        if (nombre) productosYaSolicitados.add(nombre);
+      });
+    });
+
+    return productosSeleccionados.filter((producto) =>
+      productosYaSolicitados.has(normalizarTexto(producto.nombre))
+    );
   }
 
   async function cargarSolicitudesPendientesCompra(fecha = fechaConsultaSolicitudes) {
@@ -697,19 +745,22 @@ export default function SolicitudProductos() {
       const hoy = fechaISOColombia();
       const { data: solicitudesHoy, error: errorConsultaHoy } = await supabase
         .from("solicitudes_productos")
-        .select("id")
+        .select("id, productos")
         .eq("fecha_solicitud", hoy)
-        .limit(1);
+        .order("id", { ascending: false })
+        .limit(200);
 
       if (errorConsultaHoy) {
-        setMensajeSolicitud({ texto: `No se pudo validar el límite diario: ${errorConsultaHoy.message}`, tipo: "error" });
+        setMensajeSolicitud({ texto: `No se pudo validar si hay productos repetidos hoy: ${errorConsultaHoy.message}`, tipo: "error" });
         return;
       }
 
-      if ((solicitudesHoy || []).length > 0) {
-        setYaExisteSolicitudHoy(true);
+      const productosRepetidos = obtenerProductosRepetidosDelDia(solicitudesHoy || [], nuevaSolicitud.productos);
+
+      if (productosRepetidos.length > 0) {
+        const nombresRepetidos = productosRepetidos.map((producto) => producto.nombre).join(", ");
         setMensajeSolicitud({
-          texto: "Ya se realizó una solicitud de productos el día de hoy. Solo se permite una solicitud por día.",
+          texto: `Estos productos ya fueron solicitados hoy y no se pueden repetir: ${nombresRepetidos}. Puedes quitar esos productos y guardar los demás.`,
           tipo: "warning"
         });
         return;
@@ -729,7 +780,7 @@ export default function SolicitudProductos() {
       const solicitudGuardada = data || nuevaSolicitud;
       setSolicitudFinalizada(solicitudGuardada);
       setSolicitudesGuardadas((actual) => [solicitudGuardada, ...actual]);
-      setYaExisteSolicitudHoy(true);
+      setYaExisteSolicitudHoy(false);
 
       if (abrirWhatsApp) {
         const link = crearLinkWhatsApp(
@@ -826,11 +877,9 @@ export default function SolicitudProductos() {
                         </div>
                       </div>
 
-                      {yaExisteSolicitudHoy && (
-                        <div className="alert alert-warning">
-                          Ya se realizó una solicitud de productos hoy. Puedes revisar el consolidado en “Productos pendientes” o consultar días anteriores.
-                        </div>
-                      )}
+                      <div className="alert alert-info">
+                        Puedes hacer varias solicitudes en el día, siempre que no repitas el mismo producto.
+                      </div>
 
                       {mensajeSolicitud.texto && (
                         <div className={`alert alert-${mensajeSolicitud.tipo}`}>
@@ -942,11 +991,11 @@ export default function SolicitudProductos() {
                       <button
                         type="button"
                         onClick={() => guardarSolicitudProductos({ abrirWhatsApp: true })}
-                        disabled={guardandoSolicitud || yaExisteSolicitudHoy}
+                        disabled={guardandoSolicitud}
                         className="button green"
                         style={{ width: "100%", marginTop: 14 }}
                       >
-                        {guardandoSolicitud ? "Guardando solicitud..." : yaExisteSolicitudHoy ? "Solicitud del día ya realizada" : "Guardar solicitud y enviar por WhatsApp"}
+                        {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud y enviar por WhatsApp"}
                       </button>
 
                       <div className="box soft" style={{ marginTop: 18 }}>
@@ -987,7 +1036,7 @@ export default function SolicitudProductos() {
                             onChange={(e) => setProductoSolicitudEliminarId(e.target.value)}
                           >
                             <option value="">Selecciona un producto</option>
-                            {productosSolicitud.map((producto) => (
+                            {ordenarProductosPorNombre(productosSolicitud).map((producto) => (
                               <option key={producto.id} value={producto.id}>
                                 {producto.categoria} - {producto.nombre}
                               </option>
@@ -1067,31 +1116,74 @@ export default function SolicitudProductos() {
               {cargandoPendientes ? "Cargando solicitudes..." : "No hay productos pendientes por ahora."}
             </div>
           ) : (
-            <div className="productos-seleccionados-lista">
-              {productosPendientesCompra.map((producto) => (
-                <div key={producto.id} className="producto-seleccionado-row">
-                  <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={producto.comprado}
-                      onChange={(e) => actualizarPendienteCompra(producto.id, { comprado: e.target.checked })}
-                    />
-                    <strong style={{ textDecoration: producto.comprado ? "line-through" : "none", opacity: producto.comprado ? 0.55 : 1 }}>
-                      {producto.nombre}
-                    </strong>
-                  </label>
+            <div style={{ display: "grid", gap: 14 }}>
+              {Object.entries(productosPendientesAgrupados).map(([categoria, productos]) => (
+                <div key={categoria} className="box soft" style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <h3 className="category-title" style={{ margin: 0 }}>{categoria}</h3>
+                    <span className="muted small">{productos.length} producto{productos.length === 1 ? "" : "s"}</span>
+                  </div>
 
-                  <input
-                    type="text"
-                    value={producto.cantidadComprar}
-                    onChange={(e) => actualizarPendienteCompra(producto.id, { cantidadComprar: e.target.value })}
-                    placeholder="Cantidad a comprar"
-                    disabled={producto.comprado}
-                  />
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {productos.map((producto) => (
+                      <div
+                        key={producto.id}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(180px, 1.2fr) minmax(150px, 0.8fr) auto",
+                          gap: 10,
+                          alignItems: "center",
+                          padding: "10px 12px",
+                          borderRadius: 14,
+                          background: producto.comprado ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.75)",
+                          border: "1px solid rgba(0,0,0,0.06)"
+                        }}
+                      >
+                        <label style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          <input
+                            type="checkbox"
+                            checked={producto.comprado}
+                            onChange={(e) => actualizarPendienteCompra(producto.id, { comprado: e.target.checked })}
+                          />
+                          <span style={{ minWidth: 0 }}>
+                            <strong
+                              style={{
+                                display: "block",
+                                textDecoration: producto.comprado ? "line-through" : "none",
+                                opacity: producto.comprado ? 0.55 : 1
+                              }}
+                            >
+                              {producto.nombre}
+                            </strong>
+                            <small className="muted">
+                              Solicitado {producto.vecesSolicitado} vez{producto.vecesSolicitado === 1 ? "" : "es"}
+                            </small>
+                          </span>
+                        </label>
 
-                  <span className="muted small">
-                    Solicitado {producto.vecesSolicitado} vez{producto.vecesSolicitado === 1 ? "" : "es"}
-                  </span>
+                        <input
+                          type="text"
+                          value={producto.cantidadComprar}
+                          onChange={(e) => actualizarPendienteCompra(producto.id, { cantidadComprar: e.target.value })}
+                          placeholder="Cantidad a comprar"
+                          disabled={producto.comprado}
+                          style={{ width: "100%" }}
+                        />
+
+                        <span
+                          className="muted small"
+                          style={{
+                            padding: "6px 10px",
+                            borderRadius: 999,
+                            background: producto.comprado ? "rgba(0,0,0,0.08)" : "rgba(46,125,50,0.10)",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          {producto.comprado ? "Comprado" : "Pendiente"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
