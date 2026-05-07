@@ -1,171 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./supabaseClient";
+import SolicitudProductos from "./components/SolicitudProductos";
 
 const VALOR_PARA_LLEVAR = 1500;
 const MAX_ACOMPANANTES_CLIENTE = 3;
 const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
 const CLAVE_ADMIN = "rafiki1234";
-const WHATSAPP_SOLICITUD_PRODUCTOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_PRODUCTOS || "573013707032";
-
-const categoriasSolicitudProductos = [
-  "Proteínas, lácteos y huevos",
-  "Frutas, pulpas y congelados",
-  "Verduras, hortalizas y tubérculos",
-  "Abarrotes, secos y condimentos",
-  "Empaques y desechables",
-  "Aseo y limpieza"
-];
-
-const CATEGORIA_SOLICITUD_DEFECTO = "Abarrotes, secos y condimentos";
-
-const productosRestauranteBase = [
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pollo" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pechuga" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Cerdo" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Chuleta" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Atún" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne para guisar" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne para posta" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Costilla" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Gallina" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Panza" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pata de cerdo" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pata de res" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Sobrebarriga" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Tocineta" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Leche" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Suero" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso mozzarella" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso parmesano" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso duro" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Mantequilla" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Crema de leche" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Jamón" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Huevos" },
-
-  { categoria: "Frutas, pulpas y congelados", nombre: "Mango" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Arándanos" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Uva" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Fresa" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Kiwi" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Piña" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Banano" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Mora" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Melón" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Tomate de árbol" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Papaya" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Limón" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de guanábana" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de zapote" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de níspero" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de maracuyá" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de mango" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Fresas para congelar" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Fresas para parfait" },
-  { categoria: "Frutas, pulpas y congelados", nombre: "Polvo chantillí" },
-
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ahuyama" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ajo" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Apio" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla blanca" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla larga" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla puerro" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cebolla roja" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Cilantro" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Espinaca" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Guineo verde" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Habichuela corta" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Lechuga batavia" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Lechuga crespa" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Lechuga romana" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ñame" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Papa sucia" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Papa amarilla" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pepino" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Perejil" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pimentón amarillo" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pimentón rojo" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Pimentón verde" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Plátano amarillo" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Plátano verde" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Ají topito" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Remolacha" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Yuca" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Zanahoria" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Tomate" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Mazorcas" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Guascas" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Champiñones" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Mix de verduras" },
-  { categoria: "Verduras, hortalizas y tubérculos", nombre: "Maíz" },
-
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Arroz" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Zaragosa" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Garbanzo" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Lentejas" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Pasta" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Fideos" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Harina de trigo" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Harina amarilla" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Avena" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Granola y tostadas" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Tostadas" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Pan" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Arepas" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Papas fritas" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Stevia" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Azúcar" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Azúcar en tubitos" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Panela" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Jugo de naranja" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Jugo de mandarina" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Ingredientes pulpa de café" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Aceite" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Sal" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Mayonesa" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Salsa de tomate" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Picante" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Finas hierbas" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Orégano" },
-  { categoria: "Abarrotes, secos y condimentos", nombre: "Albahaca" },
-
-  { categoria: "Empaques y desechables", nombre: "Sopero 12 oz" },
-  { categoria: "Empaques y desechables", nombre: "Sopero 24 oz" },
-  { categoria: "Empaques y desechables", nombre: "Sopero 32 oz" },
-  { categoria: "Empaques y desechables", nombre: "Contenedor 3 divisiones negro" },
-  { categoria: "Empaques y desechables", nombre: "Contenedor C1" },
-  { categoria: "Empaques y desechables", nombre: "Contenedor J1 dorado" },
-  { categoria: "Empaques y desechables", nombre: "Tarinas 12 oz" },
-  { categoria: "Empaques y desechables", nombre: "Vasos Darnel 12 oz" },
-  { categoria: "Empaques y desechables", nombre: "Vasos Darnel 16 oz" },
-  { categoria: "Empaques y desechables", nombre: "Vasos Gold Carvajal 22 oz" },
-  { categoria: "Empaques y desechables", nombre: "Vasos de tinto 9 oz" },
-  { categoria: "Empaques y desechables", nombre: "Vasos de capuchino 12 oz" },
-  { categoria: "Empaques y desechables", nombre: "Tapa Darnel plana" },
-  { categoria: "Empaques y desechables", nombre: "Tapas Darnel domo" },
-  { categoria: "Empaques y desechables", nombre: "Tapas verdes" },
-  { categoria: "Empaques y desechables", nombre: "Pitillos batido 7 mm" },
-  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 3K" },
-  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 10K" },
-  { categoria: "Empaques y desechables", nombre: "Bolsas plásticas 15K" },
-  { categoria: "Empaques y desechables", nombre: "Bolsas para cubiertos" },
-  { categoria: "Empaques y desechables", nombre: "Bolsas de porcionar" },
-  { categoria: "Empaques y desechables", nombre: "Papel para sándwich" },
-  { categoria: "Empaques y desechables", nombre: "Servilletas" },
-  { categoria: "Empaques y desechables", nombre: "Comandas" },
-
-  { categoria: "Aseo y limpieza", nombre: "Cloro" },
-  { categoria: "Aseo y limpieza", nombre: "Detergente FAB" },
-  { categoria: "Aseo y limpieza", nombre: "Desinfectante" },
-  { categoria: "Aseo y limpieza", nombre: "Bolsas de basura normales" },
-  { categoria: "Aseo y limpieza", nombre: "Bolsas de basura grandes" },
-  { categoria: "Aseo y limpieza", nombre: "Papel higiénico" },
-  { categoria: "Aseo y limpieza", nombre: "Cinta pegante" }
-];
-
-const unidadesSolicitud = ["und", "kg", "g", "lb", "paquete", "bolsa", "caja", "litro", "botella"];
 
 const estadosPedido = ["Pendiente", "Finalizado"];
 
@@ -250,79 +91,6 @@ function obtenerRangoPedidos(filtro = "hoy", fechaManual = fechaISOColombia()) {
     fin: fin.toISOString()
   };
 }
-function fechaMananaColombia() {
-  const base = new Date(`${fechaISOColombia()}T00:00:00-05:00`);
-  base.setDate(base.getDate() + 1);
-  return fechaISOColombia(base);
-}
-
-function crearProductosSolicitudInicial() {
-  return productosRestauranteBase.map((producto) => ({
-    id: crypto?.randomUUID ? crypto.randomUUID() : `${producto.categoria}-${producto.nombre}-${Math.random()}`,
-    categoria: producto.categoria,
-    nombre: producto.nombre,
-    cantidad: "",
-    unidad: "und",
-    nota: "",
-    seleccionada: false
-  }));
-}
-
-function agruparProductosSolicitud(productos) {
-  return (productos || []).reduce((grupos, producto) => {
-    const categoria = producto.categoria || "Productos";
-
-    if (!grupos[categoria]) {
-      grupos[categoria] = [];
-    }
-
-    grupos[categoria].push(producto);
-    return grupos;
-  }, {});
-}
-
-function obtenerProductosSolicitudSeleccionados(productos) {
-  return (productos || [])
-    .map((producto) => ({
-      ...producto,
-      seleccionada: Boolean(producto.seleccionada),
-      cantidad: String(producto.cantidad || "").trim(),
-      unidad: String(producto.unidad || "und").trim(),
-      nota: String(producto.nota || "").trim()
-    }))
-    .filter((producto) => producto.seleccionada);
-}
-
-function crearMensajeSolicitudProductos({ fechaSolicitud, fechaPara, productos, observaciones }) {
-  const grupos = agruparProductosSolicitud(productos);
-  const lineas = [
-    "Hola, esta es la solicitud de productos para Rafiki:",
-    "",
-    `Fecha de solicitud: ${fechaSolicitud}`,
-    `Productos requeridos para: ${fechaPara}`,
-    "",
-    "Listado solicitado:"
-  ];
-
-  Object.entries(grupos).forEach(([categoria, items]) => {
-    lineas.push("", `*${categoria}*`);
-
-    items.forEach((item) => {
-      const cantidad = String(item.cantidad || "").trim();
-      const unidad = String(item.unidad || "und").trim();
-      const cantidadTexto = cantidad ? `: ${cantidad}${unidad ? ` ${unidad}` : ""}` : "";
-      const nota = item.nota ? ` — ${item.nota}` : "";
-      lineas.push(`• ${item.nombre}${cantidadTexto}${nota}`);
-    });
-  });
-
-  if (observaciones) {
-    lineas.push("", `Observaciones: ${observaciones}`);
-  }
-
-  return lineas.join("\n");
-}
-
 
 function normalizarTexto(texto) {
   return String(texto || "")
@@ -859,10 +627,6 @@ function obtenerVistaInicial() {
     return "adminLogin";
   }
 
-  if (ruta === "/menu") {
-    return "menuPublico";
-  }
-
   if (ruta === "/pedido" || ruta === "/cliente") {
     return "cliente";
   }
@@ -884,15 +648,6 @@ export default function App() {
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
-  const [productosSolicitud, setProductosSolicitud] = useState(crearProductosSolicitudInicial);
-  const [fechaParaSolicitud, setFechaParaSolicitud] = useState(fechaMananaColombia());
-  const [observacionesSolicitud, setObservacionesSolicitud] = useState("");
-  const [mensajeSolicitud, setMensajeSolicitud] = useState({ texto: "", tipo: "info" });
-  const [guardandoSolicitud, setGuardandoSolicitud] = useState(false);
-  const [solicitudFinalizada, setSolicitudFinalizada] = useState(null);
-  const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState("");
-  const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState(CATEGORIA_SOLICITUD_DEFECTO);
-  const [productoSolicitudEliminarId, setProductoSolicitudEliminarId] = useState("");
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -1031,36 +786,6 @@ export default function App() {
     return pedidosFiltrados.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0);
   }, [pedidosFiltrados]);
 
-  const productosSolicitudSeleccionados = useMemo(
-    () => obtenerProductosSolicitudSeleccionados(productosSolicitud),
-    [productosSolicitud]
-  );
-
-  const productosSolicitudAgrupados = useMemo(
-    () => agruparProductosSolicitud(productosSolicitud),
-    [productosSolicitud]
-  );
-
-  const mensajeWhatsAppSolicitud = useMemo(
-    () =>
-      crearMensajeSolicitudProductos({
-        fechaSolicitud: fechaISOColombia(),
-        fechaPara: fechaParaSolicitud,
-        productos: productosSolicitudSeleccionados,
-        observaciones: observacionesSolicitud.trim()
-      }),
-    [fechaParaSolicitud, productosSolicitudSeleccionados, observacionesSolicitud]
-  );
-
-  const linkWhatsAppSolicitud = useMemo(
-    () =>
-      crearLinkWhatsApp(
-        WHATSAPP_SOLICITUD_PRODUCTOS,
-        solicitudFinalizada?.mensaje || mensajeWhatsAppSolicitud,
-        { abrirApp: true }
-      ),
-    [solicitudFinalizada, mensajeWhatsAppSolicitud]
-  );
 
   const platosAgrupados = useMemo(
     () => agruparPlatosPorCategoria(menu.platos_detalle),
@@ -1520,182 +1245,6 @@ export default function App() {
     }
   }
 
-  function actualizarProductoSolicitud(id, cambios) {
-    setProductosSolicitud((actual) =>
-      actual.map((producto) => (producto.id === id ? { ...producto, ...cambios } : producto))
-    );
-    setMensajeSolicitud({ texto: "", tipo: "info" });
-    setSolicitudFinalizada(null);
-  }
-
-  function alternarProductoSolicitud(id) {
-    setProductosSolicitud((actual) =>
-      actual.map((producto) => {
-        if (producto.id !== id) return producto;
-
-        const seleccionado = Boolean(producto.seleccionada);
-
-        return {
-          ...producto,
-          seleccionada: !seleccionado,
-          cantidad: seleccionado ? "" : producto.cantidad || "",
-          nota: seleccionado ? "" : producto.nota
-        };
-      })
-    );
-    setMensajeSolicitud({ texto: "", tipo: "info" });
-    setSolicitudFinalizada(null);
-  }
-
-  function agregarProductoSolicitudALista() {
-    const nombre = nuevoProductoSolicitudNombre.trim();
-    const categoria = nuevoProductoSolicitudCategoria.trim() || CATEGORIA_SOLICITUD_DEFECTO;
-
-    if (!nombre) {
-      setMensajeSolicitud({ texto: "Escribe el nombre del producto que quieres agregar.", tipo: "warning" });
-      return;
-    }
-
-    const yaExiste = productosSolicitud.some(
-      (producto) => normalizarTexto(producto.nombre) === normalizarTexto(nombre)
-    );
-
-    if (yaExiste) {
-      setMensajeSolicitud({ texto: "Ese producto ya está en la lista.", tipo: "warning" });
-      return;
-    }
-
-    const nuevoProducto = {
-      id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-      categoria,
-      nombre,
-      cantidad: "",
-      unidad: "und",
-      nota: "",
-      seleccionada: true
-    };
-
-    setProductosSolicitud((actual) => [...actual, nuevoProducto]);
-    setProductoSolicitudEliminarId(nuevoProducto.id);
-    setNuevoProductoSolicitudNombre("");
-    setNuevoProductoSolicitudCategoria(categoria);
-    setSolicitudFinalizada(null);
-    setMensajeSolicitud({ texto: "Producto agregado a la lista.", tipo: "success" });
-  }
-
-  function quitarProductoSolicitudDeLista(id) {
-    if (!id) {
-      setMensajeSolicitud({ texto: "Selecciona el producto que quieres eliminar de la lista.", tipo: "warning" });
-      return;
-    }
-
-    const producto = productosSolicitud.find((item) => item.id === id);
-    const nombre = producto?.nombre || "este producto";
-    const confirmar = window.confirm(`¿Eliminar ${nombre} de la lista principal? Esta acción solo afecta esta lista de solicitud.`);
-
-    if (!confirmar) return;
-
-    setProductosSolicitud((actual) => actual.filter((item) => item.id !== id));
-    setProductoSolicitudEliminarId("");
-    setSolicitudFinalizada(null);
-    setMensajeSolicitud({ texto: "Producto eliminado de la lista principal.", tipo: "info" });
-  }
-
-  function construirSolicitudProductos() {
-    const productos = obtenerProductosSolicitudSeleccionados(productosSolicitud);
-
-    if (productos.length === 0) {
-      return {
-        error: "Selecciona al menos un producto para guardar la solicitud."
-      };
-    }
-
-    const fechaSolicitud = fechaISOColombia();
-    const mensajeFinal = crearMensajeSolicitudProductos({
-      fechaSolicitud,
-      fechaPara: fechaParaSolicitud,
-      productos,
-      observaciones: observacionesSolicitud.trim()
-    });
-
-    const nuevaSolicitud = {
-      fecha_solicitud: fechaSolicitud,
-      fecha_para: fechaParaSolicitud,
-      productos,
-      observaciones: observacionesSolicitud.trim(),
-      mensaje: mensajeFinal
-    };
-
-    return { nuevaSolicitud, mensajeFinal };
-  }
-
-  async function guardarSolicitudProductos({ abrirWhatsApp = false } = {}) {
-    if (guardandoSolicitud) return;
-
-    const { nuevaSolicitud, mensajeFinal, error: errorValidacion } = construirSolicitudProductos();
-
-    if (errorValidacion) {
-      setMensajeSolicitud({ texto: errorValidacion, tipo: "warning" });
-      return;
-    }
-
-    setGuardandoSolicitud(true);
-
-    try {
-      const { data, error } = await supabase
-        .from("solicitudes_productos")
-        .insert(nuevaSolicitud)
-        .select()
-        .single();
-
-      if (error) {
-        setMensajeSolicitud({ texto: `Error guardando solicitud: ${error.message}`, tipo: "error" });
-        return;
-      }
-
-      const solicitudGuardada = data || nuevaSolicitud;
-      setSolicitudFinalizada(solicitudGuardada);
-
-      if (abrirWhatsApp) {
-        const link = crearLinkWhatsApp(
-          WHATSAPP_SOLICITUD_PRODUCTOS,
-          solicitudGuardada.mensaje || mensajeFinal,
-          { abrirApp: true }
-        );
-
-        setMensajeSolicitud({
-          texto: "Solicitud guardada. Se abrirá WhatsApp con el consolidado.",
-          tipo: "success"
-        });
-
-        window.location.href = link;
-      } else {
-        setMensajeSolicitud({
-          texto: "Solicitud guardada. Ahora puedes enviar el consolidado por WhatsApp.",
-          tipo: "success"
-        });
-      }
-    } catch (error) {
-      setMensajeSolicitud({
-        texto: `Error inesperado guardando solicitud: ${error.message || "revisa la conexión e intenta nuevamente."}`,
-        tipo: "error"
-      });
-    } finally {
-      setGuardandoSolicitud(false);
-    }
-  }
-
-  function limpiarSolicitudProductos() {
-    setProductosSolicitud(crearProductosSolicitudInicial());
-    setFechaParaSolicitud(fechaMananaColombia());
-    setObservacionesSolicitud("");
-    setNuevoProductoSolicitudNombre("");
-    setNuevoProductoSolicitudCategoria(CATEGORIA_SOLICITUD_DEFECTO);
-    setProductoSolicitudEliminarId("");
-    setMensajeSolicitud({ texto: "", tipo: "info" });
-    setSolicitudFinalizada(null);
-  }
-
   function abrirPanelAdmin() {
     setErrorClaveAdmin("");
 
@@ -1916,31 +1465,12 @@ export default function App() {
         .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .menu-publico { max-width: 880px; margin: 0 auto; }
-        .menu-folleto { background: #fff; border-radius: 36px; overflow: hidden; box-shadow: 0 28px 70px rgba(0,0,0,0.12); border: 1px solid #fed7aa; }
-        .menu-folleto-hero { background: linear-gradient(145deg, #ea580c, #f97316 50%, #f59e0b); color: #fff; text-align: center; padding: 38px 28px 34px; position: relative; overflow: hidden; }
-        .menu-folleto-hero::before { content: ''; position: absolute; top: -70px; right: -50px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.08); }
-        .menu-folleto-hero::after { content: ''; position: absolute; bottom: -90px; left: -40px; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,0.06); }
-        .menu-folleto-logo { width: 135px; height: 135px; object-fit: contain; background: #fff; border-radius: 28px; padding: 10px; margin-bottom: 18px; box-shadow: 0 18px 40px rgba(0,0,0,0.22); position: relative; z-index: 1; }
-        .menu-folleto-hero h2 { font-family: 'Fraunces', serif; font-size: clamp(36px, 7vw, 62px); line-height: 0.95; margin-bottom: 10px; position: relative; z-index: 1; }
-        .menu-folleto-hero p { color: rgba(255,255,255,0.9); position: relative; z-index: 1; }
-        .menu-fecha-pill { display: inline-flex; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 8px 14px; font-weight: 900; margin-bottom: 14px; position: relative; z-index: 1; }
-        .menu-folleto-body { padding: 26px; background: linear-gradient(180deg, #fff 0%, #fff7ed 100%); }
-        .menu-folleto-section { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; margin-bottom: 16px; }
-        .menu-folleto-section h3 { color: #c2410c; font-family: 'Fraunces', serif; margin-bottom: 12px; font-size: 24px; }
-        .menu-plato-row { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px dashed #fed7aa; }
-        .menu-plato-row:last-child { border-bottom: 0; }
-        .menu-plato-nombre { font-weight: 900; color: #292524; }
-        .menu-plato-precio { font-weight: 900; color: #ea580c; white-space: nowrap; }
-        .menu-acompanantes { display: flex; flex-wrap: wrap; gap: 9px; }
-        .menu-acompanante { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 999px; padding: 8px 12px; font-weight: 900; font-size: 14px; }
-        .menu-folleto-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
         @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
-          .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row, .menu-folleto-actions { grid-template-columns: 1fr; }
+          .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row { grid-template-columns: 1fr; }
           .app { padding: 14px; }
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
@@ -1950,7 +1480,7 @@ export default function App() {
 
       <div className="app">
         <div className="container">
-          {vista !== "inicio" && vista !== "menuPublico" && (
+          {vista !== "inicio" && (
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
@@ -1989,75 +1519,6 @@ export default function App() {
                 <button type="button" onClick={() => navegar("/", "cliente")} className="welcome-button">
                   🛍️ Haz tu pedido aquí
                 </button>
-              </section>
-            </main>
-          )}
-
-          {!cargando && vista === "menuPublico" && (
-            <main className="menu-publico">
-              <section className="menu-folleto">
-                <div className="menu-folleto-hero">
-                  <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="menu-folleto-logo" />
-                  <div className="menu-fecha-pill">🍽️ {menu.fecha || fechaISOColombia()}</div>
-                  <h2>{menu.titulo || "Menú del día"}</h2>
-                  <p>{menu.descripcion || "Consulta nuestro menú disponible para hoy."}</p>
-                </div>
-
-                <div className="menu-folleto-body">
-                  {menu.platos_detalle.length === 0 ? (
-                    <div className="menu-folleto-section">
-                      <h3>Menú no disponible</h3>
-                      <p className="muted" style={{ marginBottom: 0 }}>
-                        Todavía no hay platos configurados para el menú de hoy.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {Object.entries(platosAgrupados).map(([categoria, platos]) => (
-                        <div key={categoria} className="menu-folleto-section">
-                          <h3>{categoria}</h3>
-
-                          {platos.map((plato) => (
-                            <div key={`${plato.categoria}-${plato.nombre}`} className="menu-plato-row">
-                              <span className="menu-plato-nombre">{plato.nombre}</span>
-                              <span className="menu-plato-precio">{dinero(plato.precio)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-
-                      {menu.acompanantes.length > 0 && (
-                        <div className="menu-folleto-section">
-                          <h3>Acompañantes</h3>
-                          <div className="menu-acompanantes">
-                            {menu.acompanantes.map((acompanante) => (
-                              <span key={acompanante} className="menu-acompanante">
-                                {acompanante}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="menu-folleto-section">
-                        <h3>Incluye</h3>
-                        <p className="muted" style={{ marginBottom: 0 }}>
-                          Los almuerzos incluyen sopa + bebida. Los productos de sopas no incluyen acompañantes adicionales.
-                        </p>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="menu-folleto-actions">
-                    <button type="button" onClick={() => navegar("/", "cliente")} className="button green">
-                      🛍️ Hacer pedido
-                    </button>
-
-                    <button type="button" onClick={() => window.print()} className="button light">
-                      Imprimir / guardar
-                    </button>
-                  </div>
-                </div>
               </section>
             </main>
           )}
@@ -2713,208 +2174,7 @@ export default function App() {
                 </section>
               )}
 
-              {adminTab === "productos" && (
-                <section className="card card-pad">
-                  <div className="admin-top-row">
-                    <div>
-                      <h2>🧺 Solicitud de productos</h2>
-                    </div>
-
-                    <button type="button" onClick={limpiarSolicitudProductos} className="button light">
-                      Limpiar
-                    </button>
-                  </div>
-
-                  <div className="grid-2">
-                    <CampoTexto
-                      etiqueta="Fecha para la que se necesitan"
-                      type="date"
-                      value={fechaParaSolicitud}
-                      onChange={(valor) => {
-                        setFechaParaSolicitud(valor);
-                        setSolicitudFinalizada(null);
-                        setMensajeSolicitud({ texto: "", tipo: "info" });
-                      }}
-                    />
-
-                    <div className="box soft">
-                      <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong>
-                    </div>
-                  </div>
-
-                  {mensajeSolicitud.texto && (
-                    <div className={`alert alert-${mensajeSolicitud.tipo}`}>
-                      {mensajeSolicitud.texto}
-                    </div>
-                  )}
-
-                  {Object.entries(productosSolicitudAgrupados).map(([categoria, productos]) => (
-                    <div key={categoria} className="category-block">
-                      <h3 className="category-title">{categoria}</h3>
-
-                      <div className="productos-chips">
-                        {productos.map((producto) => {
-                          const seleccionado = Boolean(producto.seleccionada);
-
-                          return (
-                            <span key={producto.id} className="producto-chip-wrap">
-                              <button
-                                type="button"
-                                onClick={() => alternarProductoSolicitud(producto.id)}
-                                className={`producto-chip ${seleccionado ? "selected" : ""}`}
-                              >
-                                {seleccionado ? "✓ " : "+ "}
-                                {producto.nombre}
-                              </button>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-
-                  {productosSolicitudSeleccionados.length > 0 && (
-                    <div className="box soft">
-                      <strong>Productos seleccionados</strong>
-
-                      <div className="productos-seleccionados-lista">
-                        {productosSolicitud
-                          .filter((producto) => producto.seleccionada)
-                          .map((producto) => (
-                            <div key={producto.id} className="producto-seleccionado-row">
-                              <strong>{producto.nombre}</strong>
-
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                value={producto.cantidad}
-                                onChange={(e) =>
-                                  actualizarProductoSolicitud(producto.id, { cantidad: e.target.value })
-                                }
-                                placeholder="Cant."
-                              />
-
-                              <select
-                                value={producto.unidad}
-                                onChange={(e) =>
-                                  actualizarProductoSolicitud(producto.id, { unidad: e.target.value })
-                                }
-                              >
-                                {unidadesSolicitud.map((unidad) => (
-                                  <option key={unidad} value={unidad}>
-                                    {unidad}
-                                  </option>
-                                ))}
-                              </select>
-
-                              <input
-                                type="text"
-                                value={producto.nota}
-                                onChange={(e) =>
-                                  actualizarProductoSolicitud(producto.id, { nota: e.target.value })
-                                }
-                                placeholder="Nota"
-                              />
-
-                              <button
-                                type="button"
-                                className="button light"
-                                onClick={() => actualizarProductoSolicitud(producto.id, { seleccionada: false, cantidad: "", nota: "" })}
-                              >
-                                Quitar
-                              </button>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <CampoTexto
-                    etiqueta="Observaciones generales"
-                    value={observacionesSolicitud}
-                    onChange={(valor) => {
-                      setObservacionesSolicitud(valor);
-                      setSolicitudFinalizada(null);
-                      setMensajeSolicitud({ texto: "", tipo: "info" });
-                    }}
-                    placeholder="Ej: comprar temprano, revisar calidad, priorizar verduras frescas..."
-                    multiline
-                    rows={2}
-                  />
-
-                  {productosSolicitudSeleccionados.length > 0 && (
-                    <div className="box soft">
-                      <strong>Vista previa del mensaje</strong>
-                      <div className="solicitud-preview">{mensajeWhatsAppSolicitud}</div>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => guardarSolicitudProductos({ abrirWhatsApp: true })}
-                    disabled={guardandoSolicitud}
-                    className="button green"
-                    style={{ width: "100%", marginTop: 14 }}
-                  >
-                    {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud y enviar por WhatsApp"}
-                  </button>
-
-                  <div className="box soft" style={{ marginTop: 18 }}>
-                    <strong>Agregar producto a la lista</strong>
-                    <div className="producto-add-row">
-                      <input
-                        type="text"
-                        value={nuevoProductoSolicitudNombre}
-                        onChange={(e) => setNuevoProductoSolicitudNombre(e.target.value)}
-                        placeholder="Ej: Maíz tierno"
-                      />
-
-                      <select
-                        value={nuevoProductoSolicitudCategoria}
-                        onChange={(e) => setNuevoProductoSolicitudCategoria(e.target.value)}
-                      >
-                        {categoriasSolicitudProductos.map((categoria) => (
-                          <option key={categoria} value={categoria}>
-                            {categoria}
-                          </option>
-                        ))}
-                      </select>
-
-                      <button type="button" className="button green" onClick={agregarProductoSolicitudALista}>
-                        Agregar
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="box soft" style={{ marginTop: 12 }}>
-                    <strong>Eliminar producto de la lista</strong>
-                    <p className="muted small" style={{ marginBottom: 8 }}>
-                      Esta opción es solo para administrar el listado principal.
-                    </p>
-                    <div className="producto-delete-row">
-                      <select
-                        value={productoSolicitudEliminarId}
-                        onChange={(e) => setProductoSolicitudEliminarId(e.target.value)}
-                      >
-                        <option value="">Selecciona un producto</option>
-                        {productosSolicitud.map((producto) => (
-                          <option key={producto.id} value={producto.id}>
-                            {producto.categoria} - {producto.nombre}
-                          </option>
-                        ))}
-                      </select>
-
-                      <button
-                        type="button"
-                        className="button danger"
-                        onClick={() => quitarProductoSolicitudDeLista(productoSolicitudEliminarId)}
-                      >
-                        Eliminar de la lista
-                      </button>
-                    </div>
-                  </div>
-                </section>
-              )}
+              {adminTab === "productos" && <SolicitudProductos />}
 
               {adminTab === "menu" && (
                 <section className="card card-pad">
