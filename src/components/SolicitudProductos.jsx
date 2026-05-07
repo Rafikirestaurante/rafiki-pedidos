@@ -4,7 +4,8 @@ import { supabase } from "../supabaseClient";
 const WHATSAPP_SOLICITUD_PRODUCTOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_PRODUCTOS || "573013707032";
 
 const categoriasSolicitudProductos = [
-  "Proteínas, lácteos y huevos",
+  "Proteínas",
+  "Lácteos y huevos",
   "Frutas, pulpas y congelados",
   "Verduras, hortalizas y tubérculos",
   "Abarrotes, secos y condimentos",
@@ -16,30 +17,30 @@ const CATEGORIA_SOLICITUD_DEFECTO = "Abarrotes, secos y condimentos";
 const STORAGE_PRODUCTOS_PENDIENTES = "rafiki_productos_pendientes_compra_v2";
 
 const productosRestauranteBase = [
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pollo" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pechuga" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Cerdo" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Chuleta" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Atún" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne para guisar" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Carne para posta" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Costilla" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Gallina" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Panza" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pata de cerdo" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Pata de res" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Sobrebarriga" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Tocineta" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Leche" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Suero" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso mozzarella" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso parmesano" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Queso duro" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Mantequilla" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Crema de leche" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Jamón" },
-  { categoria: "Proteínas, lácteos y huevos", nombre: "Huevos" },
+  { categoria: "Proteínas", nombre: "Pollo" },
+  { categoria: "Proteínas", nombre: "Pechuga" },
+  { categoria: "Proteínas", nombre: "Carne" },
+  { categoria: "Proteínas", nombre: "Cerdo" },
+  { categoria: "Proteínas", nombre: "Chuleta" },
+  { categoria: "Proteínas", nombre: "Atún" },
+  { categoria: "Proteínas", nombre: "Carne para guisar" },
+  { categoria: "Proteínas", nombre: "Carne para posta" },
+  { categoria: "Proteínas", nombre: "Costilla" },
+  { categoria: "Proteínas", nombre: "Gallina" },
+  { categoria: "Proteínas", nombre: "Panza" },
+  { categoria: "Proteínas", nombre: "Pata de cerdo" },
+  { categoria: "Proteínas", nombre: "Pata de res" },
+  { categoria: "Proteínas", nombre: "Sobrebarriga" },
+  { categoria: "Proteínas", nombre: "Tocineta" },
+  { categoria: "Lácteos y huevos", nombre: "Leche" },
+  { categoria: "Lácteos y huevos", nombre: "Suero" },
+  { categoria: "Lácteos y huevos", nombre: "Queso mozzarella" },
+  { categoria: "Lácteos y huevos", nombre: "Queso parmesano" },
+  { categoria: "Lácteos y huevos", nombre: "Queso duro" },
+  { categoria: "Lácteos y huevos", nombre: "Mantequilla" },
+  { categoria: "Lácteos y huevos", nombre: "Crema de leche" },
+  { categoria: "Proteínas", nombre: "Jamón" },
+  { categoria: "Lácteos y huevos", nombre: "Huevos" },
 
   { categoria: "Frutas, pulpas y congelados", nombre: "Mango" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Arándanos" },
@@ -126,6 +127,9 @@ const productosRestauranteBase = [
   { categoria: "Abarrotes, secos y condimentos", nombre: "Finas hierbas" },
   { categoria: "Abarrotes, secos y condimentos", nombre: "Orégano" },
   { categoria: "Abarrotes, secos y condimentos", nombre: "Albahaca" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Mostaza" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Pimienta" },
+  { categoria: "Abarrotes, secos y condimentos", nombre: "Fécula" },
 
   { categoria: "Empaques y desechables", nombre: "Sopero 12 oz" },
   { categoria: "Empaques y desechables", nombre: "Sopero 24 oz" },
@@ -158,7 +162,8 @@ const productosRestauranteBase = [
   { categoria: "Aseo y limpieza", nombre: "Bolsas de basura normales" },
   { categoria: "Aseo y limpieza", nombre: "Bolsas de basura grandes" },
   { categoria: "Aseo y limpieza", nombre: "Papel higiénico" },
-  { categoria: "Aseo y limpieza", nombre: "Cinta pegante" }
+  { categoria: "Aseo y limpieza", nombre: "Cinta pegante" },
+  { categoria: "Aseo y limpieza", nombre: "Esponjas" }
 ];
 
 const unidadesSolicitud = ["und", "kg", "g", "lb", "paquete", "bolsa", "caja", "litro", "botella"];
@@ -516,6 +521,55 @@ export default function SolicitudProductos() {
     if (!confirmar) return;
     setEstadoPendientesCompra({});
     setMensajePendientes({ texto: "Lista de compras reiniciada.", tipo: "success" });
+  }
+
+  async function borrarSolicitudesDelDia() {
+    const fecha = fechaConsultaSolicitudes || fechaISOColombia();
+    const confirmar = window.confirm(
+      `¿Seguro que deseas borrar todas las solicitudes del día ${fecha}? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmar) return;
+
+    setCargandoPendientes(true);
+    setMensajePendientes({ texto: "Borrando solicitudes del día...", tipo: "info" });
+
+    try {
+      const { error } = await supabase
+        .from("solicitudes_productos")
+        .delete()
+        .eq("fecha_solicitud", fecha);
+
+      if (error) {
+        setMensajePendientes({ texto: `Error borrando solicitudes: ${error.message}`, tipo: "error" });
+        return;
+      }
+
+      setSolicitudesGuardadas([]);
+
+      setEstadoPendientesCompra((actual) => {
+        const nuevoEstado = { ...actual };
+        Object.keys(nuevoEstado).forEach((clave) => {
+          if (clave.startsWith(`${fecha}-`)) {
+            delete nuevoEstado[clave];
+          }
+        });
+        return nuevoEstado;
+      });
+
+      if (fecha === fechaISOColombia()) {
+        setYaExisteSolicitudHoy(false);
+      }
+
+      setMensajePendientes({ texto: `Solicitudes del día ${fecha} borradas correctamente.`, tipo: "success" });
+    } catch (error) {
+      setMensajePendientes({
+        texto: `Error inesperado borrando solicitudes: ${error.message || "revisa la conexión."}`,
+        tipo: "error"
+      });
+    } finally {
+      setCargandoPendientes(false);
+    }
   }
 
   function actualizarProductoSolicitud(id, cambios) {
@@ -968,6 +1022,14 @@ export default function SolicitudProductos() {
               </button>
               <button type="button" onClick={limpiarCompradosPendientes} className="button light">
                 Reiniciar marcas
+              </button>
+              <button
+                type="button"
+                onClick={borrarSolicitudesDelDia}
+                className="button danger"
+                disabled={cargandoPendientes}
+              >
+                Borrar solicitudes del día
               </button>
             </div>
           </div>
