@@ -1,10 +1,15 @@
 {
+  "id": "/admin",
   "name": "Rafiki Pedidos Admin",
   "short_name": "Rafiki Admin",
   "description": "Panel administrativo de Rafiki Pedidos para gestionar solicitudes, productos pendientes y menú diario.",
-  "start_url": "/admin",
-  "scope": "/admin",
+  "start_url": "/admin?app=admin",
+  "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait",
   "background_color": "#fff4e6",
   "theme_color": "#f97316",

@@ -1,6 +1,7 @@
-const CACHE_NAME = 'rafiki-pedidos-v1';
+const CACHE_NAME = 'rafiki-pedidos-admin-v3';
 const APP_SHELL = [
   '/',
+  '/admin',
   '/index.html',
   '/manifest.json',
   '/logo-rafiki.png',
