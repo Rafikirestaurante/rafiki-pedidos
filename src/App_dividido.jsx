@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./supabaseClient";
 import SolicitudProductos from "./components/SolicitudProductos";
+import GeneradorMenu from "./components/GeneradorMenu";
 
 const VALOR_PARA_LLEVAR = 1500;
 const MAX_ACOMPANANTES_CLIENTE = 3;
@@ -2029,6 +2030,14 @@ export default function App() {
 
                 <button
                   type="button"
+                  onClick={() => setAdminTab("generador")}
+                  className={adminTab === "generador" ? "active" : ""}
+                >
+                  Generador de menú
+                </button>
+
+                <button
+                  type="button"
                   onClick={cerrarPanelAdmin}
                   className="button light"
                 >
@@ -2175,6 +2184,8 @@ export default function App() {
               )}
 
               {adminTab === "productos" && <SolicitudProductos />}
+
+              {adminTab === "generador" && <GeneradorMenu />}
 
               {adminTab === "menu" && (
                 <section className="card card-pad">
