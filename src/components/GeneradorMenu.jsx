@@ -60,27 +60,37 @@ function crearSvgMenu({ fecha, platos, tambien, acompanantes, paraLlevar }) {
 
   const rowsSvg = rows
     .map((plato, index) => {
-      const y = 345 + index * 76;
-      const lineas = wrapText(plato.nombre || "Plato", 28);
+      const y = 394 + index * 82;
+      const lineas = wrapText(plato.nombre || "Plato", 30);
       const nombreSvg = lineas
-        .map((linea, i) => `<text x="180" y="${y + i * 27}" font-family="Arial, sans-serif" font-size="31" font-weight="800" fill="#3b2415">${escapeSvg(linea)}</text>`)
+        .map(
+          (linea, i) =>
+            `<text x="174" y="${y + i * 28}" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#2f1b10">${escapeSvg(linea)}</text>`
+        )
         .join("");
 
       return `
-        <rect x="110" y="${y - 45}" width="860" height="60" rx="22" fill="${index % 2 === 0 ? "#fff8ed" : "#ffffff"}" opacity="0.96"/>
-        <circle cx="145" cy="${y - 15}" r="10" fill="#f59e0b"/>
+        <rect x="112" y="${y - 50}" width="856" height="68" rx="26" fill="${index % 2 === 0 ? "#fffaf2" : "#ffffff"}" stroke="#f8dfba" stroke-width="2"/>
+        <circle cx="145" cy="${y - 16}" r="9" fill="#d97706"/>
         ${nombreSvg}
-        <text x="910" y="${y}" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#8b1e16" text-anchor="end">$${escapeSvg(precioVisible(plato.precio))}</text>
+        <line x1="500" y1="${y - 10}" x2="768" y2="${y - 10}" stroke="#d6b88a" stroke-width="3" stroke-dasharray="7 12" opacity="0.75"/>
+        <text x="924" y="${y}" font-family="Arial, sans-serif" font-size="34" font-weight="900" fill="#8b1e16" text-anchor="end">$${escapeSvg(precioVisible(plato.precio))}</text>
       `;
     })
     .join("");
 
   const extrasSvg = extras
-    .map((item, index) => `<text x="165" y="${930 + index * 38}" font-family="Arial, sans-serif" font-size="30" font-weight="800" fill="#3b2415">• ${escapeSvg(item)}</text>`)
+    .map(
+      (item, index) =>
+        `<text x="156" y="${955 + index * 42}" font-family="Arial, sans-serif" font-size="29" font-weight="800" fill="#321b0f">• ${escapeSvg(item)}</text>`
+    )
     .join("");
 
   const sidesSvg = sides
-    .map((item, index) => `<text x="610" y="${930 + index * 38}" font-family="Arial, sans-serif" font-size="30" font-weight="800" fill="#3b2415">• ${escapeSvg(item)}</text>`)
+    .map(
+      (item, index) =>
+        `<text x="600" y="${955 + index * 42}" font-family="Arial, sans-serif" font-size="29" font-weight="800" fill="#321b0f">• ${escapeSvg(item)}</text>`
+    )
     .join("");
 
   return `
@@ -88,51 +98,64 @@ function crearSvgMenu({ fecha, platos, tambien, acompanantes, paraLlevar }) {
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="#fff7ed"/>
-        <stop offset="0.55" stop-color="#fffaf3"/>
-        <stop offset="1" stop-color="#fde68a"/>
+        <stop offset="0.52" stop-color="#fffaf3"/>
+        <stop offset="1" stop-color="#f6d38c"/>
       </linearGradient>
-      <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#f97316"/>
-        <stop offset="1" stop-color="#f59e0b"/>
+      <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#b45309"/>
+        <stop offset="0.5" stop-color="#f59e0b"/>
+        <stop offset="1" stop-color="#92400e"/>
+      </linearGradient>
+      <linearGradient id="wine" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#9f2419"/>
+        <stop offset="1" stop-color="#5f150f"/>
       </linearGradient>
       <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#7c2d12" flood-opacity="0.20"/>
+        <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#7c2d12" flood-opacity="0.22"/>
+      </filter>
+      <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#7c2d12" flood-opacity="0.12"/>
       </filter>
     </defs>
 
     <rect width="1080" height="1350" fill="url(#bg)"/>
-    <circle cx="80" cy="90" r="160" fill="#fed7aa" opacity="0.55"/>
-    <circle cx="1015" cy="1240" r="230" fill="#fdba74" opacity="0.45"/>
+    <circle cx="90" cy="110" r="190" fill="#fed7aa" opacity="0.48"/>
+    <circle cx="1010" cy="1185" r="260" fill="#fdba74" opacity="0.38"/>
+    <circle cx="1000" cy="120" r="115" fill="#fff7ed" opacity="0.70"/>
 
-    <rect x="70" y="60" width="940" height="1230" rx="48" fill="#ffffff" opacity="0.88" filter="url(#shadow)"/>
-    <rect x="95" y="85" width="890" height="1180" rx="40" fill="none" stroke="#fb923c" stroke-width="5" opacity="0.75"/>
+    <rect x="58" y="55" width="964" height="1240" rx="58" fill="#ffffff" opacity="0.94" filter="url(#shadow)"/>
+    <rect x="84" y="82" width="912" height="1186" rx="46" fill="none" stroke="#b45309" stroke-width="4" opacity="0.55"/>
+    <rect x="104" y="102" width="872" height="1146" rx="38" fill="none" stroke="#fde7c3" stroke-width="6" opacity="0.9"/>
 
-    <text x="540" y="150" font-family="Arial, sans-serif" font-size="74" font-weight="900" fill="#8b1e16" text-anchor="middle">RAFIKI</text>
-    <text x="540" y="202" font-family="Arial, sans-serif" font-size="31" font-weight="800" fill="#7c2d12" text-anchor="middle">ALMUERZO DEL DÍA</text>
+    <circle cx="540" cy="156" r="70" fill="url(#wine)" filter="url(#softShadow)"/>
+    <text x="540" y="178" font-family="Georgia, serif" font-size="72" font-weight="900" fill="#fff8ed" text-anchor="middle">R</text>
+    <text x="540" y="260" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="#7f1d1d" text-anchor="middle" letter-spacing="3">RAFIKI</text>
+    <text x="540" y="306" font-family="Arial, sans-serif" font-size="35" font-weight="900" fill="#3b2415" text-anchor="middle" letter-spacing="2">MENÚ DEL DÍA</text>
 
-    <rect x="310" y="225" width="460" height="72" rx="34" fill="url(#orange)"/>
-    <text x="540" y="274" font-family="Arial, sans-serif" font-size="34" font-weight="900" fill="#ffffff" text-anchor="middle">${escapeSvg(fecha || fechaHoy)}</text>
+    <rect x="318" y="329" width="444" height="64" rx="32" fill="url(#gold)"/>
+    <text x="540" y="371" font-family="Arial, sans-serif" font-size="31" font-weight="900" fill="#ffffff" text-anchor="middle">${escapeSvg(fecha || fechaHoy)}</text>
 
-    <rect x="110" y="315" width="860" height="570" rx="34" fill="#fff3e0" stroke="#fed7aa" stroke-width="4"/>
-    <text x="540" y="365" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#9a3412" text-anchor="middle">PLATOS DISPONIBLES</text>
-    ${rowsSvg}
+    <rect x="96" y="414" width="888" height="462" rx="36" fill="#fff3df" stroke="#efc68e" stroke-width="4"/>
+    <rect x="320" y="418" width="440" height="54" rx="26" fill="url(#wine)"/>
+    <text x="540" y="455" font-family="Arial, sans-serif" font-size="27" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">PLATOS DISPONIBLES</text>
+    ${rowsSvg || `<text x="540" y="610" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#78716c" text-anchor="middle">Agrega los platos del día</text>`}
 
-    <rect x="110" y="900" width="410" height="300" rx="34" fill="#fff8ed" stroke="#fed7aa" stroke-width="4"/>
-    <text x="315" y="875" font-family="Arial, sans-serif" font-size="31" font-weight="900" fill="#ffffff" text-anchor="middle"></text>
-    <rect x="145" y="850" width="340" height="60" rx="28" fill="#8b1e16"/>
-    <text x="315" y="891" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#ffffff" text-anchor="middle">TAMBIÉN TENEMOS</text>
-    ${extrasSvg || `<text x="165" y="940" font-family="Arial, sans-serif" font-size="28" fill="#78716c">• Escribe opciones...</text>`}
+    <rect x="110" y="910" width="408" height="250" rx="34" fill="#fffaf2" stroke="#efc68e" stroke-width="4" filter="url(#softShadow)"/>
+    <rect x="146" y="883" width="336" height="58" rx="29" fill="url(#wine)"/>
+    <text x="314" y="922" font-family="Arial, sans-serif" font-size="25" font-weight="900" fill="#ffffff" text-anchor="middle">TAMBIÉN TENEMOS</text>
+    ${extrasSvg || `<text x="156" y="965" font-family="Arial, sans-serif" font-size="27" fill="#78716c">• Escribe opciones...</text>`}
 
-    <rect x="560" y="900" width="410" height="300" rx="34" fill="#fff8ed" stroke="#fed7aa" stroke-width="4"/>
-    <rect x="595" y="850" width="340" height="60" rx="28" fill="#8b1e16"/>
-    <text x="765" y="891" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#ffffff" text-anchor="middle">ACOMPAÑANTES</text>
-    ${sidesSvg || `<text x="610" y="940" font-family="Arial, sans-serif" font-size="28" fill="#78716c">• Escribe acompañantes...</text>`}
+    <rect x="562" y="910" width="408" height="250" rx="34" fill="#fffaf2" stroke="#efc68e" stroke-width="4" filter="url(#softShadow)"/>
+    <rect x="598" y="883" width="336" height="58" rx="29" fill="url(#wine)"/>
+    <text x="766" y="922" font-family="Arial, sans-serif" font-size="25" font-weight="900" fill="#ffffff" text-anchor="middle">ACOMPAÑANTES</text>
+    ${sidesSvg || `<text x="600" y="965" font-family="Arial, sans-serif" font-size="27" fill="#78716c">• Escribe acompañantes...</text>`}
 
-    <rect x="180" y="1220" width="720" height="70" rx="34" fill="url(#orange)"/>
-    <text x="540" y="1265" font-family="Arial, sans-serif" font-size="31" font-weight="900" fill="#ffffff" text-anchor="middle">PARA LLEVAR +$${escapeSvg(precioVisible(paraLlevar))}</text>
+    <rect x="180" y="1190" width="720" height="74" rx="37" fill="url(#gold)" filter="url(#softShadow)"/>
+    <text x="540" y="1238" font-family="Arial, sans-serif" font-size="31" font-weight="900" fill="#ffffff" text-anchor="middle">PARA LLEVAR +$${escapeSvg(precioVisible(paraLlevar))}</text>
+
+    <text x="540" y="1308" font-family="Arial, sans-serif" font-size="25" font-weight="800" fill="#7c2d12" text-anchor="middle">Rafiki Restaurante • Barranquilla</text>
   </svg>`;
 }
-
 export default function GeneradorMenu() {
   const [fecha, setFecha] = useState(fechaHoy);
   const [platos, setPlatos] = useState([
