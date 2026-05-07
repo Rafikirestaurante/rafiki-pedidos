@@ -638,7 +638,7 @@ export default function SolicitudProductos() {
         return {
           ...producto,
           seleccionada: !seleccionado,
-          cantidad: "",
+          cantidad: seleccionado ? "" : producto.cantidad || "",
           nota: seleccionado ? "" : producto.nota
         };
       })
@@ -873,12 +873,12 @@ export default function SolicitudProductos() {
                         />
 
                         <div className="box soft">
-                          <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong><span className="muted small"> Sin cantidades en esta pantalla.</span>
+                          <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong>
                         </div>
                       </div>
 
                       <div className="alert alert-info">
-                        Selecciona únicamente los productos que necesitas. Las cantidades las define el jefe en Productos pendientes.
+                        Puedes hacer varias solicitudes en el día, siempre que no repitas el mismo producto.
                       </div>
 
                       {mensajeSolicitud.texto && (
@@ -912,6 +912,15 @@ export default function SolicitudProductos() {
                         </div>
                       ))}
 
+                      {productosSolicitudSeleccionados.length > 0 && (
+                        <div className="box soft">
+                          <strong>Productos seleccionados:</strong>
+                          <p className="muted small" style={{ marginTop: 6, marginBottom: 0 }}>
+                            {productosSolicitudSeleccionados.map((producto) => producto.nombre).join(", ")}
+                          </p>
+                        </div>
+                      )}
+
                       <CampoTexto
                         etiqueta="Observaciones generales"
                         value={observacionesSolicitud}
@@ -924,6 +933,13 @@ export default function SolicitudProductos() {
                         multiline
                         rows={2}
                       />
+
+                      {productosSolicitudSeleccionados.length > 0 && (
+                        <div className="box soft">
+                          <strong>Vista previa del mensaje</strong>
+                          <div className="solicitud-preview">{mensajeWhatsAppSolicitud}</div>
+                        </div>
+                      )}
 
                       <button
                         type="button"

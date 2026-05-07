@@ -623,9 +623,10 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
 
 function obtenerVistaInicial() {
   const ruta = window.location.pathname.replace(/\/$/, "") || "/";
+  const adminActivo = localStorage.getItem("rafikiAdminActivo") === "true";
 
   if (ruta === "/admin") {
-    return "adminLogin";
+    return adminActivo ? "admin" : "adminLogin";
   }
 
   if (ruta === "/pedido" || ruta === "/cliente") {
@@ -644,7 +645,7 @@ function actualizarRuta(ruta) {
 export default function App() {
   const [vista, setVista] = useState(obtenerVistaInicial);
   const [adminTab, setAdminTab] = useState("pedidos");
-  const [adminAutenticado, setAdminAutenticado] = useState(false);
+  const [adminAutenticado, setAdminAutenticado] = useState(() => localStorage.getItem("rafikiAdminActivo") === "true");
   const [claveAdmin, setClaveAdmin] = useState("");
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
@@ -1261,6 +1262,7 @@ export default function App() {
     e.preventDefault();
 
     if (claveAdmin.trim() === CLAVE_ADMIN) {
+      localStorage.setItem("rafikiAdminActivo", "true");
       setAdminAutenticado(true);
       setClaveAdmin("");
       setErrorClaveAdmin("");
@@ -1272,6 +1274,7 @@ export default function App() {
   }
 
   function cerrarPanelAdmin() {
+    localStorage.removeItem("rafikiAdminActivo");
     setAdminAutenticado(false);
     setClaveAdmin("");
     setErrorClaveAdmin("");
@@ -1711,6 +1714,13 @@ export default function App() {
                                   )}
                                 </div>
 
+                                <button
+                                  type="button"
+                                  className="button continue-button"
+                                  onClick={() => irAElemento(`paso-cantidad-${item.id}`)}
+                                >
+                                  Continuar
+                                </button>
 
                                 <div className="box" style={{ marginTop: 18 }}>
                                   <strong>🥣 Sopa y bebida</strong>
@@ -1734,7 +1744,7 @@ export default function App() {
                               <div id={`paso-cantidad-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
                                 <div className="grid-2">
                                   <div className="box">
-                                    <strong>Cantidad</strong>
+                                    <strong>Cantidad de {item.plato || item.proteina || "proteína escogida"}</strong>
                                     <div style={{ marginTop: 10 }}>
                                       <SelectorCantidad
                                         cantidad={item.cantidad}
