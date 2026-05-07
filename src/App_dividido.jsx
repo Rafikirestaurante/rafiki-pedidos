@@ -1333,8 +1333,8 @@ export default function App() {
         .hero h2 { font-family: 'Fraunces', serif; font-size: clamp(26px, 4vw, 40px); margin-bottom: 8px; line-height: 1.05; }
         .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
         .layout { display: grid; grid-template-columns: 1fr 400px; gap: 22px; align-items: start; }
-        .admin-tabs { display: flex; gap: 8px; margin-bottom: 18px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 8px; }
-        .admin-tabs button { flex: 1; border: 0; border-radius: 16px; padding: 14px 16px; background: transparent; font-weight: 900; color: #57534e; }
+        .admin-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 18px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 8px; }
+        .admin-tabs button { width: 100%; border: 0; border-radius: 16px; padding: 14px 12px; background: transparent; font-weight: 900; color: #57534e; line-height: 1.15; min-height: 48px; }
         .admin-tabs button.active { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .admin-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
@@ -1476,6 +1476,8 @@ export default function App() {
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
           .finalizar-area { max-width: 190px; }
+          .admin-tabs { grid-template-columns: 1fr 1fr; border-radius: 18px; }
+          .admin-tabs button { font-size: 12px; padding: 12px 8px; }
         }
       `}</style>
 
