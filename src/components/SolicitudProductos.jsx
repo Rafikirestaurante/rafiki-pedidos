@@ -1130,57 +1130,58 @@ export default function SolicitudProductos() {
                         key={producto.id}
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "minmax(0, 1fr) 88px 78px",
-                          gap: 6,
+                          gridTemplateColumns: "minmax(0, 1fr) 76px 34px",
+                          gap: 8,
                           alignItems: "center",
-                          padding: "10px 12px",
+                          padding: "10px",
                           borderRadius: 14,
                           background: producto.comprado ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.75)",
                           border: "1px solid rgba(0,0,0,0.06)"
                         }}
                       >
-                        <label style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                          <input
-                            type="checkbox"
-                            checked={producto.comprado}
-                            onChange={(e) => actualizarPendienteCompra(producto.id, { comprado: e.target.checked })}
-                          />
-                          <span style={{ minWidth: 0 }}>
-                            <strong
-                              style={{
-                                display: "block",
-                                textDecoration: producto.comprado ? "line-through" : "none",
-                                opacity: producto.comprado ? 0.55 : 1
-                              }}
-                            >
-                              {producto.nombre}
-                            </strong>
-                            <small className="muted">
-                              Solicitado {producto.vecesSolicitado} vez{producto.vecesSolicitado === 1 ? "" : "es"}
-                            </small>
-                          </span>
-                        </label>
+                        <strong
+                          style={{
+                            display: "block",
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            textDecoration: producto.comprado ? "line-through" : "none",
+                            opacity: producto.comprado ? 0.55 : 1
+                          }}
+                          title={producto.nombre}
+                        >
+                          {producto.nombre}
+                        </strong>
 
                         <input
                           type="text"
                           value={producto.cantidadComprar}
                           onChange={(e) => actualizarPendienteCompra(producto.id, { cantidadComprar: e.target.value })}
-                          placeholder="Cantidad"
+                          placeholder="Cant."
                           disabled={producto.comprado}
-                          style={{ width: "100%", minWidth: 0, paddingLeft: 8, paddingRight: 8, textAlign: "center" }}
+                          style={{ width: "100%", minWidth: 0, padding: "8px 6px", textAlign: "center", fontSize: 13 }}
                         />
 
-                        <span
-                          className="muted small"
+                        <label
+                          title={producto.comprado ? "Comprado" : "Marcar comprado"}
                           style={{
-                            padding: "6px 8px",
-                            borderRadius: 999,
-                            background: producto.comprado ? "rgba(0,0,0,0.08)" : "rgba(46,125,50,0.10)",
-                            whiteSpace: "nowrap"
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: producto.comprado ? "rgba(46,125,50,0.12)" : "rgba(0,0,0,0.04)"
                           }}
                         >
-                          {producto.comprado ? "Comprado" : "Pendiente"}
-                        </span>
+                          <input
+                            type="checkbox"
+                            checked={producto.comprado}
+                            onChange={(e) => actualizarPendienteCompra(producto.id, { comprado: e.target.checked })}
+                            aria-label={`Marcar ${producto.nombre} como comprado`}
+                          />
+                        </label>
                       </div>
                     ))}
                   </div>
