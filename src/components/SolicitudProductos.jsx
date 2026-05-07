@@ -375,7 +375,7 @@ function crearMensajeCompraProveedores(productos, fechaListado = fechaISOColombi
 
     items.forEach((producto) => {
       const cantidad = String(producto.cantidadComprar || "").trim();
-      lineas.push(`• ${producto.nombre}${cantidad ? ` — Cantidad a comprar: ${cantidad}` : ""}`);
+      lineas.push(`• ${producto.nombre}${cantidad ? ` — Cantidad: ${cantidad}` : ""}`);
     });
   });
 
@@ -1130,8 +1130,8 @@ export default function SolicitudProductos() {
                         key={producto.id}
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "minmax(180px, 1.2fr) minmax(150px, 0.8fr) auto",
-                          gap: 10,
+                          gridTemplateColumns: "minmax(0, 1fr) 88px 78px",
+                          gap: 6,
                           alignItems: "center",
                           padding: "10px 12px",
                           borderRadius: 14,
@@ -1165,15 +1165,15 @@ export default function SolicitudProductos() {
                           type="text"
                           value={producto.cantidadComprar}
                           onChange={(e) => actualizarPendienteCompra(producto.id, { cantidadComprar: e.target.value })}
-                          placeholder="Cantidad a comprar"
+                          placeholder="Cantidad"
                           disabled={producto.comprado}
-                          style={{ width: "100%" }}
+                          style={{ width: "100%", minWidth: 0, paddingLeft: 8, paddingRight: 8, textAlign: "center" }}
                         />
 
                         <span
                           className="muted small"
                           style={{
-                            padding: "6px 10px",
+                            padding: "6px 8px",
                             borderRadius: 999,
                             background: producto.comprado ? "rgba(0,0,0,0.08)" : "rgba(46,125,50,0.10)",
                             whiteSpace: "nowrap"
