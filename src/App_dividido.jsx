@@ -1711,13 +1711,6 @@ export default function App() {
                                   )}
                                 </div>
 
-                                <button
-                                  type="button"
-                                  className="button continue-button"
-                                  onClick={() => irAElemento(`paso-cantidad-${item.id}`)}
-                                >
-                                  Continuar
-                                </button>
 
                                 <div className="box" style={{ marginTop: 18 }}>
                                   <strong>🥣 Sopa y bebida</strong>
