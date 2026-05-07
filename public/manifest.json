@@ -1,0 +1,26 @@
+{
+  "name": "Rafiki Pedidos",
+  "short_name": "Rafiki",
+  "description": "App de pedidos, solicitudes y menú diario de Rafiki Restaurante.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff4e6",
+  "theme_color": "#f97316",
+  "categories": ["food", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
