@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
 
 const WHATSAPP_SOLICITUD_PRODUCTOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_PRODUCTOS || "573013707032";
@@ -13,6 +13,7 @@ const categoriasSolicitudProductos = [
 ];
 
 const CATEGORIA_SOLICITUD_DEFECTO = "Abarrotes, secos y condimentos";
+const STORAGE_PRODUCTOS_PENDIENTES = "rafiki_productos_pendientes_compra_v1";
 
 const productosRestauranteBase = [
   { categoria: "Proteínas, lácteos y huevos", nombre: "Pollo" },
@@ -264,6 +265,78 @@ function crearMensajeSolicitudProductos({ fechaSolicitud, fechaPara, productos, 
   return lineas.join("\n");
 }
 
+
+function crearClaveProducto(nombre) {
+  return normalizarTexto(nombre).replace(/\s+/g, "-");
+}
+
+function cargarEstadoPendientesCompra() {
+  try {
+    const guardado = localStorage.getItem(STORAGE_PRODUCTOS_PENDIENTES);
+    return guardado ? JSON.parse(guardado) : {};
+  } catch {
+    return {};
+  }
+}
+
+function guardarEstadoPendientesCompra(estado) {
+  try {
+    localStorage.setItem(STORAGE_PRODUCTOS_PENDIENTES, JSON.stringify(estado));
+  } catch {
+    // Si el navegador bloquea localStorage, la app sigue funcionando en memoria.
+  }
+}
+
+function obtenerProductosPendientesDesdeSolicitudes(solicitudes) {
+  const mapa = new Map();
+
+  (solicitudes || []).forEach((solicitud) => {
+    const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
+
+    productos.forEach((producto) => {
+      const nombre = String(producto.nombre || "").trim();
+      if (!nombre) return;
+
+      const clave = crearClaveProducto(nombre);
+      const existente = mapa.get(clave) || {
+        id: clave,
+        nombre,
+        categoria: producto.categoria || "Productos",
+        vecesSolicitado: 0,
+        fechas: []
+      };
+
+      existente.vecesSolicitado += 1;
+
+      const fecha = solicitud.fecha_para || solicitud.fecha_solicitud || solicitud.created_at;
+      if (fecha && !existente.fechas.includes(fecha)) {
+        existente.fechas.push(fecha);
+      }
+
+      mapa.set(clave, existente);
+    });
+  });
+
+  return Array.from(mapa.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+}
+
+function crearMensajeCompraProveedores(productos) {
+  const lineas = [
+    "Hola, esta es la lista de productos para cotizar/comprar para Rafiki:",
+    "",
+    `Fecha: ${fechaISOColombia()}`,
+    "",
+    "Productos:"
+  ];
+
+  productos.forEach((producto) => {
+    const cantidad = String(producto.cantidadComprar || "").trim();
+    lineas.push(`• ${producto.nombre}${cantidad ? ` — Cantidad a comprar: ${cantidad}` : ""}`);
+  });
+
+  return lineas.join("\n");
+}
+
 function CampoTexto({
   etiqueta,
   value,
@@ -305,6 +378,11 @@ export default function SolicitudProductos() {
   const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState("");
   const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState(CATEGORIA_SOLICITUD_DEFECTO);
   const [productoSolicitudEliminarId, setProductoSolicitudEliminarId] = useState("");
+  const [vistaSolicitud, setVistaSolicitud] = useState("solicitar");
+  const [solicitudesGuardadas, setSolicitudesGuardadas] = useState([]);
+  const [cargandoPendientes, setCargandoPendientes] = useState(false);
+  const [estadoPendientesCompra, setEstadoPendientesCompra] = useState(cargarEstadoPendientesCompra);
+  const [mensajePendientes, setMensajePendientes] = useState({ texto: "", tipo: "info" });
 
   const productosSolicitudSeleccionados = useMemo(
     () => obtenerProductosSolicitudSeleccionados(productosSolicitud),
@@ -314,6 +392,21 @@ export default function SolicitudProductos() {
   const productosSolicitudAgrupados = useMemo(
     () => agruparProductosSolicitud(productosSolicitud),
     [productosSolicitud]
+  );
+
+  const productosPendientesCompra = useMemo(() => {
+    const pendientesBase = obtenerProductosPendientesDesdeSolicitudes(solicitudesGuardadas);
+
+    return pendientesBase.map((producto) => ({
+      ...producto,
+      comprado: Boolean(estadoPendientesCompra[producto.id]?.comprado),
+      cantidadComprar: estadoPendientesCompra[producto.id]?.cantidadComprar || ""
+    }));
+  }, [solicitudesGuardadas, estadoPendientesCompra]);
+
+  const productosParaEnviarProveedor = useMemo(
+    () => productosPendientesCompra.filter((producto) => !producto.comprado),
+    [productosPendientesCompra]
   );
 
   const mensajeWhatsAppSolicitud = useMemo(
@@ -326,6 +419,76 @@ export default function SolicitudProductos() {
       }),
     [fechaParaSolicitud, productosSolicitudSeleccionados, observacionesSolicitud]
   );
+
+  useEffect(() => {
+    guardarEstadoPendientesCompra(estadoPendientesCompra);
+  }, [estadoPendientesCompra]);
+
+  useEffect(() => {
+    if (vistaSolicitud === "pendientes") {
+      cargarSolicitudesPendientesCompra();
+    }
+  }, [vistaSolicitud]);
+
+  async function cargarSolicitudesPendientesCompra() {
+    setCargandoPendientes(true);
+    setMensajePendientes({ texto: "", tipo: "info" });
+
+    try {
+      const { data, error } = await supabase
+        .from("solicitudes_productos")
+        .select("*")
+        .limit(80);
+
+      if (error) {
+        setMensajePendientes({ texto: `Error cargando solicitudes: ${error.message}`, tipo: "error" });
+        return;
+      }
+
+      setSolicitudesGuardadas(data || []);
+
+      if (!data || data.length === 0) {
+        setMensajePendientes({ texto: "Todavía no hay solicitudes guardadas para consolidar.", tipo: "info" });
+      }
+    } catch (error) {
+      setMensajePendientes({
+        texto: `Error inesperado cargando pendientes: ${error.message || "revisa la conexión."}`,
+        tipo: "error"
+      });
+    } finally {
+      setCargandoPendientes(false);
+    }
+  }
+
+  function actualizarPendienteCompra(id, cambios) {
+    setEstadoPendientesCompra((actual) => ({
+      ...actual,
+      [id]: {
+        ...(actual[id] || {}),
+        ...cambios
+      }
+    }));
+    setMensajePendientes({ texto: "", tipo: "info" });
+  }
+
+  function enviarListadoProveedores() {
+    if (productosParaEnviarProveedor.length === 0) {
+      setMensajePendientes({ texto: "No hay productos pendientes para enviar. Los productos están marcados como comprados.", tipo: "warning" });
+      return;
+    }
+
+    const mensaje = crearMensajeCompraProveedores(productosParaEnviarProveedor);
+    const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_PRODUCTOS, mensaje, { abrirApp: true });
+    setMensajePendientes({ texto: "Se abrirá WhatsApp con el listado para proveedores.", tipo: "success" });
+    window.location.href = link;
+  }
+
+  function limpiarCompradosPendientes() {
+    const confirmar = window.confirm("¿Quieres desmarcar todos los productos comprados y borrar las cantidades escritas?");
+    if (!confirmar) return;
+    setEstadoPendientesCompra({});
+    setMensajePendientes({ texto: "Lista de compras reiniciada.", tipo: "success" });
+  }
 
   function actualizarProductoSolicitud(id, cambios) {
     setProductosSolicitud((actual) =>
@@ -462,6 +625,7 @@ export default function SolicitudProductos() {
 
       const solicitudGuardada = data || nuevaSolicitud;
       setSolicitudFinalizada(solicitudGuardada);
+      setSolicitudesGuardadas((actual) => [solicitudGuardada, ...actual]);
 
       if (abrirWhatsApp) {
         const link = crearLinkWhatsApp(
@@ -505,6 +669,32 @@ export default function SolicitudProductos() {
 
   return (
     <section className="card card-pad">
+      <div className="admin-top-row">
+        <div>
+          <h2>🧺 Solicitud de productos</h2>
+          <p className="muted small">Selecciona productos o revisa el consolidado pendiente para comprar.</p>
+        </div>
+      </div>
+
+      <div className="admin-tabs" style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          className={vistaSolicitud === "solicitar" ? "active" : ""}
+          onClick={() => setVistaSolicitud("solicitar")}
+        >
+          Solicitar productos
+        </button>
+        <button
+          type="button"
+          className={vistaSolicitud === "pendientes" ? "active" : ""}
+          onClick={() => setVistaSolicitud("pendientes")}
+        >
+          Productos pendientes
+        </button>
+      </div>
+
+      {vistaSolicitud === "solicitar" && (
+        <>
                       <div className="admin-top-row">
                         <div>
                           <h2>🧺 Solicitud de productos</h2>
@@ -703,7 +893,88 @@ export default function SolicitudProductos() {
                           </button>
                         </div>
                       </div>
-                    </section>
+        </>
+      )}
+
+      {vistaSolicitud === "pendientes" && (
+        <div>
+          <div className="admin-top-row">
+            <div>
+              <h2>🛒 Productos pendientes</h2>
+              <p className="muted small">
+                Aquí solo verás los productos solicitados. La cantidad a comprar la defines tú.
+              </p>
+            </div>
+
+            <div className="actions-inline">
+              <button type="button" onClick={cargarSolicitudesPendientesCompra} className="button light" disabled={cargandoPendientes}>
+                {cargandoPendientes ? "Cargando..." : "Actualizar"}
+              </button>
+              <button type="button" onClick={limpiarCompradosPendientes} className="button light">
+                Reiniciar marcas
+              </button>
+            </div>
+          </div>
+
+          {mensajePendientes.texto && (
+            <div className={`alert alert-${mensajePendientes.tipo}`}>
+              {mensajePendientes.texto}
+            </div>
+          )}
+
+          <div className="box soft" style={{ marginBottom: 12 }}>
+            <strong>{productosParaEnviarProveedor.length} productos pendientes por comprar</strong>
+            <p className="muted small" style={{ marginTop: 6 }}>
+              Los productos marcados como comprados quedan tachados y no se envían al proveedor.
+            </p>
+          </div>
+
+          {productosPendientesCompra.length === 0 ? (
+            <div className="box soft">
+              {cargandoPendientes ? "Cargando solicitudes..." : "No hay productos pendientes por ahora."}
+            </div>
+          ) : (
+            <div className="productos-seleccionados-lista">
+              {productosPendientesCompra.map((producto) => (
+                <div key={producto.id} className="producto-seleccionado-row">
+                  <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={producto.comprado}
+                      onChange={(e) => actualizarPendienteCompra(producto.id, { comprado: e.target.checked })}
+                    />
+                    <strong style={{ textDecoration: producto.comprado ? "line-through" : "none", opacity: producto.comprado ? 0.55 : 1 }}>
+                      {producto.nombre}
+                    </strong>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={producto.cantidadComprar}
+                    onChange={(e) => actualizarPendienteCompra(producto.id, { cantidadComprar: e.target.value })}
+                    placeholder="Cantidad a comprar"
+                    disabled={producto.comprado}
+                  />
+
+                  <span className="muted small">
+                    Solicitado {producto.vecesSolicitado} vez{producto.vecesSolicitado === 1 ? "" : "es"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={enviarListadoProveedores}
+            className="button green"
+            style={{ width: "100%", marginTop: 14 }}
+            disabled={productosParaEnviarProveedor.length === 0}
+          >
+            Enviar listado a proveedores por WhatsApp
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
-
