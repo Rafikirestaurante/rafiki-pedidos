@@ -1,14 +1,18 @@
 {
-  "name": "Rafiki Pedidos",
-  "short_name": "Rafiki",
-  "description": "App de pedidos, solicitudes y menú diario de Rafiki Restaurante.",
-  "start_url": "/",
-  "scope": "/",
+  "name": "Rafiki Pedidos Admin",
+  "short_name": "Rafiki Admin",
+  "description": "Panel administrativo de Rafiki Pedidos para gestionar solicitudes, productos pendientes y menú diario.",
+  "start_url": "/admin",
+  "scope": "/admin",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fff4e6",
   "theme_color": "#f97316",
-  "categories": ["food", "business", "productivity"],
+  "categories": [
+    "food",
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
