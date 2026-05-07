@@ -1483,7 +1483,7 @@ export default function App() {
 
       <div className="app">
         <div className="container">
-          {vista !== "inicio" && (
+          {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && (
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>

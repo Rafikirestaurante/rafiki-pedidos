@@ -638,7 +638,7 @@ export default function SolicitudProductos() {
         return {
           ...producto,
           seleccionada: !seleccionado,
-          cantidad: seleccionado ? "" : producto.cantidad || "",
+          cantidad: "",
           nota: seleccionado ? "" : producto.nota
         };
       })
@@ -873,12 +873,12 @@ export default function SolicitudProductos() {
                         />
 
                         <div className="box soft">
-                          <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong>
+                          <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong><span className="muted small"> Sin cantidades en esta pantalla.</span>
                         </div>
                       </div>
 
                       <div className="alert alert-info">
-                        Puedes hacer varias solicitudes en el día, siempre que no repitas el mismo producto.
+                        Selecciona únicamente los productos que necesitas. Las cantidades las define el jefe en Productos pendientes.
                       </div>
 
                       {mensajeSolicitud.texto && (
@@ -912,62 +912,6 @@ export default function SolicitudProductos() {
                         </div>
                       ))}
 
-                      {productosSolicitudSeleccionados.length > 0 && (
-                        <div className="box soft">
-                          <strong>Productos seleccionados</strong>
-
-                          <div className="productos-seleccionados-lista">
-                            {productosSolicitud
-                              .filter((producto) => producto.seleccionada)
-                              .map((producto) => (
-                                <div key={producto.id} className="producto-seleccionado-row">
-                                  <strong>{producto.nombre}</strong>
-
-                                  <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={producto.cantidad}
-                                    onChange={(e) =>
-                                      actualizarProductoSolicitud(producto.id, { cantidad: e.target.value })
-                                    }
-                                    placeholder="Cant."
-                                  />
-
-                                  <select
-                                    value={producto.unidad}
-                                    onChange={(e) =>
-                                      actualizarProductoSolicitud(producto.id, { unidad: e.target.value })
-                                    }
-                                  >
-                                    {unidadesSolicitud.map((unidad) => (
-                                      <option key={unidad} value={unidad}>
-                                        {unidad}
-                                      </option>
-                                    ))}
-                                  </select>
-
-                                  <input
-                                    type="text"
-                                    value={producto.nota}
-                                    onChange={(e) =>
-                                      actualizarProductoSolicitud(producto.id, { nota: e.target.value })
-                                    }
-                                    placeholder="Nota"
-                                  />
-
-                                  <button
-                                    type="button"
-                                    className="button light"
-                                    onClick={() => actualizarProductoSolicitud(producto.id, { seleccionada: false, cantidad: "", nota: "" })}
-                                  >
-                                    Quitar
-                                  </button>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-
                       <CampoTexto
                         etiqueta="Observaciones generales"
                         value={observacionesSolicitud}
@@ -980,13 +924,6 @@ export default function SolicitudProductos() {
                         multiline
                         rows={2}
                       />
-
-                      {productosSolicitudSeleccionados.length > 0 && (
-                        <div className="box soft">
-                          <strong>Vista previa del mensaje</strong>
-                          <div className="solicitud-preview">{mensajeWhatsAppSolicitud}</div>
-                        </div>
-                      )}
 
                       <button
                         type="button"
