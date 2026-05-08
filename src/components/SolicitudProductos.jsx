@@ -43,7 +43,6 @@ const productosRestauranteBase = [
   { categoria: "Lácteos y huevos", nombre: "Huevos" },
 
   { categoria: "Frutas, pulpas y congelados", nombre: "Mango" },
-{ categoria: "Frutas, pulpas y congelados", nombre: "Patilla" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Arándanos" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Uva" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Fresa" },
@@ -54,6 +53,7 @@ const productosRestauranteBase = [
   { categoria: "Frutas, pulpas y congelados", nombre: "Melón" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Tomate de árbol" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Papaya" },
+  { categoria: "Frutas, pulpas y congelados", nombre: "Patilla" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Limón" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de guanábana" },
   { categoria: "Frutas, pulpas y congelados", nombre: "Pulpa de zapote" },
