@@ -138,13 +138,13 @@ function crearSvgMenu({ platos, acompanantes }) {
     <text x="540" y="244" font-family="Arial, sans-serif" font-size="46" font-weight="900" fill="#7f1d1d" text-anchor="middle" letter-spacing="3">RAFIKI</text>
 
     <rect x="320" y="270" width="440" height="52" rx="26" fill="url(#wine)"/>
-    <text x="540" y="306" font-family="Arial, sans-serif" font-size="26" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">MENÚ DEL DÍA</text>
+    <text x="540" y="306" font-family="Arial, sans-serif" font-size="26" font-weight="900" fill="#f79e1c" text-anchor="middle" letter-spacing="1">MENÚ DEL DÍA</text>
 
     ${rowsSvg || `<text x="540" y="485" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#78716c" text-anchor="middle">Agrega los platos del día</text>`}
 
     <rect x="112" y="815" width="856" height="176" rx="32" fill="#fffaf2" stroke="#efc68e" stroke-width="4" filter="url(#softShadow)"/>
     <rect x="330" y="790" width="420" height="54" rx="27" fill="url(#gold)"/>
-    <text x="540" y="826" font-family="Arial, sans-serif" font-size="26" font-weight="900" fill="#ffffff" text-anchor="middle">ACOMPAÑANTES</text>
+    <text x="540" y="826" font-family="Arial, sans-serif" font-size="26" font-weight="900" fill="#f79e1c" text-anchor="middle">ACOMPAÑANTES</text>
     ${sidesSvg || `<text x="170" y="884" font-family="Arial, sans-serif" font-size="30" fill="#78716c">• Escribe acompañantes...</text>`}
   </svg>`;
 }
@@ -189,13 +189,13 @@ function crearSvgMenuSoloTexto({ platos, acompanantes }) {
 
   return `
   <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-    <text x="540" y="78" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#1f130c" text-anchor="middle" letter-spacing="3">MENÚ DEL DÍA</text>
+    <text x="540" y="78" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#f79e1c" text-anchor="middle" letter-spacing="3">MENÚ DEL DÍA</text>
     <line x1="150" y1="112" x2="930" y2="112" stroke="#1f130c" stroke-width="5" opacity="0.72"/>
 
     ${rowsSvg || `<text x="540" y="300" font-family="Arial, sans-serif" font-size="40" font-weight="800" fill="#1f130c" text-anchor="middle">Agrega los platos del día</text>`}
 
     <line x1="115" y1="${separadorY}" x2="965" y2="${separadorY}" stroke="#1f130c" stroke-width="4" opacity="0.58"/>
-    <text x="115" y="${tituloAcompanantesY}" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#1f130c">ACOMPAÑANTES</text>
+    <text x="115" y="${tituloAcompanantesY}" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#f79e1c">ACOMPAÑANTES</text>
     ${sidesSvg || `<text x="115" y="${sidesStartY}" font-family="Arial, sans-serif" font-size="34" fill="#1f130c">• Escribe acompañantes...</text>`}
   </svg>`;
 }
@@ -295,7 +295,14 @@ export default function GeneradorMenu() {
     if (error) {
       setMensaje(`No se pudo cargar el historial: ${error.message}`);
     } else {
-      const registros = data || [];
+      const registros = [];
+      const fechasVistas = new Set();
+      (data || []).forEach((registro) => {
+        if (!fechasVistas.has(registro.fecha)) {
+          fechasVistas.add(registro.fecha);
+          registros.push(registro);
+        }
+      });
       setHistorial(registros);
       if (opciones.cargarUltimo && registros.length > 0) {
         cargarRegistro(registros[0], { silencioso: true });
@@ -321,14 +328,47 @@ export default function GeneradorMenu() {
     setGuardandoHistorial(true);
     setMensaje("");
 
-    const { error } = await supabase.from("historial_generador_menu").insert({
+    const registroParaGuardar = {
       fecha: fechaMenu,
       titulo: "Menú del día",
       platos: platosParaGuardar,
       acompanantes: acompanantesParaGuardar,
       texto_generado: svgTexto,
       observaciones: observaciones.trim() || null
-    });
+    };
+
+    const { data: registroExistente, error: errorBuscar } = await supabase
+      .from("historial_generador_menu")
+      .select("id")
+      .eq("fecha", fechaMenu)
+      .order("creado_en", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (errorBuscar) {
+      setMensaje(`No se pudo validar el historial del día: ${errorBuscar.message}`);
+      setGuardandoHistorial(false);
+      return false;
+    }
+
+    let error = null;
+    let idGuardado = registroExistente?.id || null;
+
+    if (registroExistente?.id) {
+      const resultado = await supabase
+        .from("historial_generador_menu")
+        .update(registroParaGuardar)
+        .eq("id", registroExistente.id);
+      error = resultado.error;
+    } else {
+      const resultado = await supabase
+        .from("historial_generador_menu")
+        .insert(registroParaGuardar)
+        .select("id")
+        .single();
+      error = resultado.error;
+      idGuardado = resultado.data?.id || null;
+    }
 
     if (error) {
       setMensaje(`No se pudo guardar el historial: ${error.message}`);
@@ -336,8 +376,16 @@ export default function GeneradorMenu() {
       return false;
     }
 
+    if (idGuardado) {
+      await supabase
+        .from("historial_generador_menu")
+        .delete()
+        .eq("fecha", fechaMenu)
+        .neq("id", idGuardado);
+    }
+
     if (!opciones.silencioso) {
-      setMensaje("Historial del generador guardado correctamente.");
+      setMensaje(registroExistente?.id ? "Menú del día actualizado correctamente." : "Historial del generador guardado correctamente.");
     }
     await cargarHistorialGenerador({ cargarUltimo: false });
 
