@@ -2255,7 +2255,7 @@ export default function App() {
                   onClick={() => setAdminTab("productos")}
                   className={adminTab === "productos" ? "active" : ""}
                 >
-                  Solicitud de productos
+                  Solicitud de insumos
                 </button>
 
                 <button

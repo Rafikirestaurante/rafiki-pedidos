@@ -555,7 +555,7 @@ export default function SolicitudProductos() {
 
   function enviarListadoProveedores() {
     if (productosParaEnviarProveedor.length === 0) {
-      setMensajePendientes({ texto: "No hay productos pendientes para enviar. Los productos están marcados como comprados.", tipo: "warning" });
+      setMensajePendientes({ texto: "No hay insumos pendientes para enviar. Los productos están marcados como comprados.", tipo: "warning" });
       return;
     }
 
@@ -827,8 +827,8 @@ export default function SolicitudProductos() {
     <section className="card card-pad">
       <div className="admin-top-row">
         <div>
-          <h2>🧺 Solicitud de productos</h2>
-          <p className="muted small">Selecciona productos o revisa el consolidado pendiente para comprar.</p>
+          <h2>🧺 Solicitud de insumos</h2>
+          <p className="muted small">Selecciona insumos o revisa el consolidado pendiente para comprar.</p>
         </div>
       </div>
 
@@ -838,14 +838,14 @@ export default function SolicitudProductos() {
           className={vistaSolicitud === "solicitar" ? "active" : ""}
           onClick={() => setVistaSolicitud("solicitar")}
         >
-          Solicitar productos
+          Solicitar insumos
         </button>
         <button
           type="button"
           className={vistaSolicitud === "pendientes" ? "active" : ""}
           onClick={() => setVistaSolicitud("pendientes")}
         >
-          Productos pendientes
+          Insumos pendientes
         </button>
       </div>
 
@@ -853,7 +853,7 @@ export default function SolicitudProductos() {
         <>
                       <div className="admin-top-row">
                         <div>
-                          <h2>🧺 Solicitud de productos</h2>
+                          <h2>🧺 Solicitud de insumos</h2>
                         </div>
 
                         <button type="button" onClick={limpiarSolicitudProductos} className="button light">
@@ -874,12 +874,12 @@ export default function SolicitudProductos() {
                         />
 
                         <div className="box soft">
-                          <strong>{productosSolicitudSeleccionados.length} productos seleccionados</strong>
+                          <strong>{productosSolicitudSeleccionados.length} insumos seleccionados</strong>
                         </div>
                       </div>
 
                       <div className="alert alert-info">
-                        Puedes hacer varias solicitudes en el día, siempre que no repitas el mismo producto.
+                        Puedes hacer varias solicitudes en el día, siempre que no repitas el mismo insumo.
                       </div>
 
                       {mensajeSolicitud.texto && (
@@ -915,7 +915,7 @@ export default function SolicitudProductos() {
 
                       {productosSolicitudSeleccionados.length > 0 && (
                         <div className="box soft">
-                          <strong>Productos seleccionados:</strong>
+                          <strong>Insumos seleccionados:</strong>
                           <p className="muted small" style={{ marginTop: 6, marginBottom: 0 }}>
                             {productosSolicitudSeleccionados.map((producto) => producto.nombre).join(", ")}
                           </p>
@@ -953,7 +953,7 @@ export default function SolicitudProductos() {
                       </button>
 
                       <div className="box soft" style={{ marginTop: 18 }}>
-                        <strong>Agregar producto a la lista</strong>
+                        <strong>Agregar insumo a la lista</strong>
                         <div className="producto-add-row">
                           <input
                             type="text"
@@ -980,7 +980,7 @@ export default function SolicitudProductos() {
                       </div>
 
                       <div className="box soft" style={{ marginTop: 12 }}>
-                        <strong>Eliminar producto de la lista</strong>
+                        <strong>Eliminar insumo de la lista</strong>
                         <p className="muted small" style={{ marginBottom: 8 }}>
                           Esta opción es solo para administrar el listado principal.
                         </p>
@@ -989,7 +989,7 @@ export default function SolicitudProductos() {
                             value={productoSolicitudEliminarId}
                             onChange={(e) => setProductoSolicitudEliminarId(e.target.value)}
                           >
-                            <option value="">Selecciona un producto</option>
+                            <option value="">Selecciona un insumo</option>
                             {ordenarProductosPorNombre(productosSolicitud).map((producto) => (
                               <option key={producto.id} value={producto.id}>
                                 {producto.categoria} - {producto.nombre}
@@ -1013,9 +1013,9 @@ export default function SolicitudProductos() {
         <div>
           <div className="admin-top-row">
             <div>
-              <h2>🛒 Productos pendientes</h2>
+              <h2>🛒 Insumos pendientes</h2>
               <p className="muted small">
-                Aquí solo verás los productos solicitados. La cantidad a comprar la defines tú.
+                Aquí solo verás los insumos solicitados. La cantidad a comprar la defines tú.
               </p>
             </div>
 
@@ -1059,15 +1059,15 @@ export default function SolicitudProductos() {
           )}
 
           <div className="box soft" style={{ marginBottom: 12 }}>
-            <strong>{productosParaEnviarProveedor.length} productos pendientes por comprar del día {fechaConsultaSolicitudes}</strong>
+            <strong>{productosParaEnviarProveedor.length} insumos pendientes por comprar del día {fechaConsultaSolicitudes}</strong>
             <p className="muted small" style={{ marginTop: 6 }}>
-              Los productos marcados como comprados quedan tachados y no se envían al proveedor.
+              Los insumos marcados como comprados quedan tachados y no se envían al proveedor.
             </p>
           </div>
 
           {productosPendientesCompra.length === 0 ? (
             <div className="box soft">
-              {cargandoPendientes ? "Cargando solicitudes..." : "No hay productos pendientes por ahora."}
+              {cargandoPendientes ? "Cargando solicitudes..." : "No hay insumos pendientes por ahora."}
             </div>
           ) : (
             <div style={{ display: "grid", gap: 14 }}>
@@ -1075,7 +1075,7 @@ export default function SolicitudProductos() {
                 <div key={categoria} className="box soft" style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 }}>
                     <h3 className="category-title" style={{ margin: 0 }}>{categoria}</h3>
-                    <span className="muted small">{productos.length} producto{productos.length === 1 ? "" : "s"}</span>
+                    <span className="muted small">{productos.length} insumo{productos.length === 1 ? "" : "s"}</span>
                   </div>
 
                   <div style={{ display: "grid", gap: 10 }}>
