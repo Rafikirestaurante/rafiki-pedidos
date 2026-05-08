@@ -1611,17 +1611,31 @@ export default function App() {
         .chip.selected { border-color: #22c55e; background: #dcfce7; color: #15803d; box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
         .chip.blocked { background: #f5f5f4; color: #a8a29e; }
         .box { background: #fff; border: 1px solid #e7e5e4; border-radius: 18px; padding: 14px; }
+        .compact-info { padding: 10px 12px; border-radius: 14px; font-size: 14px; background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+        .pedido-paso-compacto { display: grid; gap: 10px; }
+        .compact-box { padding: 10px 12px; border-radius: 14px; }
+        .quantity-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .quantity-box strong, .takeout-box strong { font-size: 14px; }
+        .takeout-box { cursor: pointer; }
         .box.soft { background: #fafaf9; }
         .field { display: block; margin-bottom: 14px; }
         .field span { display: block; font-weight: 900; margin-bottom: 8px; font-size: 15px; }
         .field input, .field textarea, .field select, select.box { width: 100%; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 16px; padding: 13px 14px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+        .pedido-paso-compacto .field { margin-bottom: 0; }
+        .pedido-paso-compacto .field span { font-size: 14px; margin-bottom: 6px; }
+        .pedido-paso-compacto .field textarea { min-height: 58px; padding: 10px 12px; border-radius: 14px; }
         .field input:focus, .field textarea:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.12); background: #fff; }
         .quantity { display: flex; align-items: center; gap: 12px; }
         .quantity button { width: 40px; height: 40px; border-radius: 999px; border: 1.5px solid #e7e5e4; background: #fff; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+        .pedido-paso-compacto .quantity { gap: 8px; }
+        .pedido-paso-compacto .quantity button { width: 32px; height: 32px; font-size: 18px; }
+        .pedido-paso-compacto .quantity strong { min-width: 20px; text-align: center; }
         .quantity button:hover { border-color: #f97316; color: #f97316; }
         .summary-item { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; margin-bottom: 10px; font-weight: 700; }
         .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }
         .total-row strong { color: #ea580c; font-size: 26px; }
+        .compact-total-row { margin-top: 2px; padding-top: 10px; }
+        .compact-total-row strong { font-size: 22px; }
         .mini-pending { display: inline-flex; align-items: center; gap: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c; border-radius: 999px; padding: 9px 13px; font-weight: 900; margin: 12px 0 16px; }
         .mini-pending strong { background: #f97316; color: #fff; min-width: 28px; height: 28px; border-radius: 999px; display: inline-flex; justify-content: center; align-items: center; }
         .filtros-historial { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 6px; align-items: center; }
@@ -1947,28 +1961,8 @@ export default function App() {
                                   )}
                                 </div>
 
-                                <button
-                                  type="button"
-                                  className="button continue-button"
-                                  onClick={() => irAElemento(`paso-cantidad-${item.id}`)}
-                                >
-                                  Continuar
-                                </button>
-
-                                <CampoTexto
-                                  etiqueta="Observación sobre tus acompañantes"
-                                  value={item.observacionAcompanantes || ""}
-                                  onChange={(valor) => actualizarItem(item.id, { observacionAcompanantes: valor })}
-                                  placeholder="Ejemplo: sin ensalada, más arroz, aparte la salsa..."
-                                  multiline
-                                  rows={2}
-                                />
-
-                                <div className="box" style={{ marginTop: 18 }}>
-                                  <strong>🥣 Sopa y bebida</strong>
-                                  <p className="muted" style={{ marginBottom: 0 }}>
-                                    Incluidas automáticamente.
-                                  </p>
+                                <div className="box compact-info" style={{ marginTop: 12 }}>
+                                  <strong>🥣 Sopa y bebida incluida</strong>
                                 </div>
                               </div>
                             )}
@@ -1983,40 +1977,47 @@ export default function App() {
                             )}
 
                             {tienePlato && (
-                              <div id={`paso-cantidad-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
-                                <div className="grid-2">
-                                  <div className="box">
-                                    <strong>Cantidad de {item.plato || item.proteina || "proteína escogida"}</strong>
-                                    <div style={{ marginTop: 10 }}>
-                                      <SelectorCantidad
-                                        cantidad={item.cantidad}
-                                        onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <label className="box row">
-                                    <div>
-                                      <strong>🥡 Para llevar</strong>
-                                      <p className="muted" style={{ marginBottom: 0 }}>
-                                        {valorParaLlevarItem(item) === 0 && item.paraLlevar
-                                          ? "Sin costo adicional"
-                                          : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
-                                      </p>
-                                    </div>
-
-                                    <input
-                                      type="checkbox"
-                                      checked={item.paraLlevar}
-                                      onChange={(e) =>
-                                        actualizarItem(item.id, { paraLlevar: e.target.checked })
-                                      }
-                                      style={{ width: 24, height: 24 }}
-                                    />
-                                  </label>
+                              <div id={`paso-cantidad-${item.id}`} className="fade-step pedido-paso-compacto" style={{ marginTop: 12 }}>
+                                <div className="box compact-box quantity-box">
+                                  <strong>Cantidad de {item.plato || item.proteina || "proteína escogida"}</strong>
+                                  <SelectorCantidad
+                                    cantidad={item.cantidad}
+                                    onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
+                                  />
                                 </div>
 
-                                <div className="total-row">
+                                {!itemEsSopa && (
+                                  <CampoTexto
+                                    etiqueta="Observación sobre tus acompañantes"
+                                    value={item.observacionAcompanantes || ""}
+                                    onChange={(valor) => actualizarItem(item.id, { observacionAcompanantes: valor })}
+                                    placeholder="Ejemplo: sin ensalada, más arroz..."
+                                    multiline
+                                    rows={2}
+                                  />
+                                )}
+
+                                <label className="box row compact-box takeout-box">
+                                  <div>
+                                    <strong>🥡 Para llevar</strong>
+                                    <p className="muted" style={{ marginBottom: 0 }}>
+                                      {valorParaLlevarItem(item) === 0 && item.paraLlevar
+                                        ? "Sin costo adicional"
+                                        : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
+                                    </p>
+                                  </div>
+
+                                  <input
+                                    type="checkbox"
+                                    checked={item.paraLlevar}
+                                    onChange={(e) =>
+                                      actualizarItem(item.id, { paraLlevar: e.target.checked })
+                                    }
+                                    style={{ width: 20, height: 20 }}
+                                  />
+                                </label>
+
+                                <div className="total-row compact-total-row">
                                   <span>Subtotal</span>
                                   <strong>{dinero(calcularTotalItem(item))}</strong>
                                 </div>
