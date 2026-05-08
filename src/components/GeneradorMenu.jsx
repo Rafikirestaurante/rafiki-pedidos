@@ -131,7 +131,7 @@ function crearSvgMenu({ platos, acompanantes }) {
 
 function crearSvgMenuSoloTexto({ platos, acompanantes }) {
   const width = 1080;
-  const height = 880;
+  const height = 930;
   const rows = platos.slice(0, 8);
   const sides = acompanantes.slice(0, 8);
 
@@ -154,7 +154,7 @@ function crearSvgMenuSoloTexto({ platos, acompanantes }) {
     })
     .join("");
 
-  const sidesStartY = 705;
+  const sidesStartY = 738;
   const sidesSvg = sides
     .map(
       (item, index) =>
@@ -171,7 +171,7 @@ function crearSvgMenuSoloTexto({ platos, acompanantes }) {
 
     <line x1="115" y1="642" x2="965" y2="642" stroke="#1f130c" stroke-width="4" opacity="0.58"/>
     <text x="115" y="680" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#1f130c">ACOMPAÑANTES</text>
-    ${sidesSvg || `<text x="115" y="725" font-family="Arial, sans-serif" font-size="34" fill="#1f130c">• Escribe acompañantes...</text>`}
+    ${sidesSvg || `<text x="115" y="738" font-family="Arial, sans-serif" font-size="34" fill="#1f130c">• Escribe acompañantes...</text>`}
   </svg>`;
 }
 
@@ -244,7 +244,7 @@ export default function GeneradorMenu() {
   }
 
   function descargarSoloTexto() {
-    descargarDesdeSvg(svgTextoUrl, "menu-rafiki-solo-texto.png", "Imagen solo texto descargada con fondo transparente.", true, 1080, 880);
+    descargarDesdeSvg(svgTextoUrl, "menu-rafiki-solo-texto.png", "Imagen solo texto descargada con fondo transparente.", true, 1080, 930);
   }
 
   return (
