@@ -8,6 +8,7 @@ const MAX_ACOMPANANTES_CLIENTE = 3;
 const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
 const CLAVE_ADMIN = "rafiki1234";
+const CLAVE_RAFA = "rafa1234*";
 
 const estadosPedido = ["Pendiente", "Finalizado"];
 
@@ -621,6 +622,68 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
   );
 }
 
+
+function PanelRafaPrivado({ pedidos = [] }) {
+  const pedidosHoy = pedidos.filter((pedido) => obtenerEstadoPedido(pedido) !== "Cancelado");
+  const totalVentas = pedidosHoy.reduce((suma, pedido) => suma + (Number(pedido.total) || 0), 0);
+  const totalPedidos = pedidosHoy.length;
+  const pendientes = pedidosHoy.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente").length;
+  const finalizados = pedidosHoy.filter((pedido) => obtenerEstadoPedido(pedido) === "Finalizado").length;
+  const resumenProductos = consolidarPedidos(pedidosHoy);
+  const productosOrdenados = Object.entries(resumenProductos).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <section className="card card-pad">
+      <div className="admin-top-row">
+        <div>
+          <h2>🔒 Panel Rafa</h2>
+          <p className="muted">Espacio privado para revisar información gerencial del restaurante.</p>
+        </div>
+      </div>
+
+      <div className="admin-stats">
+        <div className="stat-card">
+          <span>Ventas</span>
+          <strong>{dinero(totalVentas)}</strong>
+        </div>
+        <div className="stat-card">
+          <span>Pedidos</span>
+          <strong>{totalPedidos}</strong>
+        </div>
+        <div className="stat-card">
+          <span>Pendientes</span>
+          <strong>{pendientes}</strong>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="soft-box">
+          <h3>Resumen del día</h3>
+          <p><strong>Finalizados:</strong> {finalizados}</p>
+          <p><strong>Pendientes:</strong> {pendientes}</p>
+          <p><strong>Total vendido:</strong> {dinero(totalVentas)}</p>
+        </div>
+
+        <div className="soft-box">
+          <h3>Productos más pedidos</h3>
+          {productosOrdenados.length === 0 ? (
+            <p className="muted">Todavía no hay productos para resumir.</p>
+          ) : (
+            <ul className="simple-list">
+              {productosOrdenados.slice(0, 8).map(([producto, cantidad]) => (
+                <li key={producto}>
+                  <span>{producto}</span>
+                  <strong>{cantidad}</strong>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function obtenerVistaInicial() {
   const ruta = window.location.pathname.replace(/\/$/, "") || "/";
   const adminActivo = localStorage.getItem("rafikiAdminActivo") === "true";
@@ -648,6 +711,9 @@ export default function App() {
   const [adminAutenticado, setAdminAutenticado] = useState(() => localStorage.getItem("rafikiAdminActivo") === "true");
   const [claveAdmin, setClaveAdmin] = useState("");
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
+  const [rafaAutenticado, setRafaAutenticado] = useState(() => localStorage.getItem("rafikiRafaActivo") === "true");
+  const [claveRafa, setClaveRafa] = useState("");
+  const [errorClaveRafa, setErrorClaveRafa] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
@@ -1249,6 +1315,9 @@ export default function App() {
 
   function abrirPanelAdmin() {
     setErrorClaveAdmin("");
+    setRafaAutenticado(false);
+    setClaveRafa("");
+    setErrorClaveRafa("");
 
     if (adminAutenticado) {
       navegar("/admin", "admin");
@@ -1273,8 +1342,30 @@ export default function App() {
     setErrorClaveAdmin("Clave incorrecta. Inténtalo nuevamente.");
   }
 
+  function validarClaveRafa(e) {
+    e.preventDefault();
+
+    if (claveRafa.trim() === CLAVE_RAFA) {
+      localStorage.setItem("rafikiRafaActivo", "true");
+      setRafaAutenticado(true);
+      setClaveRafa("");
+      setErrorClaveRafa("");
+      return;
+    }
+
+    setErrorClaveRafa("Clave incorrecta. Inténtalo nuevamente.");
+  }
+
+  function cerrarPanelRafa() {
+    localStorage.removeItem("rafikiRafaActivo");
+    setRafaAutenticado(false);
+    setClaveRafa("");
+    setErrorClaveRafa("");
+  }
+
   function cerrarPanelAdmin() {
     localStorage.removeItem("rafikiAdminActivo");
+    localStorage.removeItem("rafikiRafaActivo");
     setAdminAutenticado(false);
     setClaveAdmin("");
     setErrorClaveAdmin("");
@@ -1342,6 +1433,9 @@ export default function App() {
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .admin-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
         .admin-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 12px 0 16px; }
+        .soft-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 18px; padding: 16px; }
+        .simple-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+        .simple-list li { display: flex; justify-content: space-between; gap: 12px; align-items: center; background: white; border: 1px solid #ffedd5; border-radius: 12px; padding: 10px 12px; }
         .section { padding: 24px; }
         .meal-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 28px; padding: 20px; margin-bottom: 18px; scroll-margin-top: 18px; animation: fadeInUp 0.28s ease; }
         .fade-step { animation: fadeInUp 0.25s ease; scroll-margin-top: 18px; }
@@ -2043,6 +2137,14 @@ export default function App() {
 
                 <button
                   type="button"
+                  onClick={() => setAdminTab("rafa")}
+                  className={adminTab === "rafa" ? "active" : ""}
+                >
+                  Rafa
+                </button>
+
+                <button
+                  type="button"
                   onClick={cerrarPanelAdmin}
                   className="button light"
                 >
@@ -2191,6 +2293,47 @@ export default function App() {
               {adminTab === "productos" && <SolicitudProductos />}
 
               {adminTab === "generador" && <GeneradorMenu />}
+
+              {adminTab === "rafa" && (
+                rafaAutenticado ? (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                      <button type="button" onClick={cerrarPanelRafa} className="button light">
+                        Bloquear Rafa
+                      </button>
+                    </div>
+                    <PanelRafaPrivado pedidos={pedidosFiltrados} />
+                  </>
+                ) : (
+                  <section className="card card-pad" style={{ maxWidth: 520, margin: "0 auto" }}>
+                    <h2>🔒 Rafa</h2>
+                    <p className="muted">Esta sección es privada. Ingresa la contraseña para continuar.</p>
+
+                    {errorClaveRafa && (
+                      <div className="alert alert-error">{errorClaveRafa}</div>
+                    )}
+
+                    <form onSubmit={validarClaveRafa}>
+                      <label className="field">
+                        <span>Contraseña</span>
+                        <input
+                          type="password"
+                          value={claveRafa}
+                          onChange={(e) => {
+                            setClaveRafa(e.target.value);
+                            setErrorClaveRafa("");
+                          }}
+                          placeholder="Contraseña de Rafa"
+                        />
+                      </label>
+
+                      <button type="submit" className="button primary" style={{ width: "100%" }}>
+                        Entrar a Rafa
+                      </button>
+                    </form>
+                  </section>
+                )
+              )}
 
               {adminTab === "menu" && (
                 <section className="card card-pad">
