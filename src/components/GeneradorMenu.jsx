@@ -269,15 +269,21 @@ export default function GeneradorMenu() {
     image.src = url;
   }
 
-  function descargarImagen() {
-    descargarDesdeSvg(svgUrl, "menu-rafiki-compacto.png", "Flyer compacto descargado correctamente.", false, 1080, 1080);
+  async function descargarSoloTexto() {
+    const guardado = await guardarHistorialGenerador({ silencioso: true });
+    if (!guardado) return;
+
+    descargarDesdeSvg(
+      svgTextoUrl,
+      "menu-rafiki-solo-texto.png",
+      "Imagen solo texto descargada y guardada en el historial.",
+      true,
+      1080,
+      930
+    );
   }
 
-  function descargarSoloTexto() {
-    descargarDesdeSvg(svgTextoUrl, "menu-rafiki-solo-texto.png", "Imagen solo texto descargada con fondo transparente.", true, 1080, 930);
-  }
-
-  async function cargarHistorialGenerador() {
+  async function cargarHistorialGenerador(opciones = {}) {
     setCargandoHistorial(true);
     const { data, error } = await supabase
       .from("historial_generador_menu")
@@ -289,23 +295,27 @@ export default function GeneradorMenu() {
     if (error) {
       setMensaje(`No se pudo cargar el historial: ${error.message}`);
     } else {
-      setHistorial(data || []);
+      const registros = data || [];
+      setHistorial(registros);
+      if (opciones.cargarUltimo && registros.length > 0) {
+        cargarRegistro(registros[0], { silencioso: true });
+      }
     }
     setCargandoHistorial(false);
   }
 
-  async function guardarHistorialGenerador() {
+  async function guardarHistorialGenerador(opciones = {}) {
     const platosParaGuardar = normalizarPlatos(platos);
     const acompanantesParaGuardar = limpiarLista(acompanantes);
 
     if (!fechaMenu) {
       setMensaje("Selecciona la fecha del menú antes de guardar.");
-      return;
+      return false;
     }
 
     if (platosParaGuardar.length === 0 && acompanantesParaGuardar.length === 0) {
       setMensaje("Agrega al menos un plato o acompañante antes de guardar.");
-      return;
+      return false;
     }
 
     setGuardandoHistorial(true);
@@ -322,15 +332,20 @@ export default function GeneradorMenu() {
 
     if (error) {
       setMensaje(`No se pudo guardar el historial: ${error.message}`);
-    } else {
-      setMensaje("Historial del generador guardado correctamente.");
-      await cargarHistorialGenerador();
+      setGuardandoHistorial(false);
+      return false;
     }
 
+    if (!opciones.silencioso) {
+      setMensaje("Historial del generador guardado correctamente.");
+    }
+    await cargarHistorialGenerador({ cargarUltimo: false });
+
     setGuardandoHistorial(false);
+    return true;
   }
 
-  function cargarRegistro(registro) {
+  function cargarRegistro(registro, opciones = {}) {
     const platosRegistro = Array.isArray(registro.platos) ? registro.platos : [];
     const acompanantesRegistro = Array.isArray(registro.acompanantes) ? registro.acompanantes : [];
 
@@ -345,54 +360,25 @@ export default function GeneradorMenu() {
     );
     setAcompanantes(acompanantesRegistro.join("\n"));
     setObservaciones(registro.observaciones || "");
-    setMensaje("Registro cargado en el generador. Puedes editarlo o descargarlo.");
+    if (!opciones.silencioso) {
+      setMensaje("Registro cargado en el generador. Puedes editarlo o descargarlo.");
+    }
   }
 
   useEffect(() => {
-    cargarHistorialGenerador();
+    cargarHistorialGenerador({ cargarUltimo: true });
   }, []);
 
   return (
     <section className="card card-pad">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div>
-          <h2>🎨 Generador de menú Rafiki</h2>
-          <p className="muted">Crea una imagen compacta del menú para usarla en WhatsApp, Instagram o sobre una plantilla.</p>
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <button type="button" className="button light" onClick={descargarSoloTexto}>
-            Descargar solo texto
-          </button>
-          <button type="button" className="button" onClick={descargarImagen}>
-            Descargar flyer compacto
-          </button>
-        </div>
+      <div>
+        <h2>🎨 Generador de menú Rafiki</h2>
+        <p className="muted">Crea una imagen solo texto del menú para usarla en WhatsApp, Instagram o sobre una plantilla.</p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 420px)", gap: 22, alignItems: "start", marginTop: 18 }} className="generador-menu-grid">
         <div>
           <div className="box soft" style={{ marginTop: 0 }}>
-            <strong>Guardar en historial</strong>
-            <p className="muted small">Este historial es solo del generador de imagen/texto. No modifica el menú de pedidos.</p>
-            <label className="field" style={{ marginTop: 10 }}>
-              <span>Fecha del menú</span>
-              <input type="date" value={fechaMenu} onChange={(e) => setFechaMenu(e.target.value)} />
-            </label>
-            <label className="field">
-              <span>Observaciones internas</span>
-              <textarea
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-                rows={2}
-                placeholder="Ejemplo: menú publicado en Instagram, menú con promoción, etc."
-              />
-            </label>
-            <button type="button" className="button" onClick={guardarHistorialGenerador} disabled={guardandoHistorial}>
-              {guardandoHistorial ? "Guardando..." : "Guardar historial del generador"}
-            </button>
-          </div>
-
-          <div className="box soft" style={{ marginTop: 14 }}>
             <strong>Platos del día</strong>
             <p className="muted small">Puedes agregar hasta 8 platos. Escribe el precio sin puntos si quieres.</p>
             {platos.map((plato, index) => (
@@ -420,25 +406,56 @@ export default function GeneradorMenu() {
 
           <label className="field" style={{ marginTop: 14 }}>
             <span>Acompañantes</span>
-            <textarea value={acompanantes} onChange={(e) => setAcompanantes(e.target.value)} rows={5} placeholder="Arroz de maíz\nPuré\nEnsalada" />
+            <textarea value={acompanantes} onChange={(e) => setAcompanantes(e.target.value)} rows={5} placeholder={"Arroz de maíz\nPuré\nEnsalada"} />
           </label>
+
+          <div className="box soft" style={{ marginTop: 14 }}>
+            <strong>Datos para historial</strong>
+            <p className="muted small">Este historial es solo del generador de imagen/texto. No modifica el menú de pedidos.</p>
+            <label className="field" style={{ marginTop: 10 }}>
+              <span>Fecha del menú</span>
+              <input type="date" value={fechaMenu} onChange={(e) => setFechaMenu(e.target.value)} />
+            </label>
+            <label className="field">
+              <span>Observaciones internas</span>
+              <textarea
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                rows={2}
+                placeholder="Ejemplo: menú publicado en Instagram, menú con promoción, etc."
+              />
+            </label>
+          </div>
+
+          <div className="box soft acciones-generador" style={{ marginTop: 14 }}>
+            <strong>Acciones</strong>
+            <p className="muted small">Al descargar la imagen solo texto, también se guardará automáticamente en el historial.</p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button type="button" className="button download-text-button" onClick={descargarSoloTexto} disabled={guardandoHistorial}>
+                {guardandoHistorial ? "Guardando..." : "Descargar solo texto"}
+              </button>
+              <button type="button" className="button light" onClick={() => guardarHistorialGenerador()} disabled={guardandoHistorial}>
+                {guardandoHistorial ? "Guardando..." : "Guardar historial"}
+              </button>
+            </div>
+          </div>
 
           {mensaje && <div className="alert alert-ok menu-action-message">{mensaje}</div>}
         </div>
 
         <div>
           <div className="box soft" style={{ marginBottom: 10 }}>
-            <strong>Vista previa</strong>
-            <p className="muted small">El botón “solo texto” descarga un PNG transparente para pegar sobre otra plantilla.</p>
+            <strong>Vista previa solo texto</strong>
+            <p className="muted small">El PNG se descarga con fondo transparente para pegar sobre otra plantilla.</p>
           </div>
           <div style={{ borderRadius: 24, overflow: "hidden", boxShadow: "0 10px 28px rgba(124,45,18,0.16)", background: "#fff" }}>
-            <img src={svgUrl} alt="Vista previa menú Rafiki" style={{ display: "block", width: "100%", height: "auto" }} />
+            <img src={svgTextoUrl} alt="Vista previa menú Rafiki solo texto" style={{ display: "block", width: "100%", height: "auto" }} />
           </div>
 
           <div className="box soft" style={{ marginTop: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
               <strong>Historial reciente</strong>
-              <button type="button" className="button light" onClick={cargarHistorialGenerador} disabled={cargandoHistorial} style={{ padding: "8px 10px" }}>
+              <button type="button" className="button light" onClick={() => cargarHistorialGenerador({ cargarUltimo: false })} disabled={cargandoHistorial} style={{ padding: "8px 10px" }}>
                 {cargandoHistorial ? "Cargando..." : "Actualizar"}
               </button>
             </div>
@@ -472,6 +489,8 @@ export default function GeneradorMenu() {
         .history-menu-item { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; color: #3f2a1d; }
         .history-menu-item span { color: #8a5a32; font-size: 13px; font-weight: 800; }
         .history-menu-item:hover { border-color: #f97316; box-shadow: 0 4px 12px rgba(124,45,18,0.08); }
+        .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
+        .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
         @media (max-width: 860px) {
           .generador-menu-grid { grid-template-columns: 1fr !important; }
         }
