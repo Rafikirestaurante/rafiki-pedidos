@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-const WHATSAPP_SOLICITUD_PRODUCTOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_PRODUCTOS || "573013707032";
+const WHATSAPP_SOLICITUD_INSUMOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_INSUMOS || "573013707032";
 
 const categoriasSolicitudProductos = [
   "Proteínas",
@@ -14,7 +14,7 @@ const categoriasSolicitudProductos = [
 ];
 
 const CATEGORIA_SOLICITUD_DEFECTO = "Abarrotes, secos y condimentos";
-const STORAGE_PRODUCTOS_PENDIENTES = "rafiki_productos_pendientes_compra_v2";
+const STORAGE_INSUMOS_PENDIENTES = "rafiki_insumos_pendientes_compra_v1";
 
 const productosRestauranteBase = [
   { categoria: "Proteínas", nombre: "Pollo" },
@@ -268,10 +268,10 @@ function obtenerProductosSolicitudSeleccionados(productos) {
 function crearMensajeSolicitudProductos({ fechaSolicitud, fechaPara, productos, observaciones }) {
   const grupos = agruparProductosSolicitud(productos);
   const lineas = [
-    "Hola, esta es la solicitud de productos para Rafiki:",
+    "Hola, esta es la solicitud de insumos para Rafiki:",
     "",
     `Fecha de solicitud: ${fechaSolicitud}`,
-    `Productos requeridos para: ${fechaPara}`,
+    `Insumos requeridos para: ${fechaPara}`,
     "",
     "Listado solicitado:"
   ];
@@ -302,7 +302,7 @@ function crearClaveProducto(nombre) {
 
 function cargarEstadoPendientesCompra() {
   try {
-    const guardado = localStorage.getItem(STORAGE_PRODUCTOS_PENDIENTES);
+    const guardado = localStorage.getItem(STORAGE_INSUMOS_PENDIENTES);
     return guardado ? JSON.parse(guardado) : {};
   } catch {
     return {};
@@ -311,17 +311,24 @@ function cargarEstadoPendientesCompra() {
 
 function guardarEstadoPendientesCompra(estado) {
   try {
-    localStorage.setItem(STORAGE_PRODUCTOS_PENDIENTES, JSON.stringify(estado));
+    localStorage.setItem(STORAGE_INSUMOS_PENDIENTES, JSON.stringify(estado));
   } catch {
     // Si el navegador bloquea localStorage, la app sigue funcionando en memoria.
   }
+}
+
+function obtenerInsumosDeSolicitud(solicitud) {
+  if (Array.isArray(solicitud?.insumos)) return solicitud.insumos;
+  // Compatibilidad temporal por si existe alguna solicitud antigua con columna productos.
+  if (Array.isArray(solicitud?.productos)) return solicitud.productos;
+  return [];
 }
 
 function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBase = fechaISOColombia()) {
   const mapa = new Map();
 
   (solicitudes || []).forEach((solicitud) => {
-    const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
+    const productos = obtenerInsumosDeSolicitud(solicitud);
 
     productos.forEach((producto) => {
       const nombre = String(producto.nombre || "").trim();
@@ -364,11 +371,11 @@ function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBase = fec
 function crearMensajeCompraProveedores(productos, fechaListado = fechaISOColombia()) {
   const grupos = agruparProductosSolicitud(productos);
   const lineas = [
-    "Hola, esta es la lista de productos para cotizar/comprar para Rafiki:",
+    "Hola, esta es la lista de insumos para cotizar/comprar para Rafiki:",
     "",
     `Fecha de solicitud consultada: ${fechaListado}`,
     "",
-    "Productos:"
+    "Insumos:"
   ];
 
   Object.entries(grupos).forEach(([categoria, items]) => {
@@ -498,7 +505,7 @@ export default function SolicitudProductos() {
     const productosYaSolicitados = new Set();
 
     (solicitudesDelDia || []).forEach((solicitud) => {
-      const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
+      const productos = obtenerInsumosDeSolicitud(solicitud);
       productos.forEach((producto) => {
         const nombre = normalizarTexto(producto?.nombre || "");
         if (nombre) productosYaSolicitados.add(nombre);
@@ -516,7 +523,7 @@ export default function SolicitudProductos() {
 
     try {
       const { data, error } = await supabase
-        .from("solicitudes_productos")
+        .from("solicitudes_insumos")
         .select("*")
         .eq("fecha_solicitud", fecha)
         .order("id", { ascending: false })
@@ -555,18 +562,18 @@ export default function SolicitudProductos() {
 
   function enviarListadoProveedores() {
     if (productosParaEnviarProveedor.length === 0) {
-      setMensajePendientes({ texto: "No hay insumos pendientes para enviar. Los productos están marcados como comprados.", tipo: "warning" });
+      setMensajePendientes({ texto: "No hay insumos pendientes para enviar. Los insumos están marcados como comprados.", tipo: "warning" });
       return;
     }
 
     const mensaje = crearMensajeCompraProveedores(productosParaEnviarProveedor, fechaConsultaSolicitudes);
-    const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_PRODUCTOS, mensaje, { abrirApp: true });
+    const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_INSUMOS, mensaje, { abrirApp: true });
     setMensajePendientes({ texto: "Se abrirá WhatsApp con el listado para proveedores.", tipo: "success" });
     window.location.href = link;
   }
 
   function limpiarCompradosPendientes() {
-    const confirmar = window.confirm("¿Quieres desmarcar todos los productos comprados y borrar las cantidades escritas?");
+    const confirmar = window.confirm("¿Quieres desmarcar todos los insumos comprados y borrar las cantidades escritas?");
     if (!confirmar) return;
     setEstadoPendientesCompra({});
     setMensajePendientes({ texto: "Lista de compras reiniciada.", tipo: "success" });
@@ -585,7 +592,7 @@ export default function SolicitudProductos() {
 
     try {
       const { error } = await supabase
-        .from("solicitudes_productos")
+        .from("solicitudes_insumos")
         .delete()
         .eq("fecha_solicitud", fecha);
 
@@ -653,7 +660,7 @@ export default function SolicitudProductos() {
     const categoria = nuevoProductoSolicitudCategoria.trim() || CATEGORIA_SOLICITUD_DEFECTO;
 
     if (!nombre) {
-      setMensajeSolicitud({ texto: "Escribe el nombre del producto que quieres agregar.", tipo: "warning" });
+      setMensajeSolicitud({ texto: "Escribe el nombre del insumo que quieres agregar.", tipo: "warning" });
       return;
     }
 
@@ -662,7 +669,7 @@ export default function SolicitudProductos() {
     );
 
     if (yaExiste) {
-      setMensajeSolicitud({ texto: "Ese producto ya está en la lista.", tipo: "warning" });
+      setMensajeSolicitud({ texto: "Ese insumo ya está en la lista.", tipo: "warning" });
       return;
     }
 
@@ -681,17 +688,17 @@ export default function SolicitudProductos() {
     setNuevoProductoSolicitudNombre("");
     setNuevoProductoSolicitudCategoria(categoria);
     setSolicitudFinalizada(null);
-    setMensajeSolicitud({ texto: "Producto agregado a la lista.", tipo: "success" });
+    setMensajeSolicitud({ texto: "Insumo agregado a la lista.", tipo: "success" });
   }
 
   function quitarProductoSolicitudDeLista(id) {
     if (!id) {
-      setMensajeSolicitud({ texto: "Selecciona el producto que quieres eliminar de la lista.", tipo: "warning" });
+      setMensajeSolicitud({ texto: "Selecciona el insumo que quieres eliminar de la lista.", tipo: "warning" });
       return;
     }
 
     const producto = productosSolicitud.find((item) => item.id === id);
-    const nombre = producto?.nombre || "este producto";
+    const nombre = producto?.nombre || "este insumo";
     const confirmar = window.confirm(`¿Eliminar ${nombre} de la lista principal? Esta acción solo afecta esta lista de solicitud.`);
 
     if (!confirmar) return;
@@ -699,7 +706,7 @@ export default function SolicitudProductos() {
     setProductosSolicitud((actual) => actual.filter((item) => item.id !== id));
     setProductoSolicitudEliminarId("");
     setSolicitudFinalizada(null);
-    setMensajeSolicitud({ texto: "Producto eliminado de la lista principal.", tipo: "info" });
+    setMensajeSolicitud({ texto: "Insumo eliminado de la lista principal.", tipo: "info" });
   }
 
   function construirSolicitudProductos() {
@@ -707,7 +714,7 @@ export default function SolicitudProductos() {
 
     if (productos.length === 0) {
       return {
-        error: "Selecciona al menos un producto para guardar la solicitud."
+        error: "Selecciona al menos un insumo para guardar la solicitud."
       };
     }
 
@@ -722,7 +729,7 @@ export default function SolicitudProductos() {
     const nuevaSolicitud = {
       fecha_solicitud: fechaSolicitud,
       fecha_para: fechaParaSolicitud,
-      productos,
+      insumos: productos,
       observaciones: observacionesSolicitud.trim(),
       mensaje: mensajeFinal
     };
@@ -745,30 +752,30 @@ export default function SolicitudProductos() {
     try {
       const hoy = fechaISOColombia();
       const { data: solicitudesHoy, error: errorConsultaHoy } = await supabase
-        .from("solicitudes_productos")
-        .select("id, productos")
+        .from("solicitudes_insumos")
+        .select("id, insumos")
         .eq("fecha_solicitud", hoy)
         .order("id", { ascending: false })
         .limit(200);
 
       if (errorConsultaHoy) {
-        setMensajeSolicitud({ texto: `No se pudo validar si hay productos repetidos hoy: ${errorConsultaHoy.message}`, tipo: "error" });
+        setMensajeSolicitud({ texto: `No se pudo validar si hay insumos repetidos hoy: ${errorConsultaHoy.message}`, tipo: "error" });
         return;
       }
 
-      const productosRepetidos = obtenerProductosRepetidosDelDia(solicitudesHoy || [], nuevaSolicitud.productos);
+      const productosRepetidos = obtenerProductosRepetidosDelDia(solicitudesHoy || [], nuevaSolicitud.insumos);
 
       if (productosRepetidos.length > 0) {
         const nombresRepetidos = productosRepetidos.map((producto) => producto.nombre).join(", ");
         setMensajeSolicitud({
-          texto: `Estos productos ya fueron solicitados hoy y no se pueden repetir: ${nombresRepetidos}. Puedes quitar esos productos y guardar los demás.`,
+          texto: `Estos insumos ya fueron solicitados hoy y no se pueden repetir: ${nombresRepetidos}. Puedes quitar esos insumos y guardar los demás.`,
           tipo: "warning"
         });
         return;
       }
 
       const { data, error } = await supabase
-        .from("solicitudes_productos")
+        .from("solicitudes_insumos")
         .insert(nuevaSolicitud)
         .select()
         .single();
@@ -785,7 +792,7 @@ export default function SolicitudProductos() {
 
       if (abrirWhatsApp) {
         const link = crearLinkWhatsApp(
-          WHATSAPP_SOLICITUD_PRODUCTOS,
+          WHATSAPP_SOLICITUD_INSUMOS,
           solicitudGuardada.mensaje || mensajeFinal,
           { abrirApp: true }
         );

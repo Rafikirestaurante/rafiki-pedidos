@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rafiki-pedidos-admin-v7';
+const CACHE_NAME = 'rafiki-pedidos-admin-v8';
 const APP_SHELL = [
   '/',
   '/admin',
