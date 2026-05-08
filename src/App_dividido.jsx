@@ -2025,7 +2025,7 @@ export default function App() {
                                 <button
                                   type="button"
                                   className="button continue-button"
-                                  onClick={() => irAElemento("resumen-pedido")}
+                                  onClick={() => irAElemento("paso-datos-entrega")}
                                 >
                                   Continuar
                                 </button>
@@ -2094,13 +2094,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => irAElemento("paso-datos-entrega")}
-                      className="button summary-continue"
-                    >
-                      Continuar
-                    </button>
 
                     <button type="button" onClick={reiniciarPedido} className="button light small-reset">
                       Borrar y volver a empezar
