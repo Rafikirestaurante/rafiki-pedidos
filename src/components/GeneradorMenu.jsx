@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { supabase } from "../supabaseClient";
 
 function limpiarLista(texto) {
   return String(texto || "")
@@ -16,6 +17,22 @@ function precioVisible(valor) {
   if (!limpio) return "";
   return new Intl.NumberFormat("es-CO").format(Number(limpio));
 }
+function fechaHoyISO() {
+  const hoy = new Date();
+  const offset = hoy.getTimezoneOffset();
+  const local = new Date(hoy.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
+
+function normalizarPlatos(platos) {
+  return platos
+    .map((plato) => ({
+      nombre: String(plato.nombre || "").trim(),
+      precio: Number(String(plato.precio || "").replace(/[^\d]/g, "")) || 0
+    }))
+    .filter((plato) => plato.nombre);
+}
+
 
 function escapeSvg(texto) {
   return String(texto || "")
@@ -191,6 +208,11 @@ export default function GeneradorMenu() {
   ]);
   const [acompanantes, setAcompanantes] = useState("Arroz de maíz\nPuré de papa\nEnsalada\nTajadas maduras");
   const [mensaje, setMensaje] = useState("");
+  const [fechaMenu, setFechaMenu] = useState(fechaHoyISO());
+  const [observaciones, setObservaciones] = useState("");
+  const [guardandoHistorial, setGuardandoHistorial] = useState(false);
+  const [historial, setHistorial] = useState([]);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
   const platosLimpios = platos.filter((p) => p.nombre.trim());
   const listaAcompanantes = limpiarLista(acompanantes);
@@ -255,6 +277,81 @@ export default function GeneradorMenu() {
     descargarDesdeSvg(svgTextoUrl, "menu-rafiki-solo-texto.png", "Imagen solo texto descargada con fondo transparente.", true, 1080, 930);
   }
 
+  async function cargarHistorialGenerador() {
+    setCargandoHistorial(true);
+    const { data, error } = await supabase
+      .from("historial_generador_menu")
+      .select("id, fecha, platos, acompanantes, observaciones, creado_en")
+      .order("fecha", { ascending: false })
+      .order("creado_en", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      setMensaje(`No se pudo cargar el historial: ${error.message}`);
+    } else {
+      setHistorial(data || []);
+    }
+    setCargandoHistorial(false);
+  }
+
+  async function guardarHistorialGenerador() {
+    const platosParaGuardar = normalizarPlatos(platos);
+    const acompanantesParaGuardar = limpiarLista(acompanantes);
+
+    if (!fechaMenu) {
+      setMensaje("Selecciona la fecha del menú antes de guardar.");
+      return;
+    }
+
+    if (platosParaGuardar.length === 0 && acompanantesParaGuardar.length === 0) {
+      setMensaje("Agrega al menos un plato o acompañante antes de guardar.");
+      return;
+    }
+
+    setGuardandoHistorial(true);
+    setMensaje("");
+
+    const { error } = await supabase.from("historial_generador_menu").insert({
+      fecha: fechaMenu,
+      titulo: "Menú del día",
+      platos: platosParaGuardar,
+      acompanantes: acompanantesParaGuardar,
+      texto_generado: svgTexto,
+      observaciones: observaciones.trim() || null
+    });
+
+    if (error) {
+      setMensaje(`No se pudo guardar el historial: ${error.message}`);
+    } else {
+      setMensaje("Historial del generador guardado correctamente.");
+      await cargarHistorialGenerador();
+    }
+
+    setGuardandoHistorial(false);
+  }
+
+  function cargarRegistro(registro) {
+    const platosRegistro = Array.isArray(registro.platos) ? registro.platos : [];
+    const acompanantesRegistro = Array.isArray(registro.acompanantes) ? registro.acompanantes : [];
+
+    setFechaMenu(registro.fecha || fechaHoyISO());
+    setPlatos(
+      platosRegistro.length
+        ? platosRegistro.map((plato) => ({
+            nombre: plato.nombre || "",
+            precio: plato.precio ? String(plato.precio) : ""
+          }))
+        : [{ nombre: "", precio: "" }]
+    );
+    setAcompanantes(acompanantesRegistro.join("\n"));
+    setObservaciones(registro.observaciones || "");
+    setMensaje("Registro cargado en el generador. Puedes editarlo o descargarlo.");
+  }
+
+  useEffect(() => {
+    cargarHistorialGenerador();
+  }, []);
+
   return (
     <section className="card card-pad">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -275,6 +372,27 @@ export default function GeneradorMenu() {
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 420px)", gap: 22, alignItems: "start", marginTop: 18 }} className="generador-menu-grid">
         <div>
           <div className="box soft" style={{ marginTop: 0 }}>
+            <strong>Guardar en historial</strong>
+            <p className="muted small">Este historial es solo del generador de imagen/texto. No modifica el menú de pedidos.</p>
+            <label className="field" style={{ marginTop: 10 }}>
+              <span>Fecha del menú</span>
+              <input type="date" value={fechaMenu} onChange={(e) => setFechaMenu(e.target.value)} />
+            </label>
+            <label className="field">
+              <span>Observaciones internas</span>
+              <textarea
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                rows={2}
+                placeholder="Ejemplo: menú publicado en Instagram, menú con promoción, etc."
+              />
+            </label>
+            <button type="button" className="button" onClick={guardarHistorialGenerador} disabled={guardandoHistorial}>
+              {guardandoHistorial ? "Guardando..." : "Guardar historial del generador"}
+            </button>
+          </div>
+
+          <div className="box soft" style={{ marginTop: 14 }}>
             <strong>Platos del día</strong>
             <p className="muted small">Puedes agregar hasta 8 platos. Escribe el precio sin puntos si quieres.</p>
             {platos.map((plato, index) => (
@@ -316,6 +434,33 @@ export default function GeneradorMenu() {
           <div style={{ borderRadius: 24, overflow: "hidden", boxShadow: "0 10px 28px rgba(124,45,18,0.16)", background: "#fff" }}>
             <img src={svgUrl} alt="Vista previa menú Rafiki" style={{ display: "block", width: "100%", height: "auto" }} />
           </div>
+
+          <div className="box soft" style={{ marginTop: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+              <strong>Historial reciente</strong>
+              <button type="button" className="button light" onClick={cargarHistorialGenerador} disabled={cargandoHistorial} style={{ padding: "8px 10px" }}>
+                {cargandoHistorial ? "Cargando..." : "Actualizar"}
+              </button>
+            </div>
+            {historial.length === 0 ? (
+              <p className="muted small" style={{ marginBottom: 0 }}>Todavía no hay registros guardados.</p>
+            ) : (
+              <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                {historial.map((registro) => (
+                  <button
+                    key={registro.id}
+                    type="button"
+                    className="history-menu-item"
+                    onClick={() => cargarRegistro(registro)}
+                    title="Cargar este menú en el generador"
+                  >
+                    <strong>{registro.fecha}</strong>
+                    <span>{Array.isArray(registro.platos) ? registro.platos.length : 0} platos · {Array.isArray(registro.acompanantes) ? registro.acompanantes.length : 0} acompañantes</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -324,6 +469,9 @@ export default function GeneradorMenu() {
         .field span { font-weight: 900; color: #3f2a1d; }
         .field input, .field textarea, .box input { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; padding: 12px 13px; font: inherit; outline: none; background: #fff; box-sizing: border-box; }
         .field input:focus, .field textarea:focus, .box input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12); }
+        .history-menu-item { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; color: #3f2a1d; }
+        .history-menu-item span { color: #8a5a32; font-size: 13px; font-weight: 800; }
+        .history-menu-item:hover { border-color: #f97316; box-shadow: 0 4px 12px rgba(124,45,18,0.08); }
         @media (max-width: 860px) {
           .generador-menu-grid { grid-template-columns: 1fr !important; }
         }
