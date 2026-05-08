@@ -54,7 +54,7 @@ function crearSvgMenu({ platos, acompanantes }) {
   const rowsSvg = rows
     .map((plato, index) => {
       const y = 280 + index * 76;
-      const lineas = wrapText(plato.nombre || "Plato", 28);
+      const lineas = wrapText(plato.nombre || "Plato", 21);
       const nombreSvg = lineas
         .map(
           (linea, i) =>
@@ -66,13 +66,13 @@ function crearSvgMenu({ platos, acompanantes }) {
         <rect x="112" y="${y - 50}" width="856" height="64" rx="24" fill="${index % 2 === 0 ? "#fffaf2" : "#ffffff"}" stroke="#f4d6a6" stroke-width="2"/>
         <circle cx="140" cy="${y - 18}" r="8" fill="#b45309"/>
         ${nombreSvg}
-        <line x1="510" y1="${y - 12}" x2="755" y2="${y - 12}" stroke="#c7a36d" stroke-width="3" stroke-dasharray="7 12" opacity="0.72"/>
+        <line x1="650" y1="${y - 12}" x2="775" y2="${y - 12}" stroke="#c7a36d" stroke-width="3" stroke-dasharray="7 12" opacity="0.55"/>
         <text x="925" y="${y}" font-family="Arial, sans-serif" font-size="34" font-weight="900" fill="#7f1d1d" text-anchor="end">$${escapeSvg(precioVisible(plato.precio))}</text>
       `;
     })
     .join("");
 
-  const sidesStartY = 880;
+  const sidesStartY = 900;
   const sidesSvg = sides
     .map(
       (item, index) =>
@@ -138,7 +138,7 @@ function crearSvgMenuSoloTexto({ platos, acompanantes }) {
   const rowsSvg = rows
     .map((plato, index) => {
       const y = 165 + index * 70;
-      const lineas = wrapText(plato.nombre || "Plato", 31);
+      const lineas = wrapText(plato.nombre || "Plato", 22);
       const nombreSvg = lineas
         .map(
           (linea, i) =>
@@ -148,13 +148,13 @@ function crearSvgMenuSoloTexto({ platos, acompanantes }) {
 
       return `
         ${nombreSvg}
-        <line x1="515" y1="${y - 12}" x2="765" y2="${y - 12}" stroke="#1f130c" stroke-width="3" stroke-dasharray="7 14" opacity="0.72"/>
+        <line x1="650" y1="${y - 12}" x2="780" y2="${y - 12}" stroke="#1f130c" stroke-width="3" stroke-dasharray="7 14" opacity="0.45"/>
         <text x="965" y="${y + 2}" font-family="Arial, sans-serif" font-size="39" font-weight="900" fill="#1f130c" text-anchor="end">$${escapeSvg(precioVisible(plato.precio))}</text>
       `;
     })
     .join("");
 
-  const sidesStartY = 738;
+  const sidesStartY = 775;
   const sidesSvg = sides
     .map(
       (item, index) =>
@@ -170,8 +170,8 @@ function crearSvgMenuSoloTexto({ platos, acompanantes }) {
     ${rowsSvg || `<text x="540" y="300" font-family="Arial, sans-serif" font-size="40" font-weight="800" fill="#1f130c" text-anchor="middle">Agrega los platos del día</text>`}
 
     <line x1="115" y1="642" x2="965" y2="642" stroke="#1f130c" stroke-width="4" opacity="0.58"/>
-    <text x="115" y="680" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#1f130c">ACOMPAÑANTES</text>
-    ${sidesSvg || `<text x="115" y="738" font-family="Arial, sans-serif" font-size="34" fill="#1f130c">• Escribe acompañantes...</text>`}
+    <text x="115" y="685" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#1f130c">ACOMPAÑANTES</text>
+    ${sidesSvg || `<text x="115" y="775" font-family="Arial, sans-serif" font-size="34" fill="#1f130c">• Escribe acompañantes...</text>`}
   </svg>`;
 }
 
