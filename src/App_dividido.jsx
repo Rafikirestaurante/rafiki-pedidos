@@ -333,6 +333,7 @@ function crearItemNuevo() {
     precioPlato: 0,
     precioProteina: 0,
     acompanantes: [],
+    observacionAcompanantes: "",
     paraLlevar: true
   };
 }
@@ -358,6 +359,10 @@ function crearTextoItem(item) {
 
   if (acompanantes.length > 0) {
     partes.push(acompanantes.join(", "));
+  }
+
+  if (!esSopa && item.observacionAcompanantes?.trim()) {
+    partes.push(`Obs. acompañantes: ${item.observacionAcompanantes.trim()}`);
   }
 
   if (!esSopa) {
@@ -1140,7 +1145,8 @@ export default function App() {
           proteina: platoSeleccionado.nombre || "",
           precioPlato: Number(platoSeleccionado.precio) || 0,
           precioProteina: Number(platoSeleccionado.precio) || 0,
-          acompanantes: esSopa ? [] : item.acompanantes || []
+          acompanantes: esSopa ? [] : item.acompanantes || [],
+          observacionAcompanantes: esSopa ? "" : item.observacionAcompanantes || ""
         };
       })
     );
@@ -1240,7 +1246,8 @@ export default function App() {
 
         return {
           ...item,
-          acompanantes: esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || [])
+          acompanantes: esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || []),
+          observacionAcompanantes: esSopa ? "" : (item.observacionAcompanantes || "").trim()
         };
       });
 
@@ -1580,6 +1587,7 @@ export default function App() {
         .button.disabled { opacity: 0.6; pointer-events: auto; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
         .continue-button { width: 100%; margin-top: 16px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
+        .continue-button + .field { margin-top: 14px; }
         .summary-continue { width: 100%; margin: 12px 0 6px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.22); }
         .small-reset { display: block; width: fit-content; margin: 8px auto 0; font-size: 12px; padding: 8px 12px; border-radius: 999px; color: #b91c1c; border-color: #fecaca; box-shadow: none; background: #fff; }
         .link-button { display: block; text-align: center; text-decoration: none; }
@@ -1947,6 +1955,15 @@ export default function App() {
                                   Continuar
                                 </button>
 
+                                <CampoTexto
+                                  etiqueta="Observación sobre tus acompañantes"
+                                  value={item.observacionAcompanantes || ""}
+                                  onChange={(valor) => actualizarItem(item.id, { observacionAcompanantes: valor })}
+                                  placeholder="Ejemplo: sin ensalada, más arroz, aparte la salsa..."
+                                  multiline
+                                  rows={2}
+                                />
+
                                 <div className="box" style={{ marginTop: 18 }}>
                                   <strong>🥣 Sopa y bebida</strong>
                                   <p className="muted" style={{ marginBottom: 0 }}>
@@ -2058,6 +2075,9 @@ export default function App() {
                               {item.categoria && <p>Categoría: {item.categoria}</p>}
 
                               {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                              {!itemEsSopa && item.observacionAcompanantes?.trim() && (
+                                <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
+                              )}
                               {itemEsSopa && <p>Acompañantes: No aplica</p>}
 
                               {!itemEsSopa && <p>Sopa + bebida incluida</p>}
