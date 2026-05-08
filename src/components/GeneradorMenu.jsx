@@ -156,6 +156,66 @@ function crearSvgMenu({ fecha, platos, tambien, acompanantes, paraLlevar }) {
     <text x="540" y="1308" font-family="Arial, sans-serif" font-size="25" font-weight="800" fill="#7c2d12" text-anchor="middle">Rafiki Restaurante • Barranquilla</text>
   </svg>`;
 }
+
+function crearSvgMenuSoloTexto({ fecha, platos, tambien, acompanantes, paraLlevar }) {
+  const width = 1080;
+  const height = 1350;
+  const rows = platos.slice(0, 8);
+  const extras = tambien.slice(0, 7);
+  const sides = acompanantes.slice(0, 8);
+
+  const rowsSvg = rows
+    .map((plato, index) => {
+      const y = 285 + index * 78;
+      const lineas = wrapText(plato.nombre || "Plato", 31);
+      const nombreSvg = lineas
+        .map(
+          (linea, i) =>
+            `<text x="115" y="${y + i * 31}" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#1f130c">${escapeSvg(linea)}</text>`
+        )
+        .join("");
+
+      return `
+        ${nombreSvg}
+        <line x1="520" y1="${y - 12}" x2="765" y2="${y - 12}" stroke="#1f130c" stroke-width="3" stroke-dasharray="7 14" opacity="0.72"/>
+        <text x="965" y="${y + 2}" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#1f130c" text-anchor="end">$${escapeSvg(precioVisible(plato.precio))}</text>
+      `;
+    })
+    .join("");
+
+  const extrasStartY = 930;
+  const extrasSvg = extras
+    .map(
+      (item, index) =>
+        `<text x="115" y="${extrasStartY + index * 44}" font-family="Arial, sans-serif" font-size="35" font-weight="800" fill="#1f130c">• ${escapeSvg(item)}</text>`
+    )
+    .join("");
+
+  const sidesSvg = sides
+    .map(
+      (item, index) =>
+        `<text x="585" y="${extrasStartY + index * 44}" font-family="Arial, sans-serif" font-size="35" font-weight="800" fill="#1f130c">• ${escapeSvg(item)}</text>`
+    )
+    .join("");
+
+  return `
+  <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <text x="540" y="105" font-family="Arial, sans-serif" font-size="64" font-weight="900" fill="#1f130c" text-anchor="middle" letter-spacing="3">MENÚ DEL DÍA</text>
+    <text x="540" y="158" font-family="Arial, sans-serif" font-size="40" font-weight="900" fill="#1f130c" text-anchor="middle">${escapeSvg(fecha || fechaHoy)}</text>
+    <line x1="150" y1="198" x2="930" y2="198" stroke="#1f130c" stroke-width="5" opacity="0.75"/>
+
+    ${rowsSvg || `<text x="540" y="410" font-family="Arial, sans-serif" font-size="42" font-weight="800" fill="#1f130c" text-anchor="middle">Agrega los platos del día</text>`}
+
+    <line x1="115" y1="835" x2="965" y2="835" stroke="#1f130c" stroke-width="4" opacity="0.60"/>
+    <text x="115" y="890" font-family="Arial, sans-serif" font-size="39" font-weight="900" fill="#1f130c">TAMBIÉN TENEMOS</text>
+    <text x="585" y="890" font-family="Arial, sans-serif" font-size="39" font-weight="900" fill="#1f130c">ACOMPAÑANTES</text>
+    ${extrasSvg || `<text x="115" y="930" font-family="Arial, sans-serif" font-size="35" fill="#1f130c">• Escribe opciones...</text>`}
+    ${sidesSvg || `<text x="585" y="930" font-family="Arial, sans-serif" font-size="35" fill="#1f130c">• Escribe acompañantes...</text>`}
+
+    <text x="540" y="1280" font-family="Arial, sans-serif" font-size="45" font-weight="900" fill="#1f130c" text-anchor="middle">PARA LLEVAR +$${escapeSvg(precioVisible(paraLlevar))}</text>
+  </svg>`;
+}
+
 export default function GeneradorMenu() {
   const [fecha, setFecha] = useState(fechaHoy);
   const [platos, setPlatos] = useState([
@@ -181,7 +241,20 @@ export default function GeneradorMenu() {
     [fecha, platos, tambien, acompanantes, paraLlevar]
   );
 
+  const svgTexto = useMemo(
+    () =>
+      crearSvgMenuSoloTexto({
+        fecha,
+        platos: platos.filter((p) => p.nombre.trim()),
+        tambien: limpiarLista(tambien),
+        acompanantes: limpiarLista(acompanantes),
+        paraLlevar
+      }),
+    [fecha, platos, tambien, acompanantes, paraLlevar]
+  );
+
   const svgUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, [svg]);
+  const svgTextoUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgTexto)}`, [svgTexto]);
 
   function actualizarPlato(index, campo, valor) {
     setPlatos((actual) => actual.map((plato, i) => (i === index ? { ...plato, [campo]: campo === "precio" ? limpiarPrecio(valor) : valor } : plato)));
@@ -195,7 +268,7 @@ export default function GeneradorMenu() {
     setPlatos((actual) => actual.filter((_, i) => i !== index));
   }
 
-  async function descargarImagen() {
+  function descargarDesdeSvg(url, nombreArchivo, mensajeOk, transparente = false) {
     setMensaje("");
     const image = new Image();
     image.onload = () => {
@@ -203,15 +276,37 @@ export default function GeneradorMenu() {
       canvas.width = 1080;
       canvas.height = 1350;
       const ctx = canvas.getContext("2d");
+      if (!transparente) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
       ctx.drawImage(image, 0, 0);
       const link = document.createElement("a");
-      link.download = `menu-rafiki-${fecha.replace(/\s+/g, "-").toLowerCase()}.png`;
+      link.download = nombreArchivo;
       link.href = canvas.toDataURL("image/png");
       link.click();
-      setMensaje("Imagen descargada correctamente.");
+      setMensaje(mensajeOk);
     };
     image.onerror = () => setMensaje("No se pudo descargar la imagen. Intenta de nuevo.");
-    image.src = svgUrl;
+    image.src = url;
+  }
+
+  function descargarImagen() {
+    descargarDesdeSvg(
+      svgUrl,
+      `menu-rafiki-${fecha.replace(/\s+/g, "-").toLowerCase()}.png`,
+      "Imagen descargada correctamente.",
+      false
+    );
+  }
+
+  function descargarSoloTexto() {
+    descargarDesdeSvg(
+      svgTextoUrl,
+      `menu-rafiki-solo-texto-${fecha.replace(/\s+/g, "-").toLowerCase()}.png`,
+      "Imagen solo texto descargada con fondo transparente.",
+      true
+    );
   }
 
   return (
@@ -221,9 +316,14 @@ export default function GeneradorMenu() {
           <h2>🎨 Generador de menú Rafiki</h2>
           <p className="muted">Crea una imagen del menú diario lista para WhatsApp e Instagram.</p>
         </div>
-        <button type="button" className="button" onClick={descargarImagen}>
-          Descargar imagen
-        </button>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <button type="button" className="button light" onClick={descargarSoloTexto}>
+            Descargar solo texto
+          </button>
+          <button type="button" className="button" onClick={descargarImagen}>
+            Descargar flyer
+          </button>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 420px)", gap: 22, alignItems: "start", marginTop: 18 }} className="generador-menu-grid">
@@ -280,7 +380,7 @@ export default function GeneradorMenu() {
         <div>
           <div className="box soft" style={{ marginBottom: 10 }}>
             <strong>Vista previa</strong>
-            <p className="muted small">Cuando esté listo, presiona “Descargar imagen”.</p>
+            <p className="muted small">Puedes descargar el flyer completo o solo el texto en PNG transparente.</p>
           </div>
           <div ref={previewRef} style={{ borderRadius: 24, overflow: "hidden", boxShadow: "0 10px 28px rgba(124,45,18,0.16)", background: "#fff" }}>
             <img src={svgUrl} alt="Vista previa menú Rafiki" style={{ display: "block", width: "100%", height: "auto" }} />
