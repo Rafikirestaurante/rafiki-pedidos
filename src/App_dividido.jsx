@@ -1926,7 +1926,7 @@ export default function App() {
                                 <div className="step-title">
                                   <span className="step-number">2</span>
                                   <div>
-                                    <h4>Perfecto, ahora escoge tus acompañantes</h4>
+                                    <h4>Escoge tus acompañantes</h4>
                                     <p className="muted" style={{ marginBottom: 0 }}>
                                       Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones para completar tu almuerzo.
                                     </p>
