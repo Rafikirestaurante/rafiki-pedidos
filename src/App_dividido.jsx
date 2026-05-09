@@ -515,8 +515,8 @@ function crearDatosTicketPedido(pedido) {
 
 function imprimirTicketPedido(pedido) {
   const ticket = crearDatosTicketPedido(pedido);
-  const linea = "========================";
-  const separador = "------------------------";
+  const linea = "================";
+  const separador = "----------------";
   const crearLineas = (lineas) => lineas.map((lineaTexto) => `<div>${lineaTexto}</div>`).join("");
 
   const html = `
@@ -526,7 +526,7 @@ function imprimirTicketPedido(pedido) {
         <meta charset="utf-8" />
         <title>Pedido ${ticket.codigo}</title>
         <style>
-          @page { size: 80mm auto; margin: 0; }
+          @page { size: 58mm auto; margin: 0; }
           * { box-sizing: border-box; }
           body {
             margin: 0;
@@ -536,60 +536,60 @@ function imprimirTicketPedido(pedido) {
             font-family: Arial, Helvetica, sans-serif;
           }
           .ticket {
-            width: 80mm;
-            padding: 10px 8px 14px;
+            width: 58mm;
+            padding: 8px 5px 12px;
             color: #000;
             background: #fff;
           }
           .center { text-align: center; }
           .linea {
             font-family: "Courier New", monospace;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 900;
             line-height: 1.1;
             white-space: pre;
           }
           .titulo {
-            font-size: 25px;
+            font-size: 18px;
             font-weight: 900;
-            letter-spacing: 0.5px;
+            letter-spacing: 0px;
             margin: 4px 0;
             white-space: nowrap;
           }
           .info {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 800;
             line-height: 1.35;
             margin: 12px 0 10px;
           }
           .label {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 900;
             margin-top: 6px;
           }
           .cliente {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 900;
             margin: 2px 0 10px;
           }
           .bloque {
-            font-size: 22px;
+            font-size: 19px;
             font-weight: 900;
-            line-height: 1.35;
+            line-height: 1.32;
             margin: 10px 0;
             text-transform: uppercase;
             word-break: break-word;
           }
           .acompanantes {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 900;
           }
           .observaciones {
-            font-size: 21px;
+            font-size: 19px;
             font-weight: 900;
           }
           .entrega {
-            font-size: 24px;
+            font-size: 21px;
             font-weight: 900;
             margin: 14px 0 8px;
             text-align: center;
@@ -599,7 +599,7 @@ function imprimirTicketPedido(pedido) {
       <body>
         <div class="ticket">
           <div class="linea center">${linea}</div>
-          <div class="titulo center">RAFIKI&nbsp;&nbsp;&nbsp;PEDIDO</div>
+          <div class="titulo center">RAFIKI&nbsp;PEDIDO</div>
           <div class="linea center">${linea}</div>
 
           <div class="info">
@@ -2131,7 +2131,7 @@ export default function App() {
         .summary-card { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; transition: box-shadow 0.15s; }
         .summary-card:hover { box-shadow: 0 8px 24px rgba(249,115,22,0.1); }
         .summary-card.compact { padding: 15px; }
-        .summary-card span { color: #78716c; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-card span { color: #78716c; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0px; }
         .summary-card strong { display: block; color: #ea580c; font-size: 28px; margin-top: 6px; font-family: 'Fraunces', serif; }
         .productos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .producto-solicitud { background: #fff; border: 1px solid #fed7aa; border-radius: 18px; padding: 14px; }
@@ -2187,7 +2187,7 @@ export default function App() {
         .pedido-linea { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .pedido-id { font-weight: 900; color: #78716c; font-size: 13px; }
         .pedido-total { text-align: right; }
-        .pedido-total span { display: block; color: #78716c; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .pedido-total span { display: block; color: #78716c; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0px; }
         .pedido-total strong { color: #ea580c; font-size: 26px; font-family: 'Fraunces', serif; }
         .pedido-cliente-nombre { font-size: 20px; font-weight: 900; color: #292524; margin: 0 0 6px; font-family: 'Fraunces', serif; }
         .pedido-meta { font-size: 13px; color: #78716c; display: flex; flex-direction: column; gap: 2px; }
@@ -2207,10 +2207,10 @@ export default function App() {
         .progress-step { flex: 1; height: 4px; background: #fed7aa; border-radius: 4px; transition: background 0.3s; }
         .progress-step.done { background: linear-gradient(90deg, #f97316, #f59e0b); }
         .progress-labels { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .progress-label { font-size: 11px; font-weight: 900; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.5px; }
+        .progress-label { font-size: 11px; font-weight: 900; color: #a8a29e; text-transform: uppercase; letter-spacing: 0px; }
         .progress-label.done { color: #f97316; }
         .sticky-total { position: sticky; bottom: 0; background: #1c1917; border-radius: 20px 20px 0 0; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; margin: 20px -24px -24px; box-shadow: 0 -8px 24px rgba(0,0,0,0.15); }
-        .sticky-total-label { font-size: 12px; color: #a8a29e; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sticky-total-label { font-size: 12px; color: #a8a29e; font-weight: 800; text-transform: uppercase; letter-spacing: 0px; }
         .sticky-total-amount { font-size: 24px; font-weight: 900; color: #fb923c; font-family: 'Fraunces', serif; }
         .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
