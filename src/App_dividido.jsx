@@ -669,6 +669,106 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false, revisa
 }
 
 
+
+function resumirItemsPedidoCompacto(pedido) {
+  const items = obtenerItemsPedido(pedido);
+
+  if (items.length === 0) {
+    return pedido.pedido_texto || "Sin detalle";
+  }
+
+  return items.map((item) => {
+    const nombre = item.plato || item.proteina || "Plato";
+    const cantidad = item.cantidad || 1;
+    const acomp = Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+      ? ` · ${item.acompanantes.join(", ")}`
+      : "";
+    const obsAcomp = item.observacionAcompanantes?.trim()
+      ? ` · Obs: ${item.observacionAcompanantes.trim()}`
+      : "";
+    const empaque = textoParaLlevarItem(item) ? ` · ${textoParaLlevarItem(item)}` : "";
+    return `${cantidad} x ${nombre}${acomp}${obsAcomp}${empaque}`;
+  }).join(" | ");
+}
+
+function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, pedidosRevisados, onMarcarRevisado }) {
+  const revisadosSet = new Set(pedidosRevisados.map(String));
+
+  return (
+    <div className="pedidos-tabla-wrap">
+      <table className="pedidos-tabla-compacta">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Hora</th>
+            <th>Cliente</th>
+            <th>Pedido</th>
+            <th>Obs.</th>
+            <th>Pago</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pedidos.map((pedido) => {
+            const estadoNormalizado = obtenerEstadoPedido(pedido);
+            const revisado = revisadosSet.has(String(pedido.id));
+            const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
+            const linkCliente = telefonoCliente
+              ? crearLinkWhatsApp(telefonoCliente, crearMensajePedidoListo(pedido))
+              : "#";
+
+            return (
+              <tr key={pedido.id} className={`${estadoNormalizado === "Finalizado" ? "fila-finalizada" : ""} ${!revisado ? "fila-nueva" : ""}`}>
+                <td className="td-codigo">
+                  <strong>#{obtenerCodigoPedido(pedido)}</strong>
+                  {!revisado && <span>Nuevo</span>}
+                </td>
+                <td>{formatearFechaHora(pedido.created_at)}</td>
+                <td>
+                  <strong>{obtenerCliente(pedido)}</strong>
+                  <small>{pedido.telefono || "Sin teléfono"}</small>
+                  <small>{pedido.ubicacion || "Sin ubicación"}</small>
+                </td>
+                <td className="td-pedido">{resumirItemsPedidoCompacto(pedido)}</td>
+                <td className="td-obs">{pedido.observaciones || "—"}</td>
+                <td>{pedido.tipo_pago || "—"}</td>
+                <td className="td-total">{dinero(pedido.total)}</td>
+                <td>
+                  <select
+                    value={estadoNormalizado}
+                    onChange={(e) => onCambiarEstado(pedido.id, e.target.value)}
+                    disabled={guardandoEstadoPedidoId === pedido.id}
+                  >
+                    {estadosPedido.map((estado) => (
+                      <option key={estado} value={estado}>{estado}</option>
+                    ))}
+                  </select>
+                </td>
+                <td className="td-acciones">
+                  {!revisado && (
+                    <button type="button" className="mini-btn warning" onClick={() => onMarcarRevisado?.(pedido.id)}>
+                      Revisado
+                    </button>
+                  )}
+                  {telefonoCliente ? (
+                    <a href={linkCliente} target="_blank" rel="noreferrer" className="mini-btn green">
+                      WhatsApp
+                    </a>
+                  ) : (
+                    <button type="button" className="mini-btn" disabled>Sin tel.</button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function PanelRafaPrivado() {
   const hoy = fechaISOColombia();
   const [modoFecha, setModoFecha] = useState("dia");
@@ -1851,6 +1951,25 @@ export default function App() {
         .producto-seleccionado-row input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.12); background: #fff; }
         .producto-seleccionado-row .button { padding: 8px 10px; font-size: 12px; border-radius: 12px; }
         .solicitud-preview { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; font-size: 14px; margin-top: 14px; }
+
+        .pedidos-tabla-wrap { width: 100%; overflow-x: auto; border: 1px solid #fed7aa; border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
+        .pedidos-tabla-compacta { width: 100%; border-collapse: collapse; min-width: 1080px; font-size: 12px; }
+        .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 1; background: #fff7ed; color: #9a3412; text-align: left; padding: 9px 8px; border-bottom: 1px solid #fed7aa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .pedidos-tabla-compacta td { vertical-align: top; padding: 8px; border-bottom: 1px solid #f5f5f4; color: #44403c; line-height: 1.25; }
+        .pedidos-tabla-compacta tr:last-child td { border-bottom: 0; }
+        .pedidos-tabla-compacta tr.fila-nueva { background: #fff7ed; box-shadow: inset 4px 0 0 #f79e1c; }
+        .pedidos-tabla-compacta tr.fila-finalizada { background: #f0fdf4; opacity: 0.82; }
+        .td-codigo strong { display: block; color: #c2410c; font-size: 13px; }
+        .td-codigo span { display: inline-block; margin-top: 3px; background: #f79e1c; color: white; border-radius: 999px; padding: 2px 6px; font-size: 10px; font-weight: 900; }
+        .pedidos-tabla-compacta td small { display: block; color: #78716c; margin-top: 2px; font-size: 11px; }
+        .td-pedido { max-width: 360px; font-weight: 700; }
+        .td-obs { max-width: 190px; color: #7c2d12; }
+        .td-total { color: #16a34a; font-weight: 900; white-space: nowrap; }
+        .pedidos-tabla-compacta select { width: 118px; border: 1px solid #e7e5e4; border-radius: 10px; padding: 7px 8px; background: #fafaf9; font-size: 12px; font-weight: 800; }
+        .td-acciones { min-width: 94px; }
+        .mini-btn { display: block; width: 100%; margin-bottom: 5px; border: 1px solid #e7e5e4; border-radius: 10px; padding: 6px 8px; background: #fff; color: #44403c; font-size: 11px; font-weight: 900; text-align: center; text-decoration: none; box-shadow: none; }
+        .mini-btn.warning { background: #f79e1c; border-color: #f79e1c; color: #fff; }
+        .mini-btn.green { background: #16a34a; border-color: #16a34a; color: #fff; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-sin-revisar { border: 3px solid #f79e1c; box-shadow: 0 12px 34px rgba(247,158,28,0.22); }
         .pedido-finalizado { opacity: 0.7; }
@@ -2578,16 +2697,13 @@ export default function App() {
                     {pedidosPendientes.length === 0 ? (
                       <div className="box soft">No hay pedidos pendientes.</div>
                     ) : (
-                      pedidosPendientes.map((pedido, index) => (
-                        <PedidoCocina
-                          key={pedido.id}
-                          pedido={pedido}
-                          onCambiarEstado={cambiarEstadoPedido}
-                          guardandoEstado={guardandoEstadoPedidoId === pedido.id}
-                          revisado={pedidosRevisados.map(String).includes(String(pedido.id))}
-                          onMarcarRevisado={marcarPedidoRevisado}
-                        />
-                      ))
+                      <TablaPedidosCompacta
+                        pedidos={pedidosPendientes}
+                        onCambiarEstado={cambiarEstadoPedido}
+                        guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                        pedidosRevisados={pedidosRevisados}
+                        onMarcarRevisado={marcarPedidoRevisado}
+                      />
                     )}
                   </div>
 
@@ -2600,16 +2716,13 @@ export default function App() {
                     {pedidosFinalizados.length === 0 ? (
                       <div className="box soft">Todavía no hay pedidos finalizados.</div>
                     ) : (
-                      pedidosFinalizados.map((pedido, index) => (
-                        <PedidoCocina
-                          key={pedido.id}
-                          pedido={pedido}
-                          onCambiarEstado={cambiarEstadoPedido}
-                          guardandoEstado={guardandoEstadoPedidoId === pedido.id}
-                          revisado={pedidosRevisados.map(String).includes(String(pedido.id))}
-                          onMarcarRevisado={marcarPedidoRevisado}
-                        />
-                      ))
+                      <TablaPedidosCompacta
+                        pedidos={pedidosFinalizados}
+                        onCambiarEstado={cambiarEstadoPedido}
+                        guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                        pedidosRevisados={pedidosRevisados}
+                        onMarcarRevisado={marcarPedidoRevisado}
+                      />
                     )}
                   </div>
 
