@@ -16,7 +16,7 @@ const menuFallback = {
   id: null,
   fecha: new Date().toISOString().slice(0, 10),
   titulo: "Almuerzo ejecutivo Rafiki",
-  descripcion: "Escoge tu plato del d铆a y m谩ximo 3 acompa帽antes. Incluye sopa y bebida.",
+  descripcion: "Escoge tu plato del día y máximo 3 acompañantes. Incluye sopa y bebida.",
   precio: 0,
   proteinas: [],
   proteinas_detalle: [],
@@ -46,7 +46,7 @@ function obtenerCodigoPedido(pedido) {
   const numeroBase = pedido?.numero_pedido;
   const numero = formatoNumeroPedido(numeroBase);
 
-  if (numero === "----") return "Sin N掳";
+  if (numero === "----") return "Sin N°";
 
   const ciclo = Number(pedido?.ciclo_pedido) || 1;
 
@@ -78,7 +78,7 @@ function obtenerRangoPedidos(filtro = "hoy", fechaManual = fechaISOColombia()) {
   if (filtro === "dia") {
     baseTexto = fechaManual || fechaISOColombia();
   } else {
-    // Cualquier filtro distinto a "dia" se interpreta expl铆citamente como "hoy".
+    // Cualquier filtro distinto a "dia" se interpreta explícitamente como "hoy".
     baseTexto = fechaISOColombia();
   }
 
@@ -169,7 +169,7 @@ function textoAPlatosDetalle(texto, { estricto = false } = {}) {
 
     if (!linea.includes("|")) {
       if (estricto) {
-        errores.push(`L铆nea ${numeroLinea}: falta el formato "Categor铆a | Plato:Precio".`);
+        errores.push(`Línea ${numeroLinea}: falta el formato "Categoría | Plato:Precio".`);
       }
       return;
     }
@@ -180,7 +180,7 @@ function textoAPlatosDetalle(texto, { estricto = false } = {}) {
 
     if (!resto) {
       if (estricto) {
-        errores.push(`L铆nea ${numeroLinea}: falta el nombre del plato y el precio.`);
+        errores.push(`Línea ${numeroLinea}: falta el nombre del plato y el precio.`);
       }
       return;
     }
@@ -189,7 +189,7 @@ function textoAPlatosDetalle(texto, { estricto = false } = {}) {
 
     if (indicePrecio === -1) {
       if (estricto) {
-        errores.push(`L铆nea ${numeroLinea}: falta el precio despu茅s de ":".`);
+        errores.push(`Línea ${numeroLinea}: falta el precio después de ":".`);
       }
       return;
     }
@@ -201,7 +201,7 @@ function textoAPlatosDetalle(texto, { estricto = false } = {}) {
 
     if (!nombre) {
       if (estricto) {
-        errores.push(`L铆nea ${numeroLinea}: el nombre del plato est谩 vac铆o.`);
+        errores.push(`Línea ${numeroLinea}: el nombre del plato está vacío.`);
       }
       return;
     }
@@ -209,7 +209,7 @@ function textoAPlatosDetalle(texto, { estricto = false } = {}) {
     if (!precio || precio <= 0) {
       if (estricto) {
         errores.push(
-          `L铆nea ${numeroLinea}: precio inv谩lido "${precioTextoOriginal || "vac铆o"}". Usa solo n煤meros, ejemplo 18000.`
+          `Línea ${numeroLinea}: precio inválido "${precioTextoOriginal || "vacío"}". Usa solo números, ejemplo 18000.`
         );
       }
       return;
@@ -317,9 +317,9 @@ function crearMensajePedidoListo(pedido) {
   const cliente = obtenerCliente(pedido);
 
   return [
-    `Hola ${cliente}, su pedido est谩 listo.`,
+    `Hola ${cliente}, su pedido está listo.`,
     "",
-    "Gracias por comprar en Rafiki 馃嵔锔�"
+    "Gracias por comprar en Rafiki 🍽️"
   ].join("\n");
 }
 
@@ -362,7 +362,7 @@ function crearTextoItem(item) {
   }
 
   if (!esSopa && item.observacionAcompanantes?.trim()) {
-    partes.push(`Obs. acompa帽antes: ${item.observacionAcompanantes.trim()}`);
+    partes.push(`Obs. acompañantes: ${item.observacionAcompanantes.trim()}`);
   }
 
   if (!esSopa) {
@@ -391,10 +391,10 @@ function crearMensajeWhatsAppPedido(pedido) {
   return [
     "Hola Rafiki, quiero confirmar este pedido:",
     "",
-    `Pedido N掳: ${obtenerCodigoPedido(pedido)}`,
+    `Pedido N°: ${obtenerCodigoPedido(pedido)}`,
     `Cliente: ${pedido.cliente || pedido.cliente_nombre || "Cliente"}`,
-    `Tel茅fono: ${pedido.telefono || "Sin tel茅fono"}`,
-    `Ubicaci贸n: ${pedido.ubicacion || "Sin ubicaci贸n"}`,
+    `Teléfono: ${pedido.telefono || "Sin teléfono"}`,
+    `Ubicación: ${pedido.ubicacion || "Sin ubicación"}`,
     `Tipo de pago: ${pedido.tipo_pago || "No especificado"}`,
     "",
     "Pedido:",
@@ -486,7 +486,7 @@ function SelectorCantidad({ cantidad, onChange }) {
   return (
     <div className="quantity">
       <button type="button" onClick={() => onChange(Math.max(1, cantidad - 1))}>
-        鈭�
+        −
       </button>
       <strong>{cantidad}</strong>
       <button type="button" onClick={() => onChange(cantidad + 1)}>
@@ -520,11 +520,11 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
           <div>
             <p className="pedido-cliente-nombre">{obtenerCliente(pedido)}</p>
             <div className="pedido-meta">
-              <span>馃Ь Pedido N掳 {obtenerCodigoPedido(pedido)}</span>
-              <span>馃晵 {formatearFechaHora(pedido.created_at)}</span>
-              <span>馃搷 {pedido.ubicacion || "Sin ubicaci贸n"}</span>
-              <span>馃摓 {pedido.telefono || "Sin tel茅fono"}</span>
-              <span>馃挸 {pedido.tipo_pago || "Pago no especificado"}</span>
+              <span>🧾 Pedido N° {obtenerCodigoPedido(pedido)}</span>
+              <span>🕒 {formatearFechaHora(pedido.created_at)}</span>
+              <span>📍 {pedido.ubicacion || "Sin ubicación"}</span>
+              <span>📞 {pedido.telefono || "Sin teléfono"}</span>
+              <span>💳 {pedido.tipo_pago || "Pago no especificado"}</span>
             </div>
           </div>
         </div>
@@ -549,7 +549,7 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
 
                   {item.categoria && (
                     <p>
-                      <strong>Categor铆a:</strong> {item.categoria}
+                      <strong>Categoría:</strong> {item.categoria}
                     </p>
                   )}
 
@@ -559,22 +559,22 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
 
                   {!esSopa && (
                     <p>
-                      <strong>Acompa帽antes:</strong>{" "}
+                      <strong>Acompañantes:</strong>{" "}
                       {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
                         ? item.acompanantes.join(", ")
-                        : "Sin acompa帽antes"}
+                        : "Sin acompañantes"}
                     </p>
                   )}
 
                   {!esSopa && item.observacionAcompanantes?.trim() && (
                     <p className="obs-acompanantes-admin">
-                      <strong>Obs. acompa帽antes:</strong> {item.observacionAcompanantes.trim()}
+                      <strong>Obs. acompañantes:</strong> {item.observacionAcompanantes.trim()}
                     </p>
                   )}
 
                   {esSopa && (
                     <p>
-                      <strong>Acompa帽antes:</strong> No aplica para sopas
+                      <strong>Acompañantes:</strong> No aplica para sopas
                     </p>
                   )}
 
@@ -624,7 +624,7 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
           </a>
         ) : (
           <button type="button" className="button light" disabled>
-            Sin tel茅fono
+            Sin teléfono
           </button>
         )}
       </div>
@@ -717,8 +717,8 @@ function PanelRafaPrivado() {
     <section className="card card-pad">
       <div className="admin-top-row">
         <div>
-          <h2>馃敀 Panel Rafa</h2>
-          <p className="muted">Espacio privado para revisar informaci贸n gerencial del restaurante.</p>
+          <h2>🔒 Panel Rafa</h2>
+          <p className="muted">Espacio privado para revisar información gerencial del restaurante.</p>
         </div>
       </div>
 
@@ -730,14 +730,14 @@ function PanelRafaPrivado() {
             onClick={() => setModoFecha("dia")}
             className={modoFecha === "dia" ? "active" : ""}
           >
-            Un d铆a
+            Un día
           </button>
           <button
             type="button"
             onClick={() => setModoFecha("rango")}
             className={modoFecha === "rango" ? "active" : ""}
           >
-            Varios d铆as
+            Varios días
           </button>
 
           {modoFecha === "dia" ? (
@@ -807,9 +807,9 @@ function PanelRafaPrivado() {
         </div>
 
         <div className="soft-box">
-          <h3>Productos m谩s pedidos</h3>
+          <h3>Productos más pedidos</h3>
           {productosOrdenados.length === 0 ? (
-            <p className="muted">Todav铆a no hay productos para resumir en este periodo.</p>
+            <p className="muted">Todavía no hay productos para resumir en este periodo.</p>
           ) : (
             <ul className="simple-list">
               {productosOrdenados.slice(0, 12).map(([producto, cantidad]) => (
@@ -1033,7 +1033,7 @@ export default function App() {
         if (cancelado) return;
 
         if (menuError) {
-          mostrarMensaje(`Error cargando men煤: ${menuError.message}`, "error");
+          mostrarMensaje(`Error cargando menú: ${menuError.message}`, "error");
           return;
         }
 
@@ -1066,7 +1066,7 @@ export default function App() {
       } catch (error) {
         if (!cancelado) {
           mostrarMensaje(
-            `No se pudo cargar el men煤. Revisa la conexi贸n e intenta recargar la p谩gina. ${error.message || ""}`.trim(),
+            `No se pudo cargar el menú. Revisa la conexión e intenta recargar la página. ${error.message || ""}`.trim(),
             "error"
           );
         }
@@ -1112,7 +1112,7 @@ export default function App() {
       } catch (error) {
         if (!cancelado) {
           mostrarMensaje(
-            `No se pudieron cargar los pedidos. Revisa la conexi贸n y usa el bot贸n Actualizar pedidos. ${error.message || ""}`.trim(),
+            `No se pudieron cargar los pedidos. Revisa la conexión y usa el botón Actualizar pedidos. ${error.message || ""}`.trim(),
             "error"
           );
           setPedidos([]);
@@ -1190,7 +1190,7 @@ export default function App() {
 
         if (acompanantesActuales.length >= MAX_ACOMPANANTES_CLIENTE) {
           mostrarMensaje(
-            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompa帽antes por producto. La sopa y la bebida ya est谩n incluidas.`,
+            `Solo puedes escoger ${MAX_ACOMPANANTES_CLIENTE} acompañantes por producto. La sopa y la bebida ya están incluidas.`,
             "warning"
           );
           return item;
@@ -1265,8 +1265,8 @@ export default function App() {
     const camposFaltantes = [];
 
     if (!cliente.trim()) camposFaltantes.push("nombre");
-    if (!telefono.trim()) camposFaltantes.push("tel茅fono");
-    if (!ubicacion.trim()) camposFaltantes.push("ubicaci贸n");
+    if (!telefono.trim()) camposFaltantes.push("teléfono");
+    if (!ubicacion.trim()) camposFaltantes.push("ubicación");
 
     if (camposFaltantes.length > 0) {
       const textoError = `Falta ingresar: ${camposFaltantes.join(", ")}.`;
@@ -1291,7 +1291,7 @@ export default function App() {
       cliente: clienteNombre,
       cliente_nombre: clienteNombre,
       telefono: telefono.trim(),
-      ubicacion: ubicacion.trim() || "Ubicaci贸n pendiente",
+      ubicacion: ubicacion.trim() || "Ubicación pendiente",
       tipo_pago: tipoPago,
       observaciones: observaciones.trim(),
       items: itemsValidos,
@@ -1333,7 +1333,7 @@ export default function App() {
 
     if (resultadoPlatos.errores.length > 0) {
       mostrarMensajeMenu(
-        `No se puede guardar el men煤. Corrige:\n${resultadoPlatos.errores.slice(0, 5).join("\n")}`,
+        `No se puede guardar el menú. Corrige:\n${resultadoPlatos.errores.slice(0, 5).join("\n")}`,
         "error"
       );
       return;
@@ -1341,7 +1341,7 @@ export default function App() {
 
     if (resultadoPlatos.platos.length === 0) {
       mostrarMensajeMenu(
-        "Debes agregar al menos un plato del d铆a con el formato Categor铆a | Plato:Precio.",
+        "Debes agregar al menos un plato del día con el formato Categoría | Plato:Precio.",
         "warning"
       );
       return;
@@ -1376,7 +1376,7 @@ export default function App() {
           .single();
 
         if (respuesta.error) {
-          mostrarMensajeMenu(`Error guardando men煤: ${respuesta.error.message}`, "error");
+          mostrarMensajeMenu(`Error guardando menú: ${respuesta.error.message}`, "error");
           return;
         }
 
@@ -1389,7 +1389,7 @@ export default function App() {
           .single();
 
         if (respuesta.error) {
-          mostrarMensajeMenu(`Error creando men煤: ${respuesta.error.message}`, "error");
+          mostrarMensajeMenu(`Error creando menú: ${respuesta.error.message}`, "error");
           return;
         }
 
@@ -1403,7 +1403,7 @@ export default function App() {
         .neq("id", data.id);
 
       if (errorDesactivar) {
-        mostrarMensajeMenu(`El men煤 se guard贸, pero no se pudieron desactivar men煤s anteriores: ${errorDesactivar.message}`, "warning");
+        mostrarMensajeMenu(`El menú se guardó, pero no se pudieron desactivar menús anteriores: ${errorDesactivar.message}`, "warning");
       }
 
       const nuevoMenu = normalizarMenu(data);
@@ -1411,7 +1411,7 @@ export default function App() {
       setItemsPedido([crearItemNuevo()]);
       setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
       setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
-      mostrarMensajeMenu(menu.id ? "Men煤 actualizado correctamente." : "Men煤 creado correctamente.", "success");
+      mostrarMensajeMenu(menu.id ? "Menú actualizado correctamente." : "Menú creado correctamente.", "success");
     } finally {
       setGuardandoMenu(false);
     }
@@ -1429,7 +1429,7 @@ export default function App() {
     if (estadoNuevo === "Finalizado") {
       const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : "";
       const confirmar = window.confirm(
-        `驴Marcar el pedido #${codigoPedido} como finalizado?`
+        `¿Marcar el pedido #${codigoPedido} como finalizado?`
       );
 
       if (!confirmar) return;
@@ -1483,7 +1483,7 @@ export default function App() {
       return;
     }
 
-    setErrorClaveAdmin("Clave incorrecta. Int茅ntalo nuevamente.");
+    setErrorClaveAdmin("Clave incorrecta. Inténtalo nuevamente.");
   }
 
   function validarClaveRafa(e) {
@@ -1497,7 +1497,7 @@ export default function App() {
       return;
     }
 
-    setErrorClaveRafa("Clave incorrecta. Int茅ntalo nuevamente.");
+    setErrorClaveRafa("Clave incorrecta. Inténtalo nuevamente.");
   }
 
   function cerrarPanelRafa() {
@@ -1602,7 +1602,7 @@ export default function App() {
         .step-title p { font-size: 15px; }
         .step-number { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 999px; background: linear-gradient(135deg, #f97316, #f59e0b); color: white; font-weight: 900; font-size: 20px; flex: 0 0 auto; box-shadow: 0 8px 18px rgba(249,115,22,0.25); }
         .selected-dish { background: #ecfdf5; border: 1px solid #86efac; color: #166534; border-radius: 18px; padding: 12px 14px; margin-bottom: 16px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
-        .selected-dish::before { content: '鉁�'; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #22c55e; color: white; border-radius: 50%; font-size: 13px; flex-shrink: 0; }
+        .selected-dish::before { content: '✓'; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #22c55e; color: white; border-radius: 50%; font-size: 13px; flex-shrink: 0; }
         .category-block { margin-bottom: 20px; border: 1px solid #fed7aa; border-radius: 24px; padding: 16px; background: #fffaf0; }
         .category-title { font-size: 20px; margin-bottom: 12px; color: #c2410c; font-weight: 900; display: flex; align-items: center; gap: 8px; }
         .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1610,7 +1610,7 @@ export default function App() {
         .option:hover { border-color: #fdba74; background: #fff7ed; }
         .option small { display: block; margin-top: 6px; color: #ea580c; font-size: 16px; font-weight: 900; }
         .option.selected { border-color: #f97316; color: #c2410c; background: #fff7ed; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
-        .option.selected::after { content: '鉁�'; float: right; color: #f97316; font-size: 18px; }
+        .option.selected::after { content: '✓'; float: right; color: #f97316; font-size: 18px; }
         .chips { display: flex; flex-wrap: wrap; gap: 10px; }
         .chip { border: 1.5px solid #e7e5e4; background: #fff; border-radius: 999px; padding: 10px 16px; font-weight: 900; transition: all 0.15s; }
         .chip:hover:not(:disabled) { border-color: #86efac; background: #f0fdf4; }
@@ -1742,8 +1742,8 @@ export default function App() {
           {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && (
             <header className="topbar">
               <div>
-                <div className="brand">馃嵔锔� Rafiki Pedidos</div>
-                <h1>Men煤 diario y pedidos por WhatsApp</h1>
+                <div className="brand">🍽️ Rafiki Pedidos</div>
+                <h1>Menú diario y pedidos por WhatsApp</h1>
                 <p className="muted">App real conectada a Supabase.</p>
               </div>
 
@@ -1773,10 +1773,10 @@ export default function App() {
               <section className="welcome-card">
                 <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="welcome-logo" />
                 <h2>Bienvenido a Rafiki</h2>
-                <p>Escoge tu almuerzo del d铆a, selecciona tus acompa帽antes y env铆anos tu pedido por WhatsApp.</p>
+                <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
 
                 <button type="button" onClick={() => navegar("/", "cliente")} className="welcome-button">
-                  馃泹锔� Haz tu pedido aqu铆
+                  🛍️ Haz tu pedido aquí
                 </button>
               </section>
             </main>
@@ -1786,9 +1786,9 @@ export default function App() {
             <main style={{ maxWidth: 520, margin: "0 auto" }}>
               <section className="card card-pad">
                 <div style={{ textAlign: "center", marginBottom: 20 }}>
-                  <div className="brand">馃攼 Panel Rafiki</div>
+                  <div className="brand">🔐 Panel Rafiki</div>
                   <h2>Acceso administrativo</h2>
-                  <p className="muted">Ingresa la clave para ver pedidos y editar el men煤 diario.</p>
+                  <p className="muted">Ingresa la clave para ver pedidos y editar el menú diario.</p>
                 </div>
 
                 {errorClaveAdmin && (
@@ -1843,13 +1843,13 @@ export default function App() {
                 <div className="section">
                   {menu.platos_detalle.length === 0 ? (
                     <div className="box soft">
-                      Todav铆a no hay platos configurados para el men煤 de hoy. Entra al panel administrativo y agrega los platos del d铆a.
+                      Todavía no hay platos configurados para el menú de hoy. Entra al panel administrativo y agrega los platos del día.
                     </div>
                   ) : (
                   <>
                       <div style={{ marginBottom: 18 }}>
-                        <h3>馃泹锔� Arma tu pedido paso a paso</h3>
-                        <p className="muted">Primero selecciona tu prote铆na. Luego aparecer谩n los siguientes pasos.</p>
+                        <h3>🛍️ Arma tu pedido paso a paso</h3>
+                        <p className="muted">Primero selecciona tu proteína. Luego aparecerán los siguientes pasos.</p>
                       </div>
 
                       {itemsPedido.map((item, index) => {
@@ -1859,8 +1859,8 @@ export default function App() {
                         const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
 
                         const pasos = itemEsSopa
-                          ? ["Prote铆na", "Datos"]
-                          : ["Prote铆na", "Acomp.", "Datos"];
+                          ? ["Proteína", "Datos"]
+                          : ["Proteína", "Acomp.", "Datos"];
                         const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
 
                         return (
@@ -1893,16 +1893,16 @@ export default function App() {
                             <div className="step-title">
                               <span className="step-number">1</span>
                               <div>
-                                <h4>Primero selecciona tu prote铆na</h4>
+                                <h4>Primero selecciona tu proteína</h4>
                                 <p className="muted" style={{ marginBottom: 0 }}>
-                                  Toca una opci贸n para continuar.
+                                  Toca una opción para continuar.
                                 </p>
                               </div>
                             </div>
 
                             {tienePlato && (
                               <div className="selected-dish">
-                                Seleccionado: {item.plato || item.proteina} 鈥攞" "}
+                                Seleccionado: {item.plato || item.proteina} —{" "}
                                 {dinero(item.precioPlato || item.precioProteina)}
                               </div>
                             )}
@@ -1932,7 +1932,7 @@ export default function App() {
                                 <div className="step-title">
                                   <span className="step-number">2</span>
                                   <div>
-                                    <h4>Escoge tus acompa帽antes</h4>
+                                    <h4>Escoge tus acompañantes</h4>
                                     <p className="muted" style={{ marginBottom: 0 }}>
                                       Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones para completar tu almuerzo.
                                     </p>
@@ -1941,7 +1941,7 @@ export default function App() {
 
                                 <div className="chips">
                                   {menu.acompanantes.length === 0 ? (
-                                    <span className="muted">No hay acompa帽antes configurados.</span>
+                                    <span className="muted">No hay acompañantes configurados.</span>
                                   ) : (
                                     menu.acompanantes.map((acompanante) => {
                                       const seleccionado = acompanantesItem.includes(acompanante);
@@ -1959,7 +1959,7 @@ export default function App() {
                                             bloqueado ? "blocked" : ""
                                           }`}
                                         >
-                                          {seleccionado ? "鉁� " : "+ "}
+                                          {seleccionado ? "✓ " : "+ "}
                                           {acompanante}
                                         </button>
                                       );
@@ -1968,16 +1968,16 @@ export default function App() {
                                 </div>
 
                                 <div className="box compact-info" style={{ marginTop: 12 }}>
-                                  <strong>馃ィ Sopa y bebida incluida</strong>
+                                  <strong>🥣 Sopa y bebida incluida</strong>
                                 </div>
                               </div>
                             )}
 
                             {tienePlato && itemEsSopa && (
                               <div className="box soft fade-step" style={{ marginTop: 18 }}>
-                                <strong>馃ィ Producto de sopas</strong>
+                                <strong>🥣 Producto de sopas</strong>
                                 <p className="muted" style={{ marginBottom: 0 }}>
-                                  Este producto no incluye acompa帽antes, sopa adicional ni bebida.
+                                  Este producto no incluye acompañantes, sopa adicional ni bebida.
                                 </p>
                               </div>
                             )}
@@ -1985,7 +1985,7 @@ export default function App() {
                             {tienePlato && (
                               <div id={`paso-cantidad-${item.id}`} className="fade-step pedido-paso-compacto" style={{ marginTop: 12 }}>
                                 <div className="box compact-box quantity-box">
-                                  <strong>Cantidad de {item.plato || item.proteina || "prote铆na escogida"}</strong>
+                                  <strong>Cantidad de {item.plato || item.proteina || "proteína escogida"}</strong>
                                   <SelectorCantidad
                                     cantidad={item.cantidad}
                                     onChange={(cantidad) => actualizarItem(item.id, { cantidad })}
@@ -1994,10 +1994,10 @@ export default function App() {
 
                                 {!itemEsSopa && (
                                   <CampoTexto
-                                    etiqueta="Observaci贸n sobre tus acompa帽antes"
+                                    etiqueta="Observación sobre tus acompañantes"
                                     value={item.observacionAcompanantes || ""}
                                     onChange={(valor) => actualizarItem(item.id, { observacionAcompanantes: valor })}
-                                    placeholder="Ejemplo: sin ensalada, m谩s arroz..."
+                                    placeholder="Ejemplo: sin ensalada, más arroz..."
                                     multiline
                                     rows={2}
                                   />
@@ -2005,7 +2005,7 @@ export default function App() {
 
                                 <label className="box row compact-box takeout-box">
                                   <div>
-                                    <strong>馃ァ Para llevar</strong>
+                                    <strong>🥡 Para llevar</strong>
                                     <p className="muted" style={{ marginBottom: 0 }}>
                                       {valorParaLlevarItem(item) === 0 && item.paraLlevar
                                         ? "Sin costo adicional"
@@ -2054,9 +2054,9 @@ export default function App() {
 
                 {!hayProductoSeleccionado ? (
                   <div className="box soft">
-                    <strong>馃憟 Empieza seleccionando una prote铆na</strong>
+                    <strong>👈 Empieza seleccionando una proteína</strong>
                     <p className="muted" style={{ marginBottom: 0 }}>
-                      Cuando selecciones un producto, aqu铆 aparecer谩 el resumen y los datos de entrega.
+                      Cuando selecciones un producto, aquí aparecerá el resumen y los datos de entrega.
                     </p>
                   </div>
                 ) : (
@@ -2079,13 +2079,13 @@ export default function App() {
                                 {dinero(item.precioPlato || item.precioProteina)}
                               </p>
 
-                              {item.categoria && <p>Categor铆a: {item.categoria}</p>}
+                              {item.categoria && <p>Categoría: {item.categoria}</p>}
 
-                              {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompa帽antes"}</p>}
+                              {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
                               {!itemEsSopa && item.observacionAcompanantes?.trim() && (
-                                <p>Obs. acompa帽antes: {item.observacionAcompanantes.trim()}</p>
+                                <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                               )}
-                              {itemEsSopa && <p>Acompa帽antes: No aplica</p>}
+                              {itemEsSopa && <p>Acompañantes: No aplica</p>}
 
                               {!itemEsSopa && <p>Sopa + bebida incluida</p>}
 
@@ -2110,23 +2110,23 @@ export default function App() {
                       <div>
                         <h4>Datos de entrega</h4>
                         <p className="muted" style={{ marginBottom: 0 }}>
-                          As铆 sabremos a d贸nde llevar tu pedido.
+                          Así sabremos a dónde llevar tu pedido.
                         </p>
                       </div>
                     </div>
 
                     <CampoTexto
-                      etiqueta="馃懁 Nombre"
+                      etiqueta="👤 Nombre"
                       value={cliente}
                       onChange={(valor) => {
                         setCliente(valor);
                         if (errorDatosPedido) setErrorDatosPedido("");
                       }}
-                      placeholder="Ej: Laura P茅rez"
+                      placeholder="Ej: Laura Pérez"
                     />
 
                     <CampoTexto
-                      etiqueta="馃摓 Tel茅fono"
+                      etiqueta="📞 Teléfono"
                       value={telefono}
                       onChange={(valor) => {
                         setTelefono(valor);
@@ -2136,7 +2136,7 @@ export default function App() {
                     />
 
                     <CampoTexto
-                      etiqueta="馃搷 Ubicaci贸n"
+                      etiqueta="📍 Ubicación"
                       value={ubicacion}
                       onChange={(valor) => {
                         setUbicacion(valor);
@@ -2146,7 +2146,7 @@ export default function App() {
                     />
 
                     <label className="field">
-                      <span>馃挸 Tipo de pago</span>
+                      <span>💳 Tipo de pago</span>
                       <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)}>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Transferencia">Transferencia</option>
@@ -2157,7 +2157,7 @@ export default function App() {
                       etiqueta="Observaciones generales"
                       value={observaciones}
                       onChange={setObservaciones}
-                      placeholder="Ej: llevar a recepci贸n, sin cubiertos, pago en efectivo..."
+                      placeholder="Ej: llevar a recepción, sin cubiertos, pago en efectivo..."
                       multiline
                     />
 
@@ -2179,7 +2179,7 @@ export default function App() {
                             className="button"
                             style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
                           >
-                            {guardandoPedido ? "Guardando..." : "Finalizar 鈫�"}
+                            {guardandoPedido ? "Guardando..." : "Finalizar →"}
                           </button>
                         </div>
                       </div>
@@ -2194,25 +2194,25 @@ export default function App() {
             <main style={{ maxWidth: 760, margin: "0 auto" }}>
               <section className="card">
                 <div className="hero green" style={{ textAlign: "center" }}>
-                  <div className="confirmacion-check">鉁�</div>
-                  <h2 style={{ fontFamily: "'Fraunces', serif" }}>隆Pedido confirmado!</h2>
-                  <p>Revisa el consolidado y env铆alo a Rafiki por WhatsApp.</p>
+                  <div className="confirmacion-check">✓</div>
+                  <h2 style={{ fontFamily: "'Fraunces', serif" }}>¡Pedido confirmado!</h2>
+                  <p>Revisa el consolidado y envíalo a Rafiki por WhatsApp.</p>
                 </div>
 
                 <div className="card-pad">
                   <div className="box soft">
                     <h3>Consolidado del pedido</h3>
                     <p>
-                      <strong>Pedido N掳:</strong> {obtenerCodigoPedido(pedidoFinalizado)}
+                      <strong>Pedido N°:</strong> {obtenerCodigoPedido(pedidoFinalizado)}
                     </p>
                     <p>
                       <strong>Cliente:</strong> {obtenerCliente(pedidoFinalizado)}
                     </p>
                     <p>
-                      <strong>Tel茅fono:</strong> {pedidoFinalizado.telefono || "Sin tel茅fono"}
+                      <strong>Teléfono:</strong> {pedidoFinalizado.telefono || "Sin teléfono"}
                     </p>
                     <p>
-                      <strong>Ubicaci贸n:</strong> {pedidoFinalizado.ubicacion}
+                      <strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}
                     </p>
                     <p>
                       <strong>Tipo de pago:</strong> {pedidoFinalizado.tipo_pago || "No especificado"}
@@ -2234,7 +2234,7 @@ export default function App() {
                     rel="noreferrer"
                     className="button green link-button"
                   >
-                    馃煝 Confirmar pedido por WhatsApp
+                    🟢 Confirmar pedido por WhatsApp
                   </a>
 
                   <div className="grid-2" style={{ marginTop: 14 }}>
@@ -2267,7 +2267,7 @@ export default function App() {
                   onClick={() => setAdminTab("menu")}
                   className={adminTab === "menu" ? "active" : ""}
                 >
-                  Editar men煤 diario
+                  Editar menú diario
                 </button>
 
                 <button
@@ -2283,7 +2283,7 @@ export default function App() {
                   onClick={() => setAdminTab("generador")}
                   className={adminTab === "generador" ? "active" : ""}
                 >
-                  Generador de men煤
+                  Generador de menú
                 </button>
 
                 <button
@@ -2307,7 +2307,7 @@ export default function App() {
                 <section className="card card-pad">
                   <div className="admin-top-row">
                     <div>
-                      <h2>馃搵 {tituloPedidos}</h2>
+                      <h2>📋 {tituloPedidos}</h2>
                       <p className="muted">Vista organizada para preparar pedidos y revisar historial.</p>
                     </div>
 
@@ -2316,7 +2316,7 @@ export default function App() {
                       className="button light"
                       onClick={() => setRecargaPedidos((actual) => actual + 1)}
                     >
-                      馃攧 Actualizar pedidos
+                      🔄 Actualizar pedidos
                     </button>
                   </div>
 
@@ -2333,7 +2333,7 @@ export default function App() {
                     </button>
 
                     <label className="calendario-filtro">
-                      <span>Buscar d铆a</span>
+                      <span>Buscar día</span>
                       <input
                         type="date"
                         value={fechaSeleccionada}
@@ -2346,7 +2346,7 @@ export default function App() {
 
                     {hayBusquedaPedidos && (
                       <button type="button" onClick={() => setBusqueda("")}>
-                        Limpiar b煤squeda
+                        Limpiar búsqueda
                       </button>
                     )}
                   </div>
@@ -2355,7 +2355,7 @@ export default function App() {
                     etiqueta="Buscar pedido"
                     value={busqueda}
                     onChange={setBusqueda}
-                    placeholder="Buscar por cliente, ubicaci贸n, pago o estado..."
+                    placeholder="Buscar por cliente, ubicación, pago o estado..."
                   />
 
                   <p className="muted small">
@@ -2364,7 +2364,7 @@ export default function App() {
 
                   <div className="pedido-seccion">
                     <div className="section-heading">
-                      <h3>馃煛 Pedidos pendientes</h3>
+                      <h3>🟡 Pedidos pendientes</h3>
                       <span>{pedidosPendientes.length}</span>
                     </div>
 
@@ -2384,12 +2384,12 @@ export default function App() {
 
                   <div className="pedido-seccion">
                     <div className="section-heading">
-                      <h3>鉁� Finalizados</h3>
+                      <h3>✅ Finalizados</h3>
                       <span>{pedidosFinalizados.length}</span>
                     </div>
 
                     {pedidosFinalizados.length === 0 ? (
-                      <div className="box soft">Todav铆a no hay pedidos finalizados.</div>
+                      <div className="box soft">Todavía no hay pedidos finalizados.</div>
                     ) : (
                       pedidosFinalizados.map((pedido, index) => (
                         <PedidoCocina
@@ -2405,10 +2405,10 @@ export default function App() {
                   <div className="bottom-summary">
                     <div className="card card-pad">
                       <h3>Consolidado cocina</h3>
-                      <p className="muted">Resumen total de platos del d铆a seleccionado.</p>
+                      <p className="muted">Resumen total de platos del día seleccionado.</p>
 
                       {Object.keys(consolidado).length === 0 ? (
-                        <p className="muted">Todav铆a no hay productos para consolidar.</p>
+                        <p className="muted">Todavía no hay productos para consolidar.</p>
                       ) : (
                         <div className="grid-2">
                           {Object.entries(consolidado).map(([producto, cantidadProducto]) => (
@@ -2457,8 +2457,8 @@ export default function App() {
                   </>
                 ) : (
                   <section className="card card-pad" style={{ maxWidth: 520, margin: "0 auto" }}>
-                    <h2>馃敀 Rafa</h2>
-                    <p className="muted">Esta secci贸n es privada. Ingresa la contrase帽a para continuar.</p>
+                    <h2>🔒 Rafa</h2>
+                    <p className="muted">Esta sección es privada. Ingresa la contraseña para continuar.</p>
 
                     {errorClaveRafa && (
                       <div className="alert alert-error">{errorClaveRafa}</div>
@@ -2466,7 +2466,7 @@ export default function App() {
 
                     <form onSubmit={validarClaveRafa}>
                       <label className="field">
-                        <span>Contrase帽a</span>
+                        <span>Contraseña</span>
                         <input
                           type="password"
                           value={claveRafa}
@@ -2474,7 +2474,7 @@ export default function App() {
                             setClaveRafa(e.target.value);
                             setErrorClaveRafa("");
                           }}
-                          placeholder="Contrase帽a de Rafa"
+                          placeholder="Contraseña de Rafa"
                         />
                       </label>
 
@@ -2488,9 +2488,9 @@ export default function App() {
 
               {adminTab === "menu" && (
                 <section className="card card-pad">
-                  <h2>鉁忥笍 Editar men煤 diario</h2>
+                  <h2>✏️ Editar menú diario</h2>
                   <p className="muted">
-                    Aqu铆 modificas los platos, precios, categor铆as y acompa帽antes disponibles para los clientes.
+                    Aquí modificas los platos, precios, categorías y acompañantes disponibles para los clientes.
                   </p>
 
                   <CampoTexto
@@ -2500,13 +2500,13 @@ export default function App() {
                   />
 
                   <CampoTexto
-                    etiqueta="Nombre del men煤"
+                    etiqueta="Nombre del menú"
                     value={menu.titulo || ""}
                     onChange={(valor) => setMenu((actual) => ({ ...actual, titulo: valor }))}
                   />
 
                   <CampoTexto
-                    etiqueta="Descripci贸n"
+                    etiqueta="Descripción"
                     value={menu.descripcion || ""}
                     onChange={(valor) => setMenu((actual) => ({ ...actual, descripcion: valor }))}
                     multiline
@@ -2514,7 +2514,7 @@ export default function App() {
                   />
 
                   <CampoTexto
-                    etiqueta="Platos del d铆a"
+                    etiqueta="Platos del día"
                     value={platosTexto}
                     onChange={setPlatosTexto}
                     placeholder={
@@ -2525,27 +2525,27 @@ export default function App() {
                   />
 
                   <CampoTexto
-                    etiqueta="Acompa帽antes del d铆a"
+                    etiqueta="Acompañantes del día"
                     value={acompanantesTexto}
                     onChange={setAcompanantesTexto}
-                    placeholder={"Arroz con coco\nEnsalada verde\nPur茅 de papa\nTajadas maduras\nYuca cocida"}
+                    placeholder={"Arroz con coco\nEnsalada verde\nPuré de papa\nTajadas maduras\nYuca cocida"}
                     multiline
                     rows={7}
                   />
 
                   <div className="box soft small">
-                    <strong>Platos:</strong> escribe un plato por l铆nea con este formato:
+                    <strong>Platos:</strong> escribe un plato por línea con este formato:
                     <br />
-                    Categor铆a | Nombre del plato:Precio
+                    Categoría | Nombre del plato:Precio
                     <br />
                     <br />
                     <strong>Ejemplo:</strong> Pechuga | Pechuga en salsa criolla:18500
                     <br />
                     <br />
-                    <strong>Sopas:</strong> los platos con categor铆a Sopas no permiten acompa帽antes ni incluyen sopa + bebida.
+                    <strong>Sopas:</strong> los platos con categoría Sopas no permiten acompañantes ni incluyen sopa + bebida.
                     <br />
                     <br />
-                    <strong>Para llevar:</strong> las sopas configuradas como 鈥淪opas medianas sin arroz鈥�, 鈥淪opas medianas con arroz鈥� y 鈥淪ancocho de pollo con arroz鈥� tienen empaque sin costo adicional.
+                    <strong>Para llevar:</strong> las sopas configuradas como “Sopas medianas sin arroz”, “Sopas medianas con arroz” y “Sancocho de pollo con arroz” tienen empaque sin costo adicional.
                   </div>
 
                   <button
@@ -2555,7 +2555,7 @@ export default function App() {
                     className="button"
                     style={{ width: "100%", marginTop: 14 }}
                   >
-                    {guardandoMenu ? "Guardando men煤..." : "Guardar men煤 del d铆a"}
+                    {guardandoMenu ? "Guardando menú..." : "Guardar menú del día"}
                   </button>
 
                   {mensajeMenu.texto && (
@@ -2571,3 +2571,4 @@ export default function App() {
       </div>
     </>
   );
+}
