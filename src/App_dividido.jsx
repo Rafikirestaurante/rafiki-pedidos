@@ -452,6 +452,206 @@ function obtenerItemsPedido(pedido) {
   return Array.isArray(pedido.items) ? pedido.items : [];
 }
 
+function textoMayusculasTicket(texto) {
+  return String(texto || "")
+    .trim()
+    .toUpperCase();
+}
+
+function horaTicket(fecha) {
+  if (!fecha) return new Date().toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(fecha));
+}
+
+function crearDatosTicketPedido(pedido) {
+  const items = obtenerItemsPedido(pedido);
+  const productos = [];
+  const acompanantes = [];
+  const observaciones = [];
+
+  items.forEach((item) => {
+    const cantidad = Number(item.cantidad) || 1;
+    const nombre = item.plato || item.proteina || item.nombre || "Producto";
+    productos.push(`${cantidad} ${textoMayusculasTicket(nombre)}`);
+
+    if (Array.isArray(item.acompanantes)) {
+      item.acompanantes.forEach((acompanante) => {
+        const limpio = textoMayusculasTicket(acompanante);
+        if (limpio && !acompanantes.includes(limpio)) acompanantes.push(limpio);
+      });
+    }
+
+    if (item.observacionAcompanantes?.trim()) {
+      observaciones.push(`OBS. ACOMPAÑANTES: ${textoMayusculasTicket(item.observacionAcompanantes)}`);
+    }
+
+    if (item.paraLlevar) {
+      const textoEmpaque = valorParaLlevarItem(item) > 0 ? "PARA LLEVAR" : "PARA LLEVAR SIN COSTO";
+      observaciones.push(`${textoMayusculasTicket(nombre)}: ${textoEmpaque}`);
+    }
+  });
+
+  if (pedido.observaciones?.trim()) {
+    observaciones.unshift(textoMayusculasTicket(pedido.observaciones));
+  }
+
+  const tieneParaLlevar = items.some((item) => item.paraLlevar);
+
+  return {
+    codigo: obtenerCodigoPedido(pedido),
+    hora: horaTicket(pedido.created_at),
+    cliente: textoMayusculasTicket(obtenerCliente(pedido)),
+    productos: productos.length ? productos : listaPorLineas(pedido.pedido_texto).map(textoMayusculasTicket),
+    acompanantes,
+    observaciones,
+    entrega: tieneParaLlevar ? "PARA LLEVAR" : "SERVIR EN MESA"
+  };
+}
+
+function imprimirTicketPedido(pedido) {
+  const ticket = crearDatosTicketPedido(pedido);
+  const linea = "========================";
+  const separador = "------------------------";
+  const crearLineas = (lineas) => lineas.map((lineaTexto) => `<div>${lineaTexto}</div>`).join("");
+
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Pedido ${ticket.codigo}</title>
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+          }
+          .ticket {
+            width: 80mm;
+            padding: 10px 8px 14px;
+            color: #000;
+            background: #fff;
+          }
+          .center { text-align: center; }
+          .linea {
+            font-family: "Courier New", monospace;
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1.1;
+            white-space: pre;
+          }
+          .titulo {
+            font-size: 25px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            margin: 4px 0;
+            white-space: nowrap;
+          }
+          .info {
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.35;
+            margin: 12px 0 10px;
+          }
+          .label {
+            font-size: 18px;
+            font-weight: 900;
+            margin-top: 6px;
+          }
+          .cliente {
+            font-size: 22px;
+            font-weight: 900;
+            margin: 2px 0 10px;
+          }
+          .bloque {
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1.35;
+            margin: 10px 0;
+            text-transform: uppercase;
+            word-break: break-word;
+          }
+          .acompanantes {
+            font-size: 20px;
+            font-weight: 900;
+          }
+          .observaciones {
+            font-size: 21px;
+            font-weight: 900;
+          }
+          .entrega {
+            font-size: 24px;
+            font-weight: 900;
+            margin: 14px 0 8px;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ticket">
+          <div class="linea center">${linea}</div>
+          <div class="titulo center">RAFIKI&nbsp;&nbsp;&nbsp;PEDIDO</div>
+          <div class="linea center">${linea}</div>
+
+          <div class="info">
+            <div>Pedido #${ticket.codigo}</div>
+            <div>Hora: ${ticket.hora}</div>
+          </div>
+
+          <div class="label">Cliente:</div>
+          <div class="cliente">${ticket.cliente || "CLIENTE"}</div>
+
+          <div class="linea">${separador}</div>
+          <div class="bloque">${crearLineas(ticket.productos)}</div>
+
+          ${ticket.acompanantes.length ? `
+            <div class="linea">${separador}</div>
+            <div class="bloque acompanantes">${crearLineas(ticket.acompanantes)}</div>
+          ` : ""}
+
+          ${ticket.observaciones.length ? `
+            <div class="linea">${separador}</div>
+            <div class="label">OBSERVACIONES:</div>
+            <div class="bloque observaciones">${crearLineas(ticket.observaciones)}</div>
+          ` : ""}
+
+          <div class="linea">${separador}</div>
+          <div class="entrega">${ticket.entrega}</div>
+          <div class="linea center">${linea}</div>
+        </div>
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.print();
+              window.close();
+            }, 250);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+
+  const ventana = window.open("", "_blank", "width=420,height=700");
+
+  if (!ventana) {
+    alert("El navegador bloqueó la impresión. Permite ventanas emergentes para Rafiki Pedidos.");
+    return;
+  }
+
+  ventana.document.open();
+  ventana.document.write(html);
+  ventana.document.close();
+}
+
 function consolidarPedidos(pedidos) {
   const resumen = {};
 
@@ -752,6 +952,9 @@ function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoI
                       Revisado
                     </button>
                   )}
+                  <button type="button" className="mini-btn print" onClick={() => imprimirTicketPedido(pedido)}>
+                    Imprimir
+                  </button>
                   {telefonoCliente ? (
                     <a href={linkCliente} target="_blank" rel="noreferrer" className="mini-btn green">
                       WhatsApp
@@ -1970,6 +2173,7 @@ export default function App() {
         .mini-btn { display: block; width: 100%; margin-bottom: 5px; border: 1px solid #e7e5e4; border-radius: 10px; padding: 6px 8px; background: #fff; color: #44403c; font-size: 11px; font-weight: 900; text-align: center; text-decoration: none; box-shadow: none; }
         .mini-btn.warning { background: #f79e1c; border-color: #f79e1c; color: #fff; }
         .mini-btn.green { background: #16a34a; border-color: #16a34a; color: #fff; }
+        .mini-btn.print { background: #111827; border-color: #111827; color: #fff; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-sin-revisar { border: 3px solid #f79e1c; box-shadow: 0 12px 34px rgba(247,158,28,0.22); }
         .pedido-finalizado { opacity: 0.7; }
