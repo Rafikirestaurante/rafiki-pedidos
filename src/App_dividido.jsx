@@ -9,6 +9,7 @@ const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
 const CLAVE_ADMIN = "rafiki1234";
 const CLAVE_RAFA = "rafa1234*";
+const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
 
 const estadosPedido = ["Pendiente", "Finalizado"];
 
@@ -92,6 +93,29 @@ function obtenerRangoPedidos(filtro = "hoy", fechaManual = fechaISOColombia()) {
     inicio: inicio.toISOString(),
     fin: fin.toISOString()
   };
+}
+
+
+function cargarPedidosRevisadosLocal() {
+  try {
+    const guardado = localStorage.getItem(STORAGE_PEDIDOS_REVISADOS);
+    const ids = JSON.parse(guardado || "[]");
+    return Array.isArray(ids) ? ids.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarPedidosRevisadosLocal(ids) {
+  try {
+    localStorage.setItem(STORAGE_PEDIDOS_REVISADOS, JSON.stringify(Array.from(new Set(ids.map(String)))));
+  } catch {
+    // Si el navegador bloquea localStorage, la app sigue funcionando sin persistir el visto.
+  }
+}
+
+function pedidoEsDeHoy(pedido) {
+  return fechaISOColombia(new Date(pedido?.created_at || Date.now())) === fechaISOColombia();
 }
 
 function normalizarTexto(texto) {
@@ -496,7 +520,7 @@ function SelectorCantidad({ cantidad, onChange }) {
   );
 }
 
-function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
+function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
@@ -504,12 +528,13 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
   const linkCliente = telefonoCliente ? crearLinkWhatsApp(telefonoCliente, mensajeCliente) : "#";
 
   return (
-    <article className={`pedido-cocina ${estadoNormalizado === "Finalizado" ? "pedido-finalizado" : ""}`}>
+    <article className={`pedido-cocina ${estadoNormalizado === "Finalizado" ? "pedido-finalizado" : ""} ${!revisado ? "pedido-sin-revisar" : ""}`}>
       <div className={`pedido-header ${estadoNormalizado === "Finalizado" ? "pedido-header-finalizado" : "pedido-header-pending"}`}>
         <div className="pedido-header-title">
           Pedido #{obtenerCodigoPedido(pedido)}
         </div>
         <div className="pedido-header-right">
+          {!revisado && <span className="badge badge-nuevo">Nuevo</span>}
           <EstadoBadge estado={pedido.estado} />
           <strong style={{ color: "white", fontSize: 20, fontFamily: "'Fraunces', serif" }}>{dinero(pedido.total)}</strong>
         </div>
@@ -612,6 +637,16 @@ function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false }) {
             </option>
           ))}
         </select>
+
+        {!revisado && (
+          <button
+            type="button"
+            className="button warning"
+            onClick={() => onMarcarRevisado?.(pedido.id)}
+          >
+            Marcar revisado
+          </button>
+        )}
 
         {telefonoCliente ? (
           <a
@@ -878,11 +913,17 @@ export default function App() {
   const [guardandoMenu, setGuardandoMenu] = useState(false);
   const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
   const [recargaPedidos, setRecargaPedidos] = useState(0);
+  const [pedidosRevisados, setPedidosRevisados] = useState(cargarPedidosRevisadosLocal);
+  const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
+  const [sonidoActivado, setSonidoActivado] = useState(false);
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
   const mensajeMenuTimer = useRef(null);
   const menuHashRef = useRef("");
+  const pedidosRevisadosRef = useRef(pedidosRevisados);
+  const audioCtxRef = useRef(null);
+  const alertaPedidoTimer = useRef(null);
 
   function navegar(ruta, nuevaVista) {
     actualizarRuta(ruta);
@@ -923,6 +964,11 @@ export default function App() {
   }
 
   useEffect(() => {
+    pedidosRevisadosRef.current = pedidosRevisados;
+    guardarPedidosRevisadosLocal(pedidosRevisados);
+  }, [pedidosRevisados]);
+
+  useEffect(() => {
     return () => {
       if (mensajeTimer.current) {
         clearTimeout(mensajeTimer.current);
@@ -931,8 +977,75 @@ export default function App() {
       if (mensajeMenuTimer.current) {
         clearTimeout(mensajeMenuTimer.current);
       }
+
+      if (alertaPedidoTimer.current) {
+        clearTimeout(alertaPedidoTimer.current);
+      }
     };
   }, []);
+
+  function activarSonidoPedidos() {
+    setSonidoActivado(true);
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext && !audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      }
+      reproducirSonidoPedido();
+      mostrarMensaje("Sonido de nuevos pedidos activado.", "success");
+    } catch {
+      mostrarMensaje("El navegador bloqueó el sonido. Toca de nuevo el botón de activar sonido.", "warning");
+    }
+  }
+
+  function reproducirSonidoPedido() {
+    if (!sonidoActivado) return;
+
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = audioCtxRef.current || new AudioContext();
+      audioCtxRef.current = ctx;
+
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+
+      const tiempos = [0, 0.18, 0.36];
+      tiempos.forEach((inicio, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(index === 1 ? 880 : 660, ctx.currentTime + inicio);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime + inicio);
+        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + inicio + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + inicio + 0.14);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + inicio);
+        osc.stop(ctx.currentTime + inicio + 0.16);
+      });
+    } catch {
+      // El aviso visual sigue funcionando aunque el sonido sea bloqueado.
+    }
+  }
+
+  function mostrarAlertaPedidoNuevo(pedido) {
+    setAlertaPedidoNuevo(pedido);
+    if (alertaPedidoTimer.current) {
+      clearTimeout(alertaPedidoTimer.current);
+    }
+    alertaPedidoTimer.current = setTimeout(() => setAlertaPedidoNuevo(null), 12000);
+  }
+
+  function marcarPedidoRevisado(id) {
+    setPedidosRevisados((actual) => Array.from(new Set([...actual, String(id)])));
+  }
+
+  function marcarTodosPedidosRevisados() {
+    const ids = pedidosFiltrados.map((pedido) => String(pedido.id));
+    setPedidosRevisados((actual) => Array.from(new Set([...actual, ...ids])));
+    setAlertaPedidoNuevo(null);
+  }
 
   useEffect(() => {
     function manejarCambioRuta() {
@@ -989,6 +1102,11 @@ export default function App() {
   const pedidosFinalizados = useMemo(() => {
     return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) === "Finalizado");
   }, [pedidosFiltrados]);
+
+  const pedidosSinRevisar = useMemo(() => {
+    const revisados = new Set(pedidosRevisados.map(String));
+    return pedidosFiltrados.filter((pedido) => !revisados.has(String(pedido.id)));
+  }, [pedidosFiltrados, pedidosRevisados]);
 
   const consolidado = useMemo(() => consolidarPedidos(pedidosFiltrados), [pedidosFiltrados]);
 
@@ -1130,6 +1248,46 @@ export default function App() {
       cancelado = true;
     };
   }, [filtroPedidos, fechaSeleccionada, recargaPedidos]);
+
+  useEffect(() => {
+    if (!adminAutenticado) return undefined;
+
+    const canal = supabase
+      .channel("rafiki-pedidos-tiempo-real")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "pedidos" },
+        (payload) => {
+          const nuevoPedido = payload.new;
+          if (!nuevoPedido?.id) return;
+
+          const hoy = pedidoEsDeHoy(nuevoPedido);
+          const coincideConVista =
+            filtroPedidos === "hoy"
+              ? hoy
+              : filtroPedidos === "dia"
+                ? fechaISOColombia(new Date(nuevoPedido.created_at || Date.now())) === fechaSeleccionada
+                : true;
+
+          if (coincideConVista) {
+            setPedidos((actual) => {
+              if (actual.some((pedido) => pedido.id === nuevoPedido.id)) return actual;
+              return [...actual, nuevoPedido];
+            });
+          }
+
+          if (hoy && !pedidosRevisadosRef.current.map(String).includes(String(nuevoPedido.id))) {
+            reproducirSonidoPedido();
+            mostrarAlertaPedidoNuevo(nuevoPedido);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [adminAutenticado, filtroPedidos, fechaSeleccionada, sonidoActivado]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -1576,6 +1734,17 @@ export default function App() {
         .admin-tabs button.active { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .admin-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+        .admin-actions-stack { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .button.warning { background: linear-gradient(135deg, #f79e1c, #f97316); color: #fff; border: none; box-shadow: 0 8px 18px rgba(247,158,28,0.28); }
+        .button.warning:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(247,158,28,0.34); }
+        .alerta-pedido-nuevo { display: flex; justify-content: space-between; gap: 14px; align-items: center; background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 2px solid #f79e1c; border-radius: 24px; padding: 16px 18px; margin: 12px 0 16px; box-shadow: 0 12px 30px rgba(247,158,28,0.18); animation: pulseAlert 1.2s ease-in-out infinite; }
+        .alerta-pedido-nuevo strong { display: block; color: #9a3412; font-family: 'Fraunces', serif; font-size: 20px; }
+        .alerta-pedido-nuevo span { display: block; color: #7c2d12; margin-top: 4px; }
+        .alerta-pedido-nuevo button { border: none; border-radius: 999px; padding: 10px 14px; font-weight: 900; color: white; background: #f97316; cursor: pointer; }
+        .contador-sin-revisar { display: flex; justify-content: space-between; align-items: center; gap: 14px; background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
+        .contador-sin-revisar span { display: block; color: #7c2d12; font-weight: 800; }
+        .contador-sin-revisar strong { color: #f79e1c; font-size: 34px; font-family: 'Fraunces', serif; line-height: 1; }
+        .badge-nuevo { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
         .admin-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 12px 0 16px; }
         .soft-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 18px; padding: 16px; }
         .simple-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
@@ -1683,6 +1852,7 @@ export default function App() {
         .producto-seleccionado-row .button { padding: 8px 10px; font-size: 12px; border-radius: 12px; }
         .solicitud-preview { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; font-size: 14px; margin-top: 14px; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
+        .pedido-sin-revisar { border: 3px solid #f79e1c; box-shadow: 0 12px 34px rgba(247,158,28,0.22); }
         .pedido-finalizado { opacity: 0.7; }
         .pedido-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
         .pedido-header-pending { background: linear-gradient(135deg, #f97316, #fb923c); }
@@ -1724,7 +1894,7 @@ export default function App() {
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
         @media (max-width: 900px) {
-          .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-stats { grid-template-columns: 1fr; display: grid; }
+          .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-actions-stack, .contador-sin-revisar, .alerta-pedido-nuevo, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
           .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row { grid-template-columns: 1fr; }
@@ -2311,12 +2481,49 @@ export default function App() {
                       <p className="muted">Vista organizada para preparar pedidos y revisar historial.</p>
                     </div>
 
+                    <div className="admin-actions-stack">
+                      <button
+                        type="button"
+                        className="button light"
+                        onClick={() => setRecargaPedidos((actual) => actual + 1)}
+                      >
+                        🔄 Actualizar pedidos
+                      </button>
+
+                      <button
+                        type="button"
+                        className={sonidoActivado ? "button green" : "button warning"}
+                        onClick={activarSonidoPedidos}
+                      >
+                        {sonidoActivado ? "🔔 Sonido activo" : "🔔 Activar sonido"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {alertaPedidoNuevo && (
+                    <div className="alerta-pedido-nuevo">
+                      <div>
+                        <strong>🔔 Nuevo pedido #{obtenerCodigoPedido(alertaPedidoNuevo)}</strong>
+                        <span>{obtenerCliente(alertaPedidoNuevo)} · {dinero(alertaPedidoNuevo.total)}</span>
+                      </div>
+                      <button type="button" onClick={() => marcarPedidoRevisado(alertaPedidoNuevo.id)}>
+                        Marcar revisado
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="contador-sin-revisar">
+                    <div>
+                      <span>Pedidos sin revisar</span>
+                      <strong>{pedidosSinRevisar.length}</strong>
+                    </div>
                     <button
                       type="button"
                       className="button light"
-                      onClick={() => setRecargaPedidos((actual) => actual + 1)}
+                      onClick={marcarTodosPedidosRevisados}
+                      disabled={pedidosSinRevisar.length === 0}
                     >
-                      🔄 Actualizar pedidos
+                      Marcar todos como revisados
                     </button>
                   </div>
 
@@ -2377,6 +2584,8 @@ export default function App() {
                           pedido={pedido}
                           onCambiarEstado={cambiarEstadoPedido}
                           guardandoEstado={guardandoEstadoPedidoId === pedido.id}
+                          revisado={pedidosRevisados.map(String).includes(String(pedido.id))}
+                          onMarcarRevisado={marcarPedidoRevisado}
                         />
                       ))
                     )}
@@ -2397,6 +2606,8 @@ export default function App() {
                           pedido={pedido}
                           onCambiarEstado={cambiarEstadoPedido}
                           guardandoEstado={guardandoEstadoPedidoId === pedido.id}
+                          revisado={pedidosRevisados.map(String).includes(String(pedido.id))}
+                          onMarcarRevisado={marcarPedidoRevisado}
                         />
                       ))
                     )}
