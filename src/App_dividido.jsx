@@ -1224,6 +1224,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   const [meseroLocal, setMeseroLocal] = useState("");
   const [observacionesLocal, setObservacionesLocal] = useState("");
   const [errorMesa, setErrorMesa] = useState("");
+  const [categoriaActivaMesa, setCategoriaActivaMesa] = useState("almuerzos");
 
   const itemsConProducto = useMemo(
     () => itemsMesa.filter((item) => item.plato || item.proteina),
@@ -1327,6 +1328,11 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
     setErrorMesa("");
   }
 
+  function seleccionarCategoriaMesa(categoria) {
+    setCategoriaActivaMesa(categoria);
+    setErrorMesa("");
+  }
+
   async function enviarPedidoMesa() {
     if (itemsConProducto.length === 0) {
       setErrorMesa("Agrega al menos un producto.");
@@ -1358,11 +1364,32 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   return (
     <main className="order-layout mesas-cliente-layout">
       <section className="card card-pad">
-        {menu.platos_detalle.length === 0 ? (
-          <div className="box soft">No hay menú diario configurado.</div>
-        ) : (
-          <>
-            {itemsMesa.map((item, index) => {
+        <div className="mesas-tabs" aria-label="Categorías del panel mesas">
+          <button
+            type="button"
+            onClick={() => seleccionarCategoriaMesa("almuerzos")}
+            className={`mesas-tab ${categoriaActivaMesa === "almuerzos" ? "active" : ""}`}
+          >
+            <span>🍛</span>
+            <strong>Almuerzos</strong>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => seleccionarCategoriaMesa("cafeteria")}
+            className={`mesas-tab cafeteria ${categoriaActivaMesa === "cafeteria" ? "active" : ""}`}
+          >
+            <span>☕</span>
+            <strong>Cafetería</strong>
+          </button>
+        </div>
+
+        {categoriaActivaMesa === "almuerzos" ? (
+          menu.platos_detalle.length === 0 ? (
+            <div className="box soft">No hay menú diario configurado.</div>
+          ) : (
+            <>
+              {itemsMesa.map((item, index) => {
               const tienePlato = Boolean(item.plato || item.proteina);
               const itemEsSopa = esCategoriaSopa(item.categoria);
               const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
@@ -1499,7 +1526,29 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
                 </button>
               </>
             )}
-          </>
+            </>
+          )
+        ) : (
+          <div className="cafeteria-placeholder fade-step">
+            <h2>☕ Cafetería</h2>
+            <p className="muted">
+              Estructura creada para la siguiente fase. Aquí agregaremos Parfait, Batidos, Desayunos,
+              Sándwich, Bebidas calientes y Postres.
+            </p>
+
+            <div className="cafeteria-grid">
+              <div className="cafeteria-card">🍓 <strong>Parfait</strong></div>
+              <div className="cafeteria-card">🥤 <strong>Batidos</strong></div>
+              <div className="cafeteria-card">🍳 <strong>Desayunos</strong></div>
+              <div className="cafeteria-card">🥪 <strong>Sándwich</strong></div>
+              <div className="cafeteria-card">☕ <strong>Bebidas calientes</strong></div>
+              <div className="cafeteria-card">🍰 <strong>Postres</strong></div>
+            </div>
+
+            <div className="box soft" style={{ marginTop: 14 }}>
+              En esta Fase 7A no se guarda nada nuevo todavía. Almuerzos, Supabase e impresión siguen igual.
+            </div>
+          </div>
         )}
       </section>
 
@@ -2592,6 +2641,15 @@ export default function App() {
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.disabled { opacity: 0.6; pointer-events: auto; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
+        .mesas-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .mesas-tab { border: 2px solid #fed7aa; background: #fff7ed; color: #9a3412; border-radius: 22px; padding: 16px 12px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 18px rgba(249,115,22,0.08); cursor: pointer; }
+        .mesas-tab.cafeteria { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+        .mesas-tab.active { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; border-color: transparent; }
+        .mesas-tab.cafeteria.active { background: linear-gradient(135deg, #92400e, #b45309); color: #fff; }
+        .cafeteria-placeholder { padding: 8px 0 4px; }
+        .cafeteria-placeholder h2 { margin-bottom: 8px; text-align: center; color: #92400e; }
+        .cafeteria-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+        .cafeteria-card { border: 1px solid #fde68a; background: #fffbeb; color: #78350f; border-radius: 20px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; min-height: 72px; }
         .continue-button { width: 100%; margin-top: 16px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
         .continue-button + .field { margin-top: 14px; }
         .summary-continue { width: 100%; margin: 12px 0 6px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.22); }
