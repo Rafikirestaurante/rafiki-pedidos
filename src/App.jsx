@@ -1299,7 +1299,7 @@ export default function App() {
                 <div className="nav">
                   <button
                     type="button"
-                    onClick={() => navegar("/", "cliente")}
+                    onClick={() => navegar("/cliente", "cliente")}
                     className={vista === "cliente" ? "active" : ""}
                   >
                     Vista cliente
@@ -1323,7 +1323,7 @@ export default function App() {
                 <h2>Bienvenido a Rafiki</h2>
                 <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
 
-                <button type="button" onClick={() => navegar("/", "cliente")} className="welcome-button">
+                <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
                   🛍️ Haz tu pedido aquí
                 </button>
               </section>
