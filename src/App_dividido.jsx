@@ -73,14 +73,23 @@ const CAFETERIA_PARFAIT_TAMANOS = [
 const CAFETERIA_FRUTAS = ["Fresa", "Banano", "Uva", "Piña", "Mango", "Kiwi", "Arándanos"];
 const CAFETERIA_CEREALES = ["Granola", "Cornflake con Chocokrispi"];
 
-const CAFETERIA_BATIDOS_TAMANOS = [
+const CAFETERIA_BATIDOS_CREMOSOS_TAMANOS = [
   { nombre: "12 oz", precio: 11000 },
   { nombre: "16 oz", precio: 13000 },
   { nombre: "22 oz", precio: 16000 }
 ];
 
-const CAFETERIA_BATIDOS_SABORES = ["Frutos rojos", "Mambo", "Mufasa", "Simba", "Kakao", "Batido de café"];
+const CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS = [
+  { nombre: "12 oz", precio: 8500 },
+  { nombre: "16 oz", precio: 10000 },
+  { nombre: "22 oz", precio: 12500 }
+];
+
+const CAFETERIA_BATIDOS_CREMOSOS_SABORES = ["Frutos rojos", "Mambo", "Mufasa", "Simba", "Kakao", "Batido de café"];
+const CAFETERIA_BATIDOS_REFRESCANTES_SABORES = ["Karibu", "Zawadi", "Kike", "Utamu", "Nala", "Pumba", "Yenye", "Simba (en agua)", "Verde"];
+const CAFETERIA_JUGOS_TRADICIONALES_SABORES = ["Fresa", "Mora", "Zapote", "Níspero"];
 const CAFETERIA_BATIDOS_BASES = ["Yogurt", "Helado"];
+const CAFETERIA_JUGOS_BASES = ["Agua", "Leche"];
 
 const CAFETERIA_DESAYUNOS = [
   { nombre: "Huevos tomate y cebolla", precio: 11000 },
@@ -1328,6 +1337,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   const [tamanoParfait, setTamanoParfait] = useState("12 oz");
   const [frutasParfait, setFrutasParfait] = useState([]);
   const [cerealParfait, setCerealParfait] = useState("Granola");
+  const [tipoBatido, setTipoBatido] = useState("cremoso");
   const [saborBatido, setSaborBatido] = useState("Frutos rojos");
   const [tamanoBatido, setTamanoBatido] = useState("12 oz");
   const [baseBatido, setBaseBatido] = useState("Yogurt");
@@ -1502,11 +1512,39 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
     setFrutasParfait([]);
   }
 
+  function cambiarTipoBatidoMesa(tipo) {
+    setTipoBatido(tipo);
+    setTamanoBatido("12 oz");
+
+    if (tipo === "cremoso") {
+      setSaborBatido(CAFETERIA_BATIDOS_CREMOSOS_SABORES[0]);
+      setBaseBatido("Yogurt");
+      return;
+    }
+
+    if (tipo === "refrescante") {
+      setSaborBatido(CAFETERIA_BATIDOS_REFRESCANTES_SABORES[0]);
+      setBaseBatido("");
+      return;
+    }
+
+    setSaborBatido(CAFETERIA_JUGOS_TRADICIONALES_SABORES[0]);
+    setBaseBatido("Agua");
+  }
+
   function agregarBatidoMesa() {
-    const precio = precioPorNombre(CAFETERIA_BATIDOS_TAMANOS, tamanoBatido);
+    const tamanos = tipoBatido === "cremoso"
+      ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS
+      : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS;
+    const precio = precioPorNombre(tamanos, tamanoBatido);
+    const nombreTipo = tipoBatido === "cremoso"
+      ? "Batido cremoso"
+      : tipoBatido === "refrescante"
+        ? "Batido refrescante"
+        : "Jugo tradicional";
 
     agregarItemCafeteria(crearItemCafeteria({
-      tipo: "Batido",
+      tipo: nombreTipo,
       producto: `${saborBatido} ${tamanoBatido}`,
       precio,
       tamano: tamanoBatido,
@@ -1835,25 +1873,56 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
             {subcategoriaCafeteria === "batidos" && (
               <div className="cafeteria-panel fade-step">
                 <h3>🥤 Batidos</h3>
+                <h4>Tipo</h4>
+                <div className="option-grid">
+                  {[
+                    { clave: "cremoso", nombre: "Batido cremoso" },
+                    { clave: "refrescante", nombre: "Batido refrescante" },
+                    { clave: "jugo", nombre: "Jugo tradicional" }
+                  ].map((item) => (
+                    <button key={item.clave} type="button" onClick={() => cambiarTipoBatidoMesa(item.clave)} className={`option ${tipoBatido === item.clave ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                    </button>
+                  ))}
+                </div>
                 <h4>Sabor</h4>
                 <div className="chips">
-                  {CAFETERIA_BATIDOS_SABORES.map((sabor) => (
+                  {(tipoBatido === "cremoso"
+                    ? CAFETERIA_BATIDOS_CREMOSOS_SABORES
+                    : tipoBatido === "refrescante"
+                      ? CAFETERIA_BATIDOS_REFRESCANTES_SABORES
+                      : CAFETERIA_JUGOS_TRADICIONALES_SABORES
+                  ).map((sabor) => (
                     <button key={sabor} type="button" onClick={() => setSaborBatido(sabor)} className={`chip ${saborBatido === sabor ? "selected" : ""}`}>{saborBatido === sabor ? "✓ " : "+ "}{sabor}</button>
                   ))}
                 </div>
+                {tipoBatido === "cremoso" && (
+                  <>
+                    <h4>Base</h4>
+                    <div className="chips">
+                      {CAFETERIA_BATIDOS_BASES.map((base) => (
+                        <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {tipoBatido === "jugo" && (
+                  <>
+                    <h4>Base</h4>
+                    <div className="chips">
+                      {CAFETERIA_JUGOS_BASES.map((base) => (
+                        <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <h4>Tamaño</h4>
                 <div className="option-grid">
-                  {CAFETERIA_BATIDOS_TAMANOS.map((item) => (
+                  {(tipoBatido === "cremoso" ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS).map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setTamanoBatido(item.nombre)} className={`option ${tamanoBatido === item.nombre ? "selected" : ""}`}>
                       <div>{item.nombre}</div>
                       <small>{dinero(item.precio)}</small>
                     </button>
-                  ))}
-                </div>
-                <h4>Base</h4>
-                <div className="chips">
-                  {CAFETERIA_BATIDOS_BASES.map((base) => (
-                    <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
                   ))}
                 </div>
                 <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+ Agregar y seguir</button>
@@ -2700,7 +2769,7 @@ export default function App() {
       }
 
       setPedidoFinalizado(data);
-      mostrarMensaje("Pedido guardado. Ahora puedes enviar el consolidado por WhatsApp.", "success");
+      setMensaje({ texto: "", tipo: "info" });
       setVista("confirmacion");
     } finally {
       setGuardandoPedido(false);
@@ -3758,7 +3827,7 @@ export default function App() {
                             className="button"
                             style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
                           >
-                            {guardandoPedido ? "Guardando..." : "Finalizar →"}
+                            {guardandoPedido ? "Guardando..." : "Enviar a cocina →"}
                           </button>
                         </div>
                       </div>
@@ -3770,61 +3839,20 @@ export default function App() {
           )}
 
           {!cargando && vista === "confirmacion" && pedidoFinalizado && (
-            <main style={{ maxWidth: 760, margin: "0 auto" }}>
+            <main style={{ maxWidth: 620, margin: "0 auto" }}>
               <section className="card">
-                <div className="hero green" style={{ textAlign: "center" }}>
+                <div className="hero green confirmacion-cocina" style={{ textAlign: "center" }}>
                   <div className="confirmacion-check">✓</div>
-                  <h2 style={{ fontFamily: "'Fraunces', serif" }}>¡Pedido confirmado!</h2>
-                  <p>Revisa el consolidado y envíalo a Rafiki por WhatsApp.</p>
+                  <h2 style={{ fontFamily: "'Fraunces', serif" }}>
+                    Pedido #{obtenerCodigoPedido(pedidoFinalizado)} enviado a cocina
+                  </h2>
+                  <p>El pedido fue registrado correctamente.</p>
                 </div>
 
-                <div className="card-pad">
-                  <div className="box soft">
-                    <h3>Consolidado del pedido</h3>
-                    <p>
-                      <strong>Pedido N°:</strong> {obtenerCodigoPedido(pedidoFinalizado)}
-                    </p>
-                    <p>
-                      <strong>Cliente:</strong> {obtenerCliente(pedidoFinalizado)}
-                    </p>
-                    <p>
-                      <strong>Teléfono:</strong> {pedidoFinalizado.telefono || "Sin teléfono"}
-                    </p>
-                    <p>
-                      <strong>Ubicación:</strong> {pedidoFinalizado.ubicacion}
-                    </p>
-                    <p>
-                      <strong>Tipo de pago:</strong> {pedidoFinalizado.tipo_pago || "No especificado"}
-                    </p>
-
-                    <div className="pedido-text">{pedidoFinalizado.pedido_texto}</div>
-
-                    <div className="total-row">
-                      <span>Total</span>
-                      <strong>{dinero(pedidoFinalizado.total)}</strong>
-                    </div>
-                  </div>
-
-                  <pre>{mensajeWhatsAppFinal}</pre>
-
-                  <a
-                    href={linkWhatsAppFinal}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="button green link-button"
-                  >
-                    🟢 Confirmar pedido por WhatsApp
-                  </a>
-
-                  <div className="grid-2" style={{ marginTop: 14 }}>
-                    <button type="button" onClick={nuevoPedidoCliente} className="button light">
-                      Hacer otro pedido
-                    </button>
-
-                    <button type="button" onClick={() => navegar("/", "inicio")} className="button light">
-                      Volver al inicio
-                    </button>
-                  </div>
+                <div className="card-pad" style={{ textAlign: "center" }}>
+                  <button type="button" onClick={nuevoPedidoCliente} className="button green" style={{ maxWidth: 320, margin: "0 auto" }}>
+                    Hacer otro pedido
+                  </button>
                 </div>
               </section>
             </main>
