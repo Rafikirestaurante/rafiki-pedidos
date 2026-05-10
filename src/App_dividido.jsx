@@ -1209,40 +1209,58 @@ function PanelRafaPrivado() {
 
 function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   const [itemsMesa, setItemsMesa] = useState([]);
-  const [acompanantesSeleccionados, setAcompanantesSeleccionados] = useState([]);
+  const [itemActivoId, setItemActivoId] = useState(null);
+  const [pasoMesa, setPasoMesa] = useState(1);
   const [mesaLocal, setMesaLocal] = useState("Mesa 1");
   const [meseroLocal, setMeseroLocal] = useState("");
   const [observacionesLocal, setObservacionesLocal] = useState("");
+
   const total = useMemo(() => calcularTotalItems(itemsMesa), [itemsMesa]);
   const totalItems = useMemo(
     () => itemsMesa.reduce((suma, item) => suma + (Number(item.cantidad) || 0), 0),
     [itemsMesa]
   );
+  const itemActivo = itemsMesa.find((item) => item.id === itemActivoId) || null;
+  const acompanantesActivos = Array.isArray(itemActivo?.acompanantes) ? itemActivo.acompanantes : [];
 
-  function agregarPlatoMesa(plato) {
-    setItemsMesa((actual) => {
-      const existente = actual.find((item) => item.plato === plato.nombre && item.categoria === plato.categoria);
+  function seleccionarProteina(plato) {
+    const nuevoItem = {
+      ...crearItemNuevo(),
+      categoria: plato.categoria || "Platos",
+      plato: plato.nombre,
+      proteina: plato.nombre,
+      precioPlato: Number(plato.precio) || 0,
+      precioProteina: Number(plato.precio) || 0,
+      acompanantes: [],
+      observacionAcompanantes: "",
+      paraLlevar: false
+    };
 
-      if (existente) {
-        return actual.map((item) =>
-          item.id === existente.id ? { ...item, cantidad: (Number(item.cantidad) || 1) + 1 } : item
-        );
-      }
+    setItemsMesa((actual) => [...actual, nuevoItem]);
+    setItemActivoId(nuevoItem.id);
+    setPasoMesa(esCategoriaSopa(nuevoItem.categoria) ? 3 : 2);
+  }
 
-      return [
-        ...actual,
-        {
-          ...crearItemNuevo(),
-          categoria: plato.categoria || "Platos",
-          plato: plato.nombre,
-          proteina: plato.nombre,
-          precioPlato: Number(plato.precio) || 0,
-          precioProteina: Number(plato.precio) || 0,
-          acompanantes: [],
-          paraLlevar: false
-        }
-      ];
-    });
+  function alternarAcompananteActivo(acompanante) {
+    if (!itemActivoId) return;
+
+    setItemsMesa((actual) =>
+      actual.map((item) => {
+        if (item.id !== itemActivoId) return item;
+
+        const actuales = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+        const seleccionado = actuales.includes(acompanante);
+        const nuevos = seleccionado
+          ? actuales.filter((valor) => valor !== acompanante)
+          : actuales.length >= MAX_ACOMPANANTES_CLIENTE
+            ? actuales
+            : [...actuales, acompanante];
+
+        return { ...item, acompanantes: nuevos };
+      })
+    );
+
+    setPasoMesa(3);
   }
 
   function cambiarCantidadMesa(id, cantidad) {
@@ -1256,26 +1274,28 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
 
   function quitarItemMesa(id) {
     setItemsMesa((actual) => actual.filter((item) => item.id !== id));
+    if (itemActivoId === id) {
+      setItemActivoId(null);
+      setPasoMesa(1);
+    }
   }
 
-  function alternarAcompananteMesa(acompanante) {
-    setAcompanantesSeleccionados((actual) =>
-      actual.includes(acompanante)
-        ? actual.filter((item) => item !== acompanante)
-        : [...actual, acompanante]
-    );
+  function agregarOtroAlmuerzo() {
+    setItemActivoId(null);
+    setPasoMesa(1);
+    setTimeout(() => irAElemento("mesas-paso-proteinas"), 80);
   }
 
   function limpiarPedidoMesa() {
     setItemsMesa([]);
-    setAcompanantesSeleccionados([]);
+    setItemActivoId(null);
+    setPasoMesa(1);
     setObservacionesLocal("");
   }
 
   async function enviarPedidoMesa() {
     const ok = await onEnviar({
       items: itemsMesa,
-      acompanantes: acompanantesSeleccionados,
       mesa: mesaLocal,
       mesero: meseroLocal,
       observaciones: observacionesLocal
@@ -1286,8 +1306,12 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
     }
   }
 
+  const puedeEnviar = itemsMesa.length > 0 && !guardandoPedido;
+  const hayProductoActivo = Boolean(itemActivo);
+  const itemActivoEsSopa = esCategoriaSopa(itemActivo?.categoria);
+
   return (
-    <main className="mesas-pos">
+    <main className="mesas-pos mesas-wizard">
       <section className="mesas-hero">
         <div>
           <span>Panel Mesas</span>
@@ -1297,8 +1321,25 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
       </section>
 
       <section className="mesas-card">
-        <div className="mesas-section-title">
-          <h3>Proteínas y platos</h3>
+        <div className="progress-bar-wrap">
+          {[1, 2, 3].map((paso) => (
+            <div key={paso} className={`progress-step ${pasoMesa >= paso ? "done" : ""}`} />
+          ))}
+        </div>
+        <div className="progress-labels mesas-progress-labels">
+          <span className={`progress-label ${pasoMesa >= 1 ? "done" : ""}`}>Proteínas</span>
+          <span className={`progress-label ${pasoMesa >= 2 ? "done" : ""}`}>Acompañantes</span>
+          <span className={`progress-label ${pasoMesa >= 3 ? "done" : ""}`}>Confirmación</span>
+        </div>
+      </section>
+
+      <section id="mesas-paso-proteinas" className="mesas-card">
+        <div className="step-title">
+          <span className="step-number">1</span>
+          <div>
+            <h4>Proteínas</h4>
+            <p className="muted" style={{ marginBottom: 0 }}>Toca una opción para continuar.</p>
+          </div>
         </div>
 
         {Object.entries(platosAgrupados).length === 0 ? (
@@ -1313,7 +1354,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
                     key={`${plato.categoria}-${plato.nombre}`}
                     type="button"
                     className="mesa-product-btn"
-                    onClick={() => agregarPlatoMesa(plato)}
+                    onClick={() => seleccionarProteina(plato)}
                   >
                     <span>{plato.nombre}</span>
                     <small>{dinero(plato.precio)}</small>
@@ -1325,107 +1366,128 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
         )}
       </section>
 
-      <section className="mesas-card">
-        <div className="mesas-section-title">
-          <h3>Acompañantes</h3>
-        </div>
-        <div className="mesas-chips">
-          {menu.acompanantes.length === 0 ? (
-            <span className="muted">No hay acompañantes configurados.</span>
-          ) : (
-            menu.acompanantes.map((acompanante) => {
-              const seleccionado = acompanantesSeleccionados.includes(acompanante);
-              return (
-                <button
-                  key={acompanante}
-                  type="button"
-                  onClick={() => alternarAcompananteMesa(acompanante)}
-                  className={`mesa-chip ${seleccionado ? "selected" : ""}`}
-                >
-                  {seleccionado ? "✓ " : "+ "}{acompanante}
-                </button>
-              );
-            })
-          )}
-        </div>
-      </section>
+      {hayProductoActivo && !itemActivoEsSopa && pasoMesa >= 2 && (
+        <section className="mesas-card fade-step">
+          <div className="step-title">
+            <span className="step-number">2</span>
+            <div>
+              <h4>Acompañantes</h4>
+              <p className="muted" style={{ marginBottom: 0 }}>Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones.</p>
+            </div>
+          </div>
 
-      <section className="mesas-card pedido-mesa-actual">
-        <div className="mesas-section-title">
-          <h3>Pedido actual</h3>
-          {itemsMesa.length > 0 && (
+          <div className="selected-dish">
+            {itemActivo.plato || itemActivo.proteina} — {dinero(itemActivo.precioPlato || itemActivo.precioProteina)}
+          </div>
+
+          <div className="mesas-chips">
+            {menu.acompanantes.length === 0 ? (
+              <span className="muted">No hay acompañantes configurados.</span>
+            ) : (
+              menu.acompanantes.map((acompanante) => {
+                const seleccionado = acompanantesActivos.includes(acompanante);
+                const bloqueado = !seleccionado && acompanantesActivos.length >= MAX_ACOMPANANTES_CLIENTE;
+
+                return (
+                  <button
+                    key={acompanante}
+                    type="button"
+                    onClick={() => alternarAcompananteActivo(acompanante)}
+                    disabled={bloqueado}
+                    className={`mesa-chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}
+                  >
+                    {seleccionado ? "✓ " : "+ "}{acompanante}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </section>
+      )}
+
+      {hayProductoActivo && itemActivoEsSopa && pasoMesa >= 3 && (
+        <section className="mesas-card fade-step">
+          <div className="box soft">
+            <strong>Producto seleccionado:</strong> {itemActivo.plato || itemActivo.proteina}
+          </div>
+        </section>
+      )}
+
+      {itemsMesa.length > 0 && pasoMesa >= 3 && (
+        <section className="mesas-card pedido-mesa-actual fade-step">
+          <div className="mesas-section-title">
+            <h3>3. Confirmación</h3>
             <button type="button" className="mesa-link-btn" onClick={limpiarPedidoMesa}>Limpiar</button>
-          )}
-        </div>
+          </div>
 
-        {itemsMesa.length === 0 ? (
-          <div className="mesa-empty">Toca un producto para agregarlo.</div>
-        ) : (
           <div className="mesa-items-list">
-            {itemsMesa.map((item) => (
-              <div key={item.id} className="mesa-item-row">
-                <div>
-                  <strong>{item.plato || item.proteina}</strong>
-                  <span>{dinero(calcularTotalItem(item))}</span>
+            {itemsMesa.map((item, index) => {
+              const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+              return (
+                <div key={item.id} className={`mesa-item-row ${item.id === itemActivoId ? "active" : ""}`}>
+                  <div>
+                    <strong>{index + 1}. {item.plato || item.proteina}</strong>
+                    {acompanantesItem.length > 0 && <small>{acompanantesItem.join(", ")}</small>}
+                    <span>{dinero(calcularTotalItem(item))}</span>
+                  </div>
+                  <SelectorCantidad
+                    cantidad={Number(item.cantidad) || 1}
+                    onChange={(cantidad) => cambiarCantidadMesa(item.id, cantidad)}
+                  />
+                  <button type="button" className="mesa-remove" onClick={() => quitarItemMesa(item.id)}>×</button>
                 </div>
-                <SelectorCantidad
-                  cantidad={Number(item.cantidad) || 1}
-                  onChange={(cantidad) => cambiarCantidadMesa(item.id, cantidad)}
-                />
-                <button type="button" className="mesa-remove" onClick={() => quitarItemMesa(item.id)}>×</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        )}
 
-        {acompanantesSeleccionados.length > 0 && (
-          <div className="mesa-acomp-preview">
-            <strong>Acompañantes:</strong> {acompanantesSeleccionados.join(", ")}
+          <div className="mesa-otro-almuerzo">
+            <strong>¿Deseas agregar otro almuerzo?</strong>
+            <button type="button" className="button light" onClick={agregarOtroAlmuerzo}>
+              + Agregar otro almuerzo
+            </button>
           </div>
-        )}
-      </section>
 
-      <section className="mesas-card mesas-final">
-        <div className="mesas-final-grid">
-          <label className="field">
-            <span>Mesa</span>
-            <select value={mesaLocal} onChange={(e) => setMesaLocal(e.target.value)}>
-              {Array.from({ length: 30 }, (_, i) => (
-                <option key={i + 1} value={`Mesa ${i + 1}`}>{`Mesa ${i + 1}`}</option>
-              ))}
-            </select>
-          </label>
+          <div className="mesas-final-grid" style={{ marginTop: 14 }}>
+            <label className="field">
+              <span>Mesa</span>
+              <select value={mesaLocal} onChange={(e) => setMesaLocal(e.target.value)}>
+                {Array.from({ length: 30 }, (_, i) => (
+                  <option key={i + 1} value={`Mesa ${i + 1}`}>{`Mesa ${i + 1}`}</option>
+                ))}
+              </select>
+            </label>
 
-          <label className="field">
-            <span>Mesero</span>
-            <input value={meseroLocal} onChange={(e) => setMeseroLocal(e.target.value)} placeholder="Nombre" />
-          </label>
-        </div>
-
-        <CampoTexto
-          etiqueta="Observaciones"
-          value={observacionesLocal}
-          onChange={setObservacionesLocal}
-          placeholder="Ejemplo: sin ensalada, mucha salsa..."
-          multiline
-          rows={3}
-        />
-
-        <div className="mesa-send-bar">
-          <div>
-            <span>Total</span>
-            <strong>{dinero(total)}</strong>
+            <label className="field">
+              <span>Mesero</span>
+              <input value={meseroLocal} onChange={(e) => setMeseroLocal(e.target.value)} placeholder="Nombre mesero" />
+            </label>
           </div>
-          <button
-            type="button"
-            className="button green"
-            onClick={enviarPedidoMesa}
-            disabled={guardandoPedido || itemsMesa.length === 0}
-          >
-            {guardandoPedido ? "Enviando..." : "Enviar pedido mesa"}
-          </button>
-        </div>
-      </section>
+
+          <CampoTexto
+            etiqueta="Observaciones"
+            value={observacionesLocal}
+            onChange={setObservacionesLocal}
+            placeholder="Ejemplo: sin ensalada, mucha salsa..."
+            multiline
+            rows={3}
+          />
+
+          <div className="mesa-send-bar">
+            <div>
+              <span>Total</span>
+              <strong>{dinero(total)}</strong>
+            </div>
+            <button
+              type="button"
+              className="button green"
+              onClick={enviarPedidoMesa}
+              disabled={!puedeEnviar}
+            >
+              {guardandoPedido ? "Enviando..." : "Enviar pedido mesa"}
+            </button>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -2072,7 +2134,11 @@ export default function App() {
       .filter((item) => item.plato || item.proteina)
       .map((item) => ({
         ...item,
-        acompanantes: limpiarAcompanantesMenu(acompanantes || []),
+        acompanantes: limpiarAcompanantesMenu(
+          Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+            ? item.acompanantes
+            : acompanantes || []
+        ),
         observacionAcompanantes: "",
         paraLlevar: false
       }));
@@ -2591,8 +2657,16 @@ export default function App() {
         .mesa-empty { background: #fafaf9; border: 1px dashed #d6d3d1; border-radius: 18px; padding: 18px; color: #78716c; font-weight: 800; text-align: center; }
         .mesa-items-list { display: grid; gap: 10px; }
         .mesa-item-row { display: grid; grid-template-columns: 1fr auto 38px; align-items: center; gap: 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 18px; padding: 12px; }
+        .mesa-item-row.active { border-color: #22c55e; background: #f0fdf4; }
         .mesa-item-row strong { display: block; color: #292524; font-size: 17px; }
+        .mesa-item-row small { display: block; color: #57534e; font-weight: 800; margin-top: 4px; line-height: 1.25; }
         .mesa-item-row span { display: block; color: #ea580c; font-weight: 900; margin-top: 3px; }
+        .mesas-wizard .progress-bar-wrap { margin-bottom: 10px; }
+        .mesas-progress-labels { margin-bottom: 0; }
+        .mesa-chip.blocked { opacity: .45; cursor: not-allowed; }
+        .mesa-otro-almuerzo { margin-top: 14px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 20px; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .mesa-otro-almuerzo strong { color: #92400e; font-size: 18px; }
+        .mesa-otro-almuerzo .button { margin: 0; }
         .mesa-remove { width: 36px; height: 36px; border: 0; border-radius: 999px; background: #fee2e2; color: #991b1b; font-size: 22px; font-weight: 900; }
         .mesa-acomp-preview { margin-top: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 16px; padding: 12px; font-weight: 800; }
         .mesa-link-btn { border: 0; background: transparent; color: #b91c1c; font-weight: 900; text-decoration: underline; }
@@ -2609,7 +2683,8 @@ export default function App() {
           .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row, .mesas-products-grid, .mesas-final-grid { grid-template-columns: 1fr; }
           .mesa-send-bar { display: grid; grid-template-columns: 1fr; }
           .mesa-send-bar .button { width: 100%; min-width: 0; }
-          .mesa-item-row { grid-template-columns: 1fr; }
+          .mesa-item-row, .mesa-otro-almuerzo { grid-template-columns: 1fr; display: grid; }
+          .mesa-otro-almuerzo .button { width: 100%; }
           .app { padding: 14px; }
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
