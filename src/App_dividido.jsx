@@ -1208,286 +1208,399 @@ function PanelRafaPrivado() {
 
 
 function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
-  const [itemsMesa, setItemsMesa] = useState([]);
-  const [itemActivoId, setItemActivoId] = useState(null);
-  const [pasoMesa, setPasoMesa] = useState(1);
+  const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("Mesa 1");
   const [meseroLocal, setMeseroLocal] = useState("");
   const [observacionesLocal, setObservacionesLocal] = useState("");
+  const [errorMesa, setErrorMesa] = useState("");
 
-  const total = useMemo(() => calcularTotalItems(itemsMesa), [itemsMesa]);
-  const totalItems = useMemo(
-    () => itemsMesa.reduce((suma, item) => suma + (Number(item.cantidad) || 0), 0),
+  const itemsConProducto = useMemo(
+    () => itemsMesa.filter((item) => item.plato || item.proteina),
     [itemsMesa]
   );
-  const itemActivo = itemsMesa.find((item) => item.id === itemActivoId) || null;
-  const acompanantesActivos = Array.isArray(itemActivo?.acompanantes) ? itemActivo.acompanantes : [];
+  const hayProductoSeleccionadoMesa = itemsConProducto.length > 0;
+  const total = useMemo(() => calcularTotalItems(itemsConProducto), [itemsConProducto]);
 
-  function seleccionarProteina(plato) {
-    const nuevoItem = {
-      ...crearItemNuevo(),
-      categoria: plato.categoria || "Platos",
-      plato: plato.nombre,
-      proteina: plato.nombre,
-      precioPlato: Number(plato.precio) || 0,
-      precioProteina: Number(plato.precio) || 0,
-      acompanantes: [],
-      observacionAcompanantes: "",
-      paraLlevar: false
-    };
-
-    setItemsMesa((actual) => [...actual, nuevoItem]);
-    setItemActivoId(nuevoItem.id);
-    setPasoMesa(esCategoriaSopa(nuevoItem.categoria) ? 3 : 2);
+  function actualizarItemMesa(id, cambios) {
+    setItemsMesa((actual) =>
+      actual.map((item) => (item.id === id ? { ...item, ...cambios } : item))
+    );
   }
 
-  function alternarAcompananteActivo(acompanante) {
-    if (!itemActivoId) return;
-
+  function cambiarPlatoMesa(id, platoSeleccionado) {
     setItemsMesa((actual) =>
       actual.map((item) => {
-        if (item.id !== itemActivoId) return item;
+        if (item.id !== id) return item;
 
-        const actuales = Array.isArray(item.acompanantes) ? item.acompanantes : [];
-        const seleccionado = actuales.includes(acompanante);
-        const nuevos = seleccionado
-          ? actuales.filter((valor) => valor !== acompanante)
-          : actuales.length >= MAX_ACOMPANANTES_CLIENTE
-            ? actuales
-            : [...actuales, acompanante];
+        const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
 
-        return { ...item, acompanantes: nuevos };
+        return {
+          ...item,
+          categoria: platoSeleccionado.categoria || "",
+          plato: platoSeleccionado.nombre || "",
+          proteina: platoSeleccionado.nombre || "",
+          precioPlato: Number(platoSeleccionado.precio) || 0,
+          precioProteina: Number(platoSeleccionado.precio) || 0,
+          acompanantes: esSopa ? [] : item.acompanantes || [],
+          observacionAcompanantes: esSopa ? "" : item.observacionAcompanantes || "",
+          paraLlevar: false
+        };
       })
     );
 
-    setPasoMesa(3);
+    const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+
+    setTimeout(() => {
+      irAElemento(esSopa ? `mesa-confirmacion-${id}` : `mesa-paso-acompanantes-${id}`);
+    }, 120);
   }
 
-  function cambiarCantidadMesa(id, cantidad) {
-    const nuevaCantidad = Math.max(0, Number(cantidad) || 0);
+  function cambiarAcompananteMesa(id, acompanante) {
     setItemsMesa((actual) =>
-      nuevaCantidad === 0
-        ? actual.filter((item) => item.id !== id)
-        : actual.map((item) => (item.id === id ? { ...item, cantidad: nuevaCantidad } : item))
+      actual.map((item) => {
+        if (item.id !== id) return item;
+
+        if (esCategoriaSopa(item.categoria)) {
+          return { ...item, acompanantes: [] };
+        }
+
+        const acompanantesActuales = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+        const seleccionado = acompanantesActuales.includes(acompanante);
+
+        if (seleccionado) {
+          return {
+            ...item,
+            acompanantes: acompanantesActuales.filter((x) => x !== acompanante)
+          };
+        }
+
+        if (acompanantesActuales.length >= MAX_ACOMPANANTES_CLIENTE) {
+          return item;
+        }
+
+        const nuevosAcompanantes = [...acompanantesActuales, acompanante];
+
+        if (nuevosAcompanantes.length === MAX_ACOMPANANTES_CLIENTE) {
+          setTimeout(() => irAElemento(`mesa-confirmacion-${id}`), 120);
+        }
+
+        return { ...item, acompanantes: nuevosAcompanantes };
+      })
     );
   }
 
-  function quitarItemMesa(id) {
-    setItemsMesa((actual) => actual.filter((item) => item.id !== id));
-    if (itemActivoId === id) {
-      setItemActivoId(null);
-      setPasoMesa(1);
-    }
+  function agregarAlmuerzoMesa() {
+    const nuevoItem = crearItemNuevo();
+    setItemsMesa((actual) => [...actual, nuevoItem]);
+
+    setTimeout(() => {
+      const elemento = document.getElementById(`mesa-producto-${nuevoItem.id}`);
+      if (elemento) {
+        elemento.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 160);
   }
 
-  function agregarOtroAlmuerzo() {
-    setItemActivoId(null);
-    setPasoMesa(1);
-    setTimeout(() => irAElemento("mesas-paso-proteinas"), 80);
+  function quitarAlmuerzoMesa(id) {
+    setItemsMesa((actual) => {
+      const filtrados = actual.filter((item) => item.id !== id);
+      return filtrados.length > 0 ? filtrados : [crearItemNuevo()];
+    });
   }
 
-  function limpiarPedidoMesa() {
-    setItemsMesa([]);
-    setItemActivoId(null);
-    setPasoMesa(1);
+  function reiniciarPedidoMesa() {
+    setItemsMesa([crearItemNuevo()]);
+    setMesaLocal("Mesa 1");
+    setMeseroLocal("");
     setObservacionesLocal("");
+    setErrorMesa("");
   }
 
   async function enviarPedidoMesa() {
+    if (itemsConProducto.length === 0) {
+      setErrorMesa("Agrega al menos un producto.");
+      return;
+    }
+
+    if (!mesaLocal.trim()) {
+      setErrorMesa("Selecciona la mesa.");
+      return;
+    }
+
+    if (!meseroLocal.trim()) {
+      setErrorMesa("Escribe el nombre del mesero.");
+      return;
+    }
+
     const ok = await onEnviar({
-      items: itemsMesa,
+      items: itemsConProducto,
       mesa: mesaLocal,
       mesero: meseroLocal,
       observaciones: observacionesLocal
     });
 
     if (ok) {
-      limpiarPedidoMesa();
+      reiniciarPedidoMesa();
     }
   }
 
-  const puedeEnviar = itemsMesa.length > 0 && !guardandoPedido;
-  const hayProductoActivo = Boolean(itemActivo);
-  const itemActivoEsSopa = esCategoriaSopa(itemActivo?.categoria);
-
   return (
-    <main className="mesas-pos mesas-wizard">
-      <section className="mesas-hero">
-        <div>
-          <span>Panel Mesas</span>
-          <h2>Tomar pedido</h2>
-        </div>
-        <strong>{totalItems} items</strong>
-      </section>
-
-      <section className="mesas-card">
-        <div className="progress-bar-wrap">
-          {[1, 2, 3].map((paso) => (
-            <div key={paso} className={`progress-step ${pasoMesa >= paso ? "done" : ""}`} />
-          ))}
-        </div>
-        <div className="progress-labels mesas-progress-labels">
-          <span className={`progress-label ${pasoMesa >= 1 ? "done" : ""}`}>Proteínas</span>
-          <span className={`progress-label ${pasoMesa >= 2 ? "done" : ""}`}>Acompañantes</span>
-          <span className={`progress-label ${pasoMesa >= 3 ? "done" : ""}`}>Confirmación</span>
-        </div>
-      </section>
-
-      <section id="mesas-paso-proteinas" className="mesas-card">
-        <div className="step-title">
-          <span className="step-number">1</span>
+    <main className="order-layout mesas-cliente-layout">
+      <section className="card card-pad">
+        <div className="step-title" style={{ marginBottom: 14 }}>
+          <span className="step-number">🍽️</span>
           <div>
-            <h4>Proteínas</h4>
-            <p className="muted" style={{ marginBottom: 0 }}>Toca una opción para continuar.</p>
+            <h3>Panel Mesas</h3>
           </div>
         </div>
 
-        {Object.entries(platosAgrupados).length === 0 ? (
-          <div className="box soft">No hay productos configurados en el menú diario.</div>
+        {menu.platos_detalle.length === 0 ? (
+          <div className="box soft">No hay menú diario configurado.</div>
         ) : (
-          Object.entries(platosAgrupados).map(([categoria, platos]) => (
-            <div key={categoria} className="mesas-category">
-              <h4>{categoria}</h4>
-              <div className="mesas-products-grid">
-                {platos.map((plato) => (
-                  <button
-                    key={`${plato.categoria}-${plato.nombre}`}
-                    type="button"
-                    className="mesa-product-btn"
-                    onClick={() => seleccionarProteina(plato)}
-                  >
-                    <span>{plato.nombre}</span>
-                    <small>{dinero(plato.precio)}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </section>
-
-      {hayProductoActivo && !itemActivoEsSopa && pasoMesa >= 2 && (
-        <section className="mesas-card fade-step">
-          <div className="step-title">
-            <span className="step-number">2</span>
-            <div>
-              <h4>Acompañantes</h4>
-              <p className="muted" style={{ marginBottom: 0 }}>Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones.</p>
-            </div>
-          </div>
-
-          <div className="selected-dish">
-            {itemActivo.plato || itemActivo.proteina} — {dinero(itemActivo.precioPlato || itemActivo.precioProteina)}
-          </div>
-
-          <div className="mesas-chips">
-            {menu.acompanantes.length === 0 ? (
-              <span className="muted">No hay acompañantes configurados.</span>
-            ) : (
-              menu.acompanantes.map((acompanante) => {
-                const seleccionado = acompanantesActivos.includes(acompanante);
-                const bloqueado = !seleccionado && acompanantesActivos.length >= MAX_ACOMPANANTES_CLIENTE;
-
-                return (
-                  <button
-                    key={acompanante}
-                    type="button"
-                    onClick={() => alternarAcompananteActivo(acompanante)}
-                    disabled={bloqueado}
-                    className={`mesa-chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}
-                  >
-                    {seleccionado ? "✓ " : "+ "}{acompanante}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </section>
-      )}
-
-      {hayProductoActivo && itemActivoEsSopa && pasoMesa >= 3 && (
-        <section className="mesas-card fade-step">
-          <div className="box soft">
-            <strong>Producto seleccionado:</strong> {itemActivo.plato || itemActivo.proteina}
-          </div>
-        </section>
-      )}
-
-      {itemsMesa.length > 0 && pasoMesa >= 3 && (
-        <section className="mesas-card pedido-mesa-actual fade-step">
-          <div className="mesas-section-title">
-            <h3>3. Confirmación</h3>
-            <button type="button" className="mesa-link-btn" onClick={limpiarPedidoMesa}>Limpiar</button>
-          </div>
-
-          <div className="mesa-items-list">
+          <>
             {itemsMesa.map((item, index) => {
+              const tienePlato = Boolean(item.plato || item.proteina);
+              const itemEsSopa = esCategoriaSopa(item.categoria);
               const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+              const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
+              const pasos = itemEsSopa
+                ? ["Proteína", "Confirmación"]
+                : ["Proteína", "Acompañante", "Confirmación"];
+              const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
+
               return (
-                <div key={item.id} className={`mesa-item-row ${item.id === itemActivoId ? "active" : ""}`}>
-                  <div>
-                    <strong>{index + 1}. {item.plato || item.proteina}</strong>
-                    {acompanantesItem.length > 0 && <small>{acompanantesItem.join(", ")}</small>}
-                    <span>{dinero(calcularTotalItem(item))}</span>
+                <div key={item.id} id={`mesa-producto-${item.id}`} className="product-card">
+                  <div className="product-card-header">
+                    <h3>Almuerzo {index + 1}</h3>
+                    {itemsMesa.length > 1 && (
+                      <button type="button" className="mini-danger" onClick={() => quitarAlmuerzoMesa(item.id)}>
+                        Quitar
+                      </button>
+                    )}
                   </div>
-                  <SelectorCantidad
-                    cantidad={Number(item.cantidad) || 1}
-                    onChange={(cantidad) => cambiarCantidadMesa(item.id, cantidad)}
-                  />
-                  <button type="button" className="mesa-remove" onClick={() => quitarItemMesa(item.id)}>×</button>
+
+                  <div className="progress-bar-wrap">
+                    {pasos.map((_, i) => (
+                      <div key={i} className={`progress-step ${i <= pasoActual ? "done" : ""}`} />
+                    ))}
+                  </div>
+
+                  <div className="progress-labels">
+                    {pasos.map((nombre, i) => (
+                      <span key={i} className={`progress-label ${i <= pasoActual ? "done" : ""}`}>{nombre}</span>
+                    ))}
+                  </div>
+
+                  <div className="step-title">
+                    <span className="step-number">1</span>
+                    <div>
+                      <h4>Primero selecciona la proteína</h4>
+                    </div>
+                  </div>
+
+                  {tienePlato && (
+                    <div className="selected-dish">
+                      Seleccionado: {item.plato || item.proteina} — {dinero(item.precioPlato || item.precioProteina)}
+                    </div>
+                  )}
+
+                  {Object.entries(platosAgrupados).map(([categoria, platos]) => (
+                    <div key={categoria} className="category-block">
+                      <h3 className="category-title">{categoria}</h3>
+
+                      <div className="option-grid">
+                        {platos.map((plato) => (
+                          <button
+                            key={`${plato.categoria}-${plato.nombre}`}
+                            type="button"
+                            onClick={() => cambiarPlatoMesa(item.id, plato)}
+                            className={`option ${item.plato === plato.nombre ? "selected" : ""}`}
+                          >
+                            <div>{plato.nombre}</div>
+                            <small>{dinero(plato.precio)}</small>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {tienePlato && !itemEsSopa && (
+                    <div id={`mesa-paso-acompanantes-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
+                      <div className="step-title">
+                        <span className="step-number">2</span>
+                        <div>
+                          <h4>Escoge los acompañantes</h4>
+                        </div>
+                      </div>
+
+                      <div className="chips">
+                        {menu.acompanantes.length === 0 ? (
+                          <span className="muted">No hay acompañantes configurados.</span>
+                        ) : (
+                          menu.acompanantes.map((acompanante) => {
+                            const seleccionado = acompanantesItem.includes(acompanante);
+                            const bloqueado =
+                              !seleccionado && acompanantesItem.length >= MAX_ACOMPANANTES_CLIENTE;
+
+                            return (
+                              <button
+                                key={acompanante}
+                                type="button"
+                                onClick={() => cambiarAcompananteMesa(item.id, acompanante)}
+                                disabled={bloqueado}
+                                className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}
+                              >
+                                {seleccionado ? "✓ " : "+ "}{acompanante}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+
+                    </div>
+                  )}
+
+                  {tienePlato && itemEsSopa && (
+                    <div className="box soft fade-step" style={{ marginTop: 18 }}>
+                      <strong>🥣 Producto de sopas</strong>
+                    </div>
+                  )}
+
+                  {tienePlato && (
+                    <div id={`mesa-confirmacion-${item.id}`} className="fade-step pedido-paso-compacto" style={{ marginTop: 12 }}>
+                      <div className="box compact-box quantity-box">
+                        <strong>Cantidad de {item.plato || item.proteina || "producto"}</strong>
+                        <SelectorCantidad
+                          cantidad={item.cantidad}
+                          onChange={(cantidad) => actualizarItemMesa(item.id, { cantidad })}
+                        />
+                      </div>
+
+                      {!itemEsSopa && (
+                        <CampoTexto
+                          etiqueta="Observación sobre acompañantes"
+                          value={item.observacionAcompanantes || ""}
+                          onChange={(valor) => actualizarItemMesa(item.id, { observacionAcompanantes: valor })}
+                          placeholder="Ejemplo: sin ensalada, más arroz..."
+                          multiline
+                          rows={2}
+                        />
+                      )}
+
+                      <div className="total-row compact-total-row">
+                        <span>Subtotal</span>
+                        <strong>{dinero(calcularTotalItem(item))}</strong>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
-          </div>
 
-          <div className="mesa-otro-almuerzo">
-            <strong>¿Deseas agregar otro almuerzo?</strong>
-            <button type="button" className="button light" onClick={agregarOtroAlmuerzo}>
-              + Agregar otro almuerzo
+            {hayProductoSeleccionadoMesa && (
+              <button type="button" onClick={agregarAlmuerzoMesa} className="button add-meal" style={{ marginTop: 14 }}>
+                + Agregar otro almuerzo o producto
+              </button>
+            )}
+          </>
+        )}
+      </section>
+
+      <aside className="card card-pad fade-step" id="mesa-confirmacion-final">
+        <h2>{hayProductoSeleccionadoMesa ? "Confirmación" : "Resumen"}</h2>
+
+        {!hayProductoSeleccionadoMesa ? (
+          <div className="box soft">
+            <strong>👈 Empieza seleccionando una proteína</strong>
+          </div>
+        ) : (
+          <>
+            <div className="box soft" style={{ marginBottom: 12 }}>
+              <h3>Resumen del pedido</h3>
+
+              {itemsConProducto.map((item) => {
+                const itemEsSopa = esCategoriaSopa(item.categoria);
+                const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+
+                return (
+                  <div key={item.id} className="summary-item">
+                    <p><strong>{item.cantidad} x {item.plato || item.proteina}</strong> - {dinero(item.precioPlato || item.precioProteina)}</p>
+                    {item.categoria && <p>Categoría: {item.categoria}</p>}
+                    {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                    {!itemEsSopa && item.observacionAcompanantes?.trim() && (
+                      <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
+                    )}
+                    {itemEsSopa && <p>Acompañantes: No aplica</p>}
+                    {!itemEsSopa && <p>Sopa + bebida incluida</p>}
+                  </div>
+                );
+              })}
+
+              <div className="total-row">
+                <span>Total</span>
+                <strong>{dinero(total)}</strong>
+              </div>
+            </div>
+
+            <button type="button" onClick={reiniciarPedidoMesa} className="button light small-reset">
+              Borrar y volver a empezar
             </button>
-          </div>
 
-          <div className="mesas-final-grid" style={{ marginTop: 14 }}>
+            <div className="step-title" style={{ marginTop: 18 }}>
+              <span className="step-number">3</span>
+              <div>
+                <h4>Datos de mesa</h4>
+              </div>
+            </div>
+
             <label className="field">
-              <span>Mesa</span>
-              <select value={mesaLocal} onChange={(e) => setMesaLocal(e.target.value)}>
+              <span>🍽️ Mesa</span>
+              <select value={mesaLocal} onChange={(e) => { setMesaLocal(e.target.value); setErrorMesa(""); }}>
                 {Array.from({ length: 30 }, (_, i) => (
                   <option key={i + 1} value={`Mesa ${i + 1}`}>{`Mesa ${i + 1}`}</option>
                 ))}
               </select>
             </label>
 
-            <label className="field">
-              <span>Mesero</span>
-              <input value={meseroLocal} onChange={(e) => setMeseroLocal(e.target.value)} placeholder="Nombre mesero" />
-            </label>
-          </div>
+            <CampoTexto
+              etiqueta="👤 Mesero"
+              value={meseroLocal}
+              onChange={(valor) => { setMeseroLocal(valor); if (errorMesa) setErrorMesa(""); }}
+              placeholder="Nombre mesero"
+            />
 
-          <CampoTexto
-            etiqueta="Observaciones"
-            value={observacionesLocal}
-            onChange={setObservacionesLocal}
-            placeholder="Ejemplo: sin ensalada, mucha salsa..."
-            multiline
-            rows={3}
-          />
+            <CampoTexto
+              etiqueta="Observaciones generales"
+              value={observacionesLocal}
+              onChange={setObservacionesLocal}
+              placeholder="Ej: sin cubiertos, mesa espera bebida..."
+              multiline
+            />
 
-          <div className="mesa-send-bar">
-            <div>
-              <span>Total</span>
-              <strong>{dinero(total)}</strong>
+            <div className="sticky-total">
+              <div>
+                <div className="sticky-total-label">Total</div>
+                <div className="sticky-total-amount">{dinero(total)}</div>
+              </div>
+              <div className="finalizar-area">
+                {errorMesa && (
+                  <div className="finalizar-error" role="alert" aria-live="polite">{errorMesa}</div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={enviarPedidoMesa}
+                  disabled={guardandoPedido || menu.platos_detalle.length === 0}
+                  className="button"
+                  style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
+                >
+                  {guardandoPedido ? "Guardando..." : "Enviar a cocina →"}
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              className="button green"
-              onClick={enviarPedidoMesa}
-              disabled={!puedeEnviar}
-            >
-              {guardandoPedido ? "Enviando..." : "Enviar pedido mesa"}
-            </button>
-          </div>
-        </section>
-      )}
+          </>
+        )}
+      </aside>
     </main>
   );
 }
