@@ -6,10 +6,48 @@ import GeneradorMenu from "./components/GeneradorMenu";
 const VALOR_PARA_LLEVAR = 1500;
 const MAX_ACOMPANANTES_CLIENTE = 3;
 const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
-const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "573022915098";
-const CLAVE_ADMIN = "rafiki1234";
-const CLAVE_RAFA = "rafa1234*";
+const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
+const CLAVE_ADMIN = import.meta.env.VITE_CLAVE_ADMIN || "";
+const CLAVE_RAFA = import.meta.env.VITE_CLAVE_RAFA || "";
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+
+function limpiarTexto(valor, max = 120) {
+  return String(valor || "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+function limpiarTelefono(valor) {
+  return String(valor || "")
+    .replace(/[^\d\s\+\-\(\)]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 20);
+}
+
+function guardarSesionTemporal(claveStorage) {
+  const expiry = Date.now() + SESSION_DURATION_MS;
+  localStorage.setItem(claveStorage, JSON.stringify({ v: true, exp: expiry }));
+}
+
+function obtenerSesionActiva(claveStorage) {
+  try {
+    const sesion = JSON.parse(localStorage.getItem(claveStorage) || "null");
+
+    if (!sesion?.v || !sesion?.exp || Date.now() > sesion.exp) {
+      localStorage.removeItem(claveStorage);
+      return false;
+    }
+
+    return true;
+  } catch {
+    localStorage.removeItem(claveStorage);
+    return false;
+  }
+}
 
 const estadosPedido = ["Pendiente", "Finalizado"];
 
@@ -1164,9 +1202,39 @@ function PanelRafaPrivado() {
   );
 }
 
+
+function PanelMesasBasico({ mesa, setMesa, mesero, setMesero, observaciones, setObservaciones, onEnviar }) {
+  return (
+    <section className="page-section">
+      <div className="hero-card">
+        <h1>Panel Mesas</h1>
+        <div className="grid-form">
+          <div>
+            <label>Mesa</label>
+            <select value={mesa} onChange={(e) => setMesa(e.target.value)}>
+              {Array.from({ length: 20 }, (_, i) => (
+                <option key={i + 1} value={`Mesa ${i + 1}`}>{`Mesa ${i + 1}`}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>Mesero</label>
+            <input value={mesero} onChange={(e) => setMesero(e.target.value)} placeholder="Nombre mesero" />
+          </div>
+        </div>
+        <div style={{marginTop: '1rem'}}>
+          <label>Observaciones</label>
+          <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} placeholder="Observaciones" />
+        </div>
+        <button className="btn-primary" style={{marginTop: '1rem'}} onClick={onEnviar}>Enviar pedido mesa</button>
+      </div>
+    </section>
+  );
+}
+
 function obtenerVistaInicial() {
   const ruta = window.location.pathname.replace(/\/$/, "") || "/";
-  const adminActivo = localStorage.getItem("rafikiAdminActivo") === "true";
+  const adminActivo = obtenerSesionActiva("rafikiAdminActivo");
 
   if (ruta === "/admin") {
     return adminActivo ? "admin" : "adminLogin";
@@ -1174,6 +1242,10 @@ function obtenerVistaInicial() {
 
   if (ruta === "/pedido" || ruta === "/cliente") {
     return "cliente";
+  }
+
+  if (ruta === "/mesas") {
+    return "mesas";
   }
 
   return "inicio";
@@ -1188,10 +1260,10 @@ function actualizarRuta(ruta) {
 export default function App() {
   const [vista, setVista] = useState(obtenerVistaInicial);
   const [adminTab, setAdminTab] = useState("pedidos");
-  const [adminAutenticado, setAdminAutenticado] = useState(() => localStorage.getItem("rafikiAdminActivo") === "true");
+  const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
   const [claveAdmin, setClaveAdmin] = useState("");
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
-  const [rafaAutenticado, setRafaAutenticado] = useState(() => localStorage.getItem("rafikiRafaActivo") === "true");
+  const [rafaAutenticado, setRafaAutenticado] = useState(() => obtenerSesionActiva("rafikiRafaActivo"));
   const [claveRafa, setClaveRafa] = useState("");
   const [errorClaveRafa, setErrorClaveRafa] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
@@ -1202,6 +1274,8 @@ export default function App() {
   const [ubicacion, setUbicacion] = useState("");
   const [tipoPago, setTipoPago] = useState("Efectivo");
   const [observaciones, setObservaciones] = useState("");
+  const [mesa, setMesa] = useState("Mesa 1");
+  const [mesero, setMesero] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [busquedaDebounced, setBusquedaDebounced] = useState("");
   const [filtroPedidos, setFiltroPedidos] = useState("hoy");
@@ -1744,17 +1818,26 @@ export default function App() {
 
     setErrorDatosPedido("");
 
-    const clienteNombre = cliente.trim();
-    const pedidoTexto = crearTextoPedido(itemsValidos, observaciones.trim());
+    const clienteNombre = limpiarTexto(cliente, 120);
+    const telefonoLimpio = limpiarTelefono(telefono);
+    const ubicacionLimpia = limpiarTexto(ubicacion, 200);
+    const observacionesLimpias = limpiarTexto(observaciones, 500);
+
+    if (!clienteNombre || !telefonoLimpio || !ubicacionLimpia) {
+      setErrorDatosPedido("Revisa nombre, teléfono y ubicación. Hay datos inválidos o incompletos.");
+      return;
+    }
+
+    const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
     const total = calcularTotalItems(itemsValidos);
 
     const nuevoPedido = {
       cliente: clienteNombre,
       cliente_nombre: clienteNombre,
-      telefono: telefono.trim(),
-      ubicacion: ubicacion.trim() || "Ubicación pendiente",
+      telefono: telefonoLimpio,
+      ubicacion: ubicacionLimpia || "Ubicación pendiente",
       tipo_pago: tipoPago,
-      observaciones: observaciones.trim(),
+      observaciones: observacionesLimpias,
       items: itemsValidos,
       pedido_texto: pedidoTexto,
       total,
@@ -1935,8 +2018,13 @@ export default function App() {
   function validarClaveAdmin(e) {
     e.preventDefault();
 
+    if (!CLAVE_ADMIN) {
+      setErrorClaveAdmin("Falta configurar VITE_CLAVE_ADMIN en las variables de entorno.");
+      return;
+    }
+
     if (claveAdmin.trim() === CLAVE_ADMIN) {
-      localStorage.setItem("rafikiAdminActivo", "true");
+      guardarSesionTemporal("rafikiAdminActivo");
       setAdminAutenticado(true);
       setClaveAdmin("");
       setErrorClaveAdmin("");
@@ -1950,8 +2038,13 @@ export default function App() {
   function validarClaveRafa(e) {
     e.preventDefault();
 
+    if (!CLAVE_RAFA) {
+      setErrorClaveRafa("Falta configurar VITE_CLAVE_RAFA en las variables de entorno.");
+      return;
+    }
+
     if (claveRafa.trim() === CLAVE_RAFA) {
-      localStorage.setItem("rafikiRafaActivo", "true");
+      guardarSesionTemporal("rafikiRafaActivo");
       setRafaAutenticado(true);
       setClaveRafa("");
       setErrorClaveRafa("");
@@ -2742,6 +2835,18 @@ export default function App() {
                 </div>
               </section>
             </main>
+          )}
+
+          {!cargando && vista === "mesas" && (
+            <PanelMesasBasico
+              mesa={mesa}
+              setMesa={setMesa}
+              mesero={mesero}
+              setMesero={setMesero}
+              observaciones={observaciones}
+              setObservaciones={setObservaciones}
+              onEnviar={() => alert(`Pedido enviado para ${mesa}`)}
+            />
           )}
 
           {!cargando && vista === "admin" && adminAutenticado && (
