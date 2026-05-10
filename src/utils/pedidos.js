@@ -1,4 +1,4 @@
-import { VALOR_PARA_LLEVAR, MAX_ACOMPANANTES_CLIENTE, INCLUIDOS_FIJOS } from "../data/menuAlmuerzos";
+import { VALOR_PARA_LLEVAR, MAX_ACOMPANANTES_CLIENTE, INCLUIDOS_FIJOS, menuFallback } from "../data/menuAlmuerzos";
 
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
