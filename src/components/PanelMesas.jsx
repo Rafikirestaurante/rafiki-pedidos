@@ -4,6 +4,7 @@ import {
   crearItemCafeteria,
   crearItemNuevo,
   dinero,
+  esCategoriaSopa,
   limpiarAcompanantesCliente,
   limpiarTexto,
   precioPorNombre,
