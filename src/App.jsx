@@ -1314,9 +1314,9 @@ export default function App() {
           )}
 
           {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
-          {cargando && vista !== "inicio" && <div className="card card-pad">Cargando datos de Rafiki...</div>}
+          {cargando && <div className="card card-pad">Cargando datos de Rafiki...</div>}
 
-          {vista === "inicio" && (
+          {!cargando && vista === "inicio" && (
             <main className="welcome">
               <section className="welcome-card">
                 <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="welcome-logo" />
@@ -1330,7 +1330,7 @@ export default function App() {
             </main>
           )}
 
-          {vista === "adminLogin" && (
+          {!cargando && vista === "adminLogin" && (
             <main style={{ maxWidth: 520, margin: "0 auto" }}>
               <section className="card card-pad">
                 <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -1379,7 +1379,7 @@ export default function App() {
             </main>
           )}
 
-          {vista === "cliente" && (
+          {!cargando && vista === "cliente" && (
             <main className="layout">
               <section className="card" id="inicio-pedido-cliente">
                 <div className="hero">
@@ -1738,7 +1738,7 @@ export default function App() {
             </main>
           )}
 
-          {vista === "confirmacion" && pedidoFinalizado && (
+          {!cargando && vista === "confirmacion" && pedidoFinalizado && (
             <main style={{ maxWidth: 620, margin: "0 auto" }}>
               <section className="card">
                 <div className="hero green confirmacion-cocina" style={{ textAlign: "center" }}>
@@ -1758,7 +1758,7 @@ export default function App() {
             </main>
           )}
 
-          {vista === "mesas" && (
+          {!cargando && vista === "mesas" && (
             <PanelMesasPOS
               menu={menu}
               platosAgrupados={platosAgrupados}
@@ -1767,7 +1767,7 @@ export default function App() {
             />
           )}
 
-          {vista === "admin" && adminAutenticado && (
+          {!cargando && vista === "admin" && adminAutenticado && (
             <main className="admin-layout">
               <div className="admin-tabs">
                 <button
