@@ -222,15 +222,18 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
     const precioBase = precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait);
     const extraFrutas = frutasParfait.length === 3 ? 1000 : 0;
+    const frutasSeleccionadas = [...frutasParfait];
+    const descripcionParfait = `Parfait ${tamanoParfait} - Frutas: ${frutasSeleccionadas.join(", ")} - Cereal: ${cerealParfait}`;
 
     agregarItemCafeteria(crearItemCafeteria({
       tipo: "Parfait",
-      producto: `Parfait ${tamanoParfait}`,
+      producto: descripcionParfait,
       precio: precioBase + extraFrutas,
       tamano: tamanoParfait,
-      frutas: frutasParfait,
+      frutas: frutasSeleccionadas,
       cereal: cerealParfait,
-      extraFrutas
+      extraFrutas,
+      detalle_impresion: descripcionParfait
     }));
 
     setFrutasParfait([]);
