@@ -1347,13 +1347,6 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   return (
     <main className="order-layout mesas-cliente-layout">
       <section className="card card-pad">
-        <div className="step-title" style={{ marginBottom: 14 }}>
-          <span className="step-number">🍽️</span>
-          <div>
-            <h3>Panel Mesas</h3>
-          </div>
-        </div>
-
         {menu.platos_detalle.length === 0 ? (
           <div className="box soft">No hay menú diario configurado.</div>
         ) : (
@@ -1363,33 +1356,15 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
               const itemEsSopa = esCategoriaSopa(item.categoria);
               const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
               const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
-              const pasos = itemEsSopa
-                ? ["Proteína", "Confirmación"]
-                : ["Proteína", "Acompañante", "Confirmación"];
-              const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
-
               return (
                 <div key={item.id} id={`mesa-producto-${item.id}`} className="product-card">
-                  <div className="product-card-header">
-                    <h3>Almuerzo {index + 1}</h3>
-                    {itemsMesa.length > 1 && (
+                  {itemsMesa.length > 1 && (
+                    <div className="product-card-header" style={{ justifyContent: "flex-end" }}>
                       <button type="button" className="mini-danger" onClick={() => quitarAlmuerzoMesa(item.id)}>
                         Quitar
                       </button>
-                    )}
-                  </div>
-
-                  <div className="progress-bar-wrap">
-                    {pasos.map((_, i) => (
-                      <div key={i} className={`progress-step ${i <= pasoActual ? "done" : ""}`} />
-                    ))}
-                  </div>
-
-                  <div className="progress-labels">
-                    {pasos.map((nombre, i) => (
-                      <span key={i} className={`progress-label ${i <= pasoActual ? "done" : ""}`}>{nombre}</span>
-                    ))}
-                  </div>
+                    </div>
+                  )}
 
                   <div className="step-title">
                     <span className="step-number">1</span>
@@ -1498,9 +1473,20 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
             })}
 
             {hayProductoSeleccionadoMesa && (
-              <button type="button" onClick={agregarAlmuerzoMesa} className="button add-meal" style={{ marginTop: 14 }}>
-                + Agregar otro almuerzo o producto
-              </button>
+              <>
+                <button type="button" onClick={agregarAlmuerzoMesa} className="button add-meal" style={{ marginTop: 14 }}>
+                  + Agregar otro almuerzo o producto
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => irAElemento("mesa-datos-final")}
+                  className="button continue-button"
+                  style={{ marginTop: 12, background: "#16a34a" }}
+                >
+                  Continuar
+                </button>
+              </>
             )}
           </>
         )}
@@ -1546,7 +1532,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
               Borrar y volver a empezar
             </button>
 
-            <div className="step-title" style={{ marginTop: 18 }}>
+            <div id="mesa-datos-final" className="step-title" style={{ marginTop: 18 }}>
               <span className="step-number">3</span>
               <div>
                 <h4>Datos de mesa</h4>
