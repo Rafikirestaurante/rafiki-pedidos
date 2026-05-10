@@ -257,7 +257,10 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const cargando = cargandoMenu || cargandoPedidos;
+  // Fase 8 FIX: no bloquear la pantalla completa mientras Supabase carga.
+  // Así los paneles abren aunque haya demora o error de conexión.
+  const cargandoDatos = cargandoMenu || cargandoPedidos;
+  const cargando = false;
 
   const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
 
@@ -1314,7 +1317,7 @@ export default function App() {
           )}
 
           {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
-          {cargando && <div className="card card-pad">Cargando datos de Rafiki...</div>}
+          {cargandoDatos && <div className="card card-pad" style={{ marginBottom: 14 }}>Cargando datos de Rafiki...</div>}
 
           {!cargando && vista === "inicio" && (
             <main className="welcome">
@@ -1325,6 +1328,14 @@ export default function App() {
 
                 <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
                   🛍️ Haz tu pedido aquí
+                </button>
+
+                <button type="button" onClick={() => navegar("/mesas", "mesas")} className="welcome-button" style={{ marginTop: 12, background: "#16a34a" }}>
+                  🍽️ Panel mesas
+                </button>
+
+                <button type="button" onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")} className="welcome-button" style={{ marginTop: 12, background: "#292524" }}>
+                  🔐 Panel administrativo
                 </button>
               </section>
             </main>
