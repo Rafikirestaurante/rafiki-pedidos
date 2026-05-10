@@ -64,6 +64,79 @@ const menuFallback = {
   activo: true
 };
 
+const CAFETERIA_PARFAIT_TAMANOS = [
+  { nombre: "12 oz", precio: 12500 },
+  { nombre: "16 oz", precio: 16000 },
+  { nombre: "22 oz", precio: 19000 }
+];
+
+const CAFETERIA_FRUTAS = ["Fresa", "Banano", "Uva", "Piña", "Mango", "Kiwi", "Arándanos"];
+const CAFETERIA_CEREALES = ["Granola", "Cornflake con Chocokrispi"];
+
+const CAFETERIA_BATIDOS_TAMANOS = [
+  { nombre: "12 oz", precio: 11000 },
+  { nombre: "16 oz", precio: 13000 },
+  { nombre: "22 oz", precio: 16000 }
+];
+
+const CAFETERIA_BATIDOS_SABORES = ["Frutos rojos", "Mambo", "Mufasa", "Simba", "Kakao", "Batido de café"];
+const CAFETERIA_BATIDOS_BASES = ["Yogurt", "Helado"];
+
+const CAFETERIA_DESAYUNOS = [
+  { nombre: "Huevos tomate y cebolla", precio: 11000 },
+  { nombre: "Huevos revueltos", precio: 11000 },
+  { nombre: "Huevos con jamón y queso", precio: 13000 },
+  { nombre: "Huevos con tocineta", precio: 13000 },
+  { nombre: "Omelette", precio: 14000 }
+];
+
+const CAFETERIA_ACOMPANANTES_DESAYUNO = ["Arepa", "Patacón", "Yuca", "Plátano cocido", "Papa cocida", "Cayeye"];
+
+const CAFETERIA_ADICIONALES_DESAYUNO = [
+  { nombre: "Porción de huevos (4 und)", precio: 6500 },
+  { nombre: "Porción de queso costeño rayado", precio: 2000 }
+];
+
+const CAFETERIA_SANDWICHES = [
+  { nombre: "Sándwich de jamón y queso", precio: 12000 },
+  { nombre: "Sándwich de pollo", precio: 14000 }
+];
+
+const CAFETERIA_BEBIDAS_CALIENTES = [
+  { nombre: "Café americano", precio: 3500 },
+  { nombre: "Té y aromáticas", precio: 2500 },
+  { nombre: "Capuchino", precio: 5000 }
+];
+
+const CAFETERIA_POSTRES = [
+  { nombre: "Fresas con crema", precio: 13000 },
+  { nombre: "Ensalada de frutas con helado", precio: 12000 }
+];
+
+function precioPorNombre(lista, nombre) {
+  return Number(lista.find((item) => item.nombre === nombre)?.precio) || 0;
+}
+
+function crearItemCafeteria({ tipo, producto, precio = 0, cantidad = 1, ...extra }) {
+  return {
+    id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    categoria: "cafeteria",
+    tipo,
+    producto,
+    plato: producto,
+    proteina: producto,
+    precio: Number(precio) || 0,
+    precioPlato: Number(precio) || 0,
+    precioProteina: Number(precio) || 0,
+    cantidad: Number(cantidad) || 1,
+    acompanantes: [],
+    observacionAcompanantes: "",
+    paraLlevar: false,
+    ...extra
+  };
+}
+
+
 function dinero(valor) {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -413,8 +486,28 @@ function calcularTotalItems(items) {
 }
 
 function crearTextoItem(item) {
+  if (item.categoria === "cafeteria") {
+    const nombreProducto = item.producto || item.plato || item.proteina || "Producto cafetería";
+    const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
+    const partes = [`${item.cantidad} ${nombreProducto} (${dinero(precio)})`];
+
+    if (item.tipo) partes.push(`Cafetería: ${item.tipo}`);
+    if (item.tamano) partes.push(`Tamaño: ${item.tamano}`);
+    if (Array.isArray(item.frutas) && item.frutas.length > 0) partes.push(`Frutas: ${item.frutas.join(", ")}`);
+    if (item.cereal) partes.push(`Cereal: ${item.cereal}`);
+    if (Number(item.extraFrutas) > 0) partes.push(`Extra 3 frutas: ${dinero(item.extraFrutas)}`);
+    if (item.base) partes.push(`Base: ${item.base}`);
+    if (item.acompanante) partes.push(`Acompañante: ${item.acompanante}`);
+    if (Array.isArray(item.adicionales) && item.adicionales.length > 0) {
+      partes.push(`Adicionales: ${item.adicionales.map((x) => x.nombre || x).join(", ")}`);
+    }
+    if (item.observacionesItem?.trim()) partes.push(`Obs: ${item.observacionesItem.trim()}`);
+
+    return partes.join(" + ");
+  }
+
   const nombrePlato = item.plato || item.proteina || "Plato";
-  const precio = Number(item.precioPlato || item.precioProteina || 0);
+  const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
   const partes = [`${item.cantidad} ${nombrePlato} (${dinero(precio)})`];
   const esSopa = esCategoriaSopa(item.categoria);
   const acompanantes = esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || []);
@@ -1225,9 +1318,27 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   const [observacionesLocal, setObservacionesLocal] = useState("");
   const [errorMesa, setErrorMesa] = useState("");
   const [categoriaActivaMesa, setCategoriaActivaMesa] = useState("almuerzos");
+  const [subcategoriaCafeteria, setSubcategoriaCafeteria] = useState("parfait");
+  const [tamanoParfait, setTamanoParfait] = useState("12 oz");
+  const [frutasParfait, setFrutasParfait] = useState([]);
+  const [cerealParfait, setCerealParfait] = useState("Granola");
+  const [saborBatido, setSaborBatido] = useState("Frutos rojos");
+  const [tamanoBatido, setTamanoBatido] = useState("12 oz");
+  const [baseBatido, setBaseBatido] = useState("Yogurt");
+  const [desayunoSeleccionado, setDesayunoSeleccionado] = useState("Huevos tomate y cebolla");
+  const [acompananteDesayuno, setAcompananteDesayuno] = useState("Arepa");
+  const [adicionalesDesayuno, setAdicionalesDesayuno] = useState([]);
+  const [sandwichSeleccionado, setSandwichSeleccionado] = useState("Sándwich de jamón y queso");
+  const [bebidaCalienteSeleccionada, setBebidaCalienteSeleccionada] = useState("Café americano");
+  const [postreSeleccionado, setPostreSeleccionado] = useState("Fresas con crema");
+
+  const itemsAlmuerzoMesa = useMemo(
+    () => itemsMesa.filter((item) => item.categoria !== "cafeteria"),
+    [itemsMesa]
+  );
 
   const itemsConProducto = useMemo(
-    () => itemsMesa.filter((item) => item.plato || item.proteina),
+    () => itemsMesa.filter((item) => item.plato || item.proteina || item.producto),
     [itemsMesa]
   );
   const hayProductoSeleccionadoMesa = itemsConProducto.length > 0;
@@ -1328,6 +1439,84 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
     setErrorMesa("");
   }
 
+  function agregarItemCafeteria(item) {
+    setItemsMesa((actual) => [...actual, item]);
+    setErrorMesa("");
+    setTimeout(() => irAElementoMesas("mesa-confirmacion-final", 120), 120);
+  }
+
+  function toggleFrutaParfait(fruta) {
+    setFrutasParfait((actual) => {
+      if (actual.includes(fruta)) return actual.filter((item) => item !== fruta);
+      if (actual.length >= 3) return actual;
+      return [...actual, fruta];
+    });
+  }
+
+  function toggleAdicionalDesayuno(adicional) {
+    setAdicionalesDesayuno((actual) => {
+      const existe = actual.some((item) => item.nombre === adicional.nombre);
+      return existe ? actual.filter((item) => item.nombre !== adicional.nombre) : [...actual, adicional];
+    });
+  }
+
+  function agregarParfaitMesa() {
+    if (frutasParfait.length === 0) {
+      setErrorMesa("Selecciona al menos una fruta para el parfait.");
+      return;
+    }
+
+    const precioBase = precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait);
+    const extraFrutas = frutasParfait.length === 3 ? 1000 : 0;
+
+    agregarItemCafeteria(crearItemCafeteria({
+      tipo: "Parfait",
+      producto: `Parfait ${tamanoParfait}`,
+      precio: precioBase + extraFrutas,
+      tamano: tamanoParfait,
+      frutas: frutasParfait,
+      cereal: cerealParfait,
+      extraFrutas
+    }));
+
+    setFrutasParfait([]);
+  }
+
+  function agregarBatidoMesa() {
+    const precio = precioPorNombre(CAFETERIA_BATIDOS_TAMANOS, tamanoBatido);
+
+    agregarItemCafeteria(crearItemCafeteria({
+      tipo: "Batido",
+      producto: `${saborBatido} ${tamanoBatido}`,
+      precio,
+      tamano: tamanoBatido,
+      base: baseBatido
+    }));
+  }
+
+  function agregarDesayunoMesa() {
+    const precioBase = precioPorNombre(CAFETERIA_DESAYUNOS, desayunoSeleccionado);
+    const precioAdicionales = adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0);
+
+    agregarItemCafeteria(crearItemCafeteria({
+      tipo: "Desayuno",
+      producto: desayunoSeleccionado,
+      precio: precioBase + precioAdicionales,
+      acompanante: acompananteDesayuno,
+      adicionales: adicionalesDesayuno
+    }));
+
+    setAdicionalesDesayuno([]);
+  }
+
+  function agregarProductoSimpleCafeteria(tipo, producto, precio) {
+    agregarItemCafeteria(crearItemCafeteria({
+      tipo,
+      producto,
+      precio
+    }));
+  }
+
   function seleccionarCategoriaMesa(categoria) {
     setCategoriaActivaMesa(categoria);
     setErrorMesa("");
@@ -1389,14 +1578,14 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
             <div className="box soft">No hay menú diario configurado.</div>
           ) : (
             <>
-              {itemsMesa.map((item, index) => {
+              {itemsAlmuerzoMesa.map((item, index) => {
               const tienePlato = Boolean(item.plato || item.proteina);
               const itemEsSopa = esCategoriaSopa(item.categoria);
               const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
               const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
               return (
                 <div key={item.id} id={`mesa-producto-${item.id}`} className="product-card">
-                  {itemsMesa.length > 1 && (
+                  {itemsAlmuerzoMesa.length > 1 && (
                     <div className="product-card-header" style={{ justifyContent: "flex-end" }}>
                       <button type="button" className="mini-danger" onClick={() => quitarAlmuerzoMesa(item.id)}>
                         Quitar
@@ -1532,22 +1721,192 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
           <div className="cafeteria-placeholder fade-step">
             <h2>☕ Cafetería</h2>
             <p className="muted">
-              Estructura creada para la siguiente fase. Aquí agregaremos Parfait, Batidos, Desayunos,
-              Sándwich, Bebidas calientes y Postres.
+              Agrega parfait, batidos, desayunos, sándwiches, bebidas calientes y postres al mismo pedido de mesa.
             </p>
 
-            <div className="cafeteria-grid">
-              <div className="cafeteria-card">🍓 <strong>Parfait</strong></div>
-              <div className="cafeteria-card">🥤 <strong>Batidos</strong></div>
-              <div className="cafeteria-card">🍳 <strong>Desayunos</strong></div>
-              <div className="cafeteria-card">🥪 <strong>Sándwich</strong></div>
-              <div className="cafeteria-card">☕ <strong>Bebidas calientes</strong></div>
-              <div className="cafeteria-card">🍰 <strong>Postres</strong></div>
+            <div className="cafeteria-grid cafeteria-actions">
+              {[
+                ["parfait", "🍓", "Parfait"],
+                ["batidos", "🥤", "Batidos"],
+                ["desayunos", "🍳", "Desayunos"],
+                ["sandwich", "🥪", "Sándwich"],
+                ["bebidas", "☕", "Bebidas calientes"],
+                ["postres", "🍰", "Postres"]
+              ].map(([clave, icono, nombre]) => (
+                <button
+                  key={clave}
+                  type="button"
+                  onClick={() => { setSubcategoriaCafeteria(clave); setErrorMesa(""); }}
+                  className={`cafeteria-card cafeteria-button ${subcategoriaCafeteria === clave ? "active" : ""}`}
+                >
+                  <span>{icono}</span>
+                  <strong>{nombre}</strong>
+                </button>
+              ))}
             </div>
 
-            <div className="box soft" style={{ marginTop: 14 }}>
-              En esta Fase 7A no se guarda nada nuevo todavía. Almuerzos, Supabase e impresión siguen igual.
-            </div>
+            {subcategoriaCafeteria === "parfait" && (
+              <div className="cafeteria-panel fade-step">
+                <h3>🍓 Parfait</h3>
+                <div className="option-grid">
+                  {CAFETERIA_PARFAIT_TAMANOS.map((item) => (
+                    <button key={item.nombre} type="button" onClick={() => setTamanoParfait(item.nombre)} className={`option ${tamanoParfait === item.nombre ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                      <small>{dinero(item.precio)}</small>
+                    </button>
+                  ))}
+                </div>
+
+                <h4>Frutas disponibles</h4>
+                <div className="chips">
+                  {CAFETERIA_FRUTAS.map((fruta) => {
+                    const seleccionado = frutasParfait.includes(fruta);
+                    const bloqueado = !seleccionado && frutasParfait.length >= 3;
+                    return (
+                      <button key={fruta} type="button" disabled={bloqueado} onClick={() => toggleFrutaParfait(fruta)} className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}>
+                        {seleccionado ? "✓ " : "+ "}{fruta}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="muted">Máximo 3 frutas. Al escoger 3 frutas se suma automáticamente {dinero(1000)}.</p>
+
+                <h4>Cereal</h4>
+                <div className="chips">
+                  {CAFETERIA_CEREALES.map((cereal) => (
+                    <button key={cereal} type="button" onClick={() => setCerealParfait(cereal)} className={`chip ${cerealParfait === cereal ? "selected" : ""}`}>
+                      {cerealParfait === cereal ? "✓ " : "+ "}{cereal}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="total-row compact-total-row">
+                  <span>Subtotal parfait</span>
+                  <strong>{dinero(precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0))}</strong>
+                </div>
+                <button type="button" className="button add-meal" onClick={agregarParfaitMesa}>+ Agregar parfait</button>
+              </div>
+            )}
+
+            {subcategoriaCafeteria === "batidos" && (
+              <div className="cafeteria-panel fade-step">
+                <h3>🥤 Batidos</h3>
+                <h4>Sabor</h4>
+                <div className="chips">
+                  {CAFETERIA_BATIDOS_SABORES.map((sabor) => (
+                    <button key={sabor} type="button" onClick={() => setSaborBatido(sabor)} className={`chip ${saborBatido === sabor ? "selected" : ""}`}>{saborBatido === sabor ? "✓ " : "+ "}{sabor}</button>
+                  ))}
+                </div>
+                <h4>Tamaño</h4>
+                <div className="option-grid">
+                  {CAFETERIA_BATIDOS_TAMANOS.map((item) => (
+                    <button key={item.nombre} type="button" onClick={() => setTamanoBatido(item.nombre)} className={`option ${tamanoBatido === item.nombre ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                      <small>{dinero(item.precio)}</small>
+                    </button>
+                  ))}
+                </div>
+                <h4>Base</h4>
+                <div className="chips">
+                  {CAFETERIA_BATIDOS_BASES.map((base) => (
+                    <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                  ))}
+                </div>
+                <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+ Agregar batido</button>
+              </div>
+            )}
+
+            {subcategoriaCafeteria === "desayunos" && (
+              <div className="cafeteria-panel fade-step">
+                <h3>🍳 Desayunos</h3>
+                <div className="option-grid">
+                  {CAFETERIA_DESAYUNOS.map((item) => (
+                    <button key={item.nombre} type="button" onClick={() => setDesayunoSeleccionado(item.nombre)} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                      <small>{dinero(item.precio)}</small>
+                    </button>
+                  ))}
+                </div>
+                <h4>Acompañante</h4>
+                <div className="chips">
+                  {CAFETERIA_ACOMPANANTES_DESAYUNO.map((acompanante) => (
+                    <button key={acompanante} type="button" onClick={() => setAcompananteDesayuno(acompanante)} className={`chip ${acompananteDesayuno === acompanante ? "selected" : ""}`}>{acompananteDesayuno === acompanante ? "✓ " : "+ "}{acompanante}</button>
+                  ))}
+                </div>
+                <h4>Adicionales</h4>
+                <div className="chips">
+                  {CAFETERIA_ADICIONALES_DESAYUNO.map((adicional) => {
+                    const seleccionado = adicionalesDesayuno.some((item) => item.nombre === adicional.nombre);
+                    return (
+                      <button key={adicional.nombre} type="button" onClick={() => toggleAdicionalDesayuno(adicional)} className={`chip ${seleccionado ? "selected" : ""}`}>
+                        {seleccionado ? "✓ " : "+ "}{adicional.nombre} {dinero(adicional.precio)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="total-row compact-total-row">
+                  <span>Subtotal desayuno</span>
+                  <strong>{dinero(precioPorNombre(CAFETERIA_DESAYUNOS, desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0))}</strong>
+                </div>
+                <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+ Agregar desayuno</button>
+              </div>
+            )}
+
+            {subcategoriaCafeteria === "sandwich" && (
+              <div className="cafeteria-panel fade-step">
+                <h3>🥪 Sándwich</h3>
+                <div className="option-grid">
+                  {CAFETERIA_SANDWICHES.map((item) => (
+                    <button key={item.nombre} type="button" onClick={() => setSandwichSeleccionado(item.nombre)} className={`option ${sandwichSeleccionado === item.nombre ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                      <small>{dinero(item.precio)}</small>
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Sándwich", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado))}>+ Agregar sándwich</button>
+              </div>
+            )}
+
+            {subcategoriaCafeteria === "bebidas" && (
+              <div className="cafeteria-panel fade-step">
+                <h3>☕ Bebidas calientes</h3>
+                <div className="option-grid">
+                  {CAFETERIA_BEBIDAS_CALIENTES.map((item) => (
+                    <button key={item.nombre} type="button" onClick={() => setBebidaCalienteSeleccionada(item.nombre)} className={`option ${bebidaCalienteSeleccionada === item.nombre ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                      <small>{dinero(item.precio)}</small>
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada))}>+ Agregar bebida</button>
+              </div>
+            )}
+
+            {subcategoriaCafeteria === "postres" && (
+              <div className="cafeteria-panel fade-step">
+                <h3>🍰 Postres y frutas</h3>
+                <div className="option-grid">
+                  {CAFETERIA_POSTRES.map((item) => (
+                    <button key={item.nombre} type="button" onClick={() => setPostreSeleccionado(item.nombre)} className={`option ${postreSeleccionado === item.nombre ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                      <small>{dinero(item.precio)}</small>
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado))}>+ Agregar postre</button>
+              </div>
+            )}
+
+            {hayProductoSeleccionadoMesa && (
+              <button
+                type="button"
+                onClick={() => irAElementoMesas("mesa-datos-final", 120)}
+                className="button continue-button"
+                style={{ marginTop: 12, background: "#16a34a" }}
+              >
+                Continuar
+              </button>
+            )}
           </div>
         )}
       </section>
@@ -1565,19 +1924,37 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
               <h3>Resumen del pedido</h3>
 
               {itemsConProducto.map((item) => {
+                const itemEsCafeteria = item.categoria === "cafeteria";
                 const itemEsSopa = esCategoriaSopa(item.categoria);
                 const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
                 return (
                   <div key={item.id} className="summary-item">
-                    <p><strong>{item.cantidad} x {item.plato || item.proteina}</strong> - {dinero(item.precioPlato || item.precioProteina)}</p>
-                    {item.categoria && <p>Categoría: {item.categoria}</p>}
-                    {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
-                    {!itemEsSopa && item.observacionAcompanantes?.trim() && (
-                      <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
+                    <p><strong>{item.cantidad} x {item.producto || item.plato || item.proteina}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
+                    {itemEsCafeteria ? (
+                      <>
+                        <p>Categoría: Cafetería{item.tipo ? ` / ${item.tipo}` : ""}</p>
+                        {item.tamano && <p>Tamaño: {item.tamano}</p>}
+                        {Array.isArray(item.frutas) && item.frutas.length > 0 && <p>Frutas: {item.frutas.join(", ")}</p>}
+                        {item.cereal && <p>Cereal: {item.cereal}</p>}
+                        {Number(item.extraFrutas) > 0 && <p>Extra 3 frutas: {dinero(item.extraFrutas)}</p>}
+                        {item.base && <p>Base: {item.base}</p>}
+                        {item.acompanante && <p>Acompañante: {item.acompanante}</p>}
+                        {Array.isArray(item.adicionales) && item.adicionales.length > 0 && (
+                          <p>Adicionales: {item.adicionales.map((x) => x.nombre || x).join(", ")}</p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {item.categoria && <p>Categoría: {item.categoria}</p>}
+                        {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                        {!itemEsSopa && item.observacionAcompanantes?.trim() && (
+                          <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
+                        )}
+                        {itemEsSopa && <p>Acompañantes: No aplica</p>}
+                        {!itemEsSopa && <p>Sopa + bebida incluida</p>}
+                      </>
                     )}
-                    {itemEsSopa && <p>Acompañantes: No aplica</p>}
-                    {!itemEsSopa && <p>Sopa + bebida incluida</p>}
                   </div>
                 );
               })}
@@ -1636,7 +2013,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
                 <button
                   type="button"
                   onClick={enviarPedidoMesa}
-                  disabled={guardandoPedido || menu.platos_detalle.length === 0}
+                  disabled={guardandoPedido || itemsConProducto.length === 0}
                   className="button"
                   style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
                 >
@@ -2290,17 +2667,26 @@ export default function App() {
     if (guardandoPedido) return false;
 
     const itemsValidos = (Array.isArray(items) ? items : [])
-      .filter((item) => item.plato || item.proteina)
-      .map((item) => ({
-        ...item,
-        acompanantes: limpiarAcompanantesMenu(
-          Array.isArray(item.acompanantes) && item.acompanantes.length > 0
-            ? item.acompanantes
-            : acompanantes || []
-        ),
-        observacionAcompanantes: "",
-        paraLlevar: false
-      }));
+      .filter((item) => item.plato || item.proteina || item.producto)
+      .map((item) => {
+        if (item.categoria === "cafeteria") {
+          return {
+            ...item,
+            paraLlevar: false
+          };
+        }
+
+        return {
+          ...item,
+          acompanantes: limpiarAcompanantesMenu(
+            Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+              ? item.acompanantes
+              : acompanantes || []
+          ),
+          observacionAcompanantes: "",
+          paraLlevar: false
+        };
+      });
 
     if (itemsValidos.length === 0) {
       mostrarMensaje("Agrega al menos un producto al pedido de mesa.", "warning");
@@ -2650,6 +3036,12 @@ export default function App() {
         .cafeteria-placeholder h2 { margin-bottom: 8px; text-align: center; color: #92400e; }
         .cafeteria-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
         .cafeteria-card { border: 1px solid #fde68a; background: #fffbeb; color: #78350f; border-radius: 20px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; min-height: 72px; }
+        .cafeteria-button { cursor: pointer; font: inherit; flex-direction: column; }
+        .cafeteria-button.active { background: #f59e0b; color: #fff; border-color: #f59e0b; box-shadow: 0 10px 22px rgba(245,158,11,0.22); }
+        .cafeteria-panel { margin-top: 16px; border: 1px solid #fde68a; background: #fffdf5; border-radius: 22px; padding: 16px; display: grid; gap: 12px; }
+        .cafeteria-panel h3 { margin: 0; color: #92400e; font-family: 'Fraunces', serif; font-size: 24px; }
+        .cafeteria-panel h4 { margin: 4px 0 0; color: #57534e; }
+        .cafeteria-actions { align-items: stretch; }
         .continue-button { width: 100%; margin-top: 16px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
         .continue-button + .field { margin-top: 14px; }
         .summary-continue { width: 100%; margin: 12px 0 6px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.22); }
@@ -3300,7 +3692,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={registrarPedido}
-                            disabled={guardandoPedido || menu.platos_detalle.length === 0}
+                            disabled={guardandoPedido || itemsConProducto.length === 0}
                             className="button"
                             style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
                           >
