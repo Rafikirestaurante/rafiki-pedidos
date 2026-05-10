@@ -1207,6 +1207,17 @@ function PanelRafaPrivado() {
 }
 
 
+
+function irAElementoMesas(id, delay = 180) {
+  window.setTimeout(() => {
+    window.requestAnimationFrame(() => {
+      const elemento = document.getElementById(id);
+      if (!elemento) return;
+      elemento.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    });
+  }, delay);
+}
+
 function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("Mesa 1");
@@ -1251,7 +1262,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
     const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
 
     setTimeout(() => {
-      irAElemento(esSopa ? `mesa-confirmacion-${id}` : `mesa-paso-acompanantes-${id}`);
+      irAElementoMesas(esSopa ? `mesa-confirmacion-${id}` : `mesa-paso-acompanantes-${id}`, 220);
     }, 120);
   }
 
@@ -1281,7 +1292,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
         const nuevosAcompanantes = [...acompanantesActuales, acompanante];
 
         if (nuevosAcompanantes.length === MAX_ACOMPANANTES_CLIENTE) {
-          setTimeout(() => irAElemento(`mesa-confirmacion-${id}`), 120);
+          irAElementoMesas(`mesa-confirmacion-${id}`, 220);
         }
 
         return { ...item, acompanantes: nuevosAcompanantes };
@@ -1480,7 +1491,7 @@ function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
 
                 <button
                   type="button"
-                  onClick={() => irAElemento("mesa-datos-final")}
+                  onClick={() => irAElementoMesas("mesa-datos-final", 120)}
                   className="button continue-button"
                   style={{ marginTop: 12, background: "#16a34a" }}
                 >
