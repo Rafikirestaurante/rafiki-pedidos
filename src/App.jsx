@@ -11,6 +11,7 @@ import {
   acompanantesATexto,
   agruparPlatosPorCategoria,
   calcularTotalItems,
+  consolidarPedidos,
   crearItemNuevo,
   crearLinkWhatsApp,
   crearMensajeWhatsAppPedido,
