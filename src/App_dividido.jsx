@@ -511,6 +511,7 @@ function crearDatosTicketPedido(pedido) {
   const productos = [];
   const acompanantes = [];
   const observaciones = [];
+  const esPedidoMesa = pedido?.tipo_pedido === "mesa" || Boolean(pedido?.mesa);
 
   items.forEach((item) => {
     const cantidad = Number(item.cantidad) || 1;
@@ -528,7 +529,7 @@ function crearDatosTicketPedido(pedido) {
       observaciones.push(`OBS. ACOMPAÑANTES: ${textoMayusculasTicket(item.observacionAcompanantes)}`);
     }
 
-    if (item.paraLlevar) {
+    if (!esPedidoMesa && item.paraLlevar) {
       const textoEmpaque = valorParaLlevarItem(item) > 0 ? "PARA LLEVAR" : "PARA LLEVAR SIN COSTO";
       observaciones.push(`${textoMayusculasTicket(nombre)}: ${textoEmpaque}`);
     }
@@ -539,15 +540,18 @@ function crearDatosTicketPedido(pedido) {
   }
 
   const tieneParaLlevar = items.some((item) => item.paraLlevar);
+  const clienteTicket = esPedidoMesa
+    ? `${textoMayusculasTicket(pedido.mesa || "MESA")} - ${textoMayusculasTicket(pedido.mesero || "MESERO")}`
+    : textoMayusculasTicket(obtenerCliente(pedido));
 
   return {
     codigo: obtenerCodigoPedido(pedido),
     hora: horaTicket(pedido.created_at),
-    cliente: textoMayusculasTicket(obtenerCliente(pedido)),
+    cliente: clienteTicket,
     productos: productos.length ? productos : listaPorLineas(pedido.pedido_texto).map(textoMayusculasTicket),
     acompanantes,
     observaciones,
-    entrega: tieneParaLlevar ? "PARA LLEVAR" : "SERVIR EN MESA"
+    entrega: esPedidoMesa ? "SERVIR EN MESA" : (tieneParaLlevar ? "PARA LLEVAR" : "SERVIR EN MESA")
   };
 }
 
@@ -1203,32 +1207,226 @@ function PanelRafaPrivado() {
 }
 
 
-function PanelMesasBasico({ mesa, setMesa, mesero, setMesero, observaciones, setObservaciones, onEnviar }) {
+function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
+  const [itemsMesa, setItemsMesa] = useState([]);
+  const [acompanantesSeleccionados, setAcompanantesSeleccionados] = useState([]);
+  const [mesaLocal, setMesaLocal] = useState("Mesa 1");
+  const [meseroLocal, setMeseroLocal] = useState("");
+  const [observacionesLocal, setObservacionesLocal] = useState("");
+  const total = useMemo(() => calcularTotalItems(itemsMesa), [itemsMesa]);
+  const totalItems = useMemo(
+    () => itemsMesa.reduce((suma, item) => suma + (Number(item.cantidad) || 0), 0),
+    [itemsMesa]
+  );
+
+  function agregarPlatoMesa(plato) {
+    setItemsMesa((actual) => {
+      const existente = actual.find((item) => item.plato === plato.nombre && item.categoria === plato.categoria);
+
+      if (existente) {
+        return actual.map((item) =>
+          item.id === existente.id ? { ...item, cantidad: (Number(item.cantidad) || 1) + 1 } : item
+        );
+      }
+
+      return [
+        ...actual,
+        {
+          ...crearItemNuevo(),
+          categoria: plato.categoria || "Platos",
+          plato: plato.nombre,
+          proteina: plato.nombre,
+          precioPlato: Number(plato.precio) || 0,
+          precioProteina: Number(plato.precio) || 0,
+          acompanantes: [],
+          paraLlevar: false
+        }
+      ];
+    });
+  }
+
+  function cambiarCantidadMesa(id, cantidad) {
+    const nuevaCantidad = Math.max(0, Number(cantidad) || 0);
+    setItemsMesa((actual) =>
+      nuevaCantidad === 0
+        ? actual.filter((item) => item.id !== id)
+        : actual.map((item) => (item.id === id ? { ...item, cantidad: nuevaCantidad } : item))
+    );
+  }
+
+  function quitarItemMesa(id) {
+    setItemsMesa((actual) => actual.filter((item) => item.id !== id));
+  }
+
+  function alternarAcompananteMesa(acompanante) {
+    setAcompanantesSeleccionados((actual) =>
+      actual.includes(acompanante)
+        ? actual.filter((item) => item !== acompanante)
+        : [...actual, acompanante]
+    );
+  }
+
+  function limpiarPedidoMesa() {
+    setItemsMesa([]);
+    setAcompanantesSeleccionados([]);
+    setObservacionesLocal("");
+  }
+
+  async function enviarPedidoMesa() {
+    const ok = await onEnviar({
+      items: itemsMesa,
+      acompanantes: acompanantesSeleccionados,
+      mesa: mesaLocal,
+      mesero: meseroLocal,
+      observaciones: observacionesLocal
+    });
+
+    if (ok) {
+      limpiarPedidoMesa();
+    }
+  }
+
   return (
-    <section className="page-section">
-      <div className="hero-card">
-        <h1>Panel Mesas</h1>
-        <div className="grid-form">
-          <div>
-            <label>Mesa</label>
-            <select value={mesa} onChange={(e) => setMesa(e.target.value)}>
-              {Array.from({ length: 20 }, (_, i) => (
+    <main className="mesas-pos">
+      <section className="mesas-hero">
+        <div>
+          <span>Panel Mesas</span>
+          <h2>Tomar pedido</h2>
+        </div>
+        <strong>{totalItems} items</strong>
+      </section>
+
+      <section className="mesas-card">
+        <div className="mesas-section-title">
+          <h3>Proteínas y platos</h3>
+        </div>
+
+        {Object.entries(platosAgrupados).length === 0 ? (
+          <div className="box soft">No hay productos configurados en el menú diario.</div>
+        ) : (
+          Object.entries(platosAgrupados).map(([categoria, platos]) => (
+            <div key={categoria} className="mesas-category">
+              <h4>{categoria}</h4>
+              <div className="mesas-products-grid">
+                {platos.map((plato) => (
+                  <button
+                    key={`${plato.categoria}-${plato.nombre}`}
+                    type="button"
+                    className="mesa-product-btn"
+                    onClick={() => agregarPlatoMesa(plato)}
+                  >
+                    <span>{plato.nombre}</span>
+                    <small>{dinero(plato.precio)}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+
+      <section className="mesas-card">
+        <div className="mesas-section-title">
+          <h3>Acompañantes</h3>
+        </div>
+        <div className="mesas-chips">
+          {menu.acompanantes.length === 0 ? (
+            <span className="muted">No hay acompañantes configurados.</span>
+          ) : (
+            menu.acompanantes.map((acompanante) => {
+              const seleccionado = acompanantesSeleccionados.includes(acompanante);
+              return (
+                <button
+                  key={acompanante}
+                  type="button"
+                  onClick={() => alternarAcompananteMesa(acompanante)}
+                  className={`mesa-chip ${seleccionado ? "selected" : ""}`}
+                >
+                  {seleccionado ? "✓ " : "+ "}{acompanante}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <section className="mesas-card pedido-mesa-actual">
+        <div className="mesas-section-title">
+          <h3>Pedido actual</h3>
+          {itemsMesa.length > 0 && (
+            <button type="button" className="mesa-link-btn" onClick={limpiarPedidoMesa}>Limpiar</button>
+          )}
+        </div>
+
+        {itemsMesa.length === 0 ? (
+          <div className="mesa-empty">Toca un producto para agregarlo.</div>
+        ) : (
+          <div className="mesa-items-list">
+            {itemsMesa.map((item) => (
+              <div key={item.id} className="mesa-item-row">
+                <div>
+                  <strong>{item.plato || item.proteina}</strong>
+                  <span>{dinero(calcularTotalItem(item))}</span>
+                </div>
+                <SelectorCantidad
+                  cantidad={Number(item.cantidad) || 1}
+                  onChange={(cantidad) => cambiarCantidadMesa(item.id, cantidad)}
+                />
+                <button type="button" className="mesa-remove" onClick={() => quitarItemMesa(item.id)}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {acompanantesSeleccionados.length > 0 && (
+          <div className="mesa-acomp-preview">
+            <strong>Acompañantes:</strong> {acompanantesSeleccionados.join(", ")}
+          </div>
+        )}
+      </section>
+
+      <section className="mesas-card mesas-final">
+        <div className="mesas-final-grid">
+          <label className="field">
+            <span>Mesa</span>
+            <select value={mesaLocal} onChange={(e) => setMesaLocal(e.target.value)}>
+              {Array.from({ length: 30 }, (_, i) => (
                 <option key={i + 1} value={`Mesa ${i + 1}`}>{`Mesa ${i + 1}`}</option>
               ))}
             </select>
-          </div>
+          </label>
+
+          <label className="field">
+            <span>Mesero</span>
+            <input value={meseroLocal} onChange={(e) => setMeseroLocal(e.target.value)} placeholder="Nombre" />
+          </label>
+        </div>
+
+        <CampoTexto
+          etiqueta="Observaciones"
+          value={observacionesLocal}
+          onChange={setObservacionesLocal}
+          placeholder="Ejemplo: sin ensalada, mucha salsa..."
+          multiline
+          rows={3}
+        />
+
+        <div className="mesa-send-bar">
           <div>
-            <label>Mesero</label>
-            <input value={mesero} onChange={(e) => setMesero(e.target.value)} placeholder="Nombre mesero" />
+            <span>Total</span>
+            <strong>{dinero(total)}</strong>
           </div>
+          <button
+            type="button"
+            className="button green"
+            onClick={enviarPedidoMesa}
+            disabled={guardandoPedido || itemsMesa.length === 0}
+          >
+            {guardandoPedido ? "Enviando..." : "Enviar pedido mesa"}
+          </button>
         </div>
-        <div style={{marginTop: '1rem'}}>
-          <label>Observaciones</label>
-          <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} placeholder="Observaciones" />
-        </div>
-        <button className="btn-primary" style={{marginTop: '1rem'}} onClick={onEnviar}>Enviar pedido mesa</button>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
 
@@ -1867,6 +2065,67 @@ export default function App() {
     }
   }
 
+  async function registrarPedidoMesa({ items, acompanantes, mesa, mesero, observaciones: obsMesa }) {
+    if (guardandoPedido) return false;
+
+    const itemsValidos = (Array.isArray(items) ? items : [])
+      .filter((item) => item.plato || item.proteina)
+      .map((item) => ({
+        ...item,
+        acompanantes: limpiarAcompanantesMenu(acompanantes || []),
+        observacionAcompanantes: "",
+        paraLlevar: false
+      }));
+
+    if (itemsValidos.length === 0) {
+      mostrarMensaje("Agrega al menos un producto al pedido de mesa.", "warning");
+      return false;
+    }
+
+    const mesaLimpia = limpiarTexto(mesa, 40) || "Mesa 1";
+    const meseroLimpio = limpiarTexto(mesero, 80) || "Mesero";
+    const observacionesLimpias = limpiarTexto(obsMesa, 500);
+    const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
+    const total = calcularTotalItems(itemsValidos);
+
+    const nuevoPedido = {
+      cliente: mesaLimpia,
+      cliente_nombre: mesaLimpia,
+      telefono: "",
+      ubicacion: mesaLimpia,
+      tipo_pago: "Mesa",
+      tipo_pedido: "mesa",
+      mesa: mesaLimpia,
+      mesero: meseroLimpio,
+      observaciones: observacionesLimpias,
+      items: itemsValidos,
+      pedido_texto: pedidoTexto,
+      total,
+      estado: "Pendiente",
+      enviado_whatsapp: false
+    };
+
+    setGuardandoPedido(true);
+
+    try {
+      const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+
+      if (error) {
+        mostrarMensaje(`Error guardando pedido de mesa: ${error.message}`, "error");
+        return false;
+      }
+
+      if (filtroPedidos === "hoy" || filtroPedidos === "dia") {
+        setPedidos((actual) => [...actual, data]);
+      }
+
+      mostrarMensaje(`Pedido enviado a cocina para ${mesaLimpia}.`, "success");
+      return true;
+    } finally {
+      setGuardandoPedido(false);
+    }
+  }
+
   async function guardarMenu() {
     if (guardandoMenu) return;
 
@@ -2309,11 +2568,48 @@ export default function App() {
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
+
+        .mesas-pos { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+        .mesas-hero { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: linear-gradient(135deg, #1c1917, #44403c); color: #fff; border-radius: 28px; padding: 22px; box-shadow: 0 16px 36px rgba(0,0,0,0.16); }
+        .mesas-hero span { display: block; color: #fdba74; font-weight: 900; text-transform: uppercase; font-size: 12px; letter-spacing: .7px; margin-bottom: 5px; }
+        .mesas-hero h2 { margin: 0; font-size: clamp(30px, 6vw, 48px); line-height: .95; }
+        .mesas-hero strong { background: #f97316; color: #fff; border-radius: 999px; padding: 12px 16px; font-size: 18px; white-space: nowrap; }
+        .mesas-card { background: #fff; border: 1px solid #fed7aa; border-radius: 26px; padding: 18px; box-shadow: 0 12px 28px rgba(0,0,0,0.06); }
+        .mesas-section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .mesas-section-title h3 { margin: 0; color: #c2410c; font-size: 24px; font-family: 'Fraunces', serif; }
+        .mesas-category { margin-top: 14px; }
+        .mesas-category:first-of-type { margin-top: 0; }
+        .mesas-category h4 { margin-bottom: 10px; color: #57534e; font-size: 16px; }
+        .mesas-products-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .mesa-product-btn { border: 2px solid #fed7aa; background: #fff7ed; border-radius: 20px; min-height: 86px; padding: 14px 12px; text-align: left; font-weight: 900; color: #292524; box-shadow: none; }
+        .mesa-product-btn span { display: block; font-size: 18px; line-height: 1.08; }
+        .mesa-product-btn small { display: block; margin-top: 8px; color: #ea580c; font-size: 15px; font-weight: 900; }
+        .mesa-product-btn:hover { background: #ffedd5; border-color: #fb923c; }
+        .mesas-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        .mesa-chip { border: 2px solid #e7e5e4; background: #fff; border-radius: 999px; padding: 12px 16px; font-weight: 900; color: #44403c; }
+        .mesa-chip.selected { border-color: #22c55e; background: #dcfce7; color: #15803d; }
+        .mesa-empty { background: #fafaf9; border: 1px dashed #d6d3d1; border-radius: 18px; padding: 18px; color: #78716c; font-weight: 800; text-align: center; }
+        .mesa-items-list { display: grid; gap: 10px; }
+        .mesa-item-row { display: grid; grid-template-columns: 1fr auto 38px; align-items: center; gap: 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 18px; padding: 12px; }
+        .mesa-item-row strong { display: block; color: #292524; font-size: 17px; }
+        .mesa-item-row span { display: block; color: #ea580c; font-weight: 900; margin-top: 3px; }
+        .mesa-remove { width: 36px; height: 36px; border: 0; border-radius: 999px; background: #fee2e2; color: #991b1b; font-size: 22px; font-weight: 900; }
+        .mesa-acomp-preview { margin-top: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 16px; padding: 12px; font-weight: 800; }
+        .mesa-link-btn { border: 0; background: transparent; color: #b91c1c; font-weight: 900; text-decoration: underline; }
+        .mesas-final-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .mesa-send-bar { display: flex; justify-content: space-between; align-items: center; gap: 14px; background: #1c1917; color: #fff; border-radius: 22px; padding: 14px; margin-top: 6px; }
+        .mesa-send-bar span { display: block; color: #d6d3d1; font-weight: 800; font-size: 12px; text-transform: uppercase; }
+        .mesa-send-bar strong { display: block; color: #fdba74; font-size: 28px; font-family: 'Fraunces', serif; }
+        .mesa-send-bar .button { margin: 0; min-width: 210px; }
+
         @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-actions-stack, .contador-sin-revisar, .alerta-pedido-nuevo, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .nav { margin-top: 16px; }
-          .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row { grid-template-columns: 1fr; }
+          .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row, .mesas-products-grid, .mesas-final-grid { grid-template-columns: 1fr; }
+          .mesa-send-bar { display: grid; grid-template-columns: 1fr; }
+          .mesa-send-bar .button { width: 100%; min-width: 0; }
+          .mesa-item-row { grid-template-columns: 1fr; }
           .app { padding: 14px; }
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
@@ -2329,8 +2625,8 @@ export default function App() {
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
-                <h1>Menú diario y pedidos por WhatsApp</h1>
-                <p className="muted">App real conectada a Supabase.</p>
+                <h1>{vista === "mesas" ? "Panel de mesas" : "Menú diario y pedidos por WhatsApp"}</h1>
+                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : "App real conectada a Supabase."}</p>
               </div>
 
               {(vista === "cliente" || vista === "confirmacion") && (
@@ -2838,14 +3134,11 @@ export default function App() {
           )}
 
           {!cargando && vista === "mesas" && (
-            <PanelMesasBasico
-              mesa={mesa}
-              setMesa={setMesa}
-              mesero={mesero}
-              setMesero={setMesero}
-              observaciones={observaciones}
-              setObservaciones={setObservaciones}
-              onEnviar={() => alert(`Pedido enviado para ${mesa}`)}
+            <PanelMesasPOS
+              menu={menu}
+              platosAgrupados={platosAgrupados}
+              guardandoPedido={guardandoPedido}
+              onEnviar={registrarPedidoMesa}
             />
           )}
 
