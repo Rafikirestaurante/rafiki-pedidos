@@ -257,9 +257,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  // No bloqueamos la pantalla inicial ni los paneles por cargas de Supabase.
-  // Si Supabase demora o falla, la app abre con el menú de respaldo y luego actualiza.
-  const cargando = vista === "admin" ? cargandoMenu || cargandoPedidos : false;
+  const cargando = cargandoMenu || cargandoPedidos;
 
   const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
 
@@ -1316,33 +1314,23 @@ export default function App() {
           )}
 
           {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
-          {cargando && <div className="card card-pad">Cargando datos de Rafiki...</div>}
+          {cargando && vista !== "inicio" && <div className="card card-pad">Cargando datos de Rafiki...</div>}
 
-          {!cargando && vista === "inicio" && (
+          {vista === "inicio" && (
             <main className="welcome">
               <section className="welcome-card">
                 <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="welcome-logo" />
                 <h2>Bienvenido a Rafiki</h2>
                 <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
 
-                <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
-                  <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
-                    🛍️ Panel cliente
-                  </button>
-
-                  <button type="button" onClick={() => navegar("/mesas", "mesas")} className="welcome-button" style={{ background: "#16a34a" }}>
-                    🍽️ Panel mesas
-                  </button>
-
-                  <button type="button" onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")} className="welcome-button" style={{ background: "#111827" }}>
-                    🔐 Panel administrativo
-                  </button>
-                </div>
+                <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
+                  🛍️ Haz tu pedido aquí
+                </button>
               </section>
             </main>
           )}
 
-          {!cargando && vista === "adminLogin" && (
+          {vista === "adminLogin" && (
             <main style={{ maxWidth: 520, margin: "0 auto" }}>
               <section className="card card-pad">
                 <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -1391,7 +1379,7 @@ export default function App() {
             </main>
           )}
 
-          {!cargando && vista === "cliente" && (
+          {vista === "cliente" && (
             <main className="layout">
               <section className="card" id="inicio-pedido-cliente">
                 <div className="hero">
@@ -1750,7 +1738,7 @@ export default function App() {
             </main>
           )}
 
-          {!cargando && vista === "confirmacion" && pedidoFinalizado && (
+          {vista === "confirmacion" && pedidoFinalizado && (
             <main style={{ maxWidth: 620, margin: "0 auto" }}>
               <section className="card">
                 <div className="hero green confirmacion-cocina" style={{ textAlign: "center" }}>
@@ -1770,7 +1758,7 @@ export default function App() {
             </main>
           )}
 
-          {!cargando && vista === "mesas" && (
+          {vista === "mesas" && (
             <PanelMesasPOS
               menu={menu}
               platosAgrupados={platosAgrupados}
@@ -1779,7 +1767,7 @@ export default function App() {
             />
           )}
 
-          {!cargando && vista === "admin" && adminAutenticado && (
+          {vista === "admin" && adminAutenticado && (
             <main className="admin-layout">
               <div className="admin-tabs">
                 <button
