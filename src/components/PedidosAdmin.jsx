@@ -16,6 +16,7 @@ import {
   imprimirTicketPedido
 } from "../utils/pedidos";
 import { EstadoBadge } from "./common";
+import { estadosPedido } from "../data/menuAlmuerzos";
 
 export function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado }) {
   const items = obtenerItemsPedido(pedido);

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
+  calcularTotalItem,
   calcularTotalItems,
   crearItemCafeteria,
   crearItemNuevo,
@@ -12,6 +13,7 @@ import {
   valorParaLlevarItem
 } from "../utils/pedidos";
 import { MAX_ACOMPANANTES_CLIENTE } from "../data/menuAlmuerzos";
+import { CampoTexto } from "./common";
 import {
   CAFETERIA_ACOMPANANTES_DESAYUNO,
   CAFETERIA_ADICIONALES_DESAYUNO,

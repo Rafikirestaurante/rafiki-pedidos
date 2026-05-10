@@ -4,12 +4,13 @@ import SolicitudProductos from "./components/SolicitudProductos";
 import GeneradorMenu from "./components/GeneradorMenu";
 import PanelMesasPOS from "./components/PanelMesas";
 import PanelRafaPrivado from "./components/PanelRafaPrivado";
-import { CampoTexto } from "./components/common";
+import { CampoTexto, SelectorCantidad } from "./components/common";
 import { PedidoCocina, TablaPedidosCompacta } from "./components/PedidosAdmin";
-import { estadosPedido, menuFallback } from "./data/menuAlmuerzos";
+import { estadosPedido, menuFallback, MAX_ACOMPANANTES_CLIENTE, VALOR_PARA_LLEVAR } from "./data/menuAlmuerzos";
 import {
   acompanantesATexto,
   agruparPlatosPorCategoria,
+  calcularTotalItem,
   calcularTotalItems,
   consolidarPedidos,
   crearItemNuevo,
@@ -265,7 +266,12 @@ export default function App() {
 
   const cargando = cargandoMenu || cargandoPedidos;
 
-  const totalPedido = useMemo(() => calcularTotalItems(itemsPedido), [itemsPedido]);
+  const itemsConProducto = useMemo(
+    () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
+    [itemsPedido]
+  );
+
+  const totalPedido = useMemo(() => calcularTotalItems(itemsConProducto), [itemsConProducto]);
 
   const hayProductoSeleccionado = useMemo(() => {
     return itemsPedido.some((item) => item.plato || item.proteina);
