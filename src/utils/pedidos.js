@@ -536,8 +536,34 @@ export function crearDatosTicketPedido(pedido) {
 
   items.forEach((item) => {
     const cantidad = Number(item.cantidad) || 1;
-    const nombre = item.plato || item.proteina || item.nombre || "Producto";
-    productos.push(`${cantidad} ${textoMayusculasTicket(nombre)}`);
+    const esCafeteria = item.categoria === "cafeteria";
+    const nombreBase = item.plato || item.proteina || item.producto || item.nombre || "Producto";
+
+    if (esCafeteria) {
+      const tipo = textoMayusculasTicket(item.tipo || "Cafetería");
+      const tamano = textoMayusculasTicket(item.tamano || "");
+      const producto = textoMayusculasTicket(item.producto || item.nombre || "");
+      const lineaPrincipal = item.tipo === "Parfait"
+        ? `${cantidad} PARFAIT${tamano ? ` ${tamano}` : ""}`
+        : `${cantidad} ${tipo}${producto ? ` - ${producto}` : ""}`;
+
+      productos.push(lineaPrincipal);
+
+      if (Array.isArray(item.frutas) && item.frutas.length) {
+        productos.push(`  FRUTAS: ${item.frutas.map(textoMayusculasTicket).join(", ")}`);
+      }
+
+      if (item.cereal) productos.push(`  CEREAL: ${textoMayusculasTicket(item.cereal)}`);
+      if (Number(item.extraFrutas) > 0) productos.push("  EXTRA FRUTAS: +$1.000");
+      if (item.base) productos.push(`  BASE: ${textoMayusculasTicket(item.base)}`);
+      if (item.acompanante) productos.push(`  ACOMPAÑANTE: ${textoMayusculasTicket(item.acompanante)}`);
+
+      if (Array.isArray(item.adicionales) && item.adicionales.length) {
+        productos.push(`  ADICIONALES: ${item.adicionales.map((adicional) => textoMayusculasTicket(adicional.nombre || adicional)).join(", ")}`);
+      }
+    } else {
+      productos.push(`${cantidad} ${textoMayusculasTicket(nombreBase)}`);
+    }
 
     if (Array.isArray(item.acompanantes)) {
       item.acompanantes.forEach((acompanante) => {
@@ -552,7 +578,7 @@ export function crearDatosTicketPedido(pedido) {
 
     if (!esPedidoMesa && item.paraLlevar) {
       const textoEmpaque = valorParaLlevarItem(item) > 0 ? "PARA LLEVAR" : "PARA LLEVAR SIN COSTO";
-      observaciones.push(`${textoMayusculasTicket(nombre)}: ${textoEmpaque}`);
+      observaciones.push(`${textoMayusculasTicket(nombreBase)}: ${textoEmpaque}`);
     }
   });
 
@@ -720,7 +746,7 @@ export function consolidarPedidos(pedidos) {
 
   pedidos.forEach((pedido) => {
     obtenerItemsPedido(pedido).forEach((item) => {
-      const nombre = item.plato || item.proteina;
+      const nombre = item.plato || item.proteina || item.producto || item.nombre;
 
       if (nombre) {
         resumen[nombre] = (resumen[nombre] || 0) + (Number(item.cantidad) || 0);

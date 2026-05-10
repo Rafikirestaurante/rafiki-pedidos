@@ -190,6 +190,22 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setMeseroLocal("");
     setObservacionesLocal("");
     setErrorMesa("");
+
+    // Limpia también los selectores de cafetería para evitar que el siguiente pedido
+    // herede tamaño, cereal, frutas o adicionales del pedido anterior.
+    setTamanoParfait("12 oz");
+    setCerealParfait("Granola");
+    setFrutasParfait([]);
+    setTipoBatido("cremoso");
+    setSaborBatido(CAFETERIA_BATIDOS_CREMOSOS_SABORES[0]);
+    setTamanoBatido("12 oz");
+    setBaseBatido("Yogurt");
+    setDesayunoSeleccionado("Huevos tomate y cebolla");
+    setAcompananteDesayuno("Arepa");
+    setAdicionalesDesayuno([]);
+    setSandwichSeleccionado("Sándwich de jamón y queso");
+    setBebidaCalienteSeleccionada("Café americano");
+    setPostreSeleccionado("Fresas con crema");
   }
 
   function agregarItemCafeteria(item) {
