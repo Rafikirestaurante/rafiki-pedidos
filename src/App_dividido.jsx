@@ -513,228 +513,6 @@ function crearDatosTicketPedido(pedido) {
   };
 }
 
-
-function limpiarTextoImpresora(texto = "") {
-  return String(texto || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ñ/g, "n")
-    .replace(/Ñ/g, "N")
-    .replace(/[^\x20-\x7E]/g, "")
-    .trim();
-}
-
-function centrarLinea(texto = "", ancho = 32) {
-  const limpio = limpiarTextoImpresora(texto).slice(0, ancho);
-  const espacios = Math.max(0, Math.floor((ancho - limpio.length) / 2));
-  return `${" ".repeat(espacios)}${limpio}`;
-}
-
-function cortarLineasTicket(texto = "", ancho = 32) {
-  const limpio = limpiarTextoImpresora(texto).toUpperCase();
-  if (!limpio) return [];
-
-  const palabras = limpio.split(/\s+/).filter(Boolean);
-  const lineas = [];
-  let actual = "";
-
-  palabras.forEach((palabra) => {
-    if (palabra.length > ancho) {
-      if (actual) {
-        lineas.push(actual);
-        actual = "";
-      }
-      for (let i = 0; i < palabra.length; i += ancho) {
-        lineas.push(palabra.slice(i, i + ancho));
-      }
-      return;
-    }
-
-    const candidato = actual ? `${actual} ${palabra}` : palabra;
-    if (candidato.length > ancho) {
-      if (actual) lineas.push(actual);
-      actual = palabra;
-    } else {
-      actual = candidato;
-    }
-  });
-
-  if (actual) lineas.push(actual);
-  return lineas;
-}
-
-function crearTextoTicketQZ(pedido) {
-  const ticket = crearDatosTicketPedido(pedido);
-  const ancho = 32;
-  const igual = "=".repeat(ancho);
-  const guion = "-".repeat(ancho);
-  const lineas = [];
-
-  const ESC = "\x1B";
-  const GS = "\x1D";
-  const init = `${ESC}@`;
-  const alignLeft = `${ESC}a\x00`;
-  const alignCenter = `${ESC}a\x01`;
-  const boldOn = `${ESC}E\x01`;
-  const boldOff = `${ESC}E\x00`;
-  const normalSize = `${GS}!\x00`;
-  const doubleHeight = `${GS}!\x01`;
-  const bigText = `${GS}!\x11`;
-  const cut = `${GS}V\x00`;
-
-  lineas.push(init, alignCenter, boldOn, normalSize, `${igual}\n`);
-  lineas.push(bigText, `${centrarLinea("RAFIKI PEDIDO", 16)}\n`);
-  lineas.push(normalSize, `${igual}\n\n`);
-
-  lineas.push(alignLeft, boldOn, doubleHeight);
-  lineas.push(`Pedido #${limpiarTextoImpresora(ticket.codigo)}\n`);
-  lineas.push(`Hora: ${limpiarTextoImpresora(ticket.hora)}\n\n`);
-
-  lineas.push(normalSize, `Cliente:\n`, doubleHeight);
-  cortarLineasTicket(ticket.cliente || "CLIENTE", ancho).forEach((linea) => lineas.push(`${linea}\n`));
-  lineas.push(normalSize, `${guion}\n`);
-
-  lineas.push(boldOn, bigText);
-  ticket.productos.forEach((producto) => {
-    cortarLineasTicket(producto, 16).forEach((linea) => lineas.push(`${linea}\n`));
-  });
-
-  if (ticket.acompanantes.length) {
-    lineas.push(normalSize, `${guion}\n`, doubleHeight);
-    ticket.acompanantes.forEach((acompanante) => {
-      cortarLineasTicket(acompanante, ancho).forEach((linea) => lineas.push(`${linea}\n`));
-    });
-  }
-
-  if (ticket.observaciones.length) {
-    lineas.push(normalSize, `${guion}\n`, boldOn, doubleHeight, `OBSERVACIONES:\n`);
-    ticket.observaciones.forEach((observacion) => {
-      cortarLineasTicket(observacion, ancho).forEach((linea) => lineas.push(`${linea}\n`));
-    });
-  }
-
-  lineas.push(normalSize, `${guion}\n`, alignCenter, boldOn, bigText);
-  lineas.push(`${centrarLinea(ticket.entrega, 16)}\n`);
-  lineas.push(normalSize, `${igual}\n\n\n`, boldOff, cut);
-
-  return lineas.join("");
-}
-
-function cargarQZTrayScript() {
-  return new Promise((resolve, reject) => {
-    if (window.qz) {
-      resolve(window.qz);
-      return;
-    }
-
-    const existente = document.querySelector('script[data-rafiki-qz="true"]');
-    if (existente) {
-      existente.addEventListener("load", () => resolve(window.qz));
-      existente.addEventListener("error", reject);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js";
-    script.async = true;
-    script.dataset.rafikiQz = "true";
-    script.onload = () => resolve(window.qz);
-    script.onerror = () => reject(new Error("No se pudo cargar QZ Tray."));
-    document.body.appendChild(script);
-  });
-}
-
-async function asegurarConexionQZ() {
-  const qz = await cargarQZTrayScript();
-
-  if (!qz) throw new Error("QZ Tray no está disponible.");
-
-  // En etapa de pruebas usamos impresión sin certificado propio.
-  // QZ Tray puede pedir autorización en pantalla; hay que aceptarla.
-  if (qz.websocket.isActive()) return qz;
-
-  await qz.websocket.connect();
-  return qz;
-}
-
-async function obtenerImpresoraQZ(qz) {
-  const guardada = localStorage.getItem("rafikiQzPrinter") || "";
-
-  if (guardada) {
-    try {
-      await qz.printers.find(guardada);
-      return guardada;
-    } catch {
-      localStorage.removeItem("rafikiQzPrinter");
-    }
-  }
-
-  let impresora = "";
-  try {
-    impresora = await qz.printers.getDefault();
-  } catch {
-    impresora = "";
-  }
-
-  if (!impresora) {
-    impresora = prompt("Escribe el nombre exacto de la impresora térmica como aparece en Windows:");
-  }
-
-  if (!impresora) throw new Error("No se seleccionó impresora.");
-
-  localStorage.setItem("rafikiQzPrinter", impresora);
-  return impresora;
-}
-
-async function configurarImpresoraQZ() {
-  try {
-    const qz = await asegurarConexionQZ();
-    const impresoras = await qz.printers.find();
-    const listado = Array.isArray(impresoras) ? impresoras.join("\n") : String(impresoras || "");
-    const actual = localStorage.getItem("rafikiQzPrinter") || "";
-    const elegida = prompt(`Impresoras detectadas:\n\n${listado}\n\nEscribe el nombre exacto de la impresora térmica:`, actual);
-
-    if (!elegida) return;
-
-    await qz.printers.find(elegida);
-    localStorage.setItem("rafikiQzPrinter", elegida);
-    alert(`Impresora QZ configurada:\n${elegida}`);
-  } catch (error) {
-    console.error(error);
-    alert(`No se pudo configurar QZ Tray.\n\n${error.message || error}\n\nVerifica que QZ Tray esté abierto en el computador.`);
-  }
-}
-
-async function imprimirTicketPedidoQZ(pedido, opciones = {}) {
-  try {
-    const qz = await asegurarConexionQZ();
-    const impresora = await obtenerImpresoraQZ(qz);
-    const config = qz.configs.create(impresora, {
-      encoding: "CP850",
-      rasterize: false
-    });
-
-    const data = [{
-      type: "raw",
-      format: "plain",
-      data: crearTextoTicketQZ(pedido)
-    }];
-
-    await qz.print(config, data);
-    return true;
-  } catch (error) {
-    console.error(error);
-    if (!opciones.silencioso) {
-      alert(`No se pudo imprimir con QZ Tray.
-
-${error.message || error}
-
-Verifica que QZ Tray esté abierto y que la impresora esté instalada en Windows.`);
-    }
-    return false;
-  }
-}
-
 function imprimirTicketPedido(pedido) {
   const ticket = crearDatosTicketPedido(pedido);
   const linea = "================";
@@ -1113,24 +891,11 @@ function resumirItemsPedidoCompacto(pedido) {
   }).join(" | ");
 }
 
-function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, pedidosRevisados, onMarcarRevisado, impresionAutomaticaActiva, onToggleImpresionAutomatica, onImprimirPendientes, onImprimirQZ, imprimiendoPedidoId }) {
+function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, pedidosRevisados, onMarcarRevisado }) {
   const revisadosSet = new Set(pedidosRevisados.map(String));
 
   return (
-    <div className="pedidos-tabla-card">
-      <div className="pedidos-tabla-toolbar">
-        <span>Estación de impresión QZ</span>
-        <button type="button" className={`mini-btn ${impresionAutomaticaActiva ? "green" : "warning"}`} onClick={onToggleImpresionAutomatica}>
-          {impresionAutomaticaActiva ? "Auto ON" : "Auto OFF"}
-        </button>
-        <button type="button" className="mini-btn qz" onClick={onImprimirPendientes}>
-          Imprimir pendientes
-        </button>
-        <button type="button" className="mini-btn qz-config" onClick={configurarImpresoraQZ}>
-          Configurar QZ
-        </button>
-      </div>
-      <div className="pedidos-tabla-wrap">
+    <div className="pedidos-tabla-wrap">
       <table className="pedidos-tabla-compacta">
         <thead>
           <tr>
@@ -1142,7 +907,6 @@ function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoI
             <th>Pago</th>
             <th>Total</th>
             <th>Estado</th>
-            <th>Imp.</th>
             <th>Acción</th>
           </tr>
         </thead>
@@ -1182,18 +946,14 @@ function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoI
                     ))}
                   </select>
                 </td>
-                <td className="td-impreso">{pedido.impreso ? "Sí" : "No"}</td>
                 <td className="td-acciones">
                   {!revisado && (
                     <button type="button" className="mini-btn warning" onClick={() => onMarcarRevisado?.(pedido.id)}>
                       Revisado
                     </button>
                   )}
-                  <button type="button" className="mini-btn qz" onClick={() => onImprimirQZ?.(pedido, { forzar: true })} disabled={imprimiendoPedidoId === pedido.id}>
-                    {imprimiendoPedidoId === pedido.id ? "Imprimiendo" : "QZ 58mm"}
-                  </button>
                   <button type="button" className="mini-btn print" onClick={() => imprimirTicketPedido(pedido)}>
-                    Navegador
+                    Imprimir
                   </button>
                   {telefonoCliente ? (
                     <a href={linkCliente} target="_blank" rel="noreferrer" className="mini-btn green">
@@ -1208,7 +968,6 @@ function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoI
           })}
         </tbody>
       </table>
-      </div>
     </div>
   );
 }
@@ -1460,8 +1219,6 @@ export default function App() {
   const [pedidosRevisados, setPedidosRevisados] = useState(cargarPedidosRevisadosLocal);
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
   const [sonidoActivado, setSonidoActivado] = useState(false);
-  const [impresionAutomaticaActiva, setImpresionAutomaticaActiva] = useState(() => localStorage.getItem("rafikiQzAutoPrint") === "true");
-  const [imprimiendoPedidoId, setImprimiendoPedidoId] = useState(null);
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
@@ -1470,8 +1227,6 @@ export default function App() {
   const pedidosRevisadosRef = useRef(pedidosRevisados);
   const audioCtxRef = useRef(null);
   const alertaPedidoTimer = useRef(null);
-  const impresionAutomaticaRef = useRef(impresionAutomaticaActiva);
-  const pedidosEnImpresionRef = useRef(new Set());
 
   function navegar(ruta, nuevaVista) {
     actualizarRuta(ruta);
@@ -1515,11 +1270,6 @@ export default function App() {
     pedidosRevisadosRef.current = pedidosRevisados;
     guardarPedidosRevisadosLocal(pedidosRevisados);
   }, [pedidosRevisados]);
-
-  useEffect(() => {
-    impresionAutomaticaRef.current = impresionAutomaticaActiva;
-    localStorage.setItem("rafikiQzAutoPrint", impresionAutomaticaActiva ? "true" : "false");
-  }, [impresionAutomaticaActiva]);
 
   useEffect(() => {
     return () => {
@@ -1598,69 +1348,6 @@ export default function App() {
     const ids = pedidosFiltrados.map((pedido) => String(pedido.id));
     setPedidosRevisados((actual) => Array.from(new Set([...actual, ...ids])));
     setAlertaPedidoNuevo(null);
-  }
-
-  async function marcarPedidoComoImpreso(id) {
-    const { error } = await supabase
-      .from("pedidos")
-      .update({ impreso: true })
-      .eq("id", id);
-
-    if (error) {
-      throw error;
-    }
-
-    setPedidos((actual) => actual.map((pedido) => (
-      pedido.id === id ? { ...pedido, impreso: true } : pedido
-    )));
-  }
-
-  async function imprimirPedidoEstacion(pedido, opciones = {}) {
-    if (!pedido?.id) return false;
-
-    const idTexto = String(pedido.id);
-    if (pedidosEnImpresionRef.current.has(idTexto)) return false;
-    if (pedido.impreso === true && !opciones.forzar) return true;
-
-    pedidosEnImpresionRef.current.add(idTexto);
-    setImprimiendoPedidoId(pedido.id);
-
-    try {
-      const ok = await imprimirTicketPedidoQZ(pedido, { silencioso: opciones.silencioso });
-      if (!ok) {
-        if (!opciones.silencioso) mostrarMensaje("No se pudo imprimir el pedido con QZ Tray.", "error");
-        return false;
-      }
-
-      try {
-        await marcarPedidoComoImpreso(pedido.id);
-      } catch (error) {
-        console.error(error);
-        mostrarMensaje(
-          "El ticket se imprimió, pero falta la columna impreso en Supabase. Ejecuta el SQL indicado para evitar duplicados.",
-          "warning"
-        );
-      }
-
-      if (!opciones.silencioso) mostrarMensaje(`Pedido #${obtenerCodigoPedido(pedido)} enviado a impresión.`, "success");
-      return true;
-    } finally {
-      pedidosEnImpresionRef.current.delete(idTexto);
-      setImprimiendoPedidoId(null);
-    }
-  }
-
-  async function imprimirPendientesQZ() {
-    const pendientes = pedidosFiltrados.filter((pedido) => pedido.impreso !== true);
-
-    if (!pendientes.length) {
-      mostrarMensaje("No hay pedidos pendientes por imprimir.", "info");
-      return;
-    }
-
-    for (const pedido of pendientes) {
-      await imprimirPedidoEstacion(pedido, { silencioso: false });
-    }
   }
 
   useEffect(() => {
@@ -1895,10 +1582,6 @@ export default function App() {
           if (hoy && !pedidosRevisadosRef.current.map(String).includes(String(nuevoPedido.id))) {
             reproducirSonidoPedido();
             mostrarAlertaPedidoNuevo(nuevoPedido);
-          }
-
-          if (hoy && impresionAutomaticaRef.current && nuevoPedido.impreso !== true) {
-            imprimirPedidoEstacion(nuevoPedido, { silencioso: true });
           }
         }
       )
@@ -2472,9 +2155,7 @@ export default function App() {
         .producto-seleccionado-row .button { padding: 8px 10px; font-size: 12px; border-radius: 12px; }
         .solicitud-preview { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; font-size: 14px; margin-top: 14px; }
 
-        .pedidos-tabla-card { border: 1px solid #fed7aa; border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.04); overflow: hidden; }
-        .pedidos-tabla-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; background: #fff7ed; border-bottom: 1px solid #fed7aa; color: #9a3412; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; }
-        .pedidos-tabla-wrap { width: 100%; overflow-x: auto; background: #fff; }
+        .pedidos-tabla-wrap { width: 100%; overflow-x: auto; border: 1px solid #fed7aa; border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
         .pedidos-tabla-compacta { width: 100%; border-collapse: collapse; min-width: 1080px; font-size: 12px; }
         .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 1; background: #fff7ed; color: #9a3412; text-align: left; padding: 9px 8px; border-bottom: 1px solid #fed7aa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
         .pedidos-tabla-compacta td { vertical-align: top; padding: 8px; border-bottom: 1px solid #f5f5f4; color: #44403c; line-height: 1.25; }
@@ -3226,11 +2907,6 @@ export default function App() {
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
                         pedidosRevisados={pedidosRevisados}
                         onMarcarRevisado={marcarPedidoRevisado}
-                        impresionAutomaticaActiva={impresionAutomaticaActiva}
-                        onToggleImpresionAutomatica={() => setImpresionAutomaticaActiva((actual) => !actual)}
-                        onImprimirPendientes={imprimirPendientesQZ}
-                        onImprimirQZ={imprimirPedidoEstacion}
-                        imprimiendoPedidoId={imprimiendoPedidoId}
                       />
                     )}
                   </div>
@@ -3250,11 +2926,6 @@ export default function App() {
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
                         pedidosRevisados={pedidosRevisados}
                         onMarcarRevisado={marcarPedidoRevisado}
-                        impresionAutomaticaActiva={impresionAutomaticaActiva}
-                        onToggleImpresionAutomatica={() => setImpresionAutomaticaActiva((actual) => !actual)}
-                        onImprimirPendientes={imprimirPendientesQZ}
-                        onImprimirQZ={imprimirPedidoEstacion}
-                        imprimiendoPedidoId={imprimiendoPedidoId}
                       />
                     )}
                   </div>
