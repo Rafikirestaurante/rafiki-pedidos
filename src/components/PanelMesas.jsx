@@ -64,19 +64,20 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   const [errorMesa, setErrorMesa] = useState("");
   const [categoriaActivaMesa, setCategoriaActivaMesa] = useState("almuerzos");
   const [subcategoriaCafeteria, setSubcategoriaCafeteria] = useState("parfait");
-  const [tamanoParfait, setTamanoParfait] = useState("12 oz");
+  const [tamanoParfait, setTamanoParfait] = useState("");
   const [frutasParfait, setFrutasParfait] = useState([]);
-  const [tipoBatido, setTipoBatido] = useState("cremoso");
-  const [saborBatido, setSaborBatido] = useState("Frutos rojos");
-  const [tamanoBatido, setTamanoBatido] = useState("12 oz");
-  const [baseBatido, setBaseBatido] = useState("Yogurt");
-  const [desayunoSeleccionado, setDesayunoSeleccionado] = useState("Huevos tomate y cebolla");
-  const [acompananteDesayuno, setAcompananteDesayuno] = useState("Arepa");
+  const [tipoBatido, setTipoBatido] = useState("");
+  const [saborBatido, setSaborBatido] = useState("");
+  const [tamanoBatido, setTamanoBatido] = useState("");
+  const [baseBatido, setBaseBatido] = useState("");
+  const [desayunoSeleccionado, setDesayunoSeleccionado] = useState("");
+  const [acompananteDesayuno, setAcompananteDesayuno] = useState("");
   const [adicionalesDesayuno, setAdicionalesDesayuno] = useState([]);
   const [sandwichSeleccionado, setSandwichSeleccionado] = useState("");
-  const [bebidaCalienteSeleccionada, setBebidaCalienteSeleccionada] = useState("Café americano");
-  const [postreSeleccionado, setPostreSeleccionado] = useState("Fresas con crema");
+  const [bebidaCalienteSeleccionada, setBebidaCalienteSeleccionada] = useState("");
+  const [postreSeleccionado, setPostreSeleccionado] = useState("");
   const [pedidoMesaConfirmado, setPedidoMesaConfirmado] = useState(null);
+  const [cantidadCafeteria, setCantidadCafeteria] = useState(1);
 
   const itemsAlmuerzoMesa = useMemo(
     () => itemsMesa.filter((item) => item.categoria !== "cafeteria"),
@@ -193,18 +194,19 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
     // Limpia también los selectores de cafetería para evitar que el siguiente pedido
     // herede tamaño, cereal, frutas o adicionales del pedido anterior.
-    setTamanoParfait("12 oz");
+    setTamanoParfait("");
     setFrutasParfait([]);
-    setTipoBatido("cremoso");
-    setSaborBatido(CAFETERIA_BATIDOS_CREMOSOS_SABORES[0]);
-    setTamanoBatido("12 oz");
-    setBaseBatido("Yogurt");
-    setDesayunoSeleccionado("Huevos tomate y cebolla");
-    setAcompananteDesayuno("Arepa");
+    setTipoBatido("");
+    setSaborBatido("");
+    setTamanoBatido("");
+    setBaseBatido("");
+    setDesayunoSeleccionado("");
+    setAcompananteDesayuno("");
     setAdicionalesDesayuno([]);
     setSandwichSeleccionado("");
-    setBebidaCalienteSeleccionada("Café americano");
-    setPostreSeleccionado("Fresas con crema");
+    setBebidaCalienteSeleccionada("");
+    setPostreSeleccionado("");
+    setCantidadCafeteria(1);
     setPedidoMesaConfirmado(null);
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
   }
@@ -212,6 +214,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   function agregarItemCafeteria(item, destino = "categorias") {
     vibracionCortaMesas();
     setItemsMesa((actual) => [...actual, item]);
+    setCantidadCafeteria(1);
     setErrorMesa("");
     irAElementoMesas(destino === "resumen" ? "mesa-confirmacion-final" : "mesa-categorias-top", 120, "start");
   }
@@ -232,6 +235,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   }
 
   function agregarParfaitMesa(destino = "categorias") {
+    if (!tamanoParfait) {
+      setErrorMesa("Selecciona el tamaño del parfait.");
+      return;
+    }
+
     if (frutasParfait.length === 0) {
       setErrorMesa("Selecciona al menos una fruta para el parfait.");
       return;
@@ -246,6 +254,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       tipo: "Parfait",
       producto: descripcionParfait,
       precio: precioBase + extraFrutas,
+      cantidad: cantidadCafeteria,
       tamano: tamanoParfait,
       frutas: frutasSeleccionadas,
       extraFrutas,
@@ -257,25 +266,33 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
   function cambiarTipoBatidoMesa(tipo) {
     setTipoBatido(tipo);
-    setTamanoBatido("12 oz");
-
-    if (tipo === "cremoso") {
-      setSaborBatido(CAFETERIA_BATIDOS_CREMOSOS_SABORES[0]);
-      setBaseBatido("Yogurt");
-      return;
-    }
-
-    if (tipo === "refrescante") {
-      setSaborBatido(CAFETERIA_BATIDOS_REFRESCANTES_SABORES[0]);
-      setBaseBatido("");
-      return;
-    }
-
-    setSaborBatido(CAFETERIA_JUGOS_TRADICIONALES_SABORES[0]);
-    setBaseBatido("Agua");
+    setSaborBatido("");
+    setTamanoBatido("");
+    setBaseBatido("");
+    setErrorMesa("");
   }
 
   function agregarBatidoMesa(destino = "categorias") {
+    if (!tipoBatido) {
+      setErrorMesa("Selecciona el tipo de bebida.");
+      return;
+    }
+
+    if (!saborBatido) {
+      setErrorMesa("Selecciona el sabor.");
+      return;
+    }
+
+    if (!tamanoBatido) {
+      setErrorMesa("Selecciona el tamaño.");
+      return;
+    }
+
+    if ((tipoBatido === "cremoso" || tipoBatido === "jugo") && !baseBatido) {
+      setErrorMesa("Selecciona la base.");
+      return;
+    }
+
     const tamanos = tipoBatido === "cremoso"
       ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS
       : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS;
@@ -290,12 +307,24 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       tipo: nombreTipo,
       producto: `${saborBatido} ${tamanoBatido}`,
       precio,
+      cantidad: cantidadCafeteria,
       tamano: tamanoBatido,
       base: baseBatido
     }), destino);
   }
 
   function agregarDesayunoMesa(destino = "categorias") {
+    if (!desayunoSeleccionado) {
+      setErrorMesa("Selecciona un desayuno.");
+      return;
+    }
+
+    const desayunoPrincipal = CAFETERIA_DESAYUNOS.some((item) => item.nombre === desayunoSeleccionado);
+    if (desayunoPrincipal && !acompananteDesayuno) {
+      setErrorMesa("Selecciona el acompañante del desayuno.");
+      return;
+    }
+
     const precioBase = precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado);
     const precioAdicionales = adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0);
 
@@ -303,6 +332,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       tipo: "Desayuno",
       producto: desayunoSeleccionado,
       precio: precioBase + precioAdicionales,
+      cantidad: cantidadCafeteria,
       acompanante: acompananteDesayuno,
       adicionales: adicionalesDesayuno
     }), destino);
@@ -311,10 +341,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   }
 
   function agregarProductoSimpleCafeteria(tipo, producto, precio, destino = "categorias") {
+    if (!producto) {
+      setErrorMesa(`Selecciona un producto de ${tipo}.`);
+      return;
+    }
+
     agregarItemCafeteria(crearItemCafeteria({
       tipo,
       producto,
-      precio
+      precio,
+      cantidad: cantidadCafeteria
     }), destino);
   }
 
@@ -577,6 +613,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
             <div id="mesa-cafeteria-panel" />
 
+            {errorMesa && (
+              <div className="finalizar-error" role="alert" aria-live="polite" style={{ marginTop: 10 }}>{errorMesa}</div>
+            )}
+
             {subcategoriaCafeteria === "parfait" && (
               <div className="cafeteria-panel fade-step">
                 <h3>Parfait</h3>
@@ -604,9 +644,17 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                 <p className="muted">Máximo 3 frutas. Al escoger 3 frutas se suma automáticamente {dinero(1000)}.</p>
 
 
+                <div className="box compact-box quantity-box">
+                  <strong>Cantidad</strong>
+                  <SelectorCantidad
+                    cantidad={cantidadCafeteria}
+                    onChange={setCantidadCafeteria}
+                  />
+                </div>
+
                 <div className="total-row compact-total-row">
                   <span>Subtotal parfait</span>
-                  <strong>{dinero(precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0))}</strong>
+                  <strong>{dinero((precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0)) * cantidadCafeteria)}</strong>
                 </div>
                 <button type="button" className="button add-meal" onClick={agregarParfaitMesa}>+agregar otro producto</button>
               </div>
@@ -667,6 +715,14 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
+
+                <div className="box compact-box quantity-box">
+                  <strong>Cantidad</strong>
+                  <SelectorCantidad
+                    cantidad={cantidadCafeteria}
+                    onChange={setCantidadCafeteria}
+                  />
+                </div>
                 <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+agregar otro producto</button>
               </div>
             )}
@@ -697,9 +753,17 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
+                <div className="box compact-box quantity-box">
+                  <strong>Cantidad</strong>
+                  <SelectorCantidad
+                    cantidad={cantidadCafeteria}
+                    onChange={setCantidadCafeteria}
+                  />
+                </div>
+
                 <div className="total-row compact-total-row">
                   <span>Subtotal desayuno</span>
-                  <strong>{dinero(precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0))}</strong>
+                  <strong>{dinero((precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0)) * cantidadCafeteria)}</strong>
                 </div>
                 <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+agregar otro producto</button>
               </div>
@@ -716,6 +780,14 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
+
+                <div className="box compact-box quantity-box">
+                  <strong>Cantidad</strong>
+                  <SelectorCantidad
+                    cantidad={cantidadCafeteria}
+                    onChange={setCantidadCafeteria}
+                  />
+                </div>
                 <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado))}>+agregar otro producto</button>
               </div>
             )}
@@ -731,6 +803,14 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
+
+                <div className="box compact-box quantity-box">
+                  <strong>Cantidad</strong>
+                  <SelectorCantidad
+                    cantidad={cantidadCafeteria}
+                    onChange={setCantidadCafeteria}
+                  />
+                </div>
                 <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada))}>+agregar otro producto</button>
               </div>
             )}
@@ -745,6 +825,14 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                       <small>{dinero(item.precio)}</small>
                     </button>
                   ))}
+                </div>
+
+                <div className="box compact-box quantity-box">
+                  <strong>Cantidad</strong>
+                  <SelectorCantidad
+                    cantidad={cantidadCafeteria}
+                    onChange={setCantidadCafeteria}
+                  />
                 </div>
                 <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado))}>+agregar otro producto</button>
               </div>
