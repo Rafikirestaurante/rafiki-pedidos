@@ -33,22 +33,28 @@ export const CAFETERIA_DESAYUNOS = [
   { nombre: "Omelette", precio: 14000 }
 ];
 
-export const CAFETERIA_ACOMPANANTES_DESAYUNO = ["Arepa", "Patacón", "Yuca", "Plátano cocido", "Papa cocida", "Cayeye"];
-
-export const CAFETERIA_ADICIONALES_DESAYUNO = [
+export const CAFETERIA_OTROS_DESAYUNOS = [
   { nombre: "Porción de huevos (4 und)", precio: 6500 },
   { nombre: "Porción de queso costeño rayado", precio: 2000 }
 ];
 
+export const CAFETERIA_ACOMPANANTES_DESAYUNO = ["Arepa", "Patacón", "Yuca", "Plátano cocido", "Papa cocida", "Cayeye"];
+
+export const CAFETERIA_ADICIONALES_DESAYUNO = [];
+
 export const CAFETERIA_SANDWICHES = [
   { nombre: "Sándwich de jamón y queso", precio: 12000 },
-  { nombre: "Sándwich de pollo", precio: 14000 }
+  { nombre: "Sándwich de pollo", precio: 14000 },
+  { nombre: "Dedito", precio: 2500 },
+  { nombre: "Empanada", precio: 3000 }
 ];
 
 export const CAFETERIA_BEBIDAS_CALIENTES = [
   { nombre: "Café americano", precio: 3500 },
   { nombre: "Té y aromáticas", precio: 2500 },
-  { nombre: "Capuchino", precio: 5000 }
+  { nombre: "Capuchino", precio: 5000 },
+  { nombre: "Agua normal", precio: 2500 },
+  { nombre: "Agua con gas", precio: 3000 }
 ];
 
 export const CAFETERIA_POSTRES = [

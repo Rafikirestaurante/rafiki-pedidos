@@ -25,6 +25,7 @@ import {
   CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS,
   CAFETERIA_BEBIDAS_CALIENTES,
   CAFETERIA_DESAYUNOS,
+  CAFETERIA_OTROS_DESAYUNOS,
   CAFETERIA_FRUTAS,
   CAFETERIA_JUGOS_BASES,
   CAFETERIA_JUGOS_TRADICIONALES_SABORES,
@@ -295,7 +296,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   }
 
   function agregarDesayunoMesa(destino = "categorias") {
-    const precioBase = precioPorNombre(CAFETERIA_DESAYUNOS, desayunoSeleccionado);
+    const precioBase = precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado);
     const precioAdicionales = adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0);
 
     agregarItemCafeteria(crearItemCafeteria({
@@ -330,20 +331,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       return;
     }
 
-    if (modoLlevar) {
-      if (!clienteLlevar.trim()) {
-        setErrorMesa("Escribe el nombre del cliente.");
-        return;
-      }
-      if (!telefonoLlevar.trim()) {
-        setErrorMesa("Escribe el teléfono del cliente.");
-        return;
-      }
-      if (!ubicacionLlevar.trim()) {
-        setErrorMesa("Escribe la ubicación del cliente.");
-        return;
-      }
-    } else if (!mesaLocal.trim()) {
+    if (!modoLlevar && !mesaLocal.trim()) {
       setErrorMesa("Selecciona la mesa.");
       return;
     }
@@ -572,8 +560,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                 ["parfait", "Parfait"],
                 ["batidos", "Batidos"],
                 ["desayunos", "Desayunos"],
-                ["sandwich", "Sándwich"],
-                ["bebidas", "Bebidas calientes"],
+                ["sandwich", "Comida"],
+                ["bebidas", "Bebidas"],
                 ["postres", "Postres"]
               ].map(([clave, nombre]) => (
                 <button
@@ -700,20 +688,18 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     <button key={acompanante} type="button" onClick={() => setAcompananteDesayuno(acompanante)} className={`chip ${acompananteDesayuno === acompanante ? "selected" : ""}`}>{acompananteDesayuno === acompanante ? "✓ " : "+ "}{acompanante}</button>
                   ))}
                 </div>
-                <h4>Adicionales</h4>
-                <div className="chips">
-                  {CAFETERIA_ADICIONALES_DESAYUNO.map((adicional) => {
-                    const seleccionado = adicionalesDesayuno.some((item) => item.nombre === adicional.nombre);
-                    return (
-                      <button key={adicional.nombre} type="button" onClick={() => toggleAdicionalDesayuno(adicional)} className={`chip ${seleccionado ? "selected" : ""}`}>
-                        {seleccionado ? "✓ " : "+ "}{adicional.nombre} {dinero(adicional.precio)}
-                      </button>
-                    );
-                  })}
+                <h4>Otros desayunos</h4>
+                <div className="option-grid compact-options">
+                  {CAFETERIA_OTROS_DESAYUNOS.map((item) => (
+                    <button key={item.nombre} type="button" onClick={() => { setDesayunoSeleccionado(item.nombre); setAcompananteDesayuno(""); setAdicionalesDesayuno([]); }} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
+                      <div>{item.nombre}</div>
+                      <small>{dinero(item.precio)}</small>
+                    </button>
+                  ))}
                 </div>
                 <div className="total-row compact-total-row">
                   <span>Subtotal desayuno</span>
-                  <strong>{dinero(precioPorNombre(CAFETERIA_DESAYUNOS, desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0))}</strong>
+                  <strong>{dinero(precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0))}</strong>
                 </div>
                 <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+agregar otro producto</button>
               </div>
@@ -721,7 +707,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
             {subcategoriaCafeteria === "sandwich" && (
               <div className="cafeteria-panel fade-step">
-                <h3>Sándwich</h3>
+                <h3>Comida</h3>
                 <div className="option-grid">
                   {CAFETERIA_SANDWICHES.map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setSandwichSeleccionado(item.nombre)} className={`option ${sandwichSeleccionado === item.nombre ? "selected" : ""}`}>
@@ -730,13 +716,13 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Sándwich", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado))}>+agregar otro producto</button>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado))}>+agregar otro producto</button>
               </div>
             )}
 
             {subcategoriaCafeteria === "bebidas" && (
               <div className="cafeteria-panel fade-step">
-                <h3>Bebidas calientes</h3>
+                <h3>Bebidas</h3>
                 <div className="option-grid">
                   {CAFETERIA_BEBIDAS_CALIENTES.map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setBebidaCalienteSeleccionada(item.nombre)} className={`option ${bebidaCalienteSeleccionada === item.nombre ? "selected" : ""}`}>
@@ -770,7 +756,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                 if (subcategoriaCafeteria === "parfait") agregarParfaitMesa("resumen");
                 if (subcategoriaCafeteria === "batidos") agregarBatidoMesa("resumen");
                 if (subcategoriaCafeteria === "desayunos") agregarDesayunoMesa("resumen");
-                if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Sándwich", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado), "resumen");
+                if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado), "resumen");
                 if (subcategoriaCafeteria === "bebidas") agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada), "resumen");
                 if (subcategoriaCafeteria === "postres") agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado), "resumen");
               }}
@@ -915,20 +901,20 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                 {modoLlevar && (
                   <div className="datos-llevar-grid">
                     <CampoTexto
-                      etiqueta="Datos del cliente *"
+                      etiqueta="Datos del cliente"
                       value={clienteLlevar}
                       onChange={(valor) => { setClienteLlevar(valor); setErrorMesa(""); }}
                       placeholder="Nombre del cliente"
                     />
                     <CampoTexto
-                      etiqueta="Teléfono *"
+                      etiqueta="Teléfono"
                       value={telefonoLlevar}
                       onChange={(valor) => { setTelefonoLlevar(valor); setErrorMesa(""); }}
                       placeholder="Número de contacto"
                       type="tel"
                     />
                     <CampoTexto
-                      etiqueta="Ubicación *"
+                      etiqueta="Ubicación"
                       value={ubicacionLlevar}
                       onChange={(valor) => { setUbicacionLlevar(valor); setErrorMesa(""); }}
                       placeholder="Dirección o referencia"

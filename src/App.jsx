@@ -88,7 +88,7 @@ export default function App() {
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
-  const [tipoPago, setTipoPago] = useState("Efectivo");
+  const [tipoPago, setTipoPago] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [mesa, setMesa] = useState("Mesa 1");
   const [mesero, setMesero] = useState("");
@@ -590,7 +590,7 @@ export default function App() {
     setCliente("");
     setTelefono("");
     setUbicacion("");
-    setTipoPago("Efectivo");
+    setTipoPago("");
     setObservaciones("");
     setPedidoFinalizado(null);
     setErrorDatosPedido("");
@@ -623,6 +623,7 @@ export default function App() {
     if (!cliente.trim()) camposFaltantes.push("nombre");
     if (!telefono.trim()) camposFaltantes.push("teléfono");
     if (!ubicacion.trim()) camposFaltantes.push("ubicación");
+    if (!tipoPago) camposFaltantes.push("forma de pago");
 
     if (camposFaltantes.length > 0) {
       const textoError = `Falta ingresar: ${camposFaltantes.join(", ")}.`;
@@ -1745,9 +1746,14 @@ export default function App() {
 
                     <label className="field">
                       <span>💳 Tipo de pago</span>
-                      <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)}>
+                      <select value={tipoPago} onChange={(e) => {
+                        setTipoPago(e.target.value);
+                        if (errorDatosPedido) setErrorDatosPedido("");
+                      }}>
+                        <option value="">Selecciona una forma de pago</option>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Transferencia">Transferencia</option>
+                        <option value="Datafono">Datafono</option>
                       </select>
                     </label>
 
