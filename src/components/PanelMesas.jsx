@@ -73,7 +73,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   const [desayunoSeleccionado, setDesayunoSeleccionado] = useState("Huevos tomate y cebolla");
   const [acompananteDesayuno, setAcompananteDesayuno] = useState("Arepa");
   const [adicionalesDesayuno, setAdicionalesDesayuno] = useState([]);
-  const [sandwichSeleccionado, setSandwichSeleccionado] = useState("Sándwich de jamón y queso");
+  const [sandwichSeleccionado, setSandwichSeleccionado] = useState("");
   const [bebidaCalienteSeleccionada, setBebidaCalienteSeleccionada] = useState("Café americano");
   const [postreSeleccionado, setPostreSeleccionado] = useState("Fresas con crema");
   const [pedidoMesaConfirmado, setPedidoMesaConfirmado] = useState(null);
@@ -202,7 +202,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setDesayunoSeleccionado("Huevos tomate y cebolla");
     setAcompananteDesayuno("Arepa");
     setAdicionalesDesayuno([]);
-    setSandwichSeleccionado("Sándwich de jamón y queso");
+    setSandwichSeleccionado("");
     setBebidaCalienteSeleccionada("Café americano");
     setPostreSeleccionado("Fresas con crema");
     setPedidoMesaConfirmado(null);
