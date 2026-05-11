@@ -1082,8 +1082,8 @@ export default function App() {
         .mesas-tab.cafeteria.active { background: linear-gradient(135deg, #92400e, #b45309); color: #fff; }
         .cafeteria-placeholder { padding: 8px 0 4px; }
         .cafeteria-placeholder h2 { margin-bottom: 8px; text-align: center; color: #92400e; }
-        .cafeteria-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-        .cafeteria-card { border: 1px solid #fde68a; background: #fffbeb; color: #78350f; border-radius: 20px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; min-height: 72px; }
+        .cafeteria-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+        .cafeteria-card { border: 1px solid #fde68a; background: #fffbeb; color: #78350f; border-radius: 16px; padding: 10px 8px; display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 46px; font-size: 14px; }
         .cafeteria-button { cursor: pointer; font: inherit; flex-direction: column; }
         .cafeteria-button.active { background: #f59e0b; color: #fff; border-color: #f59e0b; box-shadow: 0 10px 22px rgba(245,158,11,0.22); }
         .cafeteria-panel { margin-top: 16px; border: 1px solid #fde68a; background: #fffdf5; border-radius: 22px; padding: 16px; display: grid; gap: 12px; }
@@ -1106,6 +1106,8 @@ export default function App() {
         .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .product-card .option, .cafeteria-panel .option, .product-card .chip, .cafeteria-panel .chip { min-height: 52px; font-size: 15px; }
         .product-card .option { border-width: 2px; }
+        .compact-cafeteria-actions { margin-bottom: 12px; }
+        .compact-cafeteria-actions .cafeteria-card strong { line-height: 1.1; }
         .cafeteria-card { transition: transform .15s ease, box-shadow .15s ease; }
         .cafeteria-card:active, .option:active, .chip:active, .mesas-tab:active { transform: scale(0.98); }
         .option { text-align: left; border: 1.5px solid #e7e5e4; background: #fff; border-radius: 18px; padding: 14px; font-weight: 900; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
