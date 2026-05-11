@@ -207,11 +207,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
   }
 
-  function agregarItemCafeteria(item) {
+  function agregarItemCafeteria(item, destino = "categorias") {
     vibracionCortaMesas();
     setItemsMesa((actual) => [...actual, item]);
     setErrorMesa("");
-    irAElementoMesas("mesa-categorias-top", 120, "start");
+    irAElementoMesas(destino === "resumen" ? "mesa-confirmacion-final" : "mesa-categorias-top", 120, "start");
   }
 
   function toggleFrutaParfait(fruta) {
@@ -229,7 +229,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     });
   }
 
-  function agregarParfaitMesa() {
+  function agregarParfaitMesa(destino = "categorias") {
     if (frutasParfait.length === 0) {
       setErrorMesa("Selecciona al menos una fruta para el parfait.");
       return;
@@ -249,7 +249,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       cereal: cerealParfait,
       extraFrutas,
       detalle_impresion: descripcionParfait
-    }));
+    }), destino);
 
     setFrutasParfait([]);
   }
@@ -274,7 +274,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setBaseBatido("Agua");
   }
 
-  function agregarBatidoMesa() {
+  function agregarBatidoMesa(destino = "categorias") {
     const tamanos = tipoBatido === "cremoso"
       ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS
       : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS;
@@ -291,10 +291,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       precio,
       tamano: tamanoBatido,
       base: baseBatido
-    }));
+    }), destino);
   }
 
-  function agregarDesayunoMesa() {
+  function agregarDesayunoMesa(destino = "categorias") {
     const precioBase = precioPorNombre(CAFETERIA_DESAYUNOS, desayunoSeleccionado);
     const precioAdicionales = adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0);
 
@@ -304,17 +304,17 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       precio: precioBase + precioAdicionales,
       acompanante: acompananteDesayuno,
       adicionales: adicionalesDesayuno
-    }));
+    }), destino);
 
     setAdicionalesDesayuno([]);
   }
 
-  function agregarProductoSimpleCafeteria(tipo, producto, precio) {
+  function agregarProductoSimpleCafeteria(tipo, producto, precio, destino = "categorias") {
     agregarItemCafeteria(crearItemCafeteria({
       tipo,
       producto,
       precio
-    }));
+    }), destino);
   }
 
   function seleccionarCategoriaMesa(categoria) {
@@ -532,16 +532,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
             {hayProductoSeleccionadoMesa && (
               <>
                 <button type="button" onClick={agregarAlmuerzoRapidoYSiguiente} className="button add-meal pos-primary-action" style={{ marginTop: 14 }}>
-                  + Agregar y tomar otro
+                  +agregar otro producto
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => irAElementoMesas("mesa-datos-final", 120)}
+                  onClick={() => irAElementoMesas("mesa-confirmacion-final", 120)}
                   className="button continue-button"
                   style={{ marginTop: 12, background: "#16a34a" }}
                 >
-                  Continuar a datos de mesa
+                  agregar y continuar
                 </button>
               </>
             )}
@@ -610,7 +610,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                   <span>Subtotal parfait</span>
                   <strong>{dinero(precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0))}</strong>
                 </div>
-                <button type="button" className="button add-meal" onClick={agregarParfaitMesa}>+ Agregar mas</button>
+                <button type="button" className="button add-meal" onClick={agregarParfaitMesa}>+agregar otro producto</button>
               </div>
             )}
 
@@ -669,7 +669,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
-                <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+ Agregar mas</button>
+                <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+agregar otro producto</button>
               </div>
             )}
 
@@ -705,7 +705,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                   <span>Subtotal desayuno</span>
                   <strong>{dinero(precioPorNombre(CAFETERIA_DESAYUNOS, desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0))}</strong>
                 </div>
-                <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+ Agregar mas</button>
+                <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+agregar otro producto</button>
               </div>
             )}
 
@@ -720,7 +720,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Sándwich", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado))}>+ Agregar mas</button>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Sándwich", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado))}>+agregar otro producto</button>
               </div>
             )}
 
@@ -735,7 +735,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada))}>+ Agregar mas</button>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada))}>+agregar otro producto</button>
               </div>
             )}
 
@@ -750,20 +750,25 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado))}>+ Agregar mas</button>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado))}>+agregar otro producto</button>
               </div>
             )}
 
-            {hayProductoSeleccionadoMesa && (
-              <button
-                type="button"
-                onClick={() => irAElementoMesas("mesa-datos-final", 120)}
-                className="button continue-button"
-                style={{ marginTop: 12, background: "#16a34a" }}
-              >
-                Continuar
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (subcategoriaCafeteria === "parfait") agregarParfaitMesa("resumen");
+                if (subcategoriaCafeteria === "batidos") agregarBatidoMesa("resumen");
+                if (subcategoriaCafeteria === "desayunos") agregarDesayunoMesa("resumen");
+                if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Sándwich", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado), "resumen");
+                if (subcategoriaCafeteria === "bebidas") agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada), "resumen");
+                if (subcategoriaCafeteria === "postres") agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado), "resumen");
+              }}
+              className="button continue-button"
+              style={{ marginTop: 12, background: "#16a34a" }}
+            >
+              agregar y continuar
+            </button>
           </div>
         )}
       </section>
@@ -821,6 +826,15 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                 <strong>{dinero(total)}</strong>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => irAElementoMesas("mesa-datos-final", 120)}
+              className="button continue-button"
+              style={{ marginTop: 8, background: "#16a34a" }}
+            >
+              continuar
+            </button>
 
             <button type="button" onClick={reiniciarPedidoMesa} className="button light small-reset">
               Borrar y volver a empezar
