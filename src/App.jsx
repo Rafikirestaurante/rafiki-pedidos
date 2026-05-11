@@ -967,7 +967,11 @@ export default function App() {
 
   function nuevoPedidoCliente() {
     reiniciarPedido();
-    navegar("/", "cliente");
+    navegar("/cliente", "cliente");
+
+    setTimeout(() => {
+      irAElemento("inicio-pedido-cliente", 120, "start");
+    }, 120);
   }
 
   return (
@@ -1233,6 +1237,8 @@ export default function App() {
         .sticky-total-amount { font-size: 24px; font-weight: 900; color: #fb923c; font-family: 'Fraunces', serif; }
         .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+        .confirmacion-cocina { animation: fadeInUp 0.45s ease both; }
+        .confirmacion-card { animation: fadeInUp 0.45s ease both; }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
 
@@ -1752,7 +1758,7 @@ export default function App() {
 
           {!cargando && vista === "confirmacion" && pedidoFinalizado && (
             <main style={{ maxWidth: 620, margin: "0 auto" }}>
-              <section className="card">
+              <section className="card confirmacion-card">
                 <div className="hero green confirmacion-cocina" style={{ textAlign: "center" }}>
                   <div className="confirmacion-check">✓</div>
                   <h2 style={{ fontFamily: "'Fraunces', serif" }}>
