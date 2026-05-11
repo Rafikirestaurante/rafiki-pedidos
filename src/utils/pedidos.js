@@ -437,7 +437,6 @@ export function crearTextoItem(item) {
     if (item.tipo) partes.push(`Cafetería: ${item.tipo}`);
     if (item.tamano) partes.push(`Tamaño: ${item.tamano}`);
     if (Array.isArray(item.frutas) && item.frutas.length > 0) partes.push(`Frutas: ${item.frutas.join(", ")}`);
-    if (item.cereal) partes.push(`Cereal: ${item.cereal}`);
     if (Number(item.extraFrutas) > 0) partes.push(`Extra 3 frutas: ${dinero(item.extraFrutas)}`);
     if (item.base) partes.push(`Base: ${item.base}`);
     if (item.acompanante) partes.push(`Acompañante: ${item.acompanante}`);
@@ -568,7 +567,6 @@ export function crearDatosTicketPedido(pedido) {
         productos.push(`  FRUTAS: ${item.frutas.map(textoMayusculasTicket).join(", ")}`);
       }
 
-      if (item.cereal) productos.push(`  CEREAL: ${textoMayusculasTicket(item.cereal)}`);
       if (Number(item.extraFrutas) > 0) productos.push("  EXTRA FRUTAS: +$1.000");
       if (item.base) productos.push(`  BASE: ${textoMayusculasTicket(item.base)}`);
       if (item.acompanante) productos.push(`  ACOMPAÑANTE: ${textoMayusculasTicket(item.acompanante)}`);
@@ -603,13 +601,15 @@ export function crearDatosTicketPedido(pedido) {
 
   const tieneParaLlevar = items.some((item) => item.paraLlevar);
   const clienteTicket = esPedidoMesa
-    ? `${textoMayusculasTicket(pedido.mesa || "MESA")} - ${textoMayusculasTicket(pedido.mesero || "MESERO")}`
+    ? textoMayusculasTicket(pedido.tipo_pedido === "llevar" ? (pedido.cliente || "LLEVAR") : (pedido.mesa || "MESA"))
     : textoMayusculasTicket(obtenerCliente(pedido));
 
   return {
     codigo: obtenerCodigoPedido(pedido),
     hora: horaTicket(pedido.created_at),
     cliente: clienteTicket,
+    mesa: esPedidoMesa ? textoMayusculasTicket(pedido.mesa || "MESA") : "",
+    mesero: esPedidoMesa ? textoMayusculasTicket(pedido.mesero || "MESERO") : "",
     productos: productos.length ? productos : listaPorLineas(pedido.pedido_texto).map(textoMayusculasTicket),
     acompanantes,
     observaciones,
@@ -711,8 +711,9 @@ export function imprimirTicketPedido(pedido) {
             <div>Hora: ${ticket.hora}</div>
           </div>
 
-          <div class="label">Cliente:</div>
+          <div class="label">${ticket.mesa ? "Mesa / Cliente:" : "Cliente:"}</div>
           <div class="cliente">${ticket.cliente || "CLIENTE"}</div>
+          ${ticket.mesero ? `<div class="info"><div>Mesero: ${ticket.mesero}</div></div>` : ""}
 
           <div class="linea">${separador}</div>
           <div class="bloque">${crearLineas(ticket.productos)}</div>

@@ -24,7 +24,6 @@ import {
   CAFETERIA_BATIDOS_REFRESCANTES_SABORES,
   CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS,
   CAFETERIA_BEBIDAS_CALIENTES,
-  CAFETERIA_CEREALES,
   CAFETERIA_DESAYUNOS,
   CAFETERIA_FRUTAS,
   CAFETERIA_JUGOS_BASES,
@@ -66,7 +65,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   const [subcategoriaCafeteria, setSubcategoriaCafeteria] = useState("parfait");
   const [tamanoParfait, setTamanoParfait] = useState("12 oz");
   const [frutasParfait, setFrutasParfait] = useState([]);
-  const [cerealParfait, setCerealParfait] = useState("Granola");
   const [tipoBatido, setTipoBatido] = useState("cremoso");
   const [saborBatido, setSaborBatido] = useState("Frutos rojos");
   const [tamanoBatido, setTamanoBatido] = useState("12 oz");
@@ -195,7 +193,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     // Limpia también los selectores de cafetería para evitar que el siguiente pedido
     // herede tamaño, cereal, frutas o adicionales del pedido anterior.
     setTamanoParfait("12 oz");
-    setCerealParfait("Granola");
     setFrutasParfait([]);
     setTipoBatido("cremoso");
     setSaborBatido(CAFETERIA_BATIDOS_CREMOSOS_SABORES[0]);
@@ -242,7 +239,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     const precioBase = precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait);
     const extraFrutas = frutasParfait.length === 3 ? 1000 : 0;
     const frutasSeleccionadas = [...frutasParfait];
-    const descripcionParfait = `Parfait ${tamanoParfait} - Frutas: ${frutasSeleccionadas.join(", ")} - Cereal: ${cerealParfait}`;
+    const descripcionParfait = `Parfait ${tamanoParfait} - Frutas: ${frutasSeleccionadas.join(", ")}`;
 
     agregarItemCafeteria(crearItemCafeteria({
       tipo: "Parfait",
@@ -250,7 +247,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       precio: precioBase + extraFrutas,
       tamano: tamanoParfait,
       frutas: frutasSeleccionadas,
-      cereal: cerealParfait,
       extraFrutas,
       detalle_impresion: descripcionParfait
     }), destino);
@@ -619,14 +615,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                 </div>
                 <p className="muted">Máximo 3 frutas. Al escoger 3 frutas se suma automáticamente {dinero(1000)}.</p>
 
-                <h4>Cereal</h4>
-                <div className="chips">
-                  {CAFETERIA_CEREALES.map((cereal) => (
-                    <button key={cereal} type="button" onClick={() => setCerealParfait(cereal)} className={`chip ${cerealParfait === cereal ? "selected" : ""}`}>
-                      {cerealParfait === cereal ? "✓ " : "+ "}{cereal}
-                    </button>
-                  ))}
-                </div>
 
                 <div className="total-row compact-total-row">
                   <span>Subtotal parfait</span>
@@ -820,7 +808,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                         <p>Categoría: Cafetería{item.tipo ? ` / ${item.tipo}` : ""}</p>
                         {item.tamano && <p>Tamaño: {item.tamano}</p>}
                         {Array.isArray(item.frutas) && item.frutas.length > 0 && <p>Frutas: {item.frutas.join(", ")}</p>}
-                        {item.cereal && <p>Cereal: {item.cereal}</p>}
                         {Number(item.extraFrutas) > 0 && <p>Extra 3 frutas: {dinero(item.extraFrutas)}</p>}
                         {item.base && <p>Base: {item.base}</p>}
                         {item.acompanante && <p>Acompañante: {item.acompanante}</p>}
@@ -953,7 +940,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
               <div className="mesa-dato-bloque">
                 <h4>👤 Mesero <span className="requerido">*</span></h4>
                 <div className="chips">
-                  {["Rafa", "Ara", "Pao"].map((mesero) => (
+                  {["Rafa", "Ara", "Pao", "Jesús"].map((mesero) => (
                     <button
                       key={mesero}
                       type="button"
