@@ -53,8 +53,9 @@ function vibracionCortaMesas() {
 
 export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
-  const [mesaLocal, setMesaLocal] = useState("Mesa 1");
+  const [mesaLocal, setMesaLocal] = useState("");
   const [meseroLocal, setMeseroLocal] = useState("");
+  const [tipoPagoMesa, setTipoPagoMesa] = useState("Efectivo");
   const [observacionesLocal, setObservacionesLocal] = useState("");
   const [errorMesa, setErrorMesa] = useState("");
   const [categoriaActivaMesa, setCategoriaActivaMesa] = useState("almuerzos");
@@ -86,13 +87,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   const hayProductoSeleccionadoMesa = itemsConProducto.length > 0;
   const total = useMemo(() => calcularTotalItems(itemsConProducto), [itemsConProducto]);
   const itemAlmuerzoActivo = itemsAlmuerzoMesa[itemsAlmuerzoMesa.length - 1];
-  const pasoRapidoAlmuerzo = itemAlmuerzoActivo?.plato || itemAlmuerzoActivo?.proteina
-    ? esCategoriaSopa(itemAlmuerzoActivo.categoria)
-      ? "Revisa cantidad y agrega"
-      : (Array.isArray(itemAlmuerzoActivo.acompanantes) && itemAlmuerzoActivo.acompanantes.length > 0)
-        ? "Revisa cantidad y agrega"
-        : "Escoge acompañantes"
-    : "Toca una proteína";
 
   function actualizarItemMesa(id, cambios) {
     setItemsMesa((actual) =>
@@ -188,8 +182,9 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
   function reiniciarPedidoMesa() {
     setItemsMesa([crearItemNuevo()]);
-    setMesaLocal("Mesa 1");
+    setMesaLocal("");
     setMeseroLocal("");
+    setTipoPagoMesa("Efectivo");
     setObservacionesLocal("");
     setErrorMesa("");
 
@@ -341,7 +336,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     }
 
     if (!meseroLocal.trim()) {
-      setErrorMesa("Escribe el nombre del mesero.");
+      setErrorMesa("Selecciona el mesero.");
       return;
     }
 
@@ -349,6 +344,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       items: itemsConProducto,
       mesa: mesaLocal,
       mesero: meseroLocal,
+      tipoPago: tipoPagoMesa,
       observaciones: observacionesLocal
     });
 
@@ -380,12 +376,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   return (
     <main className="order-layout mesas-cliente-layout">
       <section className="card card-pad" id="mesa-categorias-top">
-        <div className="mesa-pos-header">
-          <div>
-            <span className="mesa-pos-kicker">Modo rápido meseros</span>
-            <h2>TOCAR → AGREGAR → SIGUIENTE</h2>
-          </div>
-          <div className="mesa-pos-pill">{itemsConProducto.length} items · {dinero(total)}</div>
+        <div className="mesa-panel-title">
+          <h2>🍽️ Panel Mesas</h2>
         </div>
 
         <div className="mesas-tabs" aria-label="Categorías del panel mesas">
@@ -407,15 +399,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
             <strong>Cafetería</strong>
           </button>
         </div>
-
-        {categoriaActivaMesa === "almuerzos" && (
-          <div className="mesa-step-strip" aria-label="Paso actual">
-            <span className="active">1. Proteína</span>
-            <span className={(itemAlmuerzoActivo?.plato || itemAlmuerzoActivo?.proteina) ? "active" : ""}>2. Acompañantes</span>
-            <span className={hayProductoSeleccionadoMesa ? "active" : ""}>3. Agregar / Continuar</span>
-            <strong>{pasoRapidoAlmuerzo}</strong>
-          </div>
-        )}
 
         {categoriaActivaMesa === "almuerzos" ? (
           menu.platos_detalle.length === 0 ? (
@@ -440,7 +423,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                   <div className="step-title">
                     <span className="step-number">1</span>
                     <div>
-                      <h4>Toca la proteína</h4>
+                      <h4>Escoge la proteína</h4>
                     </div>
                   </div>
 
@@ -476,7 +459,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                       <div className="step-title">
                         <span className="step-number">2</span>
                         <div>
-                          <h4>Toca acompañantes</h4>
+                          <h4>Escoge un acompañante</h4>
                         </div>
                       </div>
 
@@ -856,29 +839,63 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
               </div>
             </div>
 
-            <label className="field">
-              <span>🍽️ Mesa</span>
-              <select value={mesaLocal} onChange={(e) => { setMesaLocal(e.target.value); setErrorMesa(""); }}>
-                {Array.from({ length: 30 }, (_, i) => (
-                  <option key={i + 1} value={`Mesa ${i + 1}`}>{`Mesa ${i + 1}`}</option>
-                ))}
-              </select>
-            </label>
+            <div className="mesa-datos-grid">
+              <div className="mesa-dato-bloque">
+                <h4>🍽️ Mesa <span className="requerido">*</span></h4>
+                <div className="mesa-selector-grid" aria-label="Seleccionar mesa">
+                  {["1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B", "5B"].map((mesa) => (
+                    <button
+                      key={mesa}
+                      type="button"
+                      onClick={() => { setMesaLocal(mesa); setErrorMesa(""); }}
+                      className={`option mesa-boton ${mesaLocal === mesa ? "selected" : ""}`}
+                    >
+                      {mesa}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            <CampoTexto
-              etiqueta="👤 Mesero"
-              value={meseroLocal}
-              onChange={(valor) => { setMeseroLocal(valor); if (errorMesa) setErrorMesa(""); }}
-              placeholder="Nombre mesero"
-            />
+              <div className="mesa-dato-bloque">
+                <h4>👤 Mesero <span className="requerido">*</span></h4>
+                <div className="chips">
+                  {["Rafa", "Ara", "Pao"].map((mesero) => (
+                    <button
+                      key={mesero}
+                      type="button"
+                      onClick={() => { setMeseroLocal(mesero); setErrorMesa(""); }}
+                      className={`chip ${meseroLocal === mesero ? "selected" : ""}`}
+                    >
+                      {meseroLocal === mesero ? "✓ " : ""}{mesero}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            <CampoTexto
-              etiqueta="Observaciones generales"
-              value={observacionesLocal}
-              onChange={setObservacionesLocal}
-              placeholder="Ej: sin cubiertos, mesa espera bebida..."
-              multiline
-            />
+              <div className="mesa-dato-bloque">
+                <h4>💳 Forma de pago</h4>
+                <div className="chips">
+                  {["Efectivo", "Transferencia", "Datafono"].map((pago) => (
+                    <button
+                      key={pago}
+                      type="button"
+                      onClick={() => setTipoPagoMesa(pago)}
+                      className={`chip ${tipoPagoMesa === pago ? "selected" : ""}`}
+                    >
+                      {tipoPagoMesa === pago ? "✓ " : ""}{pago}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <CampoTexto
+                etiqueta="Observaciones generales"
+                value={observacionesLocal}
+                onChange={setObservacionesLocal}
+                placeholder="Ej: sin cubiertos, mesa espera bebida..."
+                multiline
+              />
+            </div>
 
             <div className="sticky-total">
               <div>

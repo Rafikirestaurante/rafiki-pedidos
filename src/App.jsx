@@ -688,7 +688,7 @@ export default function App() {
     }
   }
 
-  async function registrarPedidoMesa({ items, acompanantes, mesa, mesero, observaciones: obsMesa }) {
+  async function registrarPedidoMesa({ items, acompanantes, mesa, mesero, tipoPago, observaciones: obsMesa }) {
     if (guardandoPedido) return false;
 
     const itemsValidos = (Array.isArray(items) ? items : [])
@@ -720,6 +720,7 @@ export default function App() {
 
     const mesaLimpia = limpiarTexto(mesa, 40) || "Mesa 1";
     const meseroLimpio = limpiarTexto(mesero, 80) || "Mesero";
+    const tipoPagoLimpio = limpiarTexto(tipoPago, 80) || "Efectivo";
     const observacionesLimpias = limpiarTexto(obsMesa, 500);
     const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
     const total = calcularTotalItems(itemsValidos);
@@ -729,7 +730,7 @@ export default function App() {
       cliente_nombre: mesaLimpia,
       telefono: "",
       ubicacion: mesaLimpia,
-      tipo_pago: "Mesa",
+      tipo_pago: tipoPagoLimpio,
       tipo_pedido: "mesa",
       mesa: mesaLimpia,
       mesero: meseroLimpio,
@@ -1053,6 +1054,15 @@ export default function App() {
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.disabled { opacity: 0.6; pointer-events: auto; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }
+        .mesa-panel-title { margin-bottom: 16px; padding: 14px 16px; border-radius: 22px; background: linear-gradient(135deg, #fff7ed, #fffbeb); border: 1px solid #fed7aa; text-align: center; }
+        .mesa-panel-title h2 { margin: 0; font-size: 24px; color: #7c2d12; font-family: 'Fraunces', serif; }
+        .mesa-datos-grid { display: grid; gap: 16px; margin-top: 10px; }
+        .mesa-dato-bloque { border: 1px solid #fed7aa; background: #fffaf0; border-radius: 20px; padding: 14px; }
+        .mesa-dato-bloque h4 { margin: 0 0 12px; color: #9a3412; font-size: 17px; }
+        .requerido { color: #dc2626; }
+        .mesa-selector-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .mesa-boton { min-height: 54px; text-align: center; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        .mesa-selector-grid .mesa-boton:last-child:nth-child(odd) { grid-column: 2; }
 
         .mesa-pos-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border-radius: 22px; background: linear-gradient(135deg, #fff7ed, #fffbeb); border: 1px solid #fed7aa; }
         .mesa-pos-header h2 { margin: 2px 0 0; font-size: 20px; color: #7c2d12; letter-spacing: -0.02em; }
