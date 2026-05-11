@@ -755,8 +755,8 @@ export default function App() {
         setPedidos((actual) => [...actual, data]);
       }
 
-      mostrarMensaje(`Pedido enviado a cocina para ${mesaLimpia}.`, "success");
-      return true;
+      mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} enviado a cocina para ${mesaLimpia}.`, "success");
+      return data;
     } finally {
       setGuardandoPedido(false);
     }
@@ -968,10 +968,7 @@ export default function App() {
   function nuevoPedidoCliente() {
     reiniciarPedido();
     navegar("/cliente", "cliente");
-
-    setTimeout(() => {
-      irAElemento("inicio-pedido-cliente", 120, "start");
-    }, 120);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
   }
 
   return (
@@ -1237,9 +1234,25 @@ export default function App() {
         .sticky-total-amount { font-size: 24px; font-weight: 900; color: #fb923c; font-family: 'Fraunces', serif; }
         .finalizar-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 230px; }
         .finalizar-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; font-size: 12px; font-weight: 900; text-align: right; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
-        .confirmacion-cocina { animation: fadeInUp 0.45s ease both; }
-        .confirmacion-card { animation: fadeInUp 0.45s ease both; }
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .confirmacion-restaurante { animation: fadeInUp 0.36s ease; overflow: hidden; border: 1px solid #bbf7d0; box-shadow: 0 18px 48px rgba(22,163,74,0.16); }
+        .confirmacion-restaurante .hero { padding: 34px 26px 28px; text-align: center; }
+        .confirmacion-info { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+        .confirmacion-info-item { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 11px 12px; text-align: left; }
+        .confirmacion-info-item span { display: block; color: #78716c; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+        .confirmacion-info-item strong { display: block; color: #292524; font-size: 14px; word-break: break-word; }
+        .confirmacion-resumen { background: #fafaf9; border: 1px dashed #d6d3d1; border-radius: 18px; padding: 14px; margin: 12px 0 16px; text-align: left; }
+        .confirmacion-resumen h3 { margin: 0 0 10px; color: #9a3412; font-size: 17px; }
+        .confirmacion-lineas { display: grid; gap: 7px; }
+        .confirmacion-linea { background: #fff; border: 1px solid #f5f5f4; border-radius: 12px; padding: 9px 10px; font-weight: 800; line-height: 1.25; color: #44403c; }
+        .confirmacion-total { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #1c1917; color: #fff; border-radius: 18px; padding: 14px 16px; margin-top: 12px; }
+        .confirmacion-total span { color: #fdba74; font-weight: 900; text-transform: uppercase; font-size: 12px; }
+        .confirmacion-total strong { font-family: 'Fraunces', serif; font-size: 28px; color: #fff; }
+        .confirmacion-ok { text-align: center; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 12px 14px; font-weight: 900; margin-bottom: 14px; }
+        .confirmacion-actions { display: grid; gap: 10px; }
+        .whatsapp-confirm-button { width: 100%; text-decoration: none; text-align: center; font-size: 16px; }
+        .confirmacion-simple-mesa { animation: fadeInUp 0.32s ease; max-width: 560px; margin: 0 auto; }
+        @media (max-width: 680px) { .confirmacion-info { grid-template-columns: 1fr; } .confirmacion-total strong { font-size: 24px; } }
         pre { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; overflow: auto; font-size: 14px; }
 
         .mesas-pos { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
@@ -1757,20 +1770,65 @@ export default function App() {
           )}
 
           {!cargando && vista === "confirmacion" && pedidoFinalizado && (
-            <main style={{ maxWidth: 620, margin: "0 auto" }}>
-              <section className="card confirmacion-card">
-                <div className="hero green confirmacion-cocina" style={{ textAlign: "center" }}>
+            <main style={{ maxWidth: 680, margin: "0 auto" }}>
+              <section className="card confirmacion-restaurante">
+                <div className="hero green">
                   <div className="confirmacion-check">✓</div>
-                  <h2 style={{ fontFamily: "'Fraunces', serif" }}>
-                    Pedido #{obtenerCodigoPedido(pedidoFinalizado)} enviado a cocina
-                  </h2>
-                  <p>El pedido fue registrado correctamente.</p>
+                  <h2>¡Pedido confirmado!</h2>
+                  <p>Pedido #{obtenerCodigoPedido(pedidoFinalizado)} enviado a cocina</p>
                 </div>
 
-                <div className="card-pad" style={{ textAlign: "center" }}>
-                  <button type="button" onClick={nuevoPedidoCliente} className="button green" style={{ maxWidth: 320, margin: "0 auto" }}>
-                    Hacer otro pedido
-                  </button>
+                <div className="card-pad">
+                  <div className="confirmacion-info">
+                    <div className="confirmacion-info-item">
+                      <span>Cliente</span>
+                      <strong>{pedidoFinalizado.cliente || pedidoFinalizado.cliente_nombre || "Cliente"}</strong>
+                    </div>
+                    <div className="confirmacion-info-item">
+                      <span>Teléfono</span>
+                      <strong>{pedidoFinalizado.telefono || "Sin teléfono"}</strong>
+                    </div>
+                    <div className="confirmacion-info-item">
+                      <span>Pago</span>
+                      <strong>{pedidoFinalizado.tipo_pago || "No especificado"}</strong>
+                    </div>
+                    <div className="confirmacion-info-item">
+                      <span>Ubicación</span>
+                      <strong>{pedidoFinalizado.ubicacion || "Sin ubicación"}</strong>
+                    </div>
+                  </div>
+
+                  <div className="confirmacion-resumen">
+                    <h3>Resumen del pedido</h3>
+                    <div className="confirmacion-lineas">
+                      {(pedidoFinalizado.pedido_texto || "Pedido registrado")
+                        .split("\n")
+                        .filter(Boolean)
+                        .map((linea, index) => (
+                          <div key={`${linea}-${index}`} className="confirmacion-linea">{linea}</div>
+                        ))}
+                    </div>
+                    <div className="confirmacion-total">
+                      <span>Total</span>
+                      <strong>{dinero(pedidoFinalizado.total)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="confirmacion-ok">Pedido enviado a cocina correctamente.</div>
+
+                  <div className="confirmacion-actions">
+                    <a
+                      href={linkWhatsAppFinal}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="button green whatsapp-confirm-button"
+                    >
+                      🟢 Por favor Confirmar por WhatsApp
+                    </a>
+                    <button type="button" onClick={nuevoPedidoCliente} className="button light" style={{ width: "100%" }}>
+                      Hacer otro pedido
+                    </button>
+                  </div>
                 </div>
               </section>
             </main>

@@ -8,6 +8,7 @@ import {
   esCategoriaSopa,
   limpiarAcompanantesCliente,
   limpiarTexto,
+  obtenerCodigoPedido,
   precioPorNombre,
   textoParaLlevarItem,
   valorParaLlevarItem
@@ -71,6 +72,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   const [sandwichSeleccionado, setSandwichSeleccionado] = useState("Sándwich de jamón y queso");
   const [bebidaCalienteSeleccionada, setBebidaCalienteSeleccionada] = useState("Café americano");
   const [postreSeleccionado, setPostreSeleccionado] = useState("Fresas con crema");
+  const [pedidoMesaConfirmado, setPedidoMesaConfirmado] = useState(null);
 
   const itemsAlmuerzoMesa = useMemo(
     () => itemsMesa.filter((item) => item.categoria !== "cafeteria"),
@@ -206,6 +208,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setSandwichSeleccionado("Sándwich de jamón y queso");
     setBebidaCalienteSeleccionada("Café americano");
     setPostreSeleccionado("Fresas con crema");
+    setPedidoMesaConfirmado(null);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
   }
 
   function agregarItemCafeteria(item) {
@@ -341,16 +345,36 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       return;
     }
 
-    const ok = await onEnviar({
+    const pedidoGuardado = await onEnviar({
       items: itemsConProducto,
       mesa: mesaLocal,
       mesero: meseroLocal,
       observaciones: observacionesLocal
     });
 
-    if (ok) {
-      reiniciarPedidoMesa();
+    if (pedidoGuardado) {
+      setPedidoMesaConfirmado(pedidoGuardado);
     }
+  }
+
+  if (pedidoMesaConfirmado) {
+    return (
+      <main className="confirmacion-simple-mesa">
+        <section className="card confirmacion-restaurante">
+          <div className="hero green">
+            <div className="confirmacion-check">✓</div>
+            <h2>Pedido #{obtenerCodigoPedido(pedidoMesaConfirmado)} enviado a cocina</h2>
+            <p>El pedido fue registrado correctamente.</p>
+          </div>
+          <div className="card-pad" style={{ textAlign: "center" }}>
+            <div className="confirmacion-ok">Mesa: {pedidoMesaConfirmado.mesa || pedidoMesaConfirmado.cliente || mesaLocal}</div>
+            <button type="button" onClick={reiniciarPedidoMesa} className="button green" style={{ width: "100%", maxWidth: 340 }}>
+              Hacer otro pedido
+            </button>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
