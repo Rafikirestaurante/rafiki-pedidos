@@ -688,7 +688,7 @@ export default function App() {
     }
   }
 
-  async function registrarPedidoMesa({ items, acompanantes, mesa, mesero, tipoPago, observaciones: obsMesa }) {
+  async function registrarPedidoMesa({ items, acompanantes, modoLlevar = false, mesa, cliente, telefono, ubicacion, mesero, tipoPago, observaciones: obsMesa }) {
     if (guardandoPedido) return false;
 
     const itemsValidos = (Array.isArray(items) ? items : [])
@@ -697,7 +697,7 @@ export default function App() {
         if (item.categoria === "cafeteria") {
           return {
             ...item,
-            paraLlevar: false
+            paraLlevar: Boolean(modoLlevar)
           };
         }
 
@@ -709,7 +709,7 @@ export default function App() {
               : acompanantes || []
           ),
           observacionAcompanantes: "",
-          paraLlevar: false
+          paraLlevar: Boolean(modoLlevar)
         };
       });
 
@@ -718,7 +718,11 @@ export default function App() {
       return false;
     }
 
-    const mesaLimpia = limpiarTexto(mesa, 40) || "Mesa 1";
+    const esLlevar = Boolean(modoLlevar);
+    const mesaLimpia = esLlevar ? "Llevar" : (limpiarTexto(mesa, 40) || "Mesa 1");
+    const clienteLimpio = esLlevar ? (limpiarTexto(cliente, 120) || "Cliente") : mesaLimpia;
+    const telefonoLimpio = esLlevar ? limpiarTelefono(telefono) : "";
+    const ubicacionLimpia = esLlevar ? (limpiarTexto(ubicacion, 200) || "Ubicación pendiente") : mesaLimpia;
     const meseroLimpio = limpiarTexto(mesero, 80) || "Mesero";
     const tipoPagoLimpio = limpiarTexto(tipoPago, 80) || "Efectivo";
     const observacionesLimpias = limpiarTexto(obsMesa, 500);
@@ -726,12 +730,12 @@ export default function App() {
     const total = calcularTotalItems(itemsValidos);
 
     const nuevoPedido = {
-      cliente: mesaLimpia,
-      cliente_nombre: mesaLimpia,
-      telefono: "",
-      ubicacion: mesaLimpia,
+      cliente: clienteLimpio,
+      cliente_nombre: clienteLimpio,
+      telefono: telefonoLimpio,
+      ubicacion: ubicacionLimpia,
       tipo_pago: tipoPagoLimpio,
-      tipo_pedido: "mesa",
+      tipo_pedido: esLlevar ? "llevar" : "mesa",
       mesa: mesaLimpia,
       mesero: meseroLimpio,
       observaciones: observacionesLimpias,
@@ -1062,7 +1066,10 @@ export default function App() {
         .requerido { color: #dc2626; }
         .mesa-selector-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .mesa-boton { min-height: 54px; text-align: center; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        .mesa-llevar { grid-column: 1 / -1; background: #fff7ed; }
+        .mesa-selector-grid.llevar-activo .mesa-boton:not(.mesa-llevar) { opacity: 0.45; filter: grayscale(1); }
         .mesa-selector-grid .mesa-boton:last-child:nth-child(odd) { grid-column: 2; }
+        .datos-llevar-grid { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #fed7aa; }
 
         .mesa-pos-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border-radius: 22px; background: linear-gradient(135deg, #fff7ed, #fffbeb); border: 1px solid #fed7aa; }
         .mesa-pos-header h2 { margin: 2px 0 0; font-size: 20px; color: #7c2d12; letter-spacing: -0.02em; }

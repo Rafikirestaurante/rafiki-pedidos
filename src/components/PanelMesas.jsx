@@ -54,6 +54,10 @@ function vibracionCortaMesas() {
 export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("");
+  const [modoLlevar, setModoLlevar] = useState(false);
+  const [clienteLlevar, setClienteLlevar] = useState("");
+  const [telefonoLlevar, setTelefonoLlevar] = useState("");
+  const [ubicacionLlevar, setUbicacionLlevar] = useState("");
   const [meseroLocal, setMeseroLocal] = useState("");
   const [tipoPagoMesa, setTipoPagoMesa] = useState("Efectivo");
   const [observacionesLocal, setObservacionesLocal] = useState("");
@@ -183,6 +187,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   function reiniciarPedidoMesa() {
     setItemsMesa([crearItemNuevo()]);
     setMesaLocal("");
+    setModoLlevar(false);
+    setClienteLlevar("");
+    setTelefonoLlevar("");
+    setUbicacionLlevar("");
     setMeseroLocal("");
     setTipoPagoMesa("Efectivo");
     setObservacionesLocal("");
@@ -330,7 +338,20 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       return;
     }
 
-    if (!mesaLocal.trim()) {
+    if (modoLlevar) {
+      if (!clienteLlevar.trim()) {
+        setErrorMesa("Escribe el nombre del cliente.");
+        return;
+      }
+      if (!telefonoLlevar.trim()) {
+        setErrorMesa("Escribe el teléfono del cliente.");
+        return;
+      }
+      if (!ubicacionLlevar.trim()) {
+        setErrorMesa("Escribe la ubicación del cliente.");
+        return;
+      }
+    } else if (!mesaLocal.trim()) {
       setErrorMesa("Selecciona la mesa.");
       return;
     }
@@ -342,7 +363,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
     const pedidoGuardado = await onEnviar({
       items: itemsConProducto,
-      mesa: mesaLocal,
+      modoLlevar,
+      mesa: modoLlevar ? "Llevar" : mesaLocal,
+      cliente: clienteLlevar,
+      telefono: telefonoLlevar,
+      ubicacion: ubicacionLlevar,
       mesero: meseroLocal,
       tipoPago: tipoPagoMesa,
       observaciones: observacionesLocal
@@ -363,7 +388,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
             <p>El pedido fue registrado correctamente.</p>
           </div>
           <div className="card-pad" style={{ textAlign: "center" }}>
-            <div className="confirmacion-ok">Mesa: {pedidoMesaConfirmado.mesa || pedidoMesaConfirmado.cliente || mesaLocal}</div>
+            <div className="confirmacion-ok">{modoLlevar ? "Llevar" : "Mesa"}: {pedidoMesaConfirmado.mesa || pedidoMesaConfirmado.cliente || mesaLocal}</div>
             <button type="button" onClick={reiniciarPedidoMesa} className="button green" style={{ width: "100%", maxWidth: 340 }}>
               Hacer otro pedido
             </button>
@@ -849,19 +874,83 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
             <div className="mesa-datos-grid">
               <div className="mesa-dato-bloque">
-                <h4>🍽️ Mesa <span className="requerido">*</span></h4>
-                <div className="mesa-selector-grid" aria-label="Seleccionar mesa">
-                  {["1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B", "5B"].map((mesa) => (
+                <h4>🍽️ Mesa o llevar <span className="requerido">*</span></h4>
+                <div className={`mesa-selector-grid ${modoLlevar ? "llevar-activo" : ""}`} aria-label="Seleccionar mesa o llevar">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModoLlevar(false);
+                      setMesaLocal("1A");
+                      setErrorMesa("");
+                    }}
+                    className={`option mesa-boton ${!modoLlevar && mesaLocal === "1A" ? "selected" : ""}`}
+                    disabled={modoLlevar}
+                  >
+                    1A
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModoLlevar(false);
+                      setMesaLocal("1B");
+                      setErrorMesa("");
+                    }}
+                    className={`option mesa-boton ${!modoLlevar && mesaLocal === "1B" ? "selected" : ""}`}
+                    disabled={modoLlevar}
+                  >
+                    1B
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModoLlevar(true);
+                      setMesaLocal("");
+                      setErrorMesa("");
+                    }}
+                    className={`option mesa-boton mesa-llevar ${modoLlevar ? "selected" : ""}`}
+                  >
+                    Llevar
+                  </button>
+                  {["2A", "2B", "3A", "3B", "4A", "4B", "5B"].map((mesa) => (
                     <button
                       key={mesa}
                       type="button"
-                      onClick={() => { setMesaLocal(mesa); setErrorMesa(""); }}
-                      className={`option mesa-boton ${mesaLocal === mesa ? "selected" : ""}`}
+                      onClick={() => {
+                        setModoLlevar(false);
+                        setMesaLocal(mesa);
+                        setErrorMesa("");
+                      }}
+                      className={`option mesa-boton ${!modoLlevar && mesaLocal === mesa ? "selected" : ""}`}
+                      disabled={modoLlevar}
                     >
                       {mesa}
                     </button>
                   ))}
                 </div>
+
+                {modoLlevar && (
+                  <div className="datos-llevar-grid">
+                    <CampoTexto
+                      etiqueta="Datos del cliente *"
+                      value={clienteLlevar}
+                      onChange={(valor) => { setClienteLlevar(valor); setErrorMesa(""); }}
+                      placeholder="Nombre del cliente"
+                    />
+                    <CampoTexto
+                      etiqueta="Teléfono *"
+                      value={telefonoLlevar}
+                      onChange={(valor) => { setTelefonoLlevar(valor); setErrorMesa(""); }}
+                      placeholder="Número de contacto"
+                      type="tel"
+                    />
+                    <CampoTexto
+                      etiqueta="Ubicación *"
+                      value={ubicacionLlevar}
+                      onChange={(valor) => { setUbicacionLlevar(valor); setErrorMesa(""); }}
+                      placeholder="Dirección o referencia"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="mesa-dato-bloque">
