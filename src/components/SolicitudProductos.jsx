@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { generarId } from "../utils/pedidos";
 
 const WHATSAPP_SOLICITUD_INSUMOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_INSUMOS || "";
 
@@ -224,7 +225,7 @@ function fechaMananaColombia() {
 
 function crearProductosSolicitudInicial() {
   return ordenarProductosPorNombre(productosRestauranteBase).map((producto) => ({
-    id: crypto?.randomUUID ? crypto.randomUUID() : `${producto.categoria}-${producto.nombre}-${Math.random()}`,
+    id: generarId("insumo-base"),
     categoria: producto.categoria,
     nombre: producto.nombre,
     cantidad: "",
@@ -423,7 +424,7 @@ function CampoTexto({
 }
 
 export default function SolicitudProductos() {
-  const [productosSolicitud, setProductosSolicitud] = useState(crearProductosSolicitudInicial);
+  const [productosSolicitud, setProductosSolicitud] = useState(() => crearProductosSolicitudInicial());
   const [fechaParaSolicitud, setFechaParaSolicitud] = useState(fechaMananaColombia());
   const [observacionesSolicitud, setObservacionesSolicitud] = useState("");
   const [mensajeSolicitud, setMensajeSolicitud] = useState({ texto: "", tipo: "info" });
@@ -674,7 +675,7 @@ export default function SolicitudProductos() {
     }
 
     const nuevoProducto = {
-      id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      id: generarId("insumo"),
       categoria,
       nombre,
       cantidad: "",

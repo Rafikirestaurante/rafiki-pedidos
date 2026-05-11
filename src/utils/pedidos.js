@@ -40,6 +40,21 @@ export function obtenerSesionActiva(claveStorage) {
   }
 }
 
+export function generarId(prefijo = "id") {
+  try {
+    const cryptoDisponible = globalThis?.crypto;
+    if (cryptoDisponible?.randomUUID) {
+      return cryptoDisponible.randomUUID();
+    }
+  } catch {
+    // Si crypto no está disponible, usamos fallback seguro para la app.
+  }
+
+  const parteTiempo = Date.now();
+  const parteAleatoria = Math.random().toString(36).slice(2, 11);
+  return `${prefijo}-${parteTiempo}-${parteAleatoria}`;
+}
+
 
 export function precioPorNombre(lista, nombre) {
   return Number(lista.find((item) => item.nombre === nombre)?.precio) || 0;
@@ -47,7 +62,7 @@ export function precioPorNombre(lista, nombre) {
 
 export function crearItemCafeteria({ tipo, producto, precio = 0, cantidad = 1, ...extra }) {
   return {
-    id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    id: generarId("cafeteria"),
     categoria: "cafeteria",
     tipo,
     producto,
@@ -388,7 +403,7 @@ export function crearMensajePedidoListo(pedido) {
 
 export function crearItemNuevo() {
   return {
-    id: crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    id: generarId("pedido"),
     cantidad: 1,
     categoria: "",
     plato: "",

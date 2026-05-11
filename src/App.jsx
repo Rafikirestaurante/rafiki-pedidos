@@ -74,7 +74,7 @@ function actualizarRuta(ruta) {
 }
 
 export default function App() {
-  const [vista, setVista] = useState(obtenerVistaInicial);
+  const [vista, setVista] = useState(() => obtenerVistaInicial());
   const [adminTab, setAdminTab] = useState("pedidos");
   const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
   const [claveAdmin, setClaveAdmin] = useState("");
