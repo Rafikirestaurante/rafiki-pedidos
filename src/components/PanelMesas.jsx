@@ -151,10 +151,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
         const nuevosAcompanantes = [...acompanantesActuales, acompanante];
 
-        if (nuevosAcompanantes.length >= 1) {
-          irAElementoMesas(`mesa-confirmacion-${id}`, 180, "center");
-        }
-
         return { ...item, acompanantes: nuevosAcompanantes };
       })
     );
@@ -434,6 +430,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
               const tienePlato = Boolean(item.plato || item.proteina);
               const itemEsSopa = esCategoriaSopa(item.categoria);
               const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+              const acompanantesMesaDisponibles = ["Con todo", ...menu.acompanantes.filter((acompanante) => acompanante !== "Con todo")];
               const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
               return (
                 <div key={item.id} id={`mesa-producto-${item.id}`} className="product-card">
@@ -489,10 +486,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                       </div>
 
                       <div className="chips">
-                        {menu.acompanantes.length === 0 ? (
+                        {acompanantesMesaDisponibles.length === 0 ? (
                           <span className="muted">No hay acompañantes configurados.</span>
                         ) : (
-                          menu.acompanantes.map((acompanante) => {
+                          acompanantesMesaDisponibles.map((acompanante) => {
                             const seleccionado = acompanantesItem.includes(acompanante);
                             const bloqueado =
                               !seleccionado && acompanantesItem.length >= MAX_ACOMPANANTES_CLIENTE;
@@ -900,6 +897,21 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                   >
                     1B
                   </button>
+                  {["2A", "2B", "3A", "3B", "4A", "4B", "5B"].map((mesa) => (
+                    <button
+                      key={mesa}
+                      type="button"
+                      onClick={() => {
+                        setModoLlevar(false);
+                        setMesaLocal(mesa);
+                        setErrorMesa("");
+                      }}
+                      className={`option mesa-boton ${mesa === "5B" ? "mesa-5b" : ""} ${!modoLlevar && mesaLocal === mesa ? "selected" : ""}`}
+                      disabled={modoLlevar}
+                    >
+                      {mesa}
+                    </button>
+                  ))}
                   <button
                     type="button"
                     onClick={() => {
@@ -911,21 +923,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                   >
                     Llevar
                   </button>
-                  {["2A", "2B", "3A", "3B", "4A", "4B", "5B"].map((mesa) => (
-                    <button
-                      key={mesa}
-                      type="button"
-                      onClick={() => {
-                        setModoLlevar(false);
-                        setMesaLocal(mesa);
-                        setErrorMesa("");
-                      }}
-                      className={`option mesa-boton ${!modoLlevar && mesaLocal === mesa ? "selected" : ""}`}
-                      disabled={modoLlevar}
-                    >
-                      {mesa}
-                    </button>
-                  ))}
                 </div>
 
                 {modoLlevar && (

@@ -1067,8 +1067,8 @@ export default function App() {
         .mesa-selector-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .mesa-boton { min-height: 54px; text-align: center; font-size: 18px; display: flex; align-items: center; justify-content: center; }
         .mesa-llevar { grid-column: 1 / -1; background: #fff7ed; }
+        .mesa-5b { grid-column: 2; }
         .mesa-selector-grid.llevar-activo .mesa-boton:not(.mesa-llevar) { opacity: 0.45; filter: grayscale(1); }
-        .mesa-selector-grid .mesa-boton:last-child:nth-child(odd) { grid-column: 2; }
         .datos-llevar-grid { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #fed7aa; }
 
         .mesa-pos-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border-radius: 22px; background: linear-gradient(135deg, #fff7ed, #fffbeb); border: 1px solid #fed7aa; }
