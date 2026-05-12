@@ -47,8 +47,8 @@ export const CAFETERIA_ADICIONALES_DESAYUNO = [];
 export const CAFETERIA_SANDWICHES = [
   { nombre: "Sándwich de jamón y queso", precio: 12000 },
   { nombre: "Sándwich de pollo", precio: 14000 },
-  { nombre: "Dedito", precio: 2500 },
-  { nombre: "Empanada", precio: 3000 }
+  { nombre: "Deditos", precio: 4700 },
+  { nombre: "Empanada", precio: 4700 }
 ];
 
 export const CAFETERIA_BEBIDAS_CALIENTES = [
@@ -56,7 +56,7 @@ export const CAFETERIA_BEBIDAS_CALIENTES = [
   { nombre: "Té y aromáticas", precio: 2500 },
   { nombre: "Capuchino", precio: 5000 },
   { nombre: "Agua normal", precio: 2500 },
-  { nombre: "Agua con gas", precio: 3000 }
+  { nombre: "Agua con Gas", precio: 2500 }
 ];
 
 export const CAFETERIA_POSTRES = [
