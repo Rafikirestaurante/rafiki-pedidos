@@ -290,7 +290,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setTipoBatido(tipo);
     setSaborBatido("");
     setTamanoBatido("");
-    setBaseBatido("");
+    setBaseBatido(tipo === "cremoso" ? "Helado" : "");
     setErrorMesa("");
   }
 
@@ -388,6 +388,19 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setCategoriaActivaMesa(categoria);
     setErrorMesa("");
     irAElementoMesas("mesa-categorias-top", 80, "start");
+  }
+
+  function agregarProductoCafeteriaDesdePedido(subcategoria = null) {
+    vibracionCortaMesas();
+    setCategoriaActivaMesa("cafeteria");
+    if (subcategoria) setSubcategoriaCafeteria(subcategoria);
+    setErrorMesa("");
+    irAElementoMesas("mesa-categorias-top", 80, "start");
+  }
+
+  function agregarAlmuerzoDesdeResumen() {
+    setCategoriaActivaMesa("almuerzos");
+    agregarAlmuerzoRapidoYSiguiente();
   }
 
   async function enviarPedidoMesa() {
@@ -593,7 +606,25 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                         <strong>{dinero(calcularTotalItem(item))}</strong>
                       </div>
 
-                      <div className="pos-next-hint">Listo: puedes agregar otro almuerzo o continuar a datos de mesa.</div>
+                      <div className="pos-next-hint">Listo: puedes agregar otro almuerzo, agregar cafetería o continuar a datos de mesa.</div>
+
+                      <div className="mesa-mixed-actions">
+                        <button
+                          type="button"
+                          onClick={() => agregarProductoCafeteriaDesdePedido()}
+                          className="button cafeteria-mini-action"
+                        >
+                          ☕ Agregar cafetería
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => irAElementoMesas("mesa-confirmacion-final", 120)}
+                          className="button continue-button"
+                        >
+                          Ver resumen
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -603,7 +634,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
             {hayProductoSeleccionadoMesa && (
               <>
                 <button type="button" onClick={agregarAlmuerzoRapidoYSiguiente} className="button add-meal pos-primary-action" style={{ marginTop: 14 }}>
-                  +agregar otro producto
+                  + Agregar otro almuerzo
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => agregarProductoCafeteriaDesdePedido()}
+                  className="button cafeteria-action"
+                  style={{ marginTop: 12 }}
+                >
+                  ☕ Agregar batido, parfait o cafetería
                 </button>
 
                 <button
@@ -612,7 +652,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                   className="button continue-button"
                   style={{ marginTop: 12, background: "#16a34a" }}
                 >
-                  agregar y continuar
+                  Ver resumen y continuar
                 </button>
               </>
             )}
@@ -901,10 +941,21 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
         {!hayProductoSeleccionadoMesa ? (
           <div className="box soft">
-            <strong>👈 Empieza seleccionando una proteína</strong>
+            <strong>👈 Empieza seleccionando un almuerzo o un producto de cafetería</strong>
           </div>
         ) : (
           <>
+            <p className="muted">Puedes combinar almuerzos, batidos, parfait, bebidas y cualquier producto de cafetería en una sola orden.</p>
+
+            <div className="mesa-resumen-actions">
+              <button type="button" onClick={agregarAlmuerzoDesdeResumen} className="button add-meal">
+                + Agregar almuerzo
+              </button>
+              <button type="button" onClick={() => agregarProductoCafeteriaDesdePedido()} className="button cafeteria-action">
+                ☕ Agregar cafetería
+              </button>
+            </div>
+
             <div className="box soft" style={{ marginBottom: 12 }}>
               <h3>Resumen del pedido</h3>
 

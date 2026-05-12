@@ -1,4 +1,5 @@
 export const VALOR_PARA_LLEVAR = 1500;
+export const VALOR_PARA_LLEVAR_DESAYUNO = 1000;
 export const MAX_ACOMPANANTES_CLIENTE = 3;
 export const INCLUIDOS_FIJOS = "Sopa + bebida incluida";
 

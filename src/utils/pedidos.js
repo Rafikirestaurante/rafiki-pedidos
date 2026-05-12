@@ -1,4 +1,4 @@
-import { VALOR_PARA_LLEVAR, MAX_ACOMPANANTES_CLIENTE, INCLUIDOS_FIJOS, menuFallback } from "../data/menuAlmuerzos";
+import { VALOR_PARA_LLEVAR, VALOR_PARA_LLEVAR_DESAYUNO, MAX_ACOMPANANTES_CLIENTE, INCLUIDOS_FIJOS, menuFallback } from "../data/menuAlmuerzos";
 
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
@@ -64,6 +64,7 @@ export function crearItemCafeteria({ tipo, producto, precio = 0, cantidad = 1, .
   return {
     id: generarId("cafeteria"),
     categoria: "cafeteria",
+    area: "cafeteria",
     tipo,
     producto,
     plato: producto,
@@ -199,9 +200,19 @@ export function esSopaParaLlevarGratis(item) {
   return nombresGratis.includes(nombre);
 }
 
+export function esDesayunoCafeteria(item) {
+  return item?.categoria === "cafeteria" && normalizarTexto(item?.tipo).includes("desayuno");
+}
+
 export function valorParaLlevarItem(item) {
   if (!item?.paraLlevar) return 0;
+
+  if (item?.categoria === "cafeteria") {
+    return esDesayunoCafeteria(item) ? VALOR_PARA_LLEVAR_DESAYUNO : 0;
+  }
+
   if (esSopaParaLlevarGratis(item)) return 0;
+
   return VALOR_PARA_LLEVAR;
 }
 
@@ -406,6 +417,7 @@ export function crearItemNuevo() {
     id: generarId("pedido"),
     cantidad: 1,
     categoria: "",
+    area: "cocina",
     plato: "",
     proteina: "",
     precioPlato: 0,
@@ -542,8 +554,28 @@ export function horaTicket(fecha) {
   }).format(new Date(fecha));
 }
 
-export function crearDatosTicketPedido(pedido) {
-  const items = obtenerItemsPedido(pedido);
+export function obtenerAreaItem(item) {
+  if (item?.area === "cafeteria" || item?.area === "cocina") return item.area;
+  if (item?.categoria === "cafeteria") return "cafeteria";
+  return "cocina";
+}
+
+export function separarItemsPorArea(items = []) {
+  return (Array.isArray(items) ? items : []).reduce((grupos, item) => {
+    const area = obtenerAreaItem(item);
+    grupos[area].push({ ...item, area });
+    return grupos;
+  }, { cocina: [], cafeteria: [] });
+}
+
+export function obtenerNombreArea(area) {
+  return area === "cafeteria" ? "CAFETERÍA" : "COCINA";
+}
+
+export function crearDatosTicketPedido(pedido, opciones = {}) {
+  const itemsBase = opciones.items || obtenerItemsPedido(pedido);
+  const areaTicket = opciones.area || "general";
+  const items = Array.isArray(itemsBase) ? itemsBase : [];
   const productos = [];
   const acompanantes = [];
   const observaciones = [];
@@ -551,7 +583,7 @@ export function crearDatosTicketPedido(pedido) {
 
   items.forEach((item) => {
     const cantidad = Number(item.cantidad) || 1;
-    const esCafeteria = item.categoria === "cafeteria";
+    const esCafeteria = obtenerAreaItem(item) === "cafeteria";
     const nombreBase = item.plato || item.proteina || item.producto || item.nombre || "Producto";
 
     if (esCafeteria) {
@@ -576,19 +608,23 @@ export function crearDatosTicketPedido(pedido) {
       if (Array.isArray(item.adicionales) && item.adicionales.length) {
         productos.push(`  ADICIONALES: ${item.adicionales.map((adicional) => textoMayusculasTicket(adicional.nombre || adicional)).join(", ")}`);
       }
+
+      if (item.observacionesItem?.trim()) {
+        observaciones.push(`${textoMayusculasTicket(nombreBase)}: ${textoMayusculasTicket(item.observacionesItem)}`);
+      }
     } else {
       productos.push(`${cantidad} ${textoMayusculasTicket(nombreBase)}`);
-    }
 
-    if (Array.isArray(item.acompanantes)) {
-      item.acompanantes.forEach((acompanante) => {
-        const limpio = textoMayusculasTicket(acompanante);
-        if (limpio && !acompanantes.includes(limpio)) acompanantes.push(limpio);
-      });
-    }
+      if (Array.isArray(item.acompanantes)) {
+        item.acompanantes.forEach((acompanante) => {
+          const limpio = textoMayusculasTicket(acompanante);
+          if (limpio && !acompanantes.includes(limpio)) acompanantes.push(limpio);
+        });
+      }
 
-    if (item.observacionAcompanantes?.trim()) {
-      observaciones.push(`OBS. ACOMPAÑANTES: ${textoMayusculasTicket(item.observacionAcompanantes)}`);
+      if (item.observacionAcompanantes?.trim()) {
+        observaciones.push(`OBS. ACOMPAÑANTES: ${textoMayusculasTicket(item.observacionAcompanantes)}`);
+      }
     }
 
     if (!esPedidoMesa && item.paraLlevar) {
@@ -608,6 +644,8 @@ export function crearDatosTicketPedido(pedido) {
 
   return {
     codigo: obtenerCodigoPedido(pedido),
+    area: areaTicket,
+    nombreArea: obtenerNombreArea(areaTicket),
     hora: horaTicket(pedido.created_at),
     cliente: clienteTicket,
     mesa: esPedidoMesa ? textoMayusculasTicket(pedido.mesa || "MESA") : "",
@@ -620,17 +658,67 @@ export function crearDatosTicketPedido(pedido) {
 }
 
 export function imprimirTicketPedido(pedido) {
-  const ticket = crearDatosTicketPedido(pedido);
+  const grupos = separarItemsPorArea(obtenerItemsPedido(pedido));
+  const tickets = [];
+
+  if (grupos.cocina.length > 0) {
+    tickets.push(crearDatosTicketPedido(pedido, { area: "cocina", items: grupos.cocina }));
+  }
+
+  if (grupos.cafeteria.length > 0) {
+    tickets.push(crearDatosTicketPedido(pedido, { area: "cafeteria", items: grupos.cafeteria }));
+  }
+
+  if (tickets.length === 0) {
+    tickets.push(crearDatosTicketPedido(pedido, { area: "cocina" }));
+  }
+
   const linea = "================";
   const separador = "----------------";
   const crearLineas = (lineas) => lineas.map((lineaTexto) => `<div>${lineaTexto}</div>`).join("");
+  const crearTicketHtml = (ticket, index) => `
+        <div class="ticket ${index > 0 ? "salto" : ""}">
+          <div class="linea center">${linea}</div>
+          <div class="titulo center">RAFIKI&nbsp;${ticket.nombreArea}</div>
+          <div class="subtitulo center">COMANDA ${ticket.nombreArea}</div>
+          <div class="linea center">${linea}</div>
+
+          <div class="info">
+            <div>Pedido #${ticket.codigo}</div>
+            <div>Hora: ${ticket.hora}</div>
+          </div>
+
+          <div class="label">${ticket.mesa ? "Mesa / Cliente:" : "Cliente:"}</div>
+          <div class="cliente">${ticket.cliente || "CLIENTE"}</div>
+          ${ticket.mesero ? `<div class="info"><div>Mesero: ${ticket.mesero}</div></div>` : ""}
+
+          <div class="linea">${separador}</div>
+          <div class="bloque">${crearLineas(ticket.productos)}</div>
+
+          ${ticket.acompanantes.length ? `
+            <div class="linea">${separador}</div>
+            <div class="label">ACOMPAÑANTES:</div>
+            <div class="bloque acompanantes">${crearLineas(ticket.acompanantes)}</div>
+          ` : ""}
+
+          ${ticket.observaciones.length ? `
+            <div class="linea">${separador}</div>
+            <div class="label">OBSERVACIONES:</div>
+            <div class="bloque observaciones">${crearLineas(ticket.observaciones)}</div>
+          ` : ""}
+
+          <div class="linea">${separador}</div>
+          <div class="entrega">${ticket.entrega}</div>
+          <div class="linea center">${linea}</div>
+        </div>
+  `;
 
   const html = `
     <!doctype html>
     <html>
       <head>
         <meta charset="utf-8" />
-        <title>Pedido ${ticket.codigo}</title>
+        <title>Pedido ${obtenerCodigoPedido(pedido)} - Comandas</title>
         <style>
           @page { size: 58mm auto; margin: 0; }
           * { box-sizing: border-box; }
@@ -647,6 +735,7 @@ export function imprimirTicketPedido(pedido) {
             color: #000;
             background: #fff;
           }
+          .salto { page-break-before: always; break-before: page; }
           .center { text-align: center; }
           .linea {
             font-family: "Courier New", monospace;
@@ -659,7 +748,13 @@ export function imprimirTicketPedido(pedido) {
             font-size: 18px;
             font-weight: 900;
             letter-spacing: 0px;
-            margin: 4px 0;
+            margin: 4px 0 0;
+            white-space: nowrap;
+          }
+          .subtitulo {
+            font-size: 14px;
+            font-weight: 900;
+            margin: 1px 0 4px;
             white-space: nowrap;
           }
           .info {
@@ -703,38 +798,7 @@ export function imprimirTicketPedido(pedido) {
         </style>
       </head>
       <body>
-        <div class="ticket">
-          <div class="linea center">${linea}</div>
-          <div class="titulo center">RAFIKI&nbsp;PEDIDO</div>
-          <div class="linea center">${linea}</div>
-
-          <div class="info">
-            <div>Pedido #${ticket.codigo}</div>
-            <div>Hora: ${ticket.hora}</div>
-          </div>
-
-          <div class="label">${ticket.mesa ? "Mesa / Cliente:" : "Cliente:"}</div>
-          <div class="cliente">${ticket.cliente || "CLIENTE"}</div>
-          ${ticket.mesero ? `<div class="info"><div>Mesero: ${ticket.mesero}</div></div>` : ""}
-
-          <div class="linea">${separador}</div>
-          <div class="bloque">${crearLineas(ticket.productos)}</div>
-
-          ${ticket.acompanantes.length ? `
-            <div class="linea">${separador}</div>
-            <div class="bloque acompanantes">${crearLineas(ticket.acompanantes)}</div>
-          ` : ""}
-
-          ${ticket.observaciones.length ? `
-            <div class="linea">${separador}</div>
-            <div class="label">OBSERVACIONES:</div>
-            <div class="bloque observaciones">${crearLineas(ticket.observaciones)}</div>
-          ` : ""}
-
-          <div class="linea">${separador}</div>
-          <div class="entrega">${ticket.entrega}</div>
-          <div class="linea center">${linea}</div>
-        </div>
+        ${tickets.map(crearTicketHtml).join("")}
         <script>
           window.onload = function () {
             setTimeout(function () {
@@ -747,7 +811,7 @@ export function imprimirTicketPedido(pedido) {
     </html>
   `;
 
-  const ventana = window.open("", "_blank", "width=420,height=700");
+  const ventana = window.open("", "_blank", "width=420,height=900");
 
   if (!ventana) {
     alert("El navegador bloqueó la impresión. Permite ventanas emergentes para Rafiki Pedidos.");

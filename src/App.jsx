@@ -6,7 +6,7 @@ import PanelMesasPOS from "./components/PanelMesas";
 import PanelRafaPrivado from "./components/PanelRafaPrivado";
 import { CampoTexto, SelectorCantidad } from "./components/common";
 import { PedidoCocina, TablaPedidosCompacta } from "./components/PedidosAdmin";
-import { estadosPedido, menuFallback, MAX_ACOMPANANTES_CLIENTE, VALOR_PARA_LLEVAR } from "./data/menuAlmuerzos";
+import { estadosPedido, menuFallback, MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
   acompanantesATexto,
   agruparPlatosPorCategoria,
@@ -1140,6 +1140,10 @@ export default function App() {
         .compact-cafeteria-actions .cafeteria-card strong { line-height: 1.1; }
         .cafeteria-card { transition: transform .15s ease, box-shadow .15s ease; }
         .cafeteria-card:active, .option:active, .chip:active, .mesas-tab:active { transform: scale(0.98); }
+        .cafeteria-action { background: linear-gradient(135deg, #92400e, #b45309); color: #fff; border: 0; }
+        .cafeteria-mini-action { background: #fffbeb; color: #92400e; border: 1.5px solid #fde68a; box-shadow: none; }
+        .mesa-mixed-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .mesa-resumen-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
         .option { text-align: left; border: 1.5px solid #e7e5e4; background: #fff; border-radius: 18px; padding: 14px; font-weight: 900; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
         .option:hover { border-color: #fdba74; background: #fff7ed; }
         .option small { display: block; margin-top: 6px; color: #ea580c; font-size: 16px; font-weight: 900; }
@@ -1632,7 +1636,7 @@ export default function App() {
                                     <p className="muted" style={{ marginBottom: 0 }}>
                                       {valorParaLlevarItem(item) === 0 && item.paraLlevar
                                         ? "Sin costo adicional"
-                                        : `Suma ${dinero(VALOR_PARA_LLEVAR)}`}
+                                        : `Suma ${dinero(valorParaLlevarItem(item))}`}
                                     </p>
                                   </div>
 
