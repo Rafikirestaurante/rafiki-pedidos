@@ -704,55 +704,59 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     </button>
                   ))}
                 </div>
-                <h4>Sabor</h4>
-                <div className="chips">
-                  {(tipoBatido === "cremoso"
-                    ? CAFETERIA_BATIDOS_CREMOSOS_SABORES
-                    : tipoBatido === "refrescante"
-                      ? CAFETERIA_BATIDOS_REFRESCANTES_SABORES
-                      : CAFETERIA_JUGOS_TRADICIONALES_SABORES
-                  ).map((sabor) => (
-                    <button key={sabor} type="button" onClick={() => setSaborBatido(sabor)} className={`chip ${saborBatido === sabor ? "selected" : ""}`}>{saborBatido === sabor ? "✓ " : "+ "}{sabor}</button>
-                  ))}
-                </div>
-                {tipoBatido === "cremoso" && (
+                {tipoBatido && (
                   <>
-                    <h4>Base</h4>
+                    <h4>Sabor</h4>
                     <div className="chips">
-                      {CAFETERIA_BATIDOS_BASES.map((base) => (
-                        <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                      {(tipoBatido === "cremoso"
+                        ? CAFETERIA_BATIDOS_CREMOSOS_SABORES
+                        : tipoBatido === "refrescante"
+                          ? CAFETERIA_BATIDOS_REFRESCANTES_SABORES
+                          : CAFETERIA_JUGOS_TRADICIONALES_SABORES
+                      ).map((sabor) => (
+                        <button key={sabor} type="button" onClick={() => setSaborBatido(sabor)} className={`chip ${saborBatido === sabor ? "selected" : ""}`}>{saborBatido === sabor ? "✓ " : "+ "}{sabor}</button>
                       ))}
                     </div>
-                  </>
-                )}
-                {tipoBatido === "jugo" && (
-                  <>
-                    <h4>Base</h4>
-                    <div className="chips">
-                      {CAFETERIA_JUGOS_BASES.map((base) => (
-                        <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                    {tipoBatido === "cremoso" && (
+                      <>
+                        <h4>Base</h4>
+                        <div className="chips">
+                          {CAFETERIA_BATIDOS_BASES.map((base) => (
+                            <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {tipoBatido === "jugo" && (
+                      <>
+                        <h4>Base</h4>
+                        <div className="chips">
+                          {CAFETERIA_JUGOS_BASES.map((base) => (
+                            <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    <h4>Tamaño</h4>
+                    <div className="option-grid">
+                      {(tipoBatido === "cremoso" ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS).map((item) => (
+                        <button key={item.nombre} type="button" onClick={() => setTamanoBatido(item.nombre)} className={`option ${tamanoBatido === item.nombre ? "selected" : ""}`}>
+                          <div>{item.nombre}</div>
+                          <small>{dinero(item.precio)}</small>
+                        </button>
                       ))}
                     </div>
-                  </>
-                )}
-                <h4>Tamaño</h4>
-                <div className="option-grid">
-                  {(tipoBatido === "cremoso" ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS).map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => setTamanoBatido(item.nombre)} className={`option ${tamanoBatido === item.nombre ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                      <small>{dinero(item.precio)}</small>
-                    </button>
-                  ))}
-                </div>
 
-                <div className="box compact-box quantity-box">
-                  <strong>Cantidad</strong>
-                  <SelectorCantidad
-                    cantidad={cantidadCafeteria}
-                    onChange={setCantidadCafeteria}
-                  />
-                </div>
-                <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+agregar otro producto</button>
+                    <div className="box compact-box quantity-box">
+                      <strong>Cantidad</strong>
+                      <SelectorCantidad
+                        cantidad={cantidadCafeteria}
+                        onChange={setCantidadCafeteria}
+                      />
+                    </div>
+                    <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+agregar otro producto</button>
+                  </>
+                )}
               </div>
             )}
 
