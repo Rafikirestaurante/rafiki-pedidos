@@ -17,6 +17,7 @@ import { MAX_ACOMPANANTES_CLIENTE } from "../data/menuAlmuerzos";
 import { CampoTexto } from "./common";
 import {
   CAFETERIA_ACOMPANANTES_DESAYUNO,
+  CAFETERIA_BEBIDAS_DESAYUNO,
   CAFETERIA_ADICIONALES_DESAYUNO,
   CAFETERIA_BATIDOS_BASES,
   CAFETERIA_BATIDOS_CREMOSOS_SABORES,
@@ -72,6 +73,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   const [baseBatido, setBaseBatido] = useState("");
   const [desayunoSeleccionado, setDesayunoSeleccionado] = useState("");
   const [acompananteDesayuno, setAcompananteDesayuno] = useState("");
+  const [bebidaDesayuno, setBebidaDesayuno] = useState("");
   const [adicionalesDesayuno, setAdicionalesDesayuno] = useState([]);
   const [sandwichSeleccionado, setSandwichSeleccionado] = useState("");
   const [bebidaCalienteSeleccionada, setBebidaCalienteSeleccionada] = useState("");
@@ -202,6 +204,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setBaseBatido("");
     setDesayunoSeleccionado("");
     setAcompananteDesayuno("");
+    setBebidaDesayuno("");
     setAdicionalesDesayuno([]);
     setSandwichSeleccionado("");
     setBebidaCalienteSeleccionada("");
@@ -211,10 +214,29 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
   }
 
+  function limpiarSeleccionCafeteria() {
+    // Al agregar un producto de cafetería, limpiamos todos los selectores
+    // para que el siguiente producto empiece desde cero y no parezca seleccionado.
+    setTamanoParfait("");
+    setFrutasParfait([]);
+    setTipoBatido("");
+    setSaborBatido("");
+    setTamanoBatido("");
+    setBaseBatido("");
+    setDesayunoSeleccionado("");
+    setAcompananteDesayuno("");
+    setBebidaDesayuno("");
+    setAdicionalesDesayuno([]);
+    setSandwichSeleccionado("");
+    setBebidaCalienteSeleccionada("");
+    setPostreSeleccionado("");
+    setCantidadCafeteria(1);
+  }
+
   function agregarItemCafeteria(item, destino = "categorias") {
     vibracionCortaMesas();
     setItemsMesa((actual) => [...actual, item]);
-    setCantidadCafeteria(1);
+    limpiarSeleccionCafeteria();
     setErrorMesa("");
     irAElementoMesas(destino === "resumen" ? "mesa-confirmacion-final" : "mesa-categorias-top", 120, "start");
   }
@@ -325,6 +347,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       return;
     }
 
+    if (desayunoPrincipal && !bebidaDesayuno) {
+      setErrorMesa("Selecciona la bebida del desayuno.");
+      return;
+    }
+
     const precioBase = precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado);
     const precioAdicionales = adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0);
 
@@ -334,9 +361,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       precio: precioBase + precioAdicionales,
       cantidad: cantidadCafeteria,
       acompanante: acompananteDesayuno,
+      bebida: bebidaDesayuno,
       adicionales: adicionalesDesayuno
     }), destino);
 
+    setBebidaDesayuno("");
     setAdicionalesDesayuno([]);
   }
 
@@ -744,10 +773,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     <button key={acompanante} type="button" onClick={() => setAcompananteDesayuno(acompanante)} className={`chip ${acompananteDesayuno === acompanante ? "selected" : ""}`}>{acompananteDesayuno === acompanante ? "✓ " : "+ "}{acompanante}</button>
                   ))}
                 </div>
+                <h4>Bebida</h4>
+                <div className="chips">
+                  {CAFETERIA_BEBIDAS_DESAYUNO.map((bebida) => (
+                    <button key={bebida} type="button" onClick={() => setBebidaDesayuno(bebida)} className={`chip ${bebidaDesayuno === bebida ? "selected" : ""}`}>{bebidaDesayuno === bebida ? "✓ " : "+ "}{bebida}</button>
+                  ))}
+                </div>
                 <h4>Otros desayunos</h4>
                 <div className="option-grid compact-options">
                   {CAFETERIA_OTROS_DESAYUNOS.map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => { setDesayunoSeleccionado(item.nombre); setAcompananteDesayuno(""); setAdicionalesDesayuno([]); }} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
+                    <button key={item.nombre} type="button" onClick={() => { setDesayunoSeleccionado(item.nombre); setAcompananteDesayuno(""); setBebidaDesayuno(""); setAdicionalesDesayuno([]); }} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
                       <div>{item.nombre}</div>
                       <small>{dinero(item.precio)}</small>
                     </button>

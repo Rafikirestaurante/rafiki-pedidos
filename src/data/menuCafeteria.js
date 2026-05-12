@@ -40,6 +40,8 @@ export const CAFETERIA_OTROS_DESAYUNOS = [
 
 export const CAFETERIA_ACOMPANANTES_DESAYUNO = ["Arepa", "Patacón", "Yuca", "Plátano cocido", "Papa cocida", "Cayeye"];
 
+export const CAFETERIA_BEBIDAS_DESAYUNO = ["Café con leche", "Tinto"];
+
 export const CAFETERIA_ADICIONALES_DESAYUNO = [];
 
 export const CAFETERIA_SANDWICHES = [

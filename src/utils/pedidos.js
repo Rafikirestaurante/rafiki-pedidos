@@ -440,6 +440,7 @@ export function crearTextoItem(item) {
     if (Number(item.extraFrutas) > 0) partes.push(`Extra 3 frutas: ${dinero(item.extraFrutas)}`);
     if (item.base) partes.push(`Base: ${item.base}`);
     if (item.acompanante) partes.push(`Acompañante: ${item.acompanante}`);
+    if (item.bebida) partes.push(`Bebida: ${item.bebida}`);
     if (Array.isArray(item.adicionales) && item.adicionales.length > 0) {
       partes.push(`Adicionales: ${item.adicionales.map((x) => x.nombre || x).join(", ")}`);
     }
@@ -570,6 +571,7 @@ export function crearDatosTicketPedido(pedido) {
       if (Number(item.extraFrutas) > 0) productos.push("  EXTRA FRUTAS: +$1.000");
       if (item.base) productos.push(`  BASE: ${textoMayusculasTicket(item.base)}`);
       if (item.acompanante) productos.push(`  ACOMPAÑANTE: ${textoMayusculasTicket(item.acompanante)}`);
+      if (item.bebida) productos.push(`  BEBIDA: ${textoMayusculasTicket(item.bebida)}`);
 
       if (Array.isArray(item.adicionales) && item.adicionales.length) {
         productos.push(`  ADICIONALES: ${item.adicionales.map((adicional) => textoMayusculasTicket(adicional.nombre || adicional)).join(", ")}`);
