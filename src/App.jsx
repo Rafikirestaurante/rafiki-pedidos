@@ -45,7 +45,7 @@ import {
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
 const CLAVE_ADMIN = import.meta.env.VITE_CLAVE_ADMIN || "";
 const CLAVE_RAFA = import.meta.env.VITE_CLAVE_RAFA || "";
-const CLAVE_ELIMINAR_PEDIDO = import.meta.env.VITE_CLAVE_ELIMINAR_PEDIDO || "1234";
+const CLAVE_ELIMINAR_PEDIDO = import.meta.env.VITE_CLAVE_ELIMINAR_PEDIDO || "Rafiki1989";
 
 function obtenerVistaInicial() {
   const ruta = window.location.pathname.replace(/\/$/, "") || "/";
@@ -277,19 +277,26 @@ export default function App() {
   }, [pedidosOrdenados, busquedaDebounced]);
 
   const pedidosPendientes = useMemo(() => {
-    return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) !== "Finalizado");
+    return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
   }, [pedidosFiltrados]);
 
   const pedidosFinalizados = useMemo(() => {
     return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) === "Finalizado");
   }, [pedidosFiltrados]);
 
+  const pedidosBorrados = useMemo(() => {
+    return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) === "Borrado");
+  }, [pedidosFiltrados]);
 
-  const consolidado = useMemo(() => consolidarPedidos(pedidosFiltrados), [pedidosFiltrados]);
+  const pedidosActivos = useMemo(() => {
+    return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado");
+  }, [pedidosFiltrados]);
+
+  const consolidado = useMemo(() => consolidarPedidos(pedidosActivos), [pedidosActivos]);
 
   const totalVendido = useMemo(() => {
-    return pedidosFiltrados.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0);
-  }, [pedidosFiltrados]);
+    return pedidosActivos.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0);
+  }, [pedidosActivos]);
 
 
   const platosAgrupados = useMemo(
@@ -888,13 +895,13 @@ export default function App() {
     const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
 
     const confirmar = window.confirm(
-      `¿Seguro que deseas eliminar el pedido #${codigoPedido}?\n\nEsta acción no se puede deshacer.`
+      `¿Seguro que deseas mover el pedido #${codigoPedido} a Pedidos Borrados?\n\nDejará de sumar en ventas, pero quedará visible para control.`
     );
 
     if (!confirmar) return;
 
     const claveIngresada = window.prompt(
-      `Ingresa la clave para eliminar el pedido #${codigoPedido}:`
+      `Ingresa la clave para borrar el pedido #${codigoPedido}:`
     );
 
     if (claveIngresada === null) return;
@@ -907,18 +914,20 @@ export default function App() {
     setEliminandoPedidoId(id);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("pedidos")
-        .delete()
-        .eq("id", id);
+        .update({ estado: "Borrado" })
+        .eq("id", id)
+        .select()
+        .single();
 
       if (error) {
-        mostrarMensaje(`Error eliminando pedido: ${error.message}`, "error");
+        mostrarMensaje(`Error borrando pedido: ${error.message}`, "error");
         return;
       }
 
-      setPedidos((actual) => actual.filter((pedido) => pedido.id !== id));
-      mostrarMensaje(`Pedido #${codigoPedido} eliminado correctamente.`, "success");
+      setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      mostrarMensaje(`Pedido #${codigoPedido} movido a Pedidos Borrados.`, "success");
     } finally {
       setEliminandoPedidoId(null);
     }
@@ -1192,6 +1201,9 @@ export default function App() {
         .section-heading { display: flex; justify-content: space-between; align-items: center; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px 18px; margin-bottom: 14px; }
         .section-heading h3 { margin: 0; color: #c2410c; font-family: 'Fraunces', serif; }
         .section-heading span { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; min-width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
+        .section-heading-danger { background: #fef2f2; border-color: #fecaca; }
+        .section-heading-danger h3 { color: #991b1b; }
+        .section-heading-danger span { background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 4px 10px rgba(220,38,38,0.22); }
         .bottom-summary { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 18px; }
         .summary-cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
         .summary-card { background: #fff; border: 1px solid #fed7aa; border-radius: 24px; padding: 18px; transition: box-shadow 0.15s; }
@@ -1228,6 +1240,8 @@ export default function App() {
         .pedidos-tabla-compacta tr:last-child td { border-bottom: 0; }
         .pedidos-tabla-compacta tr.fila-nueva { background: #fff7ed; box-shadow: inset 4px 0 0 #f79e1c; }
         .pedidos-tabla-compacta tr.fila-finalizada { background: #f0fdf4; opacity: 0.82; }
+        .pedidos-tabla-compacta tr.fila-borrada { background: #fef2f2; opacity: 0.78; }
+        .mini-estado-borrado { display: inline-flex; align-items: center; justify-content: center; width: 100%; border-radius: 999px; background: #fee2e2; color: #991b1b; font-size: 11px; font-weight: 900; padding: 8px 10px; margin-bottom: 6px; }
         .td-codigo strong { display: block; color: #c2410c; font-size: 13px; }
         .td-codigo span { display: inline-block; margin-top: 3px; background: #f79e1c; color: white; border-radius: 999px; padding: 2px 6px; font-size: 10px; font-weight: 900; }
         .pedidos-tabla-compacta td small { display: block; color: #78716c; margin-top: 2px; font-size: 11px; }
@@ -1242,6 +1256,13 @@ export default function App() {
         .mini-btn.print { background: #111827; border-color: #111827; color: #fff; }
         .mini-btn.danger { background: #dc2626; border-color: #dc2626; color: #fff; }
         .mini-btn.danger:disabled { opacity: 0.65; cursor: not-allowed; }
+        .paginacion-pedidos { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 12px; border: 1px solid #fed7aa; border-radius: 14px; background: #fff7ed; color: #7c2d12; font-size: 12px; font-weight: 800; }
+        .paginacion-botones { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .paginacion-botones .mini-btn { width: auto; margin-bottom: 0; padding: 7px 12px; }
+        .paginacion-botones .mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .paginacion-botones strong { color: #9a3412; white-space: nowrap; }
+        @media (max-width: 720px) { .paginacion-pedidos { align-items: stretch; flex-direction: column; } .paginacion-botones { justify-content: space-between; } }
+
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-sin-revisar { border: 3px solid #f79e1c; box-shadow: 0 12px 34px rgba(247,158,28,0.22); }
         .pedido-finalizado { opacity: 0.7; }
@@ -2028,6 +2049,7 @@ export default function App() {
 
                   <p className="muted small">
                     Mostrando {pedidosFiltrados.length} de {pedidos.length} pedidos cargados.
+                    {pedidosBorrados.length > 0 ? ` ${pedidosBorrados.length} en Pedidos Borrados no suman en ventas.` : ""}
                   </p>
 
                   <div className="pedido-seccion">
@@ -2068,6 +2090,24 @@ export default function App() {
                     )}
                   </div>
 
+                  <div className="pedido-seccion">
+                    <div className="section-heading section-heading-danger">
+                      <h3>🗑️ Pedidos Borrados</h3>
+                      <span>{pedidosBorrados.length}</span>
+                    </div>
+
+                    {pedidosBorrados.length === 0 ? (
+                      <div className="box soft">No hay pedidos borrados.</div>
+                    ) : (
+                      <TablaPedidosCompacta
+                        pedidos={pedidosBorrados}
+                        onCambiarEstado={cambiarEstadoPedido}
+                        guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                        eliminandoPedidoId={eliminandoPedidoId}
+                      />
+                    )}
+                  </div>
+
                   <div className="bottom-summary">
                     <div className="card card-pad">
                       <h3>Consolidado cocina</h3>
@@ -2090,17 +2130,12 @@ export default function App() {
                     <div className="summary-cards">
                       <div className="summary-card">
                         <span>Pedidos</span>
-                        <strong>{pedidosFiltrados.length}</strong>
+                        <strong>{pedidosActivos.length}</strong>
                       </div>
 
                       <div className="summary-card">
                         <span>Finalizados</span>
                         <strong>{pedidosFinalizados.length}</strong>
-                      </div>
-
-                      <div className="summary-card">
-                        <span>Total vendido</span>
-                        <strong>{dinero(totalVendido)}</strong>
                       </div>
                     </div>
                   </div>

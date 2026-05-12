@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   calcularTotalItem,
   crearLinkWhatsApp,
@@ -176,9 +176,30 @@ export function resumirItemsPedidoCompacto(pedido) {
   }).join(" | ");
 }
 
-export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId }) {
+export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, pedidosPorPagina = 15 }) {
+  const [paginaActual, setPaginaActual] = useState(1);
+  const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [pedidos]);
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas) {
+      setPaginaActual(totalPaginas);
+    }
+  }, [paginaActual, totalPaginas]);
+
+  const pedidosPagina = useMemo(() => {
+    const inicio = (paginaActual - 1) * pedidosPorPagina;
+    return pedidos.slice(inicio, inicio + pedidosPorPagina);
+  }, [pedidos, paginaActual, pedidosPorPagina]);
+
+  const inicioVisible = pedidos.length === 0 ? 0 : (paginaActual - 1) * pedidosPorPagina + 1;
+  const finVisible = Math.min(paginaActual * pedidosPorPagina, pedidos.length);
 
   return (
+    <>
     <div className="pedidos-tabla-wrap">
       <table className="pedidos-tabla-compacta">
         <thead>
@@ -194,7 +215,7 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
           </tr>
         </thead>
         <tbody>
-          {pedidos.map((pedido) => {
+          {pedidosPagina.map((pedido) => {
             const estadoNormalizado = obtenerEstadoPedido(pedido);
             const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
             const linkCliente = telefonoCliente
@@ -202,7 +223,7 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
               : "#";
 
             return (
-              <tr key={pedido.id} className={estadoNormalizado === "Finalizado" ? "fila-finalizada" : ""}>
+              <tr key={pedido.id} className={estadoNormalizado === "Finalizado" ? "fila-finalizada" : estadoNormalizado === "Borrado" ? "fila-borrada" : ""}>
                 <td className="td-codigo">
                   <strong>#{obtenerCodigoPedido(pedido)}</strong>
                 </td>
@@ -217,7 +238,9 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
                 <td>{pedido.tipo_pago || "—"}</td>
                 <td className="td-total">{dinero(pedido.total)}</td>
                 <td className="td-acciones">
-                  {estadoNormalizado !== "Finalizado" ? (
+                  {estadoNormalizado === "Borrado" ? (
+                    <span className="mini-estado-borrado">Borrado</span>
+                  ) : estadoNormalizado !== "Finalizado" ? (
                     <button
                       type="button"
                       className="mini-btn green"
@@ -239,14 +262,16 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
                   ) : (
                     <button type="button" className="mini-btn" disabled>Sin tel.</button>
                   )}
-                  <button
-                    type="button"
-                    className="mini-btn danger"
-                    onClick={() => onEliminarPedido?.(pedido.id)}
-                    disabled={eliminandoPedidoId === pedido.id}
-                  >
-                    {eliminandoPedidoId === pedido.id ? "Eliminando..." : "Eliminar"}
-                  </button>
+                  {estadoNormalizado !== "Borrado" && onEliminarPedido && (
+                    <button
+                      type="button"
+                      className="mini-btn danger"
+                      onClick={() => onEliminarPedido?.(pedido.id)}
+                      disabled={eliminandoPedidoId === pedido.id}
+                    >
+                      {eliminandoPedidoId === pedido.id ? "Borrando..." : "Borrar"}
+                    </button>
+                  )}
                 </td>
               </tr>
             );
@@ -254,6 +279,34 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
         </tbody>
       </table>
     </div>
+
+    {pedidos.length > pedidosPorPagina && (
+      <div className="paginacion-pedidos">
+        <span>
+          Mostrando {inicioVisible}-{finVisible} de {pedidos.length}
+        </span>
+        <div className="paginacion-botones">
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+            disabled={paginaActual === 1}
+          >
+            ← Anterior
+          </button>
+          <strong>Página {paginaActual} de {totalPaginas}</strong>
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+            disabled={paginaActual === totalPaginas}
+          >
+            Siguiente →
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

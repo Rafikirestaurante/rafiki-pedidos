@@ -426,7 +426,13 @@ export function agruparPlatosPorCategoria(platos) {
 }
 
 export function obtenerEstadoPedido(pedido) {
-  if (pedido.estado === "Finalizado" || pedido.estado === "Entregado") {
+  const estado = String(pedido?.estado || "").trim().toLowerCase();
+
+  if (["borrado", "borrados", "eliminado", "eliminados", "cancelado", "cancelados", "anulado", "anulados"].includes(estado)) {
+    return "Borrado";
+  }
+
+  if (["finalizado", "finalizados", "entregado", "entregados"].includes(estado)) {
     return "Finalizado";
   }
 
@@ -913,15 +919,17 @@ export function imprimirTicketPedido(pedido) {
 export function consolidarPedidos(pedidos) {
   const resumen = {};
 
-  pedidos.forEach((pedido) => {
-    obtenerItemsPedido(pedido).forEach((item) => {
-      const nombre = item.plato || item.proteina || item.producto || item.nombre;
+  pedidos
+    .filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado")
+    .forEach((pedido) => {
+      obtenerItemsPedido(pedido).forEach((item) => {
+        const nombre = item.plato || item.proteina || item.producto || item.nombre;
 
-      if (nombre) {
-        resumen[nombre] = (resumen[nombre] || 0) + (Number(item.cantidad) || 0);
-      }
+        if (nombre) {
+          resumen[nombre] = (resumen[nombre] || 0) + (Number(item.cantidad) || 0);
+        }
+      });
     });
-  });
 
   return resumen;
 }

@@ -171,7 +171,7 @@ export default function PanelRafaPrivado() {
     };
   }, [rangoRafa]);
 
-  const pedidosValidos = pedidosRafa.filter((pedido) => obtenerEstadoPedido(pedido) !== "Cancelado");
+  const pedidosValidos = pedidosRafa.filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado");
   const resumenVentas = crearResumenVentas(pedidosValidos);
   const totalVentas = resumenVentas.restaurante.total + resumenVentas.cafeteria.total;
   const totalPedidos = pedidosValidos.length;
