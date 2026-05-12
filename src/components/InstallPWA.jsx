@@ -4,12 +4,12 @@ export default function InstallPWA() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
-  const [isAdminPage, setIsAdminPage] = useState(false);
+  const [isInstallablePage, setIsInstallablePage] = useState(false);
 
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     setIsStandalone(Boolean(standalone));
-    setIsAdminPage(window.location.pathname.startsWith('/admin'));
+    setIsInstallablePage(window.location.pathname.startsWith('/mesas') || window.location.pathname.startsWith('/admin'));
 
     const handleBeforeInstallPrompt = (event) => {
       event.preventDefault();
@@ -45,9 +45,9 @@ export default function InstallPWA() {
     }
   };
 
-  // La instalación solo se ofrece desde el panel administrativo.
-  // Al instalarla, la app abrirá directamente en /admin por el start_url del manifest.
-  if (!isAdminPage) return null;
+  // La instalación se ofrece principalmente desde Panel Mesas.
+  // El manifest abre la app instalada directamente en /mesas.
+  if (!isInstallablePage) return null;
   if (isStandalone) return null;
   if (!installPrompt && !isIOS) return null;
 
@@ -70,7 +70,7 @@ export default function InstallPWA() {
           cursor: 'pointer'
         }}
       >
-        Instalar panel
+        Instalar app
       </button>
 
       {showIOSHelp && (
@@ -88,7 +88,7 @@ export default function InstallPWA() {
             border: '1px solid #fed7aa'
           }}
         >
-          <div style={{ fontWeight: 800, marginBottom: 6 }}>Instalar panel en iPhone</div>
+          <div style={{ fontWeight: 800, marginBottom: 6 }}>Instalar app en iPhone</div>
           <div style={{ fontSize: 14, lineHeight: 1.4 }}>
             Toca el botón compartir de Safari y luego selecciona “Agregar a pantalla de inicio”.
           </div>

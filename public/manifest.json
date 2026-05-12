@@ -1,9 +1,9 @@
 {
-  "id": "/admin",
-  "name": "Rafiki Pedidos Admin",
-  "short_name": "Rafiki Admin",
-  "description": "Panel administrativo de Rafiki Pedidos para gestionar solicitudes, productos pendientes y menú diario.",
-  "start_url": "/admin?app=admin",
+  "id": "/mesas",
+  "name": "Rafiki Mesas",
+  "short_name": "Rafiki Mesas",
+  "description": "Panel de mesas de Rafiki Pedidos para tomar pedidos internos de forma rápida.",
+  "start_url": "/mesas?app=mesas",
   "scope": "/",
   "display": "standalone",
   "display_override": [

@@ -2,19 +2,9 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import InstallPWA from "./components/InstallPWA.jsx";
+import { registerServiceWorker } from "./registerSW.js";
 
-// Limpieza defensiva: si quedó un service worker viejo instalado, puede servir archivos viejos.
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations?.().then((registrations) => {
-    registrations.forEach((registration) => registration.unregister());
-  }).catch(() => {});
-}
-
-if ("caches" in window) {
-  caches.keys?.().then((keys) => {
-    keys.forEach((key) => caches.delete(key));
-  }).catch(() => {});
-}
+registerServiceWorker();
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

@@ -1,6 +1,7 @@
-const CACHE_NAME = 'rafiki-pedidos-admin-v8';
+const CACHE_NAME = 'rafiki-pedidos-mesas-v1';
 const APP_SHELL = [
   '/',
+  '/mesas',
   '/admin',
   '/index.html',
   '/manifest.json',
@@ -48,7 +49,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }
         return response;
-      });
+      }).catch(() => cached);
     })
   );
 });
