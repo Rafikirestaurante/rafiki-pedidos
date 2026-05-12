@@ -709,7 +709,7 @@ export default function App() {
               ? item.acompanantes
               : acompanantes || []
           ),
-          observacionAcompanantes: "",
+          observacionAcompanantes: item.observacionAcompanantes || "",
           paraLlevar: Boolean(modoLlevar)
         };
       });
