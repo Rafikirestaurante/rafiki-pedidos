@@ -1,4 +1,14 @@
 import { VALOR_PARA_LLEVAR, VALOR_PARA_LLEVAR_DESAYUNO, MAX_ACOMPANANTES_CLIENTE, INCLUIDOS_FIJOS, menuFallback } from "../data/menuAlmuerzos";
+import {
+  CAFETERIA_PARFAIT_TAMANOS,
+  CAFETERIA_BATIDOS_CREMOSOS_TAMANOS,
+  CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS,
+  CAFETERIA_DESAYUNOS,
+  CAFETERIA_OTROS_DESAYUNOS,
+  CAFETERIA_SANDWICHES,
+  CAFETERIA_BEBIDAS_CALIENTES,
+  CAFETERIA_POSTRES
+} from "../data/menuCafeteria";
 
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
@@ -200,14 +210,45 @@ export function esSopaParaLlevarGratis(item) {
   return nombresGratis.includes(nombre);
 }
 
+export function esItemCafeteria(item) {
+  if (!item) return false;
+
+  if (item.categoria === "cafeteria" || item.area === "cafeteria") return true;
+
+  const tipo = normalizarTexto(item.tipo);
+  const nombre = normalizarTexto(item.producto || item.plato || item.proteina || item.nombre);
+
+  const palabrasCafeteria = [
+    "batido",
+    "jugo",
+    "parfait",
+    "desayuno",
+    "sandwich",
+    "sanduche",
+    "sandwich",
+    "bebida caliente",
+    "postre",
+    "comida",
+    "cafe",
+    "capuchino",
+    "aromatica",
+    "fresas con crema",
+    "ensalada de frutas",
+    "dedito",
+    "empanada"
+  ];
+
+  return palabrasCafeteria.some((palabra) => tipo.includes(palabra) || nombre.includes(palabra));
+}
+
 export function esDesayunoCafeteria(item) {
-  return item?.categoria === "cafeteria" && normalizarTexto(item?.tipo).includes("desayuno");
+  return esItemCafeteria(item) && normalizarTexto(item?.tipo).includes("desayuno");
 }
 
 export function valorParaLlevarItem(item) {
   if (!item?.paraLlevar) return 0;
 
-  if (item?.categoria === "cafeteria") {
+  if (esItemCafeteria(item)) {
     return esDesayunoCafeteria(item) ? VALOR_PARA_LLEVAR_DESAYUNO : 0;
   }
 
@@ -428,9 +469,55 @@ export function crearItemNuevo() {
   };
 }
 
+function buscarPrecioCanonical(lista, nombreNormalizado) {
+  const encontrado = lista.find((item) => normalizarTexto(item.nombre) === nombreNormalizado);
+  return encontrado ? Number(encontrado.precio) || 0 : 0;
+}
+
+export function precioBaseItem(item) {
+  const precioActual = Number(item?.precio || item?.precioPlato || item?.precioProteina || 0);
+
+  if (!esItemCafeteria(item)) return precioActual;
+
+  const tipo = normalizarTexto(item?.tipo);
+  const nombreCompleto = normalizarTexto(item?.producto || item?.plato || item?.proteina || item?.nombre);
+
+  if (tipo.includes("batido cremoso")) {
+    const tamano = normalizarTexto(item?.tamano || (nombreCompleto.match(/(12 oz|16 oz|22 oz)/)?.[1] || ""));
+    return buscarPrecioCanonical(CAFETERIA_BATIDOS_CREMOSOS_TAMANOS, tamano) || precioActual;
+  }
+
+  if (tipo.includes("batido refrescante") || tipo.includes("jugo tradicional")) {
+    const tamano = normalizarTexto(item?.tamano || (nombreCompleto.match(/(12 oz|16 oz|22 oz)/)?.[1] || ""));
+    return buscarPrecioCanonical(CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS, tamano) || precioActual;
+  }
+
+  if (tipo.includes("parfait")) {
+    const tamano = normalizarTexto(item?.tamano || (nombreCompleto.match(/(12 oz|16 oz|22 oz)/)?.[1] || ""));
+    const extraFrutas = Number(item?.extraFrutas || 0);
+    return (buscarPrecioCanonical(CAFETERIA_PARFAIT_TAMANOS, tamano) || (precioActual - extraFrutas)) + extraFrutas;
+  }
+
+  if (tipo.includes("desayuno")) {
+    const nombreDesayuno = normalizarTexto(item?.producto || item?.plato || item?.proteina);
+    const precioDesayuno = buscarPrecioCanonical([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], nombreDesayuno);
+    const adicionales = Array.isArray(item?.adicionales)
+      ? item.adicionales.reduce((suma, adicional) => suma + Number(adicional.precio || 0), 0)
+      : 0;
+    return precioDesayuno ? precioDesayuno + adicionales : precioActual;
+  }
+
+  const precioProductoSimple = buscarPrecioCanonical(
+    [...CAFETERIA_SANDWICHES, ...CAFETERIA_BEBIDAS_CALIENTES, ...CAFETERIA_POSTRES],
+    nombreCompleto
+  );
+
+  return precioProductoSimple || precioActual;
+}
+
 export function calcularTotalItem(item) {
   const cantidad = Number(item.cantidad) || 0;
-  const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
+  const precio = precioBaseItem(item);
   const adicional = valorParaLlevarItem(item);
 
   return cantidad * (precio + adicional);
