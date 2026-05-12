@@ -15,8 +15,6 @@ import {
   obtenerItemsPedido,
   imprimirTicketPedido
 } from "../utils/pedidos";
-import { EstadoBadge } from "./common";
-import { estadosPedido } from "../data/menuAlmuerzos";
 
 export function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado }) {
   const items = obtenerItemsPedido(pedido);
@@ -32,8 +30,6 @@ export function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false,
           Pedido #{obtenerCodigoPedido(pedido)}
         </div>
         <div className="pedido-header-right">
-          {!revisado && <span className="badge badge-nuevo">Nuevo</span>}
-          <EstadoBadge estado={pedido.estado} />
           <strong style={{ color: "white", fontSize: 20, fontFamily: "'Fraunces', serif" }}>{dinero(pedido.total)}</strong>
         </div>
       </div>
@@ -124,26 +120,17 @@ export function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false,
       )}
 
       <div className="pedido-actions">
-        <select
-          value={estadoNormalizado}
-          onChange={(e) => onCambiarEstado(pedido.id, e.target.value)}
-          disabled={guardandoEstado}
-        >
-          {estadosPedido.map((estado) => (
-            <option key={estado} value={estado}>
-              {estado}
-            </option>
-          ))}
-        </select>
-
-        {!revisado && (
+        {estadoNormalizado !== "Finalizado" ? (
           <button
             type="button"
-            className="button warning"
-            onClick={() => onMarcarRevisado?.(pedido.id)}
+            className="button green"
+            onClick={() => onCambiarEstado?.(pedido.id, "Finalizado")}
+            disabled={guardandoEstado}
           >
-            Marcar revisado
+            {guardandoEstado ? "Guardando..." : "Entregado"}
           </button>
+        ) : (
+          <span className="mini-estado-finalizado">Entregado</span>
         )}
 
         {telefonoCliente ? (
@@ -189,8 +176,7 @@ export function resumirItemsPedidoCompacto(pedido) {
   }).join(" | ");
 }
 
-export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, pedidosRevisados, onMarcarRevisado, onEliminarPedido, eliminandoPedidoId }) {
-  const revisadosSet = new Set(pedidosRevisados.map(String));
+export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId }) {
 
   return (
     <div className="pedidos-tabla-wrap">
@@ -210,17 +196,15 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
         <tbody>
           {pedidos.map((pedido) => {
             const estadoNormalizado = obtenerEstadoPedido(pedido);
-            const revisado = revisadosSet.has(String(pedido.id));
             const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
             const linkCliente = telefonoCliente
               ? crearLinkWhatsApp(telefonoCliente, crearMensajePedidoListo(pedido))
               : "#";
 
             return (
-              <tr key={pedido.id} className={`${estadoNormalizado === "Finalizado" ? "fila-finalizada" : ""} ${!revisado ? "fila-nueva" : ""}`}>
+              <tr key={pedido.id} className={estadoNormalizado === "Finalizado" ? "fila-finalizada" : ""}>
                 <td className="td-codigo">
                   <strong>#{obtenerCodigoPedido(pedido)}</strong>
-                  {!revisado && <span>Nuevo</span>}
                 </td>
                 <td>{formatearFechaHora(pedido.created_at)}</td>
                 <td>

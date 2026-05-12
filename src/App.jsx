@@ -21,7 +21,6 @@ import {
   esDispositivoMovil,
   fechaISOColombia,
   formatearFechaHora,
-  guardarPedidosRevisadosLocal,
   guardarSesionTemporal,
   limpiarAcompanantesCliente,
   limpiarAcompanantesMenu,
@@ -41,7 +40,6 @@ import {
   pedidoEsDeHoy,
   platosATexto,
   textoAPlatosDetalle,
-  cargarPedidosRevisadosLocal
 } from "./utils/pedidos";
 
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
@@ -108,7 +106,6 @@ export default function App() {
   const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
   const [eliminandoPedidoId, setEliminandoPedidoId] = useState(null);
   const [recargaPedidos, setRecargaPedidos] = useState(0);
-  const [pedidosRevisados, setPedidosRevisados] = useState(cargarPedidosRevisadosLocal);
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
   const [sonidoActivado, setSonidoActivado] = useState(false);
   const [platosTexto, setPlatosTexto] = useState("");
@@ -116,7 +113,6 @@ export default function App() {
   const mensajeTimer = useRef(null);
   const mensajeMenuTimer = useRef(null);
   const menuHashRef = useRef("");
-  const pedidosRevisadosRef = useRef(pedidosRevisados);
   const audioCtxRef = useRef(null);
   const alertaPedidoTimer = useRef(null);
 
@@ -157,11 +153,6 @@ export default function App() {
       }
     }, 160);
   }
-
-  useEffect(() => {
-    pedidosRevisadosRef.current = pedidosRevisados;
-    guardarPedidosRevisadosLocal(pedidosRevisados);
-  }, [pedidosRevisados]);
 
   useEffect(() => {
     return () => {
@@ -232,16 +223,6 @@ export default function App() {
     alertaPedidoTimer.current = setTimeout(() => setAlertaPedidoNuevo(null), 12000);
   }
 
-  function marcarPedidoRevisado(id) {
-    setPedidosRevisados((actual) => Array.from(new Set([...actual, String(id)])));
-  }
-
-  function marcarTodosPedidosRevisados() {
-    const ids = pedidosFiltrados.map((pedido) => String(pedido.id));
-    setPedidosRevisados((actual) => Array.from(new Set([...actual, ...ids])));
-    setAlertaPedidoNuevo(null);
-  }
-
   useEffect(() => {
     function manejarCambioRuta() {
       const vistaRuta = obtenerVistaInicial();
@@ -303,10 +284,6 @@ export default function App() {
     return pedidosFiltrados.filter((pedido) => obtenerEstadoPedido(pedido) === "Finalizado");
   }, [pedidosFiltrados]);
 
-  const pedidosSinRevisar = useMemo(() => {
-    const revisados = new Set(pedidosRevisados.map(String));
-    return pedidosFiltrados.filter((pedido) => !revisados.has(String(pedido.id)));
-  }, [pedidosFiltrados, pedidosRevisados]);
 
   const consolidado = useMemo(() => consolidarPedidos(pedidosFiltrados), [pedidosFiltrados]);
 
@@ -476,7 +453,7 @@ export default function App() {
             });
           }
 
-          if (hoy && !pedidosRevisadosRef.current.map(String).includes(String(nuevoPedido.id))) {
+          if (hoy) {
             reproducirSonidoPedido();
             mostrarAlertaPedidoNuevo(nuevoPedido);
           }
@@ -941,7 +918,6 @@ export default function App() {
       }
 
       setPedidos((actual) => actual.filter((pedido) => pedido.id !== id));
-      setPedidosRevisados((actual) => actual.filter((pedidoId) => String(pedidoId) !== String(id)));
       mostrarMensaje(`Pedido #${codigoPedido} eliminado correctamente.`, "success");
     } finally {
       setEliminandoPedidoId(null);
@@ -2001,26 +1977,12 @@ export default function App() {
                         <strong>🔔 Nuevo pedido #{obtenerCodigoPedido(alertaPedidoNuevo)}</strong>
                         <span>{obtenerCliente(alertaPedidoNuevo)} · {dinero(alertaPedidoNuevo.total)}</span>
                       </div>
-                      <button type="button" onClick={() => marcarPedidoRevisado(alertaPedidoNuevo.id)}>
-                        Marcar revisado
+                      <button type="button" onClick={() => setAlertaPedidoNuevo(null)}>
+                        Cerrar
                       </button>
                     </div>
                   )}
 
-                  <div className="contador-sin-revisar">
-                    <div>
-                      <span>Pedidos sin revisar</span>
-                      <strong>{pedidosSinRevisar.length}</strong>
-                    </div>
-                    <button
-                      type="button"
-                      className="button light"
-                      onClick={marcarTodosPedidosRevisados}
-                      disabled={pedidosSinRevisar.length === 0}
-                    >
-                      Marcar todos como revisados
-                    </button>
-                  </div>
 
                   <div className="filtros-historial">
                     <button
@@ -2077,8 +2039,6 @@ export default function App() {
                         pedidos={pedidosPendientes}
                         onCambiarEstado={cambiarEstadoPedido}
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-                        pedidosRevisados={pedidosRevisados}
-                        onMarcarRevisado={marcarPedidoRevisado}
                         onEliminarPedido={eliminarPedidoConClave}
                         eliminandoPedidoId={eliminandoPedidoId}
                       />
@@ -2098,8 +2058,6 @@ export default function App() {
                         pedidos={pedidosFinalizados}
                         onCambiarEstado={cambiarEstadoPedido}
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-                        pedidosRevisados={pedidosRevisados}
-                        onMarcarRevisado={marcarPedidoRevisado}
                         onEliminarPedido={eliminarPedidoConClave}
                         eliminandoPedidoId={eliminandoPedidoId}
                       />
