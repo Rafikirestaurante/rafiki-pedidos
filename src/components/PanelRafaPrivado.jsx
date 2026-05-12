@@ -1,6 +1,108 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { consolidarPedidos, dinero, fechaISOColombia, obtenerEstadoPedido } from "../utils/pedidos";
+import {
+  calcularTotalItem,
+  dinero,
+  fechaISOColombia,
+  obtenerEstadoPedido,
+  obtenerItemsPedido
+} from "../utils/pedidos";
+
+function normalizarTexto(valor) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function sumarEnMapa(mapa, clave, cantidad, total) {
+  const nombre = clave || "Sin clasificar";
+  const actual = mapa.get(nombre) || { nombre, cantidad: 0, total: 0 };
+  actual.cantidad += Number(cantidad) || 0;
+  actual.total += Number(total) || 0;
+  mapa.set(nombre, actual);
+}
+
+function ordenarResumen(mapa) {
+  return Array.from(mapa.values()).sort((a, b) => b.total - a.total || b.cantidad - a.cantidad);
+}
+
+function crearResumenVentas(pedidos) {
+  const resumen = {
+    restaurante: { total: 0, cantidad: 0 },
+    cafeteria: { total: 0, cantidad: 0 },
+    subcategoriasCafeteria: new Map(),
+    proteinas: new Map(),
+    acompanantes: new Map(),
+    tabla: new Map()
+  };
+
+  pedidos.forEach((pedido) => {
+    const items = obtenerItemsPedido(pedido);
+
+    if (!items.length) {
+      const totalPedido = Number(pedido.total) || 0;
+      resumen.restaurante.total += totalPedido;
+      resumen.restaurante.cantidad += 1;
+      sumarEnMapa(resumen.tabla, "Restaurante · Sin detalle", 1, totalPedido);
+      return;
+    }
+
+    items.forEach((item) => {
+      const cantidad = Number(item.cantidad) || 1;
+      const totalItem = calcularTotalItem(item);
+      const esCafeteria = item.categoria === "cafeteria";
+
+      if (esCafeteria) {
+        const tipo = item.tipo || "Cafetería";
+        resumen.cafeteria.total += totalItem;
+        resumen.cafeteria.cantidad += cantidad;
+        sumarEnMapa(resumen.subcategoriasCafeteria, tipo, cantidad, totalItem);
+        sumarEnMapa(resumen.tabla, `Cafetería · ${tipo}`, cantidad, totalItem);
+        return;
+      }
+
+      const proteina = item.plato || item.proteina || item.producto || "Almuerzo";
+      resumen.restaurante.total += totalItem;
+      resumen.restaurante.cantidad += cantidad;
+      sumarEnMapa(resumen.proteinas, proteina, cantidad, totalItem);
+      sumarEnMapa(resumen.tabla, "Restaurante · Almuerzos", cantidad, totalItem);
+
+      if (Array.isArray(item.acompanantes)) {
+        item.acompanantes.forEach((acompanante) => {
+          if (!acompanante) return;
+          if (normalizarTexto(acompanante) === "con todo") return;
+          sumarEnMapa(resumen.acompanantes, acompanante, cantidad, 0);
+        });
+      }
+    });
+  });
+
+  return {
+    restaurante: resumen.restaurante,
+    cafeteria: resumen.cafeteria,
+    subcategoriasCafeteria: ordenarResumen(resumen.subcategoriasCafeteria),
+    proteinas: ordenarResumen(resumen.proteinas),
+    acompanantes: ordenarResumen(resumen.acompanantes).sort((a, b) => b.cantidad - a.cantidad),
+    tabla: ordenarResumen(resumen.tabla)
+  };
+}
+
+function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTotal = true }) {
+  if (!items.length) return <p className="muted">{vacio}</p>;
+
+  return (
+    <ul className="simple-list">
+      {items.map((item) => (
+        <li key={item.nombre}>
+          <span>{item.nombre}</span>
+          <strong>{item.cantidad} {mostrarTotal ? `· ${dinero(item.total)}` : ""}</strong>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function PanelRafaPrivado() {
   const hoy = fechaISOColombia();
@@ -70,12 +172,11 @@ export default function PanelRafaPrivado() {
   }, [rangoRafa]);
 
   const pedidosValidos = pedidosRafa.filter((pedido) => obtenerEstadoPedido(pedido) !== "Cancelado");
-  const totalVentas = pedidosValidos.reduce((suma, pedido) => suma + (Number(pedido.total) || 0), 0);
+  const resumenVentas = crearResumenVentas(pedidosValidos);
+  const totalVentas = resumenVentas.restaurante.total + resumenVentas.cafeteria.total;
   const totalPedidos = pedidosValidos.length;
   const pendientes = pedidosValidos.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente").length;
   const finalizados = pedidosValidos.filter((pedido) => obtenerEstadoPedido(pedido) === "Finalizado").length;
-  const resumenProductos = consolidarPedidos(pedidosValidos);
-  const productosOrdenados = Object.entries(resumenProductos).sort((a, b) => b[1] - a[1]);
   const promedioPedido = totalPedidos > 0 ? totalVentas / totalPedidos : 0;
   const tituloPeriodo = modoFecha === "rango"
     ? `${rangoRafa.inicioTexto} al ${rangoRafa.finTexto}`
@@ -86,54 +187,34 @@ export default function PanelRafaPrivado() {
       <div className="admin-top-row">
         <div>
           <h2>🔒 Panel Rafa</h2>
-          <p className="muted">Espacio privado para revisar información gerencial del restaurante.</p>
+          <p className="muted">Resumen gerencial de ventas por restaurante, cafetería y subcategorías.</p>
         </div>
       </div>
 
       <div className="soft-box" style={{ marginBottom: 16 }}>
         <h3>Seleccionar periodo</h3>
         <div className="filtros-historial" style={{ marginTop: 10 }}>
-          <button
-            type="button"
-            onClick={() => setModoFecha("dia")}
-            className={modoFecha === "dia" ? "active" : ""}
-          >
+          <button type="button" onClick={() => setModoFecha("dia")} className={modoFecha === "dia" ? "active" : ""}>
             Un día
           </button>
-          <button
-            type="button"
-            onClick={() => setModoFecha("rango")}
-            className={modoFecha === "rango" ? "active" : ""}
-          >
+          <button type="button" onClick={() => setModoFecha("rango")} className={modoFecha === "rango" ? "active" : ""}>
             Varios días
           </button>
 
           {modoFecha === "dia" ? (
             <label className="calendario-filtro">
               <span>Fecha</span>
-              <input
-                type="date"
-                value={fechaRafa}
-                onChange={(e) => setFechaRafa(e.target.value)}
-              />
+              <input type="date" value={fechaRafa} onChange={(e) => setFechaRafa(e.target.value)} />
             </label>
           ) : (
             <>
               <label className="calendario-filtro">
                 <span>Desde</span>
-                <input
-                  type="date"
-                  value={fechaInicioRafa}
-                  onChange={(e) => setFechaInicioRafa(e.target.value)}
-                />
+                <input type="date" value={fechaInicioRafa} onChange={(e) => setFechaInicioRafa(e.target.value)} />
               </label>
               <label className="calendario-filtro">
                 <span>Hasta</span>
-                <input
-                  type="date"
-                  value={fechaFinRafa}
-                  onChange={(e) => setFechaFinRafa(e.target.value)}
-                />
+                <input type="date" value={fechaFinRafa} onChange={(e) => setFechaFinRafa(e.target.value)} />
               </label>
             </>
           )}
@@ -147,52 +228,69 @@ export default function PanelRafaPrivado() {
       {cargandoRafa && <div className="alert alert-info">Cargando informe...</div>}
 
       <div className="admin-stats">
-        <div className="stat-card">
-          <span>Ventas</span>
-          <strong>{dinero(totalVentas)}</strong>
-        </div>
-        <div className="stat-card">
-          <span>Pedidos</span>
-          <strong>{totalPedidos}</strong>
-        </div>
-        <div className="stat-card">
-          <span>Promedio</span>
-          <strong>{dinero(promedioPedido)}</strong>
-        </div>
-        <div className="stat-card">
-          <span>Pendientes</span>
-          <strong>{pendientes}</strong>
-        </div>
+        <div className="stat-card"><span>Total vendido</span><strong>{dinero(totalVentas)}</strong></div>
+        <div className="stat-card"><span>Restaurante</span><strong>{dinero(resumenVentas.restaurante.total)}</strong></div>
+        <div className="stat-card"><span>Cafetería</span><strong>{dinero(resumenVentas.cafeteria.total)}</strong></div>
+        <div className="stat-card"><span>Pedidos</span><strong>{totalPedidos}</strong></div>
+        <div className="stat-card"><span>Promedio</span><strong>{dinero(promedioPedido)}</strong></div>
+        <div className="stat-card"><span>Finalizados</span><strong>{finalizados}</strong></div>
       </div>
 
       <div className="grid-2">
         <div className="soft-box">
-          <h3>Resumen del periodo</h3>
-          <p><strong>Finalizados:</strong> {finalizados}</p>
-          <p><strong>Pendientes:</strong> {pendientes}</p>
-          <p><strong>Total pedidos:</strong> {totalPedidos}</p>
-          <p><strong>Total vendido:</strong> {dinero(totalVentas)}</p>
+          <h3>🍽️ Restaurante</h3>
+          <p><strong>Total vendido:</strong> {dinero(resumenVentas.restaurante.total)}</p>
+          <p><strong>Almuerzos vendidos:</strong> {resumenVentas.restaurante.cantidad}</p>
+          <p><strong>Pendientes:</strong> {pendientes} · <strong>Finalizados:</strong> {finalizados}</p>
         </div>
 
         <div className="soft-box">
-          <h3>Productos más pedidos</h3>
-          {productosOrdenados.length === 0 ? (
-            <p className="muted">Todavía no hay productos para resumir en este periodo.</p>
-          ) : (
-            <ul className="simple-list">
-              {productosOrdenados.slice(0, 12).map(([producto, cantidad]) => (
-                <li key={producto}>
-                  <span>{producto}</span>
-                  <strong>{cantidad}</strong>
-                </li>
-              ))}
-            </ul>
-          )}
+          <h3>☕ Cafetería</h3>
+          <p><strong>Total vendido:</strong> {dinero(resumenVentas.cafeteria.total)}</p>
+          <p><strong>Productos vendidos:</strong> {resumenVentas.cafeteria.cantidad}</p>
+          <ListaResumen items={resumenVentas.subcategoriasCafeteria} />
         </div>
+      </div>
+
+      <div className="grid-2" style={{ marginTop: 22 }}>
+        <div className="soft-box">
+          <h3>Proteínas más vendidas</h3>
+          <ListaResumen items={resumenVentas.proteinas.slice(0, 12)} />
+        </div>
+
+        <div className="soft-box">
+          <h3>Acompañantes más usados</h3>
+          <ListaResumen items={resumenVentas.acompanantes.slice(0, 12)} mostrarTotal={false} />
+        </div>
+      </div>
+
+      <div className="soft-box" style={{ marginTop: 22 }}>
+        <h3>Tabla consolidada</h3>
+        {resumenVentas.tabla.length === 0 ? (
+          <p className="muted">Todavía no hay ventas para este periodo.</p>
+        ) : (
+          <div className="pedidos-tabla-wrap">
+            <table className="pedidos-tabla-compacta">
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  <th>Cantidad</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resumenVentas.tabla.map((fila) => (
+                  <tr key={fila.nombre}>
+                    <td><strong>{fila.nombre}</strong></td>
+                    <td>{fila.cantidad}</td>
+                    <td className="td-total">{dinero(fila.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </section>
   );
 }
-
-
-
