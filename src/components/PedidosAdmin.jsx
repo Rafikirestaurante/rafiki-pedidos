@@ -189,7 +189,7 @@ export function resumirItemsPedidoCompacto(pedido) {
   }).join(" | ");
 }
 
-export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, pedidosRevisados, onMarcarRevisado }) {
+export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, pedidosRevisados, onMarcarRevisado, onEliminarPedido, eliminandoPedidoId }) {
   const revisadosSet = new Set(pedidosRevisados.map(String));
 
   return (
@@ -204,7 +204,6 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
             <th>Obs.</th>
             <th>Pago</th>
             <th>Total</th>
-            <th>Estado</th>
             <th>Acción</th>
           </tr>
         </thead>
@@ -233,22 +232,18 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
                 <td className="td-obs">{pedido.observaciones || "—"}</td>
                 <td>{pedido.tipo_pago || "—"}</td>
                 <td className="td-total">{dinero(pedido.total)}</td>
-                <td>
-                  <select
-                    value={estadoNormalizado}
-                    onChange={(e) => onCambiarEstado(pedido.id, e.target.value)}
-                    disabled={guardandoEstadoPedidoId === pedido.id}
-                  >
-                    {estadosPedido.map((estado) => (
-                      <option key={estado} value={estado}>{estado}</option>
-                    ))}
-                  </select>
-                </td>
                 <td className="td-acciones">
-                  {!revisado && (
-                    <button type="button" className="mini-btn warning" onClick={() => onMarcarRevisado?.(pedido.id)}>
-                      Revisado
+                  {estadoNormalizado !== "Finalizado" ? (
+                    <button
+                      type="button"
+                      className="mini-btn green"
+                      onClick={() => onCambiarEstado?.(pedido.id, "Finalizado")}
+                      disabled={guardandoEstadoPedidoId === pedido.id}
+                    >
+                      {guardandoEstadoPedidoId === pedido.id ? "Guardando..." : "Entregado"}
                     </button>
+                  ) : (
+                    <span className="mini-estado-finalizado">Entregado</span>
                   )}
                   <button type="button" className="mini-btn print" onClick={() => imprimirTicketPedido(pedido)}>
                     Imprimir
@@ -260,6 +255,14 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
                   ) : (
                     <button type="button" className="mini-btn" disabled>Sin tel.</button>
                   )}
+                  <button
+                    type="button"
+                    className="mini-btn danger"
+                    onClick={() => onEliminarPedido?.(pedido.id)}
+                    disabled={eliminandoPedidoId === pedido.id}
+                  >
+                    {eliminandoPedidoId === pedido.id ? "Eliminando..." : "Eliminar"}
+                  </button>
                 </td>
               </tr>
             );

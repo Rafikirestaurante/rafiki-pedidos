@@ -47,6 +47,7 @@ import {
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
 const CLAVE_ADMIN = import.meta.env.VITE_CLAVE_ADMIN || "";
 const CLAVE_RAFA = import.meta.env.VITE_CLAVE_RAFA || "";
+const CLAVE_ELIMINAR_PEDIDO = import.meta.env.VITE_CLAVE_ELIMINAR_PEDIDO || "1234";
 
 function obtenerVistaInicial() {
   const ruta = window.location.pathname.replace(/\/$/, "") || "/";
@@ -105,6 +106,7 @@ export default function App() {
   const [guardandoPedido, setGuardandoPedido] = useState(false);
   const [guardandoMenu, setGuardandoMenu] = useState(false);
   const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
+  const [eliminandoPedidoId, setEliminandoPedidoId] = useState(null);
   const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [pedidosRevisados, setPedidosRevisados] = useState(cargarPedidosRevisadosLocal);
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
@@ -874,7 +876,7 @@ export default function App() {
     if (estadoNuevo === "Finalizado") {
       const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : "";
       const confirmar = window.confirm(
-        `¿Marcar el pedido #${codigoPedido} como finalizado?`
+        `¿Confirmas que el pedido #${codigoPedido} ya fue entregado?`
       );
 
       if (!confirmar) return;
@@ -896,9 +898,53 @@ export default function App() {
       }
 
       setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
-      mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como ${estadoNuevo}.`, "success");
+      mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como ${estadoNuevo === "Finalizado" ? "Entregado" : estadoNuevo}.`, "success");
     } finally {
       setGuardandoEstadoPedidoId(null);
+    }
+  }
+
+  async function eliminarPedidoConClave(id) {
+    if (eliminandoPedidoId) return;
+
+    const pedidoActual = pedidos.find((pedido) => pedido.id === id);
+    const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
+
+    const confirmar = window.confirm(
+      `¿Seguro que deseas eliminar el pedido #${codigoPedido}?\n\nEsta acción no se puede deshacer.`
+    );
+
+    if (!confirmar) return;
+
+    const claveIngresada = window.prompt(
+      `Ingresa la clave para eliminar el pedido #${codigoPedido}:`
+    );
+
+    if (claveIngresada === null) return;
+
+    if (claveIngresada.trim() !== CLAVE_ELIMINAR_PEDIDO) {
+      mostrarMensaje("Clave incorrecta. El pedido no fue eliminado.", "error");
+      return;
+    }
+
+    setEliminandoPedidoId(id);
+
+    try {
+      const { error } = await supabase
+        .from("pedidos")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        mostrarMensaje(`Error eliminando pedido: ${error.message}`, "error");
+        return;
+      }
+
+      setPedidos((actual) => actual.filter((pedido) => pedido.id !== id));
+      setPedidosRevisados((actual) => actual.filter((pedidoId) => String(pedidoId) !== String(id)));
+      mostrarMensaje(`Pedido #${codigoPedido} eliminado correctamente.`, "success");
+    } finally {
+      setEliminandoPedidoId(null);
     }
   }
 
@@ -1214,6 +1260,8 @@ export default function App() {
         .mini-btn.warning { background: #f79e1c; border-color: #f79e1c; color: #fff; }
         .mini-btn.green { background: #16a34a; border-color: #16a34a; color: #fff; }
         .mini-btn.print { background: #111827; border-color: #111827; color: #fff; }
+        .mini-btn.danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+        .mini-btn.danger:disabled { opacity: 0.65; cursor: not-allowed; }
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-sin-revisar { border: 3px solid #f79e1c; box-shadow: 0 12px 34px rgba(247,158,28,0.22); }
         .pedido-finalizado { opacity: 0.7; }
@@ -2009,7 +2057,7 @@ export default function App() {
                     etiqueta="Buscar pedido"
                     value={busqueda}
                     onChange={setBusqueda}
-                    placeholder="Buscar por cliente, ubicación, pago o estado..."
+                    placeholder="Buscar por cliente, ubicación o pago..."
                   />
 
                   <p className="muted small">
@@ -2031,6 +2079,8 @@ export default function App() {
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
                         pedidosRevisados={pedidosRevisados}
                         onMarcarRevisado={marcarPedidoRevisado}
+                        onEliminarPedido={eliminarPedidoConClave}
+                        eliminandoPedidoId={eliminandoPedidoId}
                       />
                     )}
                   </div>
@@ -2050,6 +2100,8 @@ export default function App() {
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
                         pedidosRevisados={pedidosRevisados}
                         onMarcarRevisado={marcarPedidoRevisado}
+                        onEliminarPedido={eliminarPedidoConClave}
+                        eliminandoPedidoId={eliminandoPedidoId}
                       />
                     )}
                   </div>
