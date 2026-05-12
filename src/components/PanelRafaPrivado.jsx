@@ -182,6 +182,126 @@ export default function PanelRafaPrivado() {
     ? `${rangoRafa.inicioTexto} al ${rangoRafa.finTexto}`
     : rangoRafa.inicioTexto;
 
+
+  function escaparHtml(valor) {
+    return String(valor ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function filasResumenPdf(items, mostrarTotal = true) {
+    if (!items.length) {
+      return `<tr><td colspan="${mostrarTotal ? 3 : 2}">Sin datos en este periodo.</td></tr>`;
+    }
+
+    return items.map((item) => `
+      <tr>
+        <td>${escaparHtml(item.nombre)}</td>
+        <td>${Number(item.cantidad) || 0}</td>
+        ${mostrarTotal ? `<td>${dinero(item.total)}</td>` : ""}
+      </tr>
+    `).join("");
+  }
+
+  function generarInformePdfRafa() {
+    const fechaGeneracion = new Date().toLocaleString("es-CO", {
+      dateStyle: "short",
+      timeStyle: "short"
+    });
+
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Informe Rafa - ${escaparHtml(tituloPeriodo)}</title>
+          <style>
+            @page { size: A4; margin: 14mm; }
+            body { font-family: Arial, sans-serif; color: #1f2937; margin: 0; }
+            .header { border-bottom: 3px solid #f97316; padding-bottom: 12px; margin-bottom: 16px; }
+            h1 { margin: 0; color: #c2410c; font-size: 24px; }
+            h2 { color: #c2410c; font-size: 17px; margin: 22px 0 8px; }
+            .muted { color: #6b7280; font-size: 12px; margin-top: 5px; }
+            .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+            .stat { border: 1px solid #fed7aa; background: #fff7ed; border-radius: 12px; padding: 10px; }
+            .stat span { display: block; font-size: 11px; color: #7c2d12; font-weight: bold; text-transform: uppercase; }
+            .stat strong { display: block; font-size: 18px; margin-top: 4px; color: #111827; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; page-break-inside: avoid; }
+            th { background: #f97316; color: white; text-align: left; padding: 8px; font-size: 12px; }
+            td { border: 1px solid #e5e7eb; padding: 7px 8px; font-size: 12px; }
+            tr:nth-child(even) td { background: #fff7ed; }
+            .footer { margin-top: 22px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #6b7280; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Informe Rafa · Rafiki Pedidos</h1>
+            <div class="muted">Periodo: ${escaparHtml(tituloPeriodo)} · Generado: ${escaparHtml(fechaGeneracion)}</div>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><span>Total vendido</span><strong>${dinero(totalVentas)}</strong></div>
+            <div class="stat"><span>Restaurante</span><strong>${dinero(resumenVentas.restaurante.total)}</strong></div>
+            <div class="stat"><span>Cafetería</span><strong>${dinero(resumenVentas.cafeteria.total)}</strong></div>
+            <div class="stat"><span>Pedidos válidos</span><strong>${totalPedidos}</strong></div>
+            <div class="stat"><span>Promedio por pedido</span><strong>${dinero(promedioPedido)}</strong></div>
+            <div class="stat"><span>Finalizados</span><strong>${finalizados}</strong></div>
+          </div>
+
+          <h2>Resumen Restaurante</h2>
+          <table>
+            <tbody>
+              <tr><td><strong>Total vendido restaurante</strong></td><td>${dinero(resumenVentas.restaurante.total)}</td></tr>
+              <tr><td><strong>Almuerzos vendidos</strong></td><td>${resumenVentas.restaurante.cantidad}</td></tr>
+              <tr><td><strong>Pendientes</strong></td><td>${pendientes}</td></tr>
+              <tr><td><strong>Finalizados</strong></td><td>${finalizados}</td></tr>
+            </tbody>
+          </table>
+
+          <h2>Resumen Cafetería</h2>
+          <table>
+            <thead><tr><th>Subcategoría</th><th>Cantidad</th><th>Total</th></tr></thead>
+            <tbody>${filasResumenPdf(resumenVentas.subcategoriasCafeteria)}</tbody>
+          </table>
+
+          <h2>Proteínas más vendidas</h2>
+          <table>
+            <thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead>
+            <tbody>${filasResumenPdf(resumenVentas.proteinas.slice(0, 20))}</tbody>
+          </table>
+
+          <h2>Acompañantes más usados</h2>
+          <table>
+            <thead><tr><th>Acompañante</th><th>Cantidad</th></tr></thead>
+            <tbody>${filasResumenPdf(resumenVentas.acompanantes.slice(0, 20), false)}</tbody>
+          </table>
+
+          <h2>Tabla consolidada</h2>
+          <table>
+            <thead><tr><th>Categoría</th><th>Cantidad</th><th>Total</th></tr></thead>
+            <tbody>${filasResumenPdf(resumenVentas.tabla)}</tbody>
+          </table>
+
+          <div class="footer">Los pedidos en estado Borrado no se incluyen en este informe ni en las estadísticas.</div>
+          <script>window.onload = () => { window.print(); };</script>
+        </body>
+      </html>
+    `;
+
+    const ventana = window.open("", "_blank", "width=900,height=700");
+    if (!ventana) {
+      setErrorRafa("El navegador bloqueó la ventana del PDF. Permite ventanas emergentes e intenta de nuevo.");
+      return;
+    }
+
+    ventana.document.open();
+    ventana.document.write(html);
+    ventana.document.close();
+  }
+
   return (
     <section className="card card-pad">
       <div className="admin-top-row">
@@ -189,6 +309,9 @@ export default function PanelRafaPrivado() {
           <h2>🔒 Panel Rafa</h2>
           <p className="muted">Resumen gerencial de ventas por restaurante, cafetería y subcategorías.</p>
         </div>
+        <button type="button" className="button" onClick={generarInformePdfRafa} disabled={cargandoRafa || pedidosValidos.length === 0}>
+          📄 Generar PDF
+        </button>
       </div>
 
       <div className="soft-box" style={{ marginBottom: 16 }}>

@@ -105,6 +105,7 @@ export default function App() {
   const [guardandoMenu, setGuardandoMenu] = useState(false);
   const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
   const [eliminandoPedidoId, setEliminandoPedidoId] = useState(null);
+  const [finalizandoPendientes, setFinalizandoPendientes] = useState(false);
   const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
   const [sonidoActivado, setSonidoActivado] = useState(false);
@@ -888,6 +889,48 @@ export default function App() {
     }
   }
 
+
+  async function finalizarTodosPendientes() {
+    if (finalizandoPendientes || guardandoEstadoPedidoId) return;
+
+    const pendientesParaFinalizar = pedidosPendientes.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
+
+    if (pendientesParaFinalizar.length === 0) {
+      mostrarMensaje("No hay pedidos pendientes para finalizar.", "warning");
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `¿Confirmas finalizar ${pendientesParaFinalizar.length} pedidos pendientes?\n\nTodos pasarán a Pedidos Finalizados.`
+    );
+
+    if (!confirmar) return;
+
+    setFinalizandoPendientes(true);
+
+    try {
+      const ids = pendientesParaFinalizar.map((pedido) => pedido.id);
+      const { data, error } = await supabase
+        .from("pedidos")
+        .update({ estado: "Finalizado" })
+        .in("id", ids)
+        .select();
+
+      if (error) {
+        mostrarMensaje(`Error finalizando pedidos: ${error.message}`, "error");
+        return;
+      }
+
+      const actualizados = data || [];
+      const mapaActualizados = new Map(actualizados.map((pedido) => [pedido.id, pedido]));
+
+      setPedidos((actual) => actual.map((pedido) => mapaActualizados.get(pedido.id) || pedido));
+      mostrarMensaje(`${actualizados.length || ids.length} pedidos pendientes marcados como entregados.`, "success");
+    } finally {
+      setFinalizandoPendientes(false);
+    }
+  }
+
   async function eliminarPedidoConClave(id) {
     if (eliminandoPedidoId) return;
 
@@ -1201,6 +1244,8 @@ export default function App() {
         .section-heading { display: flex; justify-content: space-between; align-items: center; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px 18px; margin-bottom: 14px; }
         .section-heading h3 { margin: 0; color: #c2410c; font-family: 'Fraunces', serif; }
         .section-heading span { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; min-width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
+        .section-heading-actions { display: inline-flex; align-items: center; gap: 8px; }
+        .section-heading-actions .mini-btn { width: auto; margin-bottom: 0; white-space: nowrap; padding: 8px 10px; }
         .section-heading-danger { background: #fef2f2; border-color: #fecaca; }
         .section-heading-danger h3 { color: #991b1b; }
         .section-heading-danger span { background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 4px 10px rgba(220,38,38,0.22); }
@@ -2055,7 +2100,19 @@ export default function App() {
                   <div className="pedido-seccion">
                     <div className="section-heading">
                       <h3>🟡 Pedidos pendientes</h3>
-                      <span>{pedidosPendientes.length}</span>
+                      <div className="section-heading-actions">
+                        {pedidosPendientes.length > 0 && (
+                          <button
+                            type="button"
+                            className="mini-btn green"
+                            onClick={finalizarTodosPendientes}
+                            disabled={finalizandoPendientes}
+                          >
+                            {finalizandoPendientes ? "Finalizando..." : "Finalizar todos"}
+                          </button>
+                        )}
+                        <span>{pedidosPendientes.length}</span>
+                      </div>
                     </div>
 
                     {pedidosPendientes.length === 0 ? (
