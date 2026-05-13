@@ -4,17 +4,11 @@ import {
   calcularTotalItem,
   dinero,
   fechaISOColombia,
+  normalizarTexto,
   obtenerEstadoPedido,
   obtenerItemsPedido
 } from "../utils/pedidos";
 
-function normalizarTexto(valor) {
-  return String(valor || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
 
 function sumarEnMapa(mapa, clave, cantidad, total) {
   const nombre = clave || "Sin clasificar";

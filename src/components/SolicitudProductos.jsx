@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { generarId } from "../utils/pedidos";
+import { crearLinkWhatsApp, fechaISOColombia, generarId, normalizarTexto } from "../utils/pedidos";
 
 const WHATSAPP_SOLICITUD_INSUMOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_INSUMOS || "";
 
@@ -171,22 +171,7 @@ const productosRestauranteBase = [
 
 const unidadesSolicitud = ["und", "kg", "g", "lb", "paquete", "bolsa", "caja", "litro", "botella"];
 
-function fechaISOColombia(fecha = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Bogota",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(fecha);
-}
 
-function normalizarTexto(texto) {
-  return String(texto || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
 
 function ordenarProductosPorNombre(productos) {
   return [...(productos || [])].sort((a, b) =>
@@ -205,17 +190,6 @@ function ordenarCategoriasPorLista(categorias) {
   });
 }
 
-function crearLinkWhatsApp(numero, mensaje, { abrirApp = false } = {}) {
-  const numeroLimpio = String(numero || "").replace(/\D/g, "");
-  const texto = encodeURIComponent(mensaje || "");
-  const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  if (abrirApp && esMovil) {
-    return `whatsapp://send?phone=${numeroLimpio}&text=${texto}`;
-  }
-
-  return `https://wa.me/${numeroLimpio}?text=${texto}`;
-}
 
 function fechaMananaColombia() {
   const base = new Date(`${fechaISOColombia()}T00:00:00-05:00`);

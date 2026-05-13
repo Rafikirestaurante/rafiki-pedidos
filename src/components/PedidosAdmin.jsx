@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   calcularTotalItem,
   crearLinkWhatsApp,
@@ -16,7 +16,38 @@ import {
   imprimirTicketPedido
 } from "../utils/pedidos";
 
-export function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado }) {
+function esItemCafeteria(item) {
+  return item?.categoria === "cafeteria" || item?.area === "cafeteria";
+}
+
+function obtenerNombreItemCafeteria(item) {
+  const tipo = item.tipo || "Producto cafetería";
+  const producto = item.producto || item.nombre || item.plato || item.proteina || "";
+  return producto ? `${tipo} — ${producto}` : tipo;
+}
+
+function obtenerPrecioUnitarioItem(item) {
+  return Number(item.precioPlato || item.precioProteina || item.precio || 0);
+}
+
+function renderDetalleCafeteria(item) {
+  const filas = [];
+
+  if (item.base) filas.push(["Base", item.base]);
+  if (item.tamano) filas.push(["Tamaño", item.tamano]);
+  if (Array.isArray(item.frutas) && item.frutas.length > 0) filas.push(["Frutas", item.frutas.join(", ")]);
+  if (Number(item.extraFrutas) > 0) filas.push(["Extra frutas", dinero(item.extraFrutas)]);
+  if (item.acompanante) filas.push(["Acompañante", item.acompanante]);
+  if (item.bebida) filas.push(["Bebida", item.bebida]);
+  if (Array.isArray(item.adicionales) && item.adicionales.length > 0) {
+    filas.push(["Adicionales", item.adicionales.map((x) => x.nombre || x).join(", ")]);
+  }
+  if (item.observacionesItem?.trim()) filas.push(["Obs.", item.observacionesItem.trim()]);
+
+  return filas;
+}
+
+function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
@@ -53,17 +84,22 @@ export function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false,
           <div className="pedido-text">{pedido.pedido_texto}</div>
         ) : (
           items.map((item, index) => {
-            const nombre = item.plato || item.proteina || "Plato";
-            const precio = item.precioPlato || item.precioProteina || 0;
+            const itemEsCafeteria = esItemCafeteria(item);
+            const nombre = itemEsCafeteria
+              ? obtenerNombreItemCafeteria(item)
+              : item.plato || item.proteina || "Plato";
+            const precioUnitario = obtenerPrecioUnitarioItem(item);
+            const totalItem = calcularTotalItem(item);
             const esSopa = esCategoriaSopa(item.categoria);
+            const detallesCafeteria = itemEsCafeteria ? renderDetalleCafeteria(item) : [];
 
             return (
-              <div key={item.id || index} className="item-cocina">
+              <div key={item.id || index} className={`item-cocina ${itemEsCafeteria ? "item-cafeteria-admin" : ""}`}>
                 <div className="item-numero">#{index + 1}</div>
 
                 <div className="item-detalle">
                   <h4>
-                    {item.cantidad} x {nombre}
+                    {item.cantidad || 1} x {nombre}
                   </h4>
 
                   {item.categoria && (
@@ -73,39 +109,62 @@ export function PedidoCocina({ pedido, onCambiarEstado, guardandoEstado = false,
                   )}
 
                   <p>
-                    <strong>Precio:</strong> {dinero(precio)}
+                    <strong>Precio:</strong> {dinero(precioUnitario)}
+                    {Number(item.cantidad || 1) > 1 ? ` · Total item: ${dinero(totalItem)}` : ""}
                   </p>
 
-                  {!esSopa && (
-                    <p>
-                      <strong>Acompañantes:</strong>{" "}
-                      {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
-                        ? item.acompanantes.join(", ")
-                        : "Sin acompañantes"}
-                    </p>
-                  )}
+                  {itemEsCafeteria ? (
+                    <>
+                      {detallesCafeteria.length > 0 ? (
+                        detallesCafeteria.map(([etiqueta, valor]) => (
+                          <p key={etiqueta}>
+                            <strong>{etiqueta}:</strong> {valor}
+                          </p>
+                        ))
+                      ) : (
+                        <p>
+                          <strong>Detalle:</strong> {crearTextoItem(item)}
+                        </p>
+                      )}
 
-                  {!esSopa && item.observacionAcompanantes?.trim() && (
-                    <p className="obs-acompanantes-admin">
-                      <strong>Obs. acompañantes:</strong> {item.observacionAcompanantes.trim()}
-                    </p>
-                  )}
+                      <p>
+                        <strong>Empaque:</strong> {textoParaLlevarItem(item)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      {!esSopa && (
+                        <p>
+                          <strong>Acompañantes:</strong>{" "}
+                          {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+                            ? item.acompanantes.join(", ")
+                            : "Sin acompañantes"}
+                        </p>
+                      )}
 
-                  {esSopa && (
-                    <p>
-                      <strong>Acompañantes:</strong> No aplica para sopas
-                    </p>
-                  )}
+                      {!esSopa && item.observacionAcompanantes?.trim() && (
+                        <p className="obs-acompanantes-admin">
+                          <strong>Obs. acompañantes:</strong> {item.observacionAcompanantes.trim()}
+                        </p>
+                      )}
 
-                  {!esSopa && (
-                    <p>
-                      <strong>Incluye:</strong> Sopa + bebida
-                    </p>
-                  )}
+                      {esSopa && (
+                        <p>
+                          <strong>Acompañantes:</strong> No aplica para sopas
+                        </p>
+                      )}
 
-                  <p>
-                    <strong>Empaque:</strong> {textoParaLlevarItem(item)}
-                  </p>
+                      {!esSopa && (
+                        <p>
+                          <strong>Incluye:</strong> Sopa + bebida
+                        </p>
+                      )}
+
+                      <p>
+                        <strong>Empaque:</strong> {textoParaLlevarItem(item)}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -163,6 +222,10 @@ export function resumirItemsPedidoCompacto(pedido) {
   }
 
   return items.map((item) => {
+    if (esItemCafeteria(item)) {
+      return crearTextoItem(item);
+    }
+
     const nombre = item.plato || item.proteina || "Plato";
     const cantidad = item.cantidad || 1;
     const acomp = Array.isArray(item.acompanantes) && item.acompanantes.length > 0
@@ -176,7 +239,7 @@ export function resumirItemsPedidoCompacto(pedido) {
   }).join(" | ");
 }
 
-export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, pedidosPorPagina = 15 }) {
+function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, pedidosPorPagina = 15 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
 
@@ -197,6 +260,14 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
 
   const inicioVisible = pedidos.length === 0 ? 0 : (paginaActual - 1) * pedidosPorPagina + 1;
   const finVisible = Math.min(paginaActual * pedidosPorPagina, pedidos.length);
+
+  const irPaginaAnterior = useCallback(() => {
+    setPaginaActual((pagina) => Math.max(1, pagina - 1));
+  }, []);
+
+  const irPaginaSiguiente = useCallback(() => {
+    setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1));
+  }, [totalPaginas]);
 
   return (
     <>
@@ -289,7 +360,7 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
           <button
             type="button"
             className="mini-btn"
-            onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+            onClick={irPaginaAnterior}
             disabled={paginaActual === 1}
           >
             ← Anterior
@@ -298,7 +369,7 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
           <button
             type="button"
             className="mini-btn"
-            onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+            onClick={irPaginaSiguiente}
             disabled={paginaActual === totalPaginas}
           >
             Siguiente →
@@ -310,3 +381,5 @@ export function TablaPedidosCompacta({ pedidos, onCambiarEstado, guardandoEstado
   );
 }
 
+export const PedidoCocina = React.memo(PedidoCocinaBase);
+export const TablaPedidosCompacta = React.memo(TablaPedidosCompactaBase);

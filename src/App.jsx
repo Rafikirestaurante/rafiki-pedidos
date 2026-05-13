@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./supabaseClient";
 import SolicitudProductos from "./components/SolicitudProductos";
 import GeneradorMenu from "./components/GeneradorMenu";
@@ -117,12 +117,12 @@ export default function App() {
   const audioCtxRef = useRef(null);
   const alertaPedidoTimer = useRef(null);
 
-  function navegar(ruta, nuevaVista) {
+  const navegar = useCallback((ruta, nuevaVista) => {
     actualizarRuta(ruta);
     setVista(nuevaVista);
-  }
+  }, []);
 
-  function mostrarMensaje(texto, tipo = "info") {
+  const mostrarMensaje = useCallback((texto, tipo = "info") => {
     if (mensajeTimer.current) {
       clearTimeout(mensajeTimer.current);
     }
@@ -132,9 +132,9 @@ export default function App() {
     mensajeTimer.current = setTimeout(() => {
       setMensaje({ texto: "", tipo: "info" });
     }, 5000);
-  }
+  }, []);
 
-  function mostrarMensajeMenu(texto, tipo = "info") {
+  const mostrarMensajeMenu = useCallback((texto, tipo = "info") => {
     if (mensajeMenuTimer.current) {
       clearTimeout(mensajeMenuTimer.current);
     }
@@ -144,7 +144,7 @@ export default function App() {
     mensajeMenuTimer.current = setTimeout(() => {
       setMensajeMenu({ texto: "", tipo: "info" });
     }, 6000);
-  }
+  }, []);
 
   function irAElemento(id) {
     setTimeout(() => {
@@ -849,7 +849,7 @@ export default function App() {
     }
   }
 
-  async function cambiarEstadoPedido(id, estado) {
+  const cambiarEstadoPedido = useCallback(async (id, estado) => {
     if (guardandoEstadoPedidoId) return;
 
     const estadoNuevo = estado === "Finalizado" ? "Finalizado" : "Pendiente";
@@ -887,10 +887,10 @@ export default function App() {
     } finally {
       setGuardandoEstadoPedidoId(null);
     }
-  }
+  }, [guardandoEstadoPedidoId, pedidos, mostrarMensaje]);
 
 
-  async function finalizarTodosPendientes() {
+  const finalizarTodosPendientes = useCallback(async () => {
     if (finalizandoPendientes || guardandoEstadoPedidoId) return;
 
     const pendientesParaFinalizar = pedidosPendientes.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
@@ -929,9 +929,9 @@ export default function App() {
     } finally {
       setFinalizandoPendientes(false);
     }
-  }
+  }, [finalizandoPendientes, guardandoEstadoPedidoId, pedidosPendientes, mostrarMensaje]);
 
-  async function eliminarPedidoConClave(id) {
+  const eliminarPedidoConClave = useCallback(async (id) => {
     if (eliminandoPedidoId) return;
 
     const pedidoActual = pedidos.find((pedido) => pedido.id === id);
@@ -974,7 +974,7 @@ export default function App() {
     } finally {
       setEliminandoPedidoId(null);
     }
-  }
+  }, [eliminandoPedidoId, pedidos, mostrarMensaje]);
 
   function abrirPanelAdmin() {
     setErrorClaveAdmin("");
