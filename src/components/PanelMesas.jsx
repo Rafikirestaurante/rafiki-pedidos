@@ -56,7 +56,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("");
   const [modoLlevar, setModoLlevar] = useState(false);
-  const [clienteLlevar, setClienteLlevar] = useState("");
+  const [clientePedido, setClientePedido] = useState("");
   const [telefonoLlevar, setTelefonoLlevar] = useState("");
   const [ubicacionLlevar, setUbicacionLlevar] = useState("");
   const [meseroLocal, setMeseroLocal] = useState("");
@@ -186,7 +186,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
     setItemsMesa([crearItemNuevo()]);
     setMesaLocal("");
     setModoLlevar(false);
-    setClienteLlevar("");
+    setClientePedido("");
     setTelefonoLlevar("");
     setUbicacionLlevar("");
     setMeseroLocal("");
@@ -423,7 +423,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       items: itemsConProducto,
       modoLlevar,
       mesa: modoLlevar ? "Llevar" : mesaLocal,
-      cliente: clienteLlevar,
+      cliente: clientePedido,
       telefono: telefonoLlevar,
       ubicacion: ubicacionLlevar,
       mesero: meseroLocal,
@@ -1076,29 +1076,31 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                   </button>
                 </div>
 
-                {modoLlevar && (
-                  <div className="datos-llevar-grid">
-                    <CampoTexto
-                      etiqueta="Datos del cliente"
-                      value={clienteLlevar}
-                      onChange={(valor) => { setClienteLlevar(valor); setErrorMesa(""); }}
-                      placeholder="Nombre del cliente"
-                    />
-                    <CampoTexto
-                      etiqueta="Teléfono"
-                      value={telefonoLlevar}
-                      onChange={(valor) => { setTelefonoLlevar(valor); setErrorMesa(""); }}
-                      placeholder="Número de contacto"
-                      type="tel"
-                    />
-                    <CampoTexto
-                      etiqueta="Ubicación"
-                      value={ubicacionLlevar}
-                      onChange={(valor) => { setUbicacionLlevar(valor); setErrorMesa(""); }}
-                      placeholder="Dirección o referencia"
-                    />
-                  </div>
-                )}
+                <div className="datos-llevar-grid" style={{ marginTop: 12 }}>
+                  <CampoTexto
+                    etiqueta="Cliente (opcional)"
+                    value={clientePedido}
+                    onChange={(valor) => { setClientePedido(valor); setErrorMesa(""); }}
+                    placeholder="Ej: Sra. Inés, Juan Pérez..."
+                  />
+                  {modoLlevar && (
+                    <>
+                      <CampoTexto
+                        etiqueta="Teléfono"
+                        value={telefonoLlevar}
+                        onChange={(valor) => { setTelefonoLlevar(valor); setErrorMesa(""); }}
+                        placeholder="Número de contacto"
+                        type="tel"
+                      />
+                      <CampoTexto
+                        etiqueta="Ubicación"
+                        value={ubicacionLlevar}
+                        onChange={(valor) => { setUbicacionLlevar(valor); setErrorMesa(""); }}
+                        placeholder="Dirección o referencia"
+                      />
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="mesa-dato-bloque">

@@ -708,7 +708,8 @@ export default function App() {
 
     const esLlevar = Boolean(modoLlevar);
     const mesaLimpia = esLlevar ? "Llevar" : (limpiarTexto(mesa, 40) || "Mesa 1");
-    const clienteLimpio = esLlevar ? (limpiarTexto(cliente, 120) || "Cliente") : mesaLimpia;
+    const clienteMesaOpcional = limpiarTexto(cliente, 120);
+    const clienteLimpio = clienteMesaOpcional || (esLlevar ? "Cliente" : mesaLimpia);
     const telefonoLimpio = esLlevar ? limpiarTelefono(telefono) : "";
     const ubicacionLimpia = esLlevar ? (limpiarTexto(ubicacion, 200) || "Ubicación pendiente") : mesaLimpia;
     const meseroLimpio = limpiarTexto(mesero, 80) || "Mesero";
