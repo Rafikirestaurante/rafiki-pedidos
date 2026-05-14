@@ -176,10 +176,35 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
   }
 
   function quitarAlmuerzoMesa(id) {
+    quitarItemPedidoMesa(id);
+  }
+
+  function quitarItemPedidoMesa(id) {
     setItemsMesa((actual) => {
       const filtrados = actual.filter((item) => item.id !== id);
       return filtrados.length > 0 ? filtrados : [crearItemNuevo()];
     });
+    setErrorMesa("");
+  }
+
+  function seleccionarMesaLocal(mesa) {
+    setErrorMesa("");
+    if (!modoLlevar && mesaLocal === mesa) {
+      setMesaLocal("");
+      return;
+    }
+    setModoLlevar(false);
+    setMesaLocal(mesa);
+  }
+
+  function alternarModoLlevar() {
+    setErrorMesa("");
+    if (modoLlevar) {
+      setModoLlevar(false);
+      return;
+    }
+    setModoLlevar(true);
+    setMesaLocal("");
   }
 
   function reiniciarPedidoMesa() {
@@ -966,7 +991,17 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
 
                 return (
                   <div key={item.id} className="summary-item">
-                    <p><strong>{item.cantidad} x {item.producto || item.plato || item.proteina}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
+                    <div className="summary-item-header">
+                      <p><strong>{item.cantidad} x {item.producto || item.plato || item.proteina}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
+                      <button
+                        type="button"
+                        className="mini-danger"
+                        onClick={() => quitarItemPedidoMesa(item.id)}
+                        aria-label={`Borrar ${item.producto || item.plato || item.proteina || "producto"} del pedido`}
+                      >
+                        Borrar
+                      </button>
+                    </div>
                     {itemEsCafeteria ? (
                       <>
                         <p>Categoría: Cafetería{item.tipo ? ` / ${item.tipo}` : ""}</p>
@@ -1026,25 +1061,15 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                 <div className={`mesa-selector-grid ${modoLlevar ? "llevar-activo" : ""}`} aria-label="Seleccionar mesa o llevar">
                   <button
                     type="button"
-                    onClick={() => {
-                      setModoLlevar(false);
-                      setMesaLocal("1A");
-                      setErrorMesa("");
-                    }}
+                    onClick={() => seleccionarMesaLocal("1A")}
                     className={`option mesa-boton ${!modoLlevar && mesaLocal === "1A" ? "selected" : ""}`}
-                    disabled={modoLlevar}
                   >
                     1A
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setModoLlevar(false);
-                      setMesaLocal("1B");
-                      setErrorMesa("");
-                    }}
+                    onClick={() => seleccionarMesaLocal("1B")}
                     className={`option mesa-boton ${!modoLlevar && mesaLocal === "1B" ? "selected" : ""}`}
-                    disabled={modoLlevar}
                   >
                     1B
                   </button>
@@ -1052,24 +1077,15 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                     <button
                       key={mesa}
                       type="button"
-                      onClick={() => {
-                        setModoLlevar(false);
-                        setMesaLocal(mesa);
-                        setErrorMesa("");
-                      }}
+                      onClick={() => seleccionarMesaLocal(mesa)}
                       className={`option mesa-boton ${mesa === "5B" ? "mesa-5b" : ""} ${!modoLlevar && mesaLocal === mesa ? "selected" : ""}`}
-                      disabled={modoLlevar}
                     >
                       {mesa}
                     </button>
                   ))}
                   <button
                     type="button"
-                    onClick={() => {
-                      setModoLlevar(true);
-                      setMesaLocal("");
-                      setErrorMesa("");
-                    }}
+                    onClick={alternarModoLlevar}
                     className={`option mesa-boton mesa-llevar ${modoLlevar ? "selected" : ""}`}
                   >
                     Llevar
