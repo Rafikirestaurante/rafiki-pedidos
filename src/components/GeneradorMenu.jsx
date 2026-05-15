@@ -446,19 +446,19 @@ export default function GeneradorMenu() {
   }, []);
 
   return (
-    <section className="card card-pad">
+    <section className="card card-pad generador-menu">
       <div>
         <h2>🎨 Generador de menú Rafiki</h2>
         <p className="muted">Crea una imagen solo texto del menú para usarla en WhatsApp, Instagram o sobre una plantilla.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(300px, 420px)", gap: 22, alignItems: "start", marginTop: 18 }} className="generador-menu-grid">
+      <div className="generador-menu-grid">
         <div>
           <div className="box soft" style={{ marginTop: 0 }}>
             <strong>Platos del día</strong>
             <p className="muted small">Puedes agregar hasta 8 platos. Escribe el precio sin puntos si quieres.</p>
             {platos.map((plato, index) => (
-              <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 120px 38px", gap: 8, marginTop: 10, alignItems: "center" }}>
+              <div key={index} className="plato-menu-row">
                 <input
                   value={plato.nombre}
                   onChange={(e) => actualizarPlato(index, "nombre", e.target.value)}
@@ -524,12 +524,12 @@ export default function GeneradorMenu() {
             <strong>Vista previa solo texto</strong>
             <p className="muted small">El PNG se descarga con fondo transparente para pegar sobre otra plantilla.</p>
           </div>
-          <div style={{ borderRadius: 24, overflow: "hidden", boxShadow: "0 10px 28px rgba(124,45,18,0.16)", background: "#fff" }}>
+          <div className="preview-menu-frame">
             <img src={svgTextoUrl} alt="Vista previa menú Rafiki solo texto" style={{ display: "block", width: "100%", height: "auto" }} />
           </div>
 
           <div className="box soft" style={{ marginTop: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+            <div className="generador-box-header">
               <strong>Historial reciente</strong>
               <button type="button" className="button light" onClick={() => cargarHistorialGenerador({ cargarUltimo: false })} disabled={cargandoHistorial} style={{ padding: "8px 10px" }}>
                 {cargandoHistorial ? "Cargando..." : "Actualizar"}
@@ -556,7 +556,7 @@ export default function GeneradorMenu() {
           </div>
 
           <div className="box soft" style={{ marginTop: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+            <div className="generador-box-header">
               <strong>Informe últimos 7 menús</strong>
               <span className="muted small">Solo platos, sin precios</span>
             </div>
@@ -600,27 +600,46 @@ export default function GeneradorMenu() {
       </div>
 
       <style>{`
+        .generador-menu { width: 100%; max-width: 100%; overflow: visible; }
+        .generador-menu, .generador-menu * { min-width: 0; }
+        .generador-menu h2 { line-height: 1.05; }
+        .generador-menu-grid { width: 100%; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 22px; align-items: start; margin-top: 18px; }
+        .plato-menu-row { display: grid; grid-template-columns: minmax(0, 1fr) 120px 38px; gap: 8px; margin-top: 10px; align-items: center; }
         .field { display: grid; gap: 7px; margin-bottom: 12px; }
         .field span { font-weight: 900; color: #3f2a1d; }
-        .field input, .field textarea, .box input { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; padding: 12px 13px; font: inherit; outline: none; background: #fff; box-sizing: border-box; }
+        .field input, .field textarea, .box input { width: 100%; max-width: 100%; border: 1px solid #fed7aa; border-radius: 14px; padding: 12px 13px; font: inherit; outline: none; background: #fff; box-sizing: border-box; }
         .field input:focus, .field textarea:focus, .box input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12); }
+        .preview-menu-frame { width: 100%; max-width: 100%; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 28px rgba(124,45,18,0.16); background: #fff; }
+        .preview-menu-frame img { max-width: 100%; height: auto; }
+        .generador-box-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
         .history-menu-item { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; color: #3f2a1d; }
         .history-menu-item span { color: #8a5a32; font-size: 13px; font-weight: 800; }
         .history-menu-item:hover { border-color: #f97316; box-shadow: 0 4px 12px rgba(124,45,18,0.08); }
-        .informe-menu-scroll { margin-top: 12px; overflow-x: auto; padding-bottom: 4px; }
-        .informe-menu-tabla { width: 100%; min-width: 760px; border-collapse: collapse; background: #fff; border: 1px solid #fed7aa; border-radius: 16px; overflow: hidden; }
+        .informe-menu-scroll { width: 100%; max-width: 100%; margin-top: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+        .informe-menu-tabla { width: max-content; min-width: 680px; max-width: none; border-collapse: collapse; background: #fff; border: 1px solid #fed7aa; border-radius: 16px; overflow: hidden; }
         .informe-menu-tabla th { background: #fff7ed; color: #7c2d12; font-size: 13px; text-transform: capitalize; padding: 10px; border: 1px solid #fed7aa; white-space: nowrap; }
-        .informe-menu-tabla td { vertical-align: top; min-width: 130px; padding: 10px; border: 1px solid #fed7aa; color: #3f2a1d; }
-        .informe-menu-tabla ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
-        .informe-menu-tabla li { font-size: 13px; font-weight: 800; line-height: 1.25; }
+        .informe-menu-tabla td { vertical-align: top; width: 98px; min-width: 98px; max-width: 98px; padding: 10px; border: 1px solid #fed7aa; color: #3f2a1d; }
+        .informe-menu-tabla ul { margin: 0; padding-left: 16px; display: grid; gap: 6px; }
+        .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
         .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
         .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
         @media (max-width: 860px) {
-          .generador-menu-grid { grid-template-columns: 1fr !important; }
+          .generador-menu-grid { grid-template-columns: 1fr !important; gap: 16px; }
         }
-        @media (max-width: 520px) {
-          .box.soft div[style*="grid-template-columns: 1fr 120px 38px"] { grid-template-columns: 1fr 88px 34px !important; gap: 6px !important; }
-          .box.soft input { padding: 10px 8px; font-size: 14px; }
+        @media (max-width: 640px) {
+          .generador-menu.card-pad { padding: 14px !important; border-radius: 22px; }
+          .generador-menu h2 { font-size: 24px; }
+          .plato-menu-row { grid-template-columns: minmax(0, 1fr) 92px 34px; gap: 6px; }
+          .box.soft input, .field input, .field textarea { padding: 10px 8px; font-size: 14px; }
+          .acciones-generador .button, .generador-menu .button { width: 100%; justify-content: center; }
+          .history-menu-item { align-items: flex-start; flex-direction: column; }
+          .preview-menu-frame { border-radius: 18px; }
+          .informe-menu-tabla { min-width: 640px; }
+          .informe-menu-tabla td { width: 92px; min-width: 92px; max-width: 92px; padding: 8px; }
+        }
+        @media (max-width: 420px) {
+          .plato-menu-row { grid-template-columns: 1fr; }
+          .plato-menu-row .button { width: 100%; }
         }
       `}</style>
     </section>
