@@ -278,6 +278,10 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
     setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1));
   }, [totalPaginas]);
 
+  const irPaginaFinal = useCallback(() => {
+    setPaginaActual(totalPaginas);
+  }, [totalPaginas]);
+
   return (
     <>
     <div className="pedidos-tabla-wrap">
@@ -382,6 +386,15 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
             disabled={paginaActual === totalPaginas}
           >
             Siguiente →
+          </button>
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={irPaginaFinal}
+            disabled={paginaActual === totalPaginas}
+            title="Ir a la última página"
+          >
+            Fin
           </button>
         </div>
       </div>

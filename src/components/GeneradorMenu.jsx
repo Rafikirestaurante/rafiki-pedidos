@@ -33,6 +33,21 @@ function normalizarPlatos(platos) {
     .filter((plato) => plato.nombre);
 }
 
+function formatearFechaCorta(fechaISO) {
+  if (!fechaISO) return "Sin fecha";
+  const [year, month, day] = String(fechaISO).split("-").map(Number);
+  if (!year || !month || !day) return String(fechaISO);
+  const fecha = new Date(year, month - 1, day);
+  return fecha.toLocaleDateString("es-CO", { day: "numeric", month: "long" });
+}
+
+function obtenerPlatosSinPrecio(registro) {
+  const platos = Array.isArray(registro?.platos) ? registro.platos : [];
+  return platos
+    .map((plato) => String(plato?.nombre || plato || "").trim())
+    .filter(Boolean);
+}
+
 
 function escapeSvg(texto) {
   return String(texto || "")
@@ -230,6 +245,19 @@ export default function GeneradorMenu() {
   const svgUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, [svg]);
   const svgTextoUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgTexto)}`, [svgTexto]);
 
+  const informeUltimosMenus = useMemo(() => {
+    const unicosPorFecha = new Map();
+    historial.forEach((registro) => {
+      if (registro?.fecha && !unicosPorFecha.has(registro.fecha)) {
+        unicosPorFecha.set(registro.fecha, registro);
+      }
+    });
+
+    return Array.from(unicosPorFecha.values())
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
+      .slice(-7);
+  }, [historial]);
+
   function actualizarPlato(index, campo, valor) {
     setPlatos((actual) =>
       actual.map((plato, i) =>
@@ -290,7 +318,7 @@ export default function GeneradorMenu() {
       .select("id, fecha, platos, acompanantes, observaciones, creado_en")
       .order("fecha", { ascending: false })
       .order("creado_en", { ascending: false })
-      .limit(10);
+      .limit(21);
 
     if (error) {
       setMensaje(`No se pudo cargar el historial: ${error.message}`);
@@ -526,6 +554,48 @@ export default function GeneradorMenu() {
               </div>
             )}
           </div>
+
+          <div className="box soft" style={{ marginTop: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+              <strong>Informe últimos 7 menús</strong>
+              <span className="muted small">Solo platos, sin precios</span>
+            </div>
+            {informeUltimosMenus.length === 0 ? (
+              <p className="muted small" style={{ marginBottom: 0 }}>Guarda menús en el historial para ver el informe.</p>
+            ) : (
+              <div className="informe-menu-scroll">
+                <table className="informe-menu-tabla">
+                  <thead>
+                    <tr>
+                      {informeUltimosMenus.map((registro) => (
+                        <th key={registro.fecha}>{formatearFechaCorta(registro.fecha)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      {informeUltimosMenus.map((registro) => {
+                        const platosRegistro = obtenerPlatosSinPrecio(registro);
+                        return (
+                          <td key={registro.fecha}>
+                            {platosRegistro.length ? (
+                              <ul>
+                                {platosRegistro.map((plato, index) => (
+                                  <li key={`${registro.fecha}-${index}`}>{plato}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="muted small">Sin platos</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -537,6 +607,12 @@ export default function GeneradorMenu() {
         .history-menu-item { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; color: #3f2a1d; }
         .history-menu-item span { color: #8a5a32; font-size: 13px; font-weight: 800; }
         .history-menu-item:hover { border-color: #f97316; box-shadow: 0 4px 12px rgba(124,45,18,0.08); }
+        .informe-menu-scroll { margin-top: 12px; overflow-x: auto; padding-bottom: 4px; }
+        .informe-menu-tabla { width: 100%; min-width: 760px; border-collapse: collapse; background: #fff; border: 1px solid #fed7aa; border-radius: 16px; overflow: hidden; }
+        .informe-menu-tabla th { background: #fff7ed; color: #7c2d12; font-size: 13px; text-transform: capitalize; padding: 10px; border: 1px solid #fed7aa; white-space: nowrap; }
+        .informe-menu-tabla td { vertical-align: top; min-width: 130px; padding: 10px; border: 1px solid #fed7aa; color: #3f2a1d; }
+        .informe-menu-tabla ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+        .informe-menu-tabla li { font-size: 13px; font-weight: 800; line-height: 1.25; }
         .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
         .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
         @media (max-width: 860px) {
