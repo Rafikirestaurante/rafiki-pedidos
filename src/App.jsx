@@ -1456,6 +1456,17 @@ export default function App() {
                   </button>
                 </div>
               )}
+
+              {vista === "mesas" && (
+                <div className="nav">
+                  <button
+                    type="button"
+                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
+                  >
+                    Panel admin
+                  </button>
+                </div>
+              )}
             </header>
           )}
 
@@ -1965,6 +1976,19 @@ export default function App() {
 
           {!cargando && vista === "admin" && adminAutenticado && (
             <main className="admin-layout">
+              <header className="topbar admin-panel-header">
+                <div>
+                  <div className="brand">⚙️ Panel Administrativo</div>
+                  <h1>Gestión de pedidos y ventas</h1>
+                  <p className="muted">Control de pedidos, menú diario, solicitudes y estadísticas.</p>
+                </div>
+                <div className="nav">
+                  <button type="button" onClick={() => navegar("/mesas", "mesas")}>
+                    Panel mesas
+                  </button>
+                </div>
+              </header>
+
               <div className="admin-tabs">
                 <button
                   type="button"
