@@ -245,7 +245,7 @@ export function resumirItemsPedidoCompacto(pedido) {
       : "";
     const empaque = textoParaLlevarItem(item) ? ` · ${textoParaLlevarItem(item)}` : "";
     return `${cantidad} x ${nombre}${acomp}${obsAcomp}${empaque}`;
-  }).join(" | ");
+  }).join(" + ");
 }
 
 function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, pedidosPorPagina = 15 }) {
