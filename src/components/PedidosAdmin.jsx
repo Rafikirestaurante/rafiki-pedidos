@@ -214,6 +214,15 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
 
 
 
+function resumirItemCafeteriaCompacto(item) {
+  const cantidad = Number(item.cantidad) || 1;
+  const nombre = item.detalle_impresion || item.producto || item.nombre || item.plato || item.proteina || "Producto cafetería";
+  const precio = obtenerPrecioUnitarioItem(item);
+  const precioTexto = precio > 0 ? ` (${dinero(precio)})` : "";
+
+  return `${cantidad} ${nombre}${precioTexto}`;
+}
+
 export function resumirItemsPedidoCompacto(pedido) {
   const items = obtenerItemsPedido(pedido);
 
@@ -223,7 +232,7 @@ export function resumirItemsPedidoCompacto(pedido) {
 
   return items.map((item) => {
     if (esItemCafeteria(item)) {
-      return crearTextoItem(item);
+      return resumirItemCafeteriaCompacto(item);
     }
 
     const nombre = item.plato || item.proteina || "Plato";
