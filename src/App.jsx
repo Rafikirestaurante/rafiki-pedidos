@@ -1261,7 +1261,11 @@ export default function App() {
                 </div>
 
                 <div className="section">
-                  {menu.platos_detalle.length === 0 ? (
+                  {cargandoMenu ? (
+                    <div className="box soft">
+                      Cargando menú de hoy...
+                    </div>
+                  ) : menu.platos_detalle.length === 0 ? (
                     <div className="box soft">
                       Todavía no hay platos configurados para el menú de hoy. Entra al panel administrativo y agrega los platos del día.
                     </div>
@@ -1451,9 +1455,9 @@ export default function App() {
                                 <button
                                   type="button"
                                   className="button continue-button"
-                                  onClick={() => irAElemento("paso-datos-entrega")}
+                                  onClick={() => irAElemento("resumen-pedido")}
                                 >
-                                  Continuar
+                                  Ver resumen y continuar
                                 </button>
                               </div>
                             )}
@@ -1530,6 +1534,14 @@ export default function App() {
                       </div>
                     </div>
 
+
+                    <button
+                      type="button"
+                      onClick={() => irAElemento("paso-datos-entrega")}
+                      className="button continue-button"
+                    >
+                      Continuar
+                    </button>
 
                     <button type="button" onClick={reiniciarPedido} className="button light small-reset">
                       Borrar y volver a empezar
