@@ -15,7 +15,8 @@ export const appStyles = `
         .muted { color: #78716c; }
         .small { font-size: 13px; }
         .nav { display: flex; gap: 6px; background: #ffffff; border: 1px solid #fed7aa; padding: 6px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
-        .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; }
+        .nav-wrap { flex-wrap: wrap; justify-content: flex-end; }
+        .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; white-space: nowrap; }
         .nav button.active { background: #f97316; color: #fff; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
         .alert { white-space: pre-line; padding: 14px 18px; border-radius: 18px; margin-bottom: 18px; font-weight: 700; border: 1px solid transparent; animation: fadeInUp 0.3s ease; }
         .alert-info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
@@ -36,8 +37,11 @@ export const appStyles = `
         .welcome-menu-preview .label { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px; }
         .welcome-menu-preview .menu-name { font-size: 18px; font-weight: 900; }
         .welcome-menu-preview .menu-price { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+        .welcome-actions { position: relative; z-index: 1; display: grid; gap: 12px; justify-items: center; margin-top: 24px; }
         .welcome-button { display: inline-flex; justify-content: center; align-items: center; gap: 10px; width: min(100%, 420px); border: 0; background: #ffffff; color: #c2410c; padding: 20px 28px; border-radius: 22px; font-size: 20px; font-weight: 900; text-decoration: none; box-shadow: 0 16px 36px rgba(0,0,0,0.18); position: relative; z-index: 1; letter-spacing: -0.3px; }
+        .welcome-secondary-button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; width: min(100%, 360px); border: 1px solid rgba(255,255,255,0.45); background: rgba(255,255,255,0.14); color: #fff; padding: 13px 18px; border-radius: 18px; font-size: 15px; font-weight: 900; box-shadow: none; backdrop-filter: blur(4px); }
         .welcome-button:hover { transform: translateY(-2px); box-shadow: 0 22px 44px rgba(0,0,0,0.22); }
+        .welcome-secondary-button:hover { background: rgba(255,255,255,0.22); }
         .admin-small { margin-top: 18px; border: 0; background: transparent; color: #78716c; font-weight: 800; text-decoration: underline; font-size: 13px; }
         .hero { background: linear-gradient(145deg, #ea580c, #f97316 50%, #f59e0b); color: white; padding: 36px 32px; position: relative; overflow: hidden; }
         .hero::before { content: ''; position: absolute; top: -30px; right: -30px; width: 160px; height: 160px; background: rgba(255,255,255,0.06); border-radius: 50%; }
@@ -49,6 +53,7 @@ export const appStyles = `
         .admin-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 18px; background: #fff; border: 1px solid #fed7aa; border-radius: 22px; padding: 8px; }
         .admin-tabs button { width: 100%; border: 0; border-radius: 16px; padding: 14px 12px; background: transparent; font-weight: 900; color: #57534e; line-height: 1.15; min-height: 48px; }
         .admin-tabs button.active { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
+        .admin-tabs .admin-tab-close { border: 1px solid #e7e5e4; color: #7c2d12; }
         .admin-layout { display: grid; grid-template-columns: 1fr; gap: 22px; }
         .admin-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
         .admin-actions-stack { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
@@ -362,7 +367,10 @@ export const appStyles = `
         @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-actions-stack, .contador-sin-revisar, .alerta-pedido-nuevo, .admin-stats { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
-          .nav { margin-top: 16px; }
+          .topbar h1 { font-size: clamp(28px, 9vw, 40px); }
+          .nav { margin-top: 16px; width: 100%; overflow-x: auto; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+          .nav-wrap { flex-wrap: nowrap; }
+          .nav button { flex: 0 0 auto; padding: 11px 14px; font-size: 13px; }
           .mesa-pos-header { align-items: flex-start; flex-direction: column; }
           .mesa-step-strip { top: 4px; grid-template-columns: 1fr; }
           .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row, .mesas-products-grid, .mesas-final-grid { grid-template-columns: 1fr; }
@@ -371,6 +379,11 @@ export const appStyles = `
           .mesa-item-row, .mesa-otro-almuerzo { grid-template-columns: 1fr; display: grid; }
           .mesa-otro-almuerzo .button { width: 100%; }
           .app { padding: 14px; }
+          .card-pad, .section { padding: 18px; }
+          .welcome-card { padding: 34px 18px 28px; border-radius: 28px; }
+          .welcome-logo { width: 108px; height: 108px; border-radius: 20px; }
+          .welcome-button { font-size: 17px; padding: 17px 20px; border-radius: 20px; }
+          .welcome-secondary-button { width: 100%; }
           .pedido-total { text-align: left; }
           .sticky-total { align-items: flex-start; gap: 12px; }
           .finalizar-area { max-width: 190px; }

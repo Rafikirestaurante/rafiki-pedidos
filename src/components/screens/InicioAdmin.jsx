@@ -8,9 +8,15 @@ export function InicioRafiki({ navegar }) {
         <h2>Bienvenido a Rafiki</h2>
         <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
 
-        <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
-          🛍️ Haz tu pedido aquí
-        </button>
+        <div className="welcome-actions">
+          <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
+            🛍️ Haz tu pedido aquí
+          </button>
+
+          <button type="button" onClick={() => navegar("/admin", "adminLogin")} className="welcome-secondary-button">
+            🔐 Panel administrativo
+          </button>
+        </div>
       </section>
     </main>
   );

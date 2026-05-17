@@ -1073,12 +1073,16 @@ export default function App() {
               )}
 
               {vista === "mesas" && (
-                <div className="nav">
+                <div className="nav nav-wrap">
                   <button
                     type="button"
                     onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
                   >
                     Panel admin
+                  </button>
+
+                  <button type="button" onClick={() => navegar("/", "inicio")}>
+                    Inicio
                   </button>
                 </div>
               )}
@@ -1559,9 +1563,15 @@ export default function App() {
                   <h1>Gestión de pedidos y ventas</h1>
                   <p className="muted">Control de pedidos, menú diario, solicitudes y estadísticas.</p>
                 </div>
-                <div className="nav">
+                <div className="nav nav-wrap">
                   <button type="button" onClick={() => navegar("/mesas", "mesas")}>
                     Panel mesas
+                  </button>
+                  <button type="button" onClick={() => navegar("/cliente", "cliente")}>
+                    Vista cliente
+                  </button>
+                  <button type="button" onClick={() => navegar("/", "inicio")}>
+                    Inicio
                   </button>
                 </div>
               </header>
@@ -1610,7 +1620,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={cerrarPanelAdmin}
-                  className="button light"
+                  className="button light admin-tab-close"
                 >
                   Cerrar panel
                 </button>
