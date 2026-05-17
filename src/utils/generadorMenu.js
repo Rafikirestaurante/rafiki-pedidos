@@ -91,7 +91,6 @@ export function wrapText(texto, max = 26) {
 
 export function crearSvgMenu({ platos, acompanantes }) {
   const width = 1080;
-  const height = 1080;
   const rows = platos.slice(0, 8);
   const sides = acompanantes.slice(0, 7);
 
@@ -119,7 +118,12 @@ export function crearSvgMenu({ platos, acompanantes }) {
     })
     .join("");
 
-  const sidesStartY = 900;
+  const sidesBoxY = Math.max(815, currentY + 28);
+  const sidesTitleY = sidesBoxY - 25;
+  const sidesTitleTextY = sidesTitleY + 36;
+  const sidesStartY = sidesBoxY + 85;
+  const sidesBoxHeight = Math.max(176, 118 + Math.max(sides.length, 1) * 42);
+  const height = Math.max(1080, sidesBoxY + sidesBoxHeight + 58);
   const sidesSvg = sides
     .map(
       (item, index) =>
@@ -152,13 +156,13 @@ export function crearSvgMenu({ platos, acompanantes }) {
       </filter>
     </defs>
 
-    <rect width="1080" height="1080" fill="url(#bg)"/>
+    <rect width="1080" height="${height}" fill="url(#bg)"/>
     <circle cx="82" cy="112" r="170" fill="#fed7aa" opacity="0.42"/>
-    <circle cx="1000" cy="1000" r="250" fill="#fdba74" opacity="0.34"/>
+    <circle cx="1000" cy="${height - 80}" r="250" fill="#fdba74" opacity="0.34"/>
 
-    <rect x="64" y="58" width="952" height="964" rx="54" fill="#ffffff" opacity="0.95" filter="url(#shadow)"/>
-    <rect x="92" y="86" width="896" height="908" rx="42" fill="none" stroke="#b45309" stroke-width="4" opacity="0.48"/>
-    <rect x="113" y="107" width="854" height="866" rx="34" fill="none" stroke="#fde7c3" stroke-width="6" opacity="0.95"/>
+    <rect x="64" y="58" width="952" height="${height - 116}" rx="54" fill="#ffffff" opacity="0.95" filter="url(#shadow)"/>
+    <rect x="92" y="86" width="896" height="${height - 172}" rx="42" fill="none" stroke="#b45309" stroke-width="4" opacity="0.48"/>
+    <rect x="113" y="107" width="854" height="${height - 214}" rx="34" fill="none" stroke="#fde7c3" stroke-width="6" opacity="0.95"/>
 
     <circle cx="540" cy="155" r="58" fill="url(#wine)" filter="url(#softShadow)"/>
     <text x="540" y="174" font-family="Georgia, serif" font-size="60" font-weight="900" fill="#fff8ed" text-anchor="middle">R</text>
@@ -169,16 +173,15 @@ export function crearSvgMenu({ platos, acompanantes }) {
 
     ${rowsSvg || `<text x="540" y="485" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#78716c" text-anchor="middle">Agrega los platos del día</text>`}
 
-    <rect x="112" y="815" width="856" height="176" rx="32" fill="#fffaf2" stroke="#efc68e" stroke-width="4" filter="url(#softShadow)"/>
-    <rect x="330" y="790" width="420" height="54" rx="27" fill="url(#gold)"/>
-    <text x="540" y="826" font-family="Arial, sans-serif" font-size="26" font-weight="900" fill="#f79e1c" text-anchor="middle">ACOMPAÑANTES</text>
+    <rect x="112" y="${sidesBoxY}" width="856" height="${sidesBoxHeight}" rx="32" fill="#fffaf2" stroke="#efc68e" stroke-width="4" filter="url(#softShadow)"/>
+    <rect x="330" y="${sidesTitleY}" width="420" height="54" rx="27" fill="url(#gold)"/>
+    <text x="540" y="${sidesTitleTextY}" font-family="Arial, sans-serif" font-size="26" font-weight="900" fill="#f79e1c" text-anchor="middle">ACOMPAÑANTES</text>
     ${sidesSvg || `<text x="170" y="884" font-family="Arial, sans-serif" font-size="30" fill="#78716c">• Escribe acompañantes...</text>`}
   </svg>`;
 }
 
 export function crearSvgMenuSoloTexto({ platos, acompanantes }) {
   const width = 1080;
-  const height = 930;
   const rows = platos.slice(0, 8);
   const sides = acompanantes.slice(0, 8);
 
@@ -204,9 +207,10 @@ export function crearSvgMenuSoloTexto({ platos, acompanantes }) {
     })
     .join("");
 
-  const separadorY = Math.min(670, currentY + 18);
+  const separadorY = currentY + 18;
   const tituloAcompanantesY = separadorY + 60;
   const sidesStartY = tituloAcompanantesY + 70;
+  const height = Math.max(930, sidesStartY + Math.max(sides.length, 1) * 44 + 58);
   const sidesSvg = sides
     .map(
       (item, index) =>
