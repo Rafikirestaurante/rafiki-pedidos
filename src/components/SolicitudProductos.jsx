@@ -358,7 +358,7 @@ function crearMensajeCompraProveedores(productos, fechaListado = fechaISOColombi
 
     items.forEach((producto) => {
       const cantidad = String(producto.cantidadComprar || "").trim();
-      lineas.push(`• ${producto.nombre}${cantidad ? ` — Cantidad: ${cantidad}` : ""}`);
+      lineas.push(`• ${producto.nombre}${cantidad ? ` : ${cantidad}` : ""}`);
     });
   });
 
@@ -436,8 +436,8 @@ export default function SolicitudProductos() {
   }, [solicitudesGuardadas, estadoPendientesCompra, fechaConsultaSolicitudes]);
 
   const productosParaEnviarProveedor = useMemo(
-    () => productosPendientesCompra.filter((producto) => !producto.comprado),
-    [productosPendientesCompra]
+    () => productosPendientesCompra.filter((producto) => !producto.comprado && estadoPendientesCompra[producto.id]?.enviarProveedor !== false),
+    [productosPendientesCompra, estadoPendientesCompra]
   );
 
   const productosPendientesAgrupados = useMemo(
@@ -1041,10 +1041,38 @@ export default function SolicitudProductos() {
           )}
 
           <div className="box soft" style={{ marginBottom: 12 }}>
-            <strong>{productosParaEnviarProveedor.length} insumos pendientes por comprar del día {fechaConsultaSolicitudes}</strong>
+            <strong>{productosParaEnviarProveedor.length} insumos seleccionados para enviar del día {fechaConsultaSolicitudes}</strong>
             <p className="muted small" style={{ marginTop: 6 }}>
-              Los insumos marcados como comprados quedan tachados y no se envían al proveedor.
+              Marca la columna Enviar para escoger qué insumos van por WhatsApp. Los insumos comprados no se envían.
             </p>
+            {productosPendientesCompra.length > 0 && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="button secondary"
+                  style={{ padding: "8px 10px", fontSize: 12 }}
+                  onClick={() => {
+                    productosPendientesCompra.forEach((producto) => {
+                      if (!producto.comprado) actualizarPendienteCompra(producto.id, { enviarProveedor: true });
+                    });
+                  }}
+                >
+                  Seleccionar todos
+                </button>
+                <button
+                  type="button"
+                  className="button secondary"
+                  style={{ padding: "8px 10px", fontSize: 12 }}
+                  onClick={() => {
+                    productosPendientesCompra.forEach((producto) => {
+                      if (!producto.comprado) actualizarPendienteCompra(producto.id, { enviarProveedor: false });
+                    });
+                  }}
+                >
+                  Quitar selección
+                </button>
+              </div>
+            )}
           </div>
 
           {productosPendientesCompra.length === 0 ? (
@@ -1066,7 +1094,7 @@ export default function SolicitudProductos() {
                         key={producto.id}
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "minmax(0, 1fr) 76px 34px",
+                          gridTemplateColumns: "34px minmax(0, 1fr) 76px 34px",
                           gap: 8,
                           alignItems: "center",
                           padding: "10px",
@@ -1075,6 +1103,31 @@ export default function SolicitudProductos() {
                           border: "1px solid rgba(0,0,0,0.06)"
                         }}
                       >
+                        <label
+                          title={producto.comprado ? "Comprado: no se envía" : "Enviar por WhatsApp"}
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: producto.comprado
+                              ? "rgba(0,0,0,0.04)"
+                              : estadoPendientesCompra[producto.id]?.enviarProveedor === false
+                                ? "rgba(0,0,0,0.04)"
+                                : "rgba(46,125,50,0.12)"
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!producto.comprado && estadoPendientesCompra[producto.id]?.enviarProveedor !== false}
+                            disabled={producto.comprado}
+                            onChange={(e) => actualizarPendienteCompra(producto.id, { enviarProveedor: e.target.checked })}
+                            aria-label={`Enviar ${producto.nombre} por WhatsApp`}
+                          />
+                        </label>
+
                         <strong
                           style={{
                             display: "block",
@@ -1133,7 +1186,7 @@ export default function SolicitudProductos() {
             style={{ width: "100%", marginTop: 14 }}
             disabled={productosParaEnviarProveedor.length === 0}
           >
-            Enviar listado a proveedores por WhatsApp
+            Enviar seleccionados por WhatsApp
           </button>
         </div>
       )}
