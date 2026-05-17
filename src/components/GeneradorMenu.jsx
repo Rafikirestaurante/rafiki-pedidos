@@ -255,7 +255,7 @@ export default function GeneradorMenu() {
 
     return Array.from(unicosPorFecha.values())
       .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
-      .slice(-7);
+      .slice(-12);
   }, [historial]);
 
   function actualizarPlato(index, campo, valor) {
@@ -557,7 +557,7 @@ export default function GeneradorMenu() {
 
           <div className="box soft" style={{ marginTop: 14 }}>
             <div className="generador-box-header">
-              <strong>Informe últimos 7 menús</strong>
+              <strong>Informe últimos 12 menús</strong>
               <span className="muted small">Solo platos, sin precios</span>
             </div>
             {informeUltimosMenus.length === 0 ? (

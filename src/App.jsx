@@ -567,9 +567,10 @@ export default function App() {
   }
 
   function eliminarAlmuerzo(id) {
-    setItemsPedido((actual) =>
-      actual.length === 1 ? actual : actual.filter((item) => item.id !== id)
-    );
+    setItemsPedido((actual) => {
+      const restantes = actual.filter((item) => item.id !== id);
+      return restantes.length === 0 ? [crearItemNuevo()] : restantes;
+    });
   }
 
   function reiniciarPedido() {
@@ -1229,6 +1230,10 @@ export default function App() {
         .pedido-paso-compacto .quantity strong { min-width: 20px; text-align: center; }
         .quantity button:hover { border-color: #f97316; color: #f97316; }
         .summary-item { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; margin-bottom: 10px; font-weight: 700; }
+        .summary-item-header { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+        .summary-item-header p { margin-top: 0; }
+        .mini-danger { border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+        .mini-danger:hover { background: #fee2e2; border-color: #fca5a5; }
         .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }
         .total-row strong { color: #ea580c; font-size: 26px; }
         .compact-total-row { margin-top: 2px; padding-top: 10px; }
@@ -1779,10 +1784,20 @@ export default function App() {
 
                           return (
                             <div key={item.id} className="summary-item">
-                              <p>
-                                <strong>{item.cantidad} x {item.plato || item.proteina}</strong> - {" "}
-                                {dinero(item.precioPlato || item.precioProteina)}
-                              </p>
+                              <div className="summary-item-header">
+                                <p>
+                                  <strong>{item.cantidad} x {item.plato || item.proteina}</strong> - {" "}
+                                  {dinero(item.precioPlato || item.precioProteina)}
+                                </p>
+                                <button
+                                  type="button"
+                                  className="mini-danger"
+                                  onClick={() => eliminarAlmuerzo(item.id)}
+                                  aria-label={`Borrar ${item.plato || item.proteina || "producto"} del pedido`}
+                                >
+                                  Borrar
+                                </button>
+                              </div>
 
                               {item.categoria && <p>Categoría: {item.categoria}</p>}
 
