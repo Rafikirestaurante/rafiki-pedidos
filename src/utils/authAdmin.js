@@ -1,24 +1,18 @@
-const ROL_POR_DEFECTO = "admin";
+const ROL_POR_DEFECTO = "usuario";
 
 export const ROLES_ADMIN = {
   ADMIN: "admin",
-  CAJA: "caja",
-  COCINA: "cocina",
-  MESERO: "mesero",
+  USUARIO: "usuario",
 };
 
 export const NOMBRES_ROLES = {
   admin: "Administrador",
-  caja: "Caja",
-  cocina: "Cocina",
-  mesero: "Mesero",
+  usuario: "Usuario",
 };
 
 const PERMISOS_POR_ROL = {
   admin: ["pedidos", "menu", "productos", "generador", "rafa", "eliminar_pedido", "cambiar_estado", "finalizar_pendientes"],
-  caja: ["pedidos", "generador", "cambiar_estado", "finalizar_pendientes"],
-  cocina: ["pedidos", "cambiar_estado"],
-  mesero: ["pedidos", "cambiar_estado"],
+  usuario: ["pedidos", "menu", "productos", "generador", "cambiar_estado", "finalizar_pendientes"],
 };
 
 function limpiarRol(valor) {
