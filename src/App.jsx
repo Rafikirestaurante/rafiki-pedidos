@@ -66,9 +66,12 @@ export default function App() {
   const [vista, setVista] = useState(() => obtenerVistaInicial());
   const [adminTab, setAdminTab] = useState("pedidos");
   const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
-  const [claveAdmin, setClaveAdmin] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminUsuario, setAdminUsuario] = useState(null);
+  const [adminAuthCargando, setAdminAuthCargando] = useState(true);
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
-  const [rafaAutenticado, setRafaAutenticado] = useState(() => obtenerSesionActiva("rafikiRafaActivo"));
+  const [rafaAutenticado, setRafaAutenticado] = useState(false);
   const [claveRafa, setClaveRafa] = useState("");
   const [errorClaveRafa, setErrorClaveRafa] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
@@ -110,6 +113,49 @@ export default function App() {
   const navegar = useCallback((ruta, nuevaVista) => {
     actualizarRuta(ruta);
     setVista(nuevaVista);
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function revisarSesionAdmin() {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!activo) return;
+
+        const usuario = data?.session?.user || null;
+        setAdminUsuario(usuario);
+
+        if (usuario) {
+          setAdminAutenticado(true);
+        }
+      } finally {
+        if (activo) setAdminAuthCargando(false);
+      }
+    }
+
+    revisarSesionAdmin();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const usuario = session?.user || null;
+      setAdminUsuario(usuario);
+
+      if (usuario) {
+        setAdminAutenticado(true);
+        setErrorClaveAdmin("");
+        return;
+      }
+
+      if (!obtenerSesionActiva("rafikiAdminActivo")) {
+        setAdminAutenticado(false);
+        setRafaAutenticado(false);
+      }
+    });
+
+    return () => {
+      activo = false;
+      authListener?.subscription?.unsubscribe?.();
+    };
   }, []);
 
   const mostrarMensaje = useCallback((texto, tipo = "info") => {
@@ -238,7 +284,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const cargando = cargandoMenu || cargandoPedidos;
+  const cargando = cargandoMenu || cargandoPedidos || adminAuthCargando;
 
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
@@ -962,6 +1008,7 @@ export default function App() {
 
   function abrirPanelAdmin() {
     setErrorClaveAdmin("");
+    setAdminPassword("");
     setRafaAutenticado(false);
     setClaveRafa("");
     setErrorClaveRafa("");
@@ -974,24 +1021,53 @@ export default function App() {
     navegar("/admin", "adminLogin");
   }
 
-  function validarClaveAdmin(e) {
+  async function validarClaveAdmin(e) {
     e.preventDefault();
+    setErrorClaveAdmin("");
 
-    if (!CLAVE_ADMIN) {
-      setErrorClaveAdmin("Falta configurar VITE_CLAVE_ADMIN en las variables de entorno.");
-      return;
-    }
+    const email = adminEmail.trim();
+    const password = adminPassword.trim();
 
-    if (claveAdmin.trim() === CLAVE_ADMIN) {
-      guardarSesionTemporal("rafikiAdminActivo");
+    if (email) {
+      if (!password) {
+        setErrorClaveAdmin("Ingresa la contraseña del usuario administrativo.");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setErrorClaveAdmin(`No se pudo iniciar sesión: ${error.message}`);
+        return;
+      }
+
+      setAdminUsuario(data?.user || null);
       setAdminAutenticado(true);
-      setClaveAdmin("");
+      setAdminPassword("");
       setErrorClaveAdmin("");
       navegar("/admin", "admin");
       return;
     }
 
-    setErrorClaveAdmin("Clave incorrecta. Inténtalo nuevamente.");
+    // Respaldo temporal: permite entrar con la clave antigua mientras se crean los usuarios en Supabase Auth.
+    if (!CLAVE_ADMIN) {
+      setErrorClaveAdmin("Ingresa el email del usuario administrativo. Como respaldo, también puedes configurar VITE_CLAVE_ADMIN.");
+      return;
+    }
+
+    if (password === CLAVE_ADMIN) {
+      guardarSesionTemporal("rafikiAdminActivo");
+      setAdminAutenticado(true);
+      setAdminPassword("");
+      setErrorClaveAdmin("");
+      navegar("/admin", "admin");
+      return;
+    }
+
+    setErrorClaveAdmin("Credenciales incorrectas. Inténtalo nuevamente.");
   }
 
   function validarClaveRafa(e) {
@@ -1020,11 +1096,15 @@ export default function App() {
     setErrorClaveRafa("");
   }
 
-  function cerrarPanelAdmin() {
+  async function cerrarPanelAdmin() {
     localStorage.removeItem("rafikiAdminActivo");
     localStorage.removeItem("rafikiRafaActivo");
+    await supabase.auth.signOut();
     setAdminAutenticado(false);
-    setClaveAdmin("");
+    setAdminUsuario(null);
+    setAdminEmail("");
+    setAdminPassword("");
+    setRafaAutenticado(false);
     setErrorClaveAdmin("");
     navegar("/admin", "adminLogin");
   }
@@ -1085,9 +1165,11 @@ export default function App() {
 
           {!cargando && vista === "adminLogin" && (
             <AdminLogin
-              claveAdmin={claveAdmin}
+              adminEmail={adminEmail}
+              adminPassword={adminPassword}
               errorClaveAdmin={errorClaveAdmin}
-              setClaveAdmin={setClaveAdmin}
+              setAdminEmail={setAdminEmail}
+              setAdminPassword={setAdminPassword}
               setErrorClaveAdmin={setErrorClaveAdmin}
               validarClaveAdmin={validarClaveAdmin}
               navegar={navegar}
@@ -1551,6 +1633,7 @@ export default function App() {
                   <div className="brand">⚙️ Panel Administrativo</div>
                   <h1>Gestión de pedidos y ventas</h1>
                   <p className="muted">Control de pedidos, menú diario, solicitudes y estadísticas.</p>
+                  {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
                 </div>
                 <div className="nav nav-wrap">
                   <button type="button" onClick={() => navegar("/mesas", "mesas")}>
@@ -1807,7 +1890,7 @@ export default function App() {
               )}
 
               {adminTab === "rafa" && (
-                rafaAutenticado ? (
+                (adminUsuario || rafaAutenticado) ? (
                   <>
                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
                       <button type="button" onClick={cerrarPanelRafa} className="button light">

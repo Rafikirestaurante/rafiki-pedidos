@@ -21,9 +21,11 @@ export function InicioRafiki({ navegar }) {
 }
 
 export function AdminLogin({
-  claveAdmin,
+  adminEmail,
+  adminPassword,
   errorClaveAdmin,
-  setClaveAdmin,
+  setAdminEmail,
+  setAdminPassword,
   setErrorClaveAdmin,
   validarClaveAdmin,
   navegar,
@@ -41,18 +43,37 @@ export function AdminLogin({
 
         <form onSubmit={validarClaveAdmin}>
           <label className="field">
-            <span>{TEXTOS_APP.CLAVE_PANEL}</span>
+            <span>Email administrativo</span>
             <input
-              type="password"
-              value={claveAdmin}
+              type="email"
+              value={adminEmail}
               onChange={(e) => {
-                setClaveAdmin(e.target.value);
+                setAdminEmail(e.target.value);
                 setErrorClaveAdmin("");
               }}
-              placeholder={TEXTOS_APP.CLAVE_PLACEHOLDER}
+              placeholder="admin@tudominio.com"
+              autoComplete="username"
               autoFocus
             />
           </label>
+
+          <label className="field">
+            <span>Contraseña</span>
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => {
+                setAdminPassword(e.target.value);
+                setErrorClaveAdmin("");
+              }}
+              placeholder={TEXTOS_APP.CLAVE_PLACEHOLDER}
+              autoComplete="current-password"
+            />
+          </label>
+
+          <p className="muted small">
+            Si todavía no has creado usuarios en Supabase Auth, deja el email vacío y usa la clave antigua como respaldo temporal.
+          </p>
 
           <Boton tipo="submit" full>
             {BOTONES.ENTRAR_PANEL}
@@ -61,7 +82,8 @@ export function AdminLogin({
 
         <Boton
           onClick={() => {
-            setClaveAdmin("");
+            setAdminEmail("");
+            setAdminPassword("");
             setErrorClaveAdmin("");
             navegar("/", "inicio");
           }}
