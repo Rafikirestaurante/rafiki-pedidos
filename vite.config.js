@@ -8,7 +8,7 @@ const rafikiManifest = {
   short_name: 'Rafiki',
   description: 'Aplicación PWA interna de Rafiki Pedidos para panel mesas, administración y panel Rafa.',
   lang: 'es',
-  start_url: '/mesas?app=mesas',
+  start_url: '/mesas',
   scope: '/',
   display: 'standalone',
   display_override: ['standalone', 'minimal-ui'],
@@ -66,7 +66,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webp}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.hostname.includes('supabase.co'),
