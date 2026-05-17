@@ -413,11 +413,11 @@ export default function GeneradorMenu() {
         .history-menu-item span { color: #8a5a32; font-size: 13px; font-weight: 800; }
         .history-menu-item:hover { border-color: #f97316; box-shadow: 0 4px 12px rgba(124,45,18,0.08); }
         .informe-menu-scroll { width: 100%; max-width: 100%; margin-top: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
-        .informe-menu-tabla { width: max-content; min-width: 680px; max-width: none; border-collapse: collapse; background: #fff; border: 1px solid #fed7aa; border-radius: 16px; overflow: hidden; }
+        .informe-menu-tabla { width: max-content; min-width: 1080px; max-width: none; border-collapse: collapse; background: #fff; border: 1px solid #fed7aa; border-radius: 16px; overflow: hidden; }
         .informe-menu-tabla th { background: #fff7ed; color: #7c2d12; font-size: 13px; text-transform: capitalize; padding: 10px; border: 1px solid #fed7aa; white-space: nowrap; }
-        .informe-menu-tabla td { vertical-align: top; width: 98px; min-width: 98px; max-width: 98px; padding: 10px; border: 1px solid #fed7aa; color: #3f2a1d; }
+        .informe-menu-tabla td { vertical-align: top; width: 160px; min-width: 160px; max-width: 160px; padding: 12px; border: 1px solid #fed7aa; color: #3f2a1d; }
         .informe-menu-tabla ul { margin: 0; padding-left: 16px; display: grid; gap: 6px; }
-        .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+        .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.3; overflow-wrap: normal; word-break: normal; hyphens: none; }
         .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
         .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
         @media (max-width: 860px) {

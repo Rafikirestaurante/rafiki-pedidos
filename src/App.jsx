@@ -59,8 +59,6 @@ function CargandoModulo({ texto = TEXTOS_APP.CARGANDO_SECCION }) {
 }
 
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
-const CLAVE_ADMIN = import.meta.env.VITE_CLAVE_ADMIN || "";
-const CLAVE_RAFA = import.meta.env.VITE_CLAVE_RAFA || "";
 const CLAVE_ELIMINAR_PEDIDO = import.meta.env.VITE_CLAVE_ELIMINAR_PEDIDO || "Rafiki1989";
 
 export default function App() {
@@ -73,9 +71,6 @@ export default function App() {
   const [adminRol, setAdminRol] = useState("usuario");
   const [adminAuthCargando, setAdminAuthCargando] = useState(true);
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
-  const [rafaAutenticado, setRafaAutenticado] = useState(false);
-  const [claveRafa, setClaveRafa] = useState("");
-  const [errorClaveRafa, setErrorClaveRafa] = useState("");
   const [menu, setMenu] = useState(normalizarMenu(menuFallback));
   const [pedidos, setPedidos] = useState([]);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
@@ -192,7 +187,6 @@ export default function App() {
 
         if (!obtenerSesionActiva("rafikiAdminActivo")) {
           setAdminAutenticado(false);
-          setRafaAutenticado(false);
         }
       }
     });
@@ -1136,10 +1130,6 @@ export default function App() {
   function abrirPanelAdmin() {
     setErrorClaveAdmin("");
     setAdminPassword("");
-    setRafaAutenticado(false);
-    setClaveRafa("");
-    setErrorClaveRafa("");
-
     if (adminAutenticado) {
       navegar("/admin", "admin");
       return;
@@ -1155,87 +1145,45 @@ export default function App() {
     const email = adminEmail.trim();
     const password = adminPassword.trim();
 
-    if (email) {
-      if (!password) {
-        setErrorClaveAdmin("Ingresa la contraseña del usuario administrativo.");
-        return;
-      }
-
-      guardarSesionTemporal("rafikiAdminActivo");
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        localStorage.removeItem("rafikiAdminActivo");
-        setErrorClaveAdmin(`No se pudo iniciar sesión: ${error.message}`);
-        return;
-      }
-
-      const usuarioAutenticado = data?.user || null;
-      const rol = await cargarRolAdmin(usuarioAutenticado);
-      activarSesionAdmin(usuarioAutenticado, rol);
-      setAdminPassword("");
-      setErrorClaveAdmin("");
-      navegar("/admin", "admin");
+    if (!email) {
+      setErrorClaveAdmin("Ingresa el email del usuario administrativo.");
       return;
     }
 
-    // Respaldo temporal: permite entrar con la clave antigua mientras se crean los usuarios en Supabase Auth.
-    if (!CLAVE_ADMIN) {
-      setErrorClaveAdmin("Ingresa el email del usuario administrativo. Como respaldo, también puedes configurar VITE_CLAVE_ADMIN.");
+    if (!password) {
+      setErrorClaveAdmin("Ingresa la contraseña del usuario administrativo.");
       return;
     }
 
-    if (password === CLAVE_ADMIN) {
-      activarSesionAdmin(null, "admin");
-      setAdminPassword("");
-      setErrorClaveAdmin("");
-      navegar("/admin", "admin");
+    guardarSesionTemporal("rafikiAdminActivo");
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      localStorage.removeItem("rafikiAdminActivo");
+      setErrorClaveAdmin(`No se pudo iniciar sesión: ${error.message}`);
       return;
     }
 
-    setErrorClaveAdmin("Credenciales incorrectas. Inténtalo nuevamente.");
-  }
-
-  function validarClaveRafa(e) {
-    e.preventDefault();
-
-    if (!CLAVE_RAFA) {
-      setErrorClaveRafa("Falta configurar VITE_CLAVE_RAFA en las variables de entorno.");
-      return;
-    }
-
-    if (claveRafa.trim() === CLAVE_RAFA) {
-      guardarSesionTemporal("rafikiRafaActivo");
-      setRafaAutenticado(true);
-      setClaveRafa("");
-      setErrorClaveRafa("");
-      return;
-    }
-
-    setErrorClaveRafa("Clave incorrecta. Inténtalo nuevamente.");
-  }
-
-  function cerrarPanelRafa() {
-    localStorage.removeItem("rafikiRafaActivo");
-    setRafaAutenticado(false);
-    setClaveRafa("");
-    setErrorClaveRafa("");
+    const usuarioAutenticado = data?.user || null;
+    const rol = await cargarRolAdmin(usuarioAutenticado);
+    activarSesionAdmin(usuarioAutenticado, rol);
+    setAdminPassword("");
+    setErrorClaveAdmin("");
+    navegar("/admin", "admin");
   }
 
   async function cerrarPanelAdmin() {
     localStorage.removeItem("rafikiAdminActivo");
-    localStorage.removeItem("rafikiRafaActivo");
     await supabase.auth.signOut();
     setAdminAutenticado(false);
     setAdminUsuario(null);
     setAdminRol("usuario");
     setAdminEmail("");
     setAdminPassword("");
-    setRafaAutenticado(false);
     setErrorClaveAdmin("");
     navegar("/admin", "adminLogin");
   }
@@ -2027,46 +1975,9 @@ export default function App() {
               )}
 
               {adminTab === "rafa" && puedeVerRafa && (
-                (adminUsuario || rafaAutenticado) ? (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                      <button type="button" onClick={cerrarPanelRafa} className="button light">
-                        Bloquear Rafa
-                      </button>
-                    </div>
-                    <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
-                      <PanelRafaPrivado />
-                    </Suspense>
-                  </>
-                ) : (
-                  <section className="card card-pad" style={{ maxWidth: 520, margin: "0 auto" }}>
-                    <h2>🔒 Rafa</h2>
-                    <p className="muted">Esta sección es privada. Ingresa la contraseña para continuar.</p>
-
-                    {errorClaveRafa && (
-                      <div className="alert alert-error">{errorClaveRafa}</div>
-                    )}
-
-                    <form onSubmit={validarClaveRafa}>
-                      <label className="field">
-                        <span>Contraseña</span>
-                        <input
-                          type="password"
-                          value={claveRafa}
-                          onChange={(e) => {
-                            setClaveRafa(e.target.value);
-                            setErrorClaveRafa("");
-                          }}
-                          placeholder="Contraseña de Rafa"
-                        />
-                      </label>
-
-                      <button type="submit" className="button primary" style={{ width: "100%" }}>
-                        Entrar a Rafa
-                      </button>
-                    </form>
-                  </section>
-                )
+                <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
+                  <PanelRafaPrivado />
+                </Suspense>
               )}
 
               {adminTab === "menu" && puedeVerMenu && (

@@ -72,7 +72,7 @@ export function AdminLogin({
           </label>
 
           <p className="muted small">
-            Si todavía no has creado usuarios en Supabase Auth, deja el email vacío y usa la clave antigua como respaldo temporal.
+            El acceso administrativo se realiza únicamente con usuarios creados en Supabase Auth.
           </p>
 
           <Boton tipo="submit" full>
