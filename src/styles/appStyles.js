@@ -145,7 +145,8 @@ export const appStyles = `
         .cafeteria-card:active, .option:active, .chip:active, .mesas-tab:active { transform: scale(0.98); }
         .cafeteria-action { background: linear-gradient(135deg, #92400e, #b45309); color: #fff; border: 0; }
         .cafeteria-mini-action { background: #fffbeb; color: #92400e; border: 1.5px solid #fde68a; box-shadow: none; }
-        .mesa-mixed-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .mesa-clean-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
+        .mesa-clean-actions .button { width: 100%; min-height: 48px; font-size: 16px; }
         .mesa-resumen-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
         .option { text-align: left; border: 1.5px solid #e7e5e4; background: #fff; border-radius: 18px; padding: 14px; font-weight: 900; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
         .option:hover { border-color: #fdba74; background: #fff7ed; }

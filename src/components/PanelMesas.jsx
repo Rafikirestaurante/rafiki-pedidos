@@ -593,25 +593,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
                         <strong>{dinero(calcularTotalItem(item))}</strong>
                       </div>
 
-                      <div className="pos-next-hint">Listo: puedes agregar otro almuerzo, agregar cafetería o continuar a datos de mesa.</div>
-
-                      <div className="mesa-mixed-actions">
-                        <button
-                          type="button"
-                          onClick={() => agregarProductoCafeteriaDesdePedido()}
-                          className="button cafeteria-mini-action"
-                        >
-                          ☕ Agregar cafetería
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => irAElementoMesas("mesa-confirmacion-final", 120)}
-                          className="button continue-button"
-                        >
-                          Ver resumen
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -619,29 +600,32 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
             })}
 
             {hayProductoSeleccionadoMesa && (
-              <>
-                <button type="button" onClick={agregarAlmuerzoRapidoYSiguiente} className="button add-meal pos-primary-action" style={{ marginTop: 14 }}>
-                  + Agregar otro almuerzo
-                </button>
-
+              <div className="mesa-clean-actions">
                 <button
                   type="button"
                   onClick={() => agregarProductoCafeteriaDesdePedido()}
                   className="button cafeteria-action"
-                  style={{ marginTop: 12 }}
                 >
-                  ☕ Agregar batido, parfait o cafetería
+                  Agregar cafetería
+                </button>
+
+                <button
+                  type="button"
+                  onClick={agregarAlmuerzoRapidoYSiguiente}
+                  className="button add-meal pos-primary-action"
+                >
+                  Agregar otro almuerzo
                 </button>
 
                 <button
                   type="button"
                   onClick={() => irAElementoMesas("mesa-confirmacion-final", 120)}
                   className="button continue-button"
-                  style={{ marginTop: 12, background: "#16a34a" }}
+                  style={{ background: "#16a34a" }}
                 >
                   Ver resumen y continuar
                 </button>
-              </>
+              </div>
             )}
             </>
           )
