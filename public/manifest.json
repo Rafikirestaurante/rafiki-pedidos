@@ -2,47 +2,75 @@
   "id": "/mesas",
   "name": "Rafiki Pedidos",
   "short_name": "Rafiki",
-  "description": "Aplicación PWA de Rafiki Pedidos para clientes, mesas, administración y panel Rafa.",
+  "description": "Aplicación PWA interna de Rafiki Pedidos para panel mesas, administración y panel Rafa.",
   "start_url": "/mesas?app=mesas",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait",
   "background_color": "#fff4e6",
   "theme_color": "#f97316",
-  "categories": ["food", "business", "productivity"],
+  "categories": [
+    "food",
+    "business",
+    "productivity"
+  ],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ],
   "shortcuts": [
-    {
-      "name": "Nuevo pedido cliente",
-      "short_name": "Cliente",
-      "description": "Abrir el panel de pedidos para clientes.",
-      "url": "/cliente?source=pwa-shortcut",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
-    },
     {
       "name": "Panel mesas",
       "short_name": "Mesas",
       "description": "Abrir el panel de mesas para meseros.",
       "url": "/mesas?source=pwa-shortcut",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Pedidos de hoy",
       "short_name": "Pedidos",
       "description": "Abrir el panel administrativo de pedidos.",
       "url": "/admin?source=pwa-shortcut",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Panel Rafa",
       "short_name": "Rafa",
       "description": "Abrir la sección privada del panel Rafa.",
       "url": "/rafa?source=pwa-shortcut",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

@@ -6,7 +6,7 @@ const rafikiManifest = {
   id: '/mesas',
   name: 'Rafiki Pedidos',
   short_name: 'Rafiki',
-  description: 'Aplicación PWA de Rafiki Pedidos para clientes, mesas, administración y panel Rafa.',
+  description: 'Aplicación PWA interna de Rafiki Pedidos para panel mesas, administración y panel Rafa.',
   lang: 'es',
   start_url: '/mesas?app=mesas',
   scope: '/',
@@ -31,13 +31,6 @@ const rafikiManifest = {
     }
   ],
   shortcuts: [
-    {
-      name: 'Nuevo pedido cliente',
-      short_name: 'Cliente',
-      description: 'Abrir el panel de pedidos para clientes.',
-      url: '/cliente?source=pwa-shortcut',
-      icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }]
-    },
     {
       name: 'Panel mesas',
       short_name: 'Mesas',
