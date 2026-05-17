@@ -1155,7 +1155,7 @@ export default function App() {
       return;
     }
 
-    guardarSesionTemporal("rafikiAdminActivo");
+    localStorage.removeItem("rafikiAdminActivo");
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -1163,7 +1163,6 @@ export default function App() {
     });
 
     if (error) {
-      localStorage.removeItem("rafikiAdminActivo");
       setErrorClaveAdmin(`No se pudo iniciar sesión: ${error.message}`);
       return;
     }
