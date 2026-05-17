@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import InstallPWA from "./components/InstallPWA.jsx";
+import PWAUpdatePrompt from "./components/PWAUpdatePrompt.jsx";
 import { registerServiceWorker } from "./registerSW.js";
 
 registerServiceWorker();
@@ -42,5 +43,6 @@ createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
     <App />
     <InstallPWA />
+    <PWAUpdatePrompt />
   </ErrorBoundary>
 );

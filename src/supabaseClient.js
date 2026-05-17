@@ -20,13 +20,12 @@ function crearClienteSupabaseSeguro() {
 
   console.error(supabaseConfigMensaje);
 
-  // Cliente de respaldo solo para que React no quede en blanco si faltan variables.
-  // La app muestra un error claro y evita consultas reales mientras supabaseConfigOk sea false.
-  return createClient("https://rafiki-config-incompleta.supabase.co", "rafiki-config-incompleta", {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
+  // No usamos URL/KEY ficticios: así evitamos errores silenciosos en producción.
+  // Si alguna parte del código intenta consultar Supabase sin configuración,
+  // fallará con un mensaje claro y rastreable.
+  return new Proxy({}, {
+    get() {
+      throw new Error(supabaseConfigMensaje);
     },
   });
 }

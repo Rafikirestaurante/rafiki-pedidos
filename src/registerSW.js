@@ -1,4 +1,10 @@
-const SW_URL = '/sw.js?v=fase13-2026-05-17';
+const SW_URL = '/sw.js?v=fase13b-2026-05-17';
+
+function avisarNuevaVersion(registration) {
+  window.dispatchEvent(new CustomEvent('rafiki:nueva-version-disponible', {
+    detail: { registration }
+  }));
+}
 
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
@@ -18,7 +24,7 @@ export function registerServiceWorker() {
 
         nuevoSW.addEventListener('statechange', () => {
           if (nuevoSW.state === 'installed' && navigator.serviceWorker.controller) {
-            nuevoSW.postMessage({ type: 'SKIP_WAITING' });
+            avisarNuevaVersion(registration);
           }
         });
       });
@@ -26,11 +32,13 @@ export function registerServiceWorker() {
       console.warn('No se pudo registrar el service worker:', error);
     }
   });
+}
 
-  let recargaRealizada = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (recargaRealizada) return;
-    recargaRealizada = true;
-    window.location.reload();
-  });
+export function activarNuevaVersion(registration) {
+  const waiting = registration?.waiting || registration?.installing;
+  if (waiting) {
+    waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+
+  window.location.reload();
 }

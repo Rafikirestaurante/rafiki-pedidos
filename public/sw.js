@@ -1,6 +1,6 @@
-/* Rafiki Pedidos - Service Worker Fase 13
+/* Rafiki Pedidos - Service Worker Fase 13B
    Objetivo: estabilidad. Evita index viejo, limpia cachés anteriores y nunca responde undefined. */
-const SW_VERSION = 'fase13-2026-05-17';
+const SW_VERSION = 'fase13b-2026-05-17';
 const CACHE_NAME = `rafiki-pedidos-${SW_VERSION}`;
 
 const APP_SHELL = [
