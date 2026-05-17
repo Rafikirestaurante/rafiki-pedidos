@@ -1,12 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./utils/navigation";
 import { InicioRafiki, AdminLogin } from "./components/screens/InicioAdmin";
-import SolicitudProductos from "./components/SolicitudProductos";
-import GeneradorMenu from "./components/GeneradorMenu";
-import PanelMesasPOS from "./components/PanelMesas";
-import PanelRafaPrivado from "./components/PanelRafaPrivado";
 import { CampoTexto, SelectorCantidad } from "./components/common";
 import { PedidoCocina, TablaPedidosCompacta } from "./components/PedidosAdmin";
 import { estadosPedido, menuFallback, MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
@@ -44,6 +40,21 @@ import {
   platosATexto,
   textoAPlatosDetalle,
 } from "./utils/pedidos";
+
+
+const SolicitudProductos = lazy(() => import("./components/SolicitudProductos"));
+const GeneradorMenu = lazy(() => import("./components/GeneradorMenu"));
+const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
+const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
+
+function CargandoModulo({ texto = "Cargando sección..." }) {
+  return (
+    <div className="card card-pad module-loader" role="status" aria-live="polite">
+      <strong>{texto}</strong>
+      <p className="muted" style={{ marginBottom: 0 }}>Preparando esta parte de Rafiki Pedidos.</p>
+    </div>
+  );
+}
 
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
 const CLAVE_ADMIN = import.meta.env.VITE_CLAVE_ADMIN || "";
@@ -1530,12 +1541,14 @@ export default function App() {
           )}
 
           {!cargando && vista === "mesas" && (
-            <PanelMesasPOS
-              menu={menu}
-              platosAgrupados={platosAgrupados}
-              guardandoPedido={guardandoPedido}
-              onEnviar={registrarPedidoMesa}
-            />
+            <Suspense fallback={<CargandoModulo texto="Cargando panel mesas..." />}>
+              <PanelMesasPOS
+                menu={menu}
+                platosAgrupados={platosAgrupados}
+                guardandoPedido={guardandoPedido}
+                onEnviar={registrarPedidoMesa}
+              />
+            </Suspense>
           )}
 
           {!cargando && vista === "admin" && adminAutenticado && (
@@ -1788,9 +1801,17 @@ export default function App() {
                 </section>
               )}
 
-              {adminTab === "productos" && <SolicitudProductos />}
+              {adminTab === "productos" && (
+                <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
+                  <SolicitudProductos />
+                </Suspense>
+              )}
 
-              {adminTab === "generador" && <GeneradorMenu />}
+              {adminTab === "generador" && (
+                <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
+                  <GeneradorMenu />
+                </Suspense>
+              )}
 
               {adminTab === "rafa" && (
                 rafaAutenticado ? (
@@ -1800,7 +1821,9 @@ export default function App() {
                         Bloquear Rafa
                       </button>
                     </div>
-                    <PanelRafaPrivado />
+                    <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
+                      <PanelRafaPrivado />
+                    </Suspense>
                   </>
                 ) : (
                   <section className="card card-pad" style={{ maxWidth: 520, margin: "0 auto" }}>
