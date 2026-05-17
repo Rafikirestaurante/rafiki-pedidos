@@ -38,7 +38,7 @@ import {
   vibracionCortaMesas
 } from "../utils/mesas";
 
-export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, onEnviar }) {
+export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar }) {
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("");
   const [modoLlevar, setModoLlevar] = useState(false);
@@ -471,7 +471,9 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
         />
 
         {categoriaActivaMesa === "almuerzos" ? (
-          menu.platos_detalle.length === 0 ? (
+          cargandoMenu ? (
+            <div className="box soft">Cargando menú diario...</div>
+          ) : menu.platos_detalle.length === 0 ? (
             <div className="box soft">No hay menú diario configurado.</div>
           ) : (
             <>
@@ -908,7 +910,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, guardandoPedido, 
       </section>
 
       <aside className="card card-pad fade-step" id="mesa-confirmacion-final">
-        <h2>{hayProductoSeleccionadoMesa ? "Confirmación" : "Resumen"}</h2>
+        <h2>{hayProductoSeleccionadoMesa ? "Resumen del pedido" : "Resumen"}</h2>
 
         {!hayProductoSeleccionadoMesa ? (
           <div className="box soft">

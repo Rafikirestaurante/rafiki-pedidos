@@ -61,6 +61,25 @@ function CargandoModulo({ texto = TEXTOS_APP.CARGANDO_SECCION }) {
 const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
 const CLAVE_ELIMINAR_PEDIDO = import.meta.env.VITE_CLAVE_ELIMINAR_PEDIDO || "Rafiki1989";
 
+const MENU_CACHE_KEY = "rafikiMenuDiarioCache";
+
+function leerMenuCache() {
+  try {
+    const raw = window.localStorage.getItem(MENU_CACHE_KEY);
+    return raw ? normalizarMenu(JSON.parse(raw)) : normalizarMenu(menuFallback);
+  } catch (_error) {
+    return normalizarMenu(menuFallback);
+  }
+}
+
+function guardarMenuCache(menuNormalizado) {
+  try {
+    window.localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(menuNormalizado));
+  } catch (_error) {
+    // No bloquear la app si el navegador no permite localStorage.
+  }
+}
+
 export default function App() {
   const [vista, setVista] = useState(() => obtenerVistaInicial());
   const [adminTab, setAdminTab] = useState("pedidos");
@@ -71,7 +90,7 @@ export default function App() {
   const [adminRol, setAdminRol] = useState("usuario");
   const [adminAuthCargando, setAdminAuthCargando] = useState(true);
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
-  const [menu, setMenu] = useState(normalizarMenu(menuFallback));
+  const [menu, setMenu] = useState(() => leerMenuCache());
   const [pedidos, setPedidos] = useState([]);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
@@ -333,7 +352,7 @@ export default function App() {
 
   const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
-  const cargandoDatosOperativos = cargandoMenu || cargandoPedidos;
+  const cargandoDatosOperativos = vista === "admin" ? (cargandoMenu || cargandoPedidos) : cargandoMenu;
 
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
@@ -431,7 +450,7 @@ export default function App() {
             .order("id", { ascending: false })
             .limit(1)
             .maybeSingle(),
-          8000,
+          15000,
           "La carga del menú"
         );
 
@@ -456,6 +475,7 @@ export default function App() {
           if (menuHashRef.current !== nuevoHash) {
             menuHashRef.current = nuevoHash;
             setMenu(menuNormalizado);
+            guardarMenuCache(menuNormalizado);
             setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
             setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
 
@@ -491,6 +511,14 @@ export default function App() {
 
   useEffect(() => {
     let cancelado = false;
+    const debeCargarPedidos = vista === "admin" && adminAutenticado;
+
+    if (!debeCargarPedidos) {
+      setCargandoPedidos(false);
+      return () => {
+        cancelado = true;
+      };
+    }
 
     async function cargarPedidosSeguro() {
       setCargandoPedidos(true);
@@ -505,7 +533,7 @@ export default function App() {
             .gte("created_at", rango.inicio)
             .lt("created_at", rango.fin)
             .order("created_at", { ascending: true }),
-          8000,
+          12000,
           "La carga de pedidos"
         );
 
@@ -538,10 +566,10 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [filtroPedidos, fechaSeleccionada, recargaPedidos]);
+  }, [vista, adminAutenticado, filtroPedidos, fechaSeleccionada, recargaPedidos]);
 
   useEffect(() => {
-    if (!adminAutenticado) return undefined;
+    if (!adminAutenticado || vista !== "admin") return undefined;
 
     const canal = supabase
       .channel("rafiki-pedidos-tiempo-real")
@@ -578,7 +606,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(canal);
     };
-  }, [adminAutenticado, filtroPedidos, fechaSeleccionada, sonidoActivado]);
+  }, [adminAutenticado, vista, filtroPedidos, fechaSeleccionada, sonidoActivado]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -1707,6 +1735,7 @@ export default function App() {
               <PanelMesasPOS
                 menu={menu}
                 platosAgrupados={platosAgrupados}
+                cargandoMenu={cargandoMenu}
                 guardandoPedido={guardandoPedido}
                 onEnviar={registrarPedidoMesa}
               />
