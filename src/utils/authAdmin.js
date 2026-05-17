@@ -36,14 +36,14 @@ export async function obtenerRolUsuarioDesdeTabla(supabase, usuario) {
   const consultaRol = supabase
     .from("usuarios_roles")
     .select("email, rol")
-    .eq("email", email)
+    .ilike("email", email)
     .limit(1)
     .maybeSingle();
 
   const tiempoMaximo = new Promise((resolve) => {
     window.setTimeout(() => {
       resolve({ data: null, error: new Error("Tiempo máximo consultando usuarios_roles") });
-    }, 8000);
+    }, 3000);
   });
 
   try {

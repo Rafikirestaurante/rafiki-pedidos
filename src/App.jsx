@@ -80,7 +80,23 @@ function guardarMenuCache(menuNormalizado) {
   }
 }
 
+function hayMenuCacheValido() {
+  try {
+    const raw = window.localStorage.getItem(MENU_CACHE_KEY);
+    if (!raw) return false;
+    const menuGuardado = normalizarMenu(JSON.parse(raw));
+    return Boolean(
+      menuGuardado?.id ||
+      menuGuardado?.platos_detalle?.length ||
+      menuGuardado?.acompanantes?.length
+    );
+  } catch (_error) {
+    return false;
+  }
+}
+
 export default function App() {
+  const menuCacheDisponibleRef = useRef(hayMenuCacheValido());
   const [vista, setVista] = useState(() => obtenerVistaInicial());
   const [adminTab, setAdminTab] = useState("pedidos");
   const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
@@ -108,7 +124,7 @@ export default function App() {
   const [mensajeMenu, setMensajeMenu] = useState({ texto: "", tipo: "info" });
   const [errorDatosPedido, setErrorDatosPedido] = useState("");
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
-  const [cargandoMenu, setCargandoMenu] = useState(true);
+  const [cargandoMenu, setCargandoMenu] = useState(() => !menuCacheDisponibleRef.current);
   const [cargandoPedidos, setCargandoPedidos] = useState(true);
   const [guardandoPedido, setGuardandoPedido] = useState(false);
   const [guardandoMenu, setGuardandoMenu] = useState(false);
@@ -157,6 +173,17 @@ export default function App() {
 
   useEffect(() => {
     let activo = true;
+    const rutaAdmin = vista === "admin" || vista === "adminLogin";
+    const haySesionTemporalAdmin = obtenerSesionActiva("rafikiAdminActivo");
+
+    if (!rutaAdmin && !haySesionTemporalAdmin) {
+      setAdminAuthCargando(false);
+      return () => {
+        activo = false;
+      };
+    }
+
+    setAdminAuthCargando(true);
 
     async function revisarSesionAdmin() {
       try {
@@ -214,7 +241,7 @@ export default function App() {
       activo = false;
       authListener?.subscription?.unsubscribe?.();
     };
-  }, [cargarRolAdmin, activarSesionAdmin]);
+  }, [vista, cargarRolAdmin, activarSesionAdmin]);
 
   useEffect(() => {
     if (!adminAutenticado) return;
@@ -439,7 +466,8 @@ export default function App() {
     let cancelado = false;
 
     async function cargarMenuSeguro() {
-      setCargandoMenu(true);
+      const hayCache = menuCacheDisponibleRef.current;
+      setCargandoMenu(!hayCache);
 
       try {
         const { data: menuData, error: menuError } = await conTiempoMaximo(
@@ -450,7 +478,7 @@ export default function App() {
             .order("id", { ascending: false })
             .limit(1)
             .maybeSingle(),
-          15000,
+          7000,
           "La carga del menú"
         );
 
@@ -476,6 +504,7 @@ export default function App() {
             menuHashRef.current = nuevoHash;
             setMenu(menuNormalizado);
             guardarMenuCache(menuNormalizado);
+            menuCacheDisponibleRef.current = true;
             setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
             setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
 
@@ -489,7 +518,7 @@ export default function App() {
           setAcompanantesTexto("");
         }
       } catch (error) {
-        if (!cancelado) {
+        if (!cancelado && !menuCacheDisponibleRef.current) {
           mostrarMensaje(
             `No se pudo cargar el menú. Revisa la conexión e intenta recargar la página. ${error.message || ""}`.trim(),
             "error"
