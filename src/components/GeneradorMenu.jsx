@@ -6,7 +6,7 @@ import {
   precioVisible,
   fechaHoyISO,
   normalizarPlatos,
-  formatearFechaCorta,
+  formatearFechaInformeMenu,
   obtenerPlatosSinPrecio,
   crearSvgMenu,
   crearSvgMenuSoloTexto
@@ -364,9 +364,15 @@ export default function GeneradorMenu() {
                 <table className="informe-menu-tabla">
                   <thead>
                     <tr>
-                      {informeUltimosMenus.map((registro) => (
-                        <th key={registro.fecha}>{formatearFechaCorta(registro.fecha)}</th>
-                      ))}
+                      {informeUltimosMenus.map((registro) => {
+                        const fechaInforme = formatearFechaInformeMenu(registro.fecha);
+                        return (
+                          <th key={registro.fecha}>
+                            <span className="informe-menu-dia">{fechaInforme.diaSemana}</span>
+                            <span className="informe-menu-fecha">{fechaInforme.fechaCorta}</span>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
@@ -414,10 +420,12 @@ export default function GeneradorMenu() {
         .history-menu-item:hover { border-color: #f97316; box-shadow: 0 4px 12px rgba(124,45,18,0.08); }
         .informe-menu-scroll { width: 100%; max-width: 100%; margin-top: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
         .informe-menu-tabla { width: max-content; min-width: 1080px; max-width: none; border-collapse: collapse; background: #fff; border: 1px solid #fed7aa; border-radius: 16px; overflow: hidden; }
-        .informe-menu-tabla th { background: #fff7ed; color: #7c2d12; font-size: 13px; text-transform: capitalize; padding: 10px; border: 1px solid #fed7aa; white-space: nowrap; }
-        .informe-menu-tabla td { vertical-align: top; width: 160px; min-width: 160px; max-width: 160px; padding: 12px; border: 1px solid #fed7aa; color: #3f2a1d; }
+        .informe-menu-tabla th { background: #fff7ed; color: #7c2d12; padding: 10px 12px; border: 1px solid #fed7aa; white-space: nowrap; text-align: center; }
+        .informe-menu-dia { display: block; font-size: 13px; font-weight: 950; line-height: 1.15; }
+        .informe-menu-fecha { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 800; color: #9a3412; line-height: 1.15; }
+        .informe-menu-tabla td { vertical-align: top; width: 210px; min-width: 210px; max-width: 210px; padding: 12px 14px; border: 1px solid #fed7aa; color: #3f2a1d; }
         .informe-menu-tabla ul { margin: 0; padding-left: 16px; display: grid; gap: 6px; }
-        .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.3; overflow-wrap: normal; word-break: normal; hyphens: none; }
+        .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.3; overflow-wrap: normal; word-break: normal; hyphens: none; white-space: normal; }
         .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
         .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
         @media (max-width: 860px) {
@@ -431,8 +439,8 @@ export default function GeneradorMenu() {
           .acciones-generador .button, .generador-menu .button { width: 100%; justify-content: center; }
           .history-menu-item { align-items: flex-start; flex-direction: column; }
           .preview-menu-frame { border-radius: 18px; }
-          .informe-menu-tabla { min-width: 640px; }
-          .informe-menu-tabla td { width: 92px; min-width: 92px; max-width: 92px; padding: 8px; }
+          .informe-menu-tabla { min-width: 1080px; }
+          .informe-menu-tabla td { width: 165px; min-width: 165px; max-width: 165px; padding: 10px; }
         }
         @media (max-width: 420px) {
           .plato-menu-row { grid-template-columns: 1fr; }

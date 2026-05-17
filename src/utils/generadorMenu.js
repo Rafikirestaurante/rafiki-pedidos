@@ -38,6 +38,21 @@ export function formatearFechaCorta(fechaISO) {
   return fecha.toLocaleDateString("es-CO", { day: "numeric", month: "long" });
 }
 
+export function formatearFechaInformeMenu(fechaISO) {
+  if (!fechaISO) return { diaSemana: "Sin fecha", fechaCorta: "" };
+  const [year, month, day] = String(fechaISO).split("-").map(Number);
+  if (!year || !month || !day) return { diaSemana: String(fechaISO), fechaCorta: "" };
+
+  const fecha = new Date(year, month - 1, day);
+  const diaSemana = fecha.toLocaleDateString("es-CO", { weekday: "long" });
+  const fechaCorta = fecha.toLocaleDateString("es-CO", { day: "numeric", month: "long" });
+
+  return {
+    diaSemana: diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1),
+    fechaCorta
+  };
+}
+
 export function obtenerPlatosSinPrecio(registro) {
   const platos = Array.isArray(registro?.platos) ? registro.platos : [];
   return platos
