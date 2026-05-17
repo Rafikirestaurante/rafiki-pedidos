@@ -80,6 +80,7 @@ export const appStyles = `
         .button { border: 0; background: linear-gradient(135deg, #f97316, #fb923c); color: white; font-weight: 900; padding: 14px 18px; border-radius: 16px; box-shadow: 0 6px 16px rgba(249,115,22,0.28); letter-spacing: -0.2px; }
         .button.green { background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 6px 16px rgba(34,197,94,0.25); }
         .button.light { background: #fff; color: #44403c; border: 1px solid #e7e5e4; box-shadow: none; }
+        .button.full-width { width: 100%; }
         .button.danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; box-shadow: none; }
         .button.disabled { opacity: 0.6; pointer-events: auto; }
         .button.add-meal { width: 100%; margin-top: 4px; margin-bottom: 18px; }

@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./utils/navigation";
 import { InicioRafiki, AdminLogin } from "./components/screens/InicioAdmin";
-import { CampoTexto, SelectorCantidad } from "./components/common";
+import { CampoTexto, SelectorCantidad, Tarjeta } from "./components/common";
 import { PedidoCocina, TablaPedidosCompacta } from "./components/PedidosAdmin";
 import { estadosPedido, menuFallback, MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
@@ -40,6 +40,7 @@ import {
   platosATexto,
   textoAPlatosDetalle,
 } from "./utils/pedidos";
+import { BOTONES, CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS, TEXTOS_APP } from "./config/textos";
 
 
 const SolicitudProductos = lazy(() => import("./components/SolicitudProductos"));
@@ -47,12 +48,12 @@ const GeneradorMenu = lazy(() => import("./components/GeneradorMenu"));
 const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
 const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
 
-function CargandoModulo({ texto = "Cargando sección..." }) {
+function CargandoModulo({ texto = TEXTOS_APP.CARGANDO_SECCION }) {
   return (
-    <div className="card card-pad module-loader" role="status" aria-live="polite">
+    <Tarjeta className="module-loader" role="status" aria-live="polite">
       <strong>{texto}</strong>
-      <p className="muted" style={{ marginBottom: 0 }}>Preparando esta parte de Rafiki Pedidos.</p>
-    </div>
+      <p className="muted" style={{ marginBottom: 0 }}>{TEXTOS_APP.CARGANDO_SECCION_DETALLE}</p>
+    </Tarjeta>
   );
 }
 
@@ -168,9 +169,9 @@ export default function App() {
         audioCtxRef.current = new AudioContext();
       }
       reproducirSonidoPedido();
-      mostrarMensaje("Sonido de nuevos pedidos activado.", "success");
+      mostrarMensaje(MENSAJES_PEDIDOS.SONIDO_ACTIVADO, "success");
     } catch {
-      mostrarMensaje("El navegador bloqueó el sonido. Toca de nuevo el botón de activar sonido.", "warning");
+      mostrarMensaje(MENSAJES_PEDIDOS.SONIDO_BLOQUEADO, "warning");
     }
   }
 
@@ -834,7 +835,7 @@ export default function App() {
       setItemsPedido([crearItemNuevo()]);
       setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
       setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
-      mostrarMensajeMenu(menu.id ? "Menú actualizado correctamente." : "Menú creado correctamente.", "success");
+      mostrarMensajeMenu(menu.id ? MENSAJES_PEDIDOS.MENU_ACTUALIZADO : MENSAJES_PEDIDOS.MENU_CREADO, "success");
     } finally {
       setGuardandoMenu(false);
     }
@@ -851,9 +852,7 @@ export default function App() {
 
     if (estadoNuevo === "Finalizado") {
       const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : "";
-      const confirmar = window.confirm(
-        `¿Confirmas que el pedido #${codigoPedido} ya fue entregado?`
-      );
+      const confirmar = window.confirm(CONFIRMACIONES_PEDIDOS.pedidoEntregado(codigoPedido));
 
       if (!confirmar) return;
     }
@@ -887,13 +886,11 @@ export default function App() {
     const pendientesParaFinalizar = pedidosPendientes.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
 
     if (pendientesParaFinalizar.length === 0) {
-      mostrarMensaje("No hay pedidos pendientes para finalizar.", "warning");
+      mostrarMensaje(MENSAJES_PEDIDOS.SIN_PEDIDOS_PENDIENTES, "warning");
       return;
     }
 
-    const confirmar = window.confirm(
-      `¿Confirmas finalizar ${pendientesParaFinalizar.length} pedidos pendientes?\n\nTodos pasarán a Pedidos Finalizados.`
-    );
+    const confirmar = window.confirm(CONFIRMACIONES_PEDIDOS.finalizarPendientes(pendientesParaFinalizar.length));
 
     if (!confirmar) return;
 
@@ -928,20 +925,16 @@ export default function App() {
     const pedidoActual = pedidos.find((pedido) => pedido.id === id);
     const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
 
-    const confirmar = window.confirm(
-      `¿Seguro que deseas mover el pedido #${codigoPedido} a Pedidos Borrados?\n\nDejará de sumar en ventas, pero quedará visible para control.`
-    );
+    const confirmar = window.confirm(CONFIRMACIONES_PEDIDOS.eliminarPedido(codigoPedido));
 
     if (!confirmar) return;
 
-    const claveIngresada = window.prompt(
-      `Ingresa la clave para borrar el pedido #${codigoPedido}:`
-    );
+    const claveIngresada = window.prompt(CONFIRMACIONES_PEDIDOS.claveEliminarPedido(codigoPedido));
 
     if (claveIngresada === null) return;
 
     if (claveIngresada.trim() !== CLAVE_ELIMINAR_PEDIDO) {
-      mostrarMensaje("Clave incorrecta. El pedido no fue eliminado.", "error");
+      mostrarMensaje(MENSAJES_PEDIDOS.CLAVE_INCORRECTA_ELIMINAR, "error");
       return;
     }
 
@@ -1529,7 +1522,7 @@ export default function App() {
                       rel="noreferrer"
                       className="button green whatsapp-confirm-button"
                     >
-                      🟢 Por favor Confirmar por WhatsApp
+                      {BOTONES.CONFIRMAR_WHATSAPP}
                     </a>
                     <button type="button" onClick={nuevoPedidoCliente} className="button light" style={{ width: "100%" }}>
                       Hacer otro pedido

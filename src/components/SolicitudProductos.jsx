@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { crearLinkWhatsApp, fechaISOColombia, generarId, normalizarTexto } from "../utils/pedidos";
+import { BOTONES, CONFIRMACIONES_INSUMOS, MENSAJES_INSUMOS } from "../config/textos";
 import CampoTexto from "./insumos/CampoTexto";
 import { CATEGORIA_SOLICITUD_DEFECTO, categoriasSolicitudProductos } from "../data/solicitudProductosData";
 import {
@@ -159,33 +160,31 @@ export default function SolicitudProductos() {
 
   function enviarListadoProveedores() {
     if (productosParaEnviarProveedor.length === 0) {
-      setMensajePendientes({ texto: "No hay insumos pendientes para enviar. Los insumos están marcados como comprados.", tipo: "warning" });
+      setMensajePendientes({ texto: MENSAJES_INSUMOS.SIN_INSUMOS_PARA_ENVIAR, tipo: "warning" });
       return;
     }
 
     const mensaje = crearMensajeCompraProveedores(productosParaEnviarProveedor, fechaConsultaSolicitudes);
     const link = crearLinkWhatsApp(WHATSAPP_SOLICITUD_INSUMOS, mensaje, { abrirApp: true });
-    setMensajePendientes({ texto: "Se abrirá WhatsApp con el listado para proveedores.", tipo: "success" });
+    setMensajePendientes({ texto: MENSAJES_INSUMOS.ABRIR_WHATSAPP_PROVEEDORES, tipo: "success" });
     window.location.href = link;
   }
 
   function limpiarCompradosPendientes() {
-    const confirmar = window.confirm("¿Quieres desmarcar todos los insumos comprados y borrar las cantidades escritas?");
+    const confirmar = window.confirm(CONFIRMACIONES_INSUMOS.limpiarComprados);
     if (!confirmar) return;
     setEstadoPendientesCompra({});
-    setMensajePendientes({ texto: "Lista de compras reiniciada.", tipo: "success" });
+    setMensajePendientes({ texto: MENSAJES_INSUMOS.LISTA_COMPRAS_REINICIADA, tipo: "success" });
   }
 
   async function borrarSolicitudesDelDia() {
     const fecha = fechaConsultaSolicitudes || fechaISOColombia();
-    const confirmar = window.confirm(
-      `¿Seguro que deseas borrar todas las solicitudes del día ${fecha}? Esta acción no se puede deshacer.`
-    );
+    const confirmar = window.confirm(CONFIRMACIONES_INSUMOS.borrarSolicitudesDia(fecha));
 
     if (!confirmar) return;
 
     setCargandoPendientes(true);
-    setMensajePendientes({ texto: "Borrando solicitudes del día...", tipo: "info" });
+    setMensajePendientes({ texto: MENSAJES_INSUMOS.BORRANDO_SOLICITUDES_DIA, tipo: "info" });
 
     try {
       const { error } = await supabase
@@ -296,7 +295,7 @@ export default function SolicitudProductos() {
 
     const producto = productosSolicitud.find((item) => item.id === id);
     const nombre = producto?.nombre || "este insumo";
-    const confirmar = window.confirm(`¿Eliminar ${nombre} de la lista principal? Esta acción solo afecta esta lista de solicitud.`);
+    const confirmar = window.confirm(CONFIRMACIONES_INSUMOS.eliminarProductoLista(nombre));
 
     if (!confirmar) return;
 
@@ -395,14 +394,14 @@ export default function SolicitudProductos() {
         );
 
         setMensajeSolicitud({
-          texto: "Solicitud guardada. Se abrirá WhatsApp con el consolidado.",
+          texto: MENSAJES_INSUMOS.SOLICITUD_GUARDADA_WHATSAPP,
           tipo: "success"
         });
 
         window.location.href = link;
       } else {
         setMensajeSolicitud({
-          texto: "Solicitud guardada. Ahora puedes enviar el consolidado por WhatsApp.",
+          texto: MENSAJES_INSUMOS.SOLICITUD_GUARDADA,
           tipo: "success"
         });
       }
@@ -553,7 +552,7 @@ export default function SolicitudProductos() {
                         className="button green"
                         style={{ width: "100%", marginTop: 14 }}
                       >
-                        {guardandoSolicitud ? "Guardando solicitud..." : "Guardar solicitud y enviar por WhatsApp"}
+                        {guardandoSolicitud ? BOTONES.GUARDANDO_SOLICITUD : BOTONES.GUARDAR_ENVIAR_WHATSAPP}
                       </button>
 
                       <div className="box soft" style={{ marginTop: 18 }}>
@@ -808,7 +807,7 @@ export default function SolicitudProductos() {
             style={{ width: "100%", marginTop: 14 }}
             disabled={productosParaEnviarProveedor.length === 0}
           >
-            Enviar seleccionados por WhatsApp
+            {BOTONES.ENVIAR_SELECCIONADOS_WHATSAPP}
           </button>
         </div>
       )}

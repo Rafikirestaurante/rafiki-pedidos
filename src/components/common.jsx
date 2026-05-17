@@ -53,3 +53,36 @@ export function SelectorCantidad({ cantidad, onChange }) {
   );
 }
 
+
+export function Boton({
+  children,
+  tipo = "button",
+  variante = "primary",
+  className = "",
+  full = false,
+  ...props
+}) {
+  const clases = ["button", variante !== "primary" ? variante : "", full ? "full-width" : "", className]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <button type={tipo} className={clases} {...props}>
+      {children}
+    </button>
+  );
+}
+
+export function Tarjeta({ children, className = "", padding = true, ...props }) {
+  const clases = ["card", padding ? "card-pad" : "", className].filter(Boolean).join(" ");
+  return (
+    <section className={clases} {...props}>
+      {children}
+    </section>
+  );
+}
+
+export function Aviso({ mensaje, tipo = "info" }) {
+  if (!mensaje) return null;
+  return <div className={`alert alert-${tipo}`}>{mensaje}</div>;
+}

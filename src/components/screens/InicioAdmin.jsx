@@ -1,16 +1,18 @@
 import React from "react";
+import { Aviso, Boton, Tarjeta } from "../common";
+import { BOTONES, TEXTOS_APP } from "../../config/textos";
 
 export function InicioRafiki({ navegar }) {
   return (
     <main className="welcome">
       <section className="welcome-card">
         <img src="/logo-rafiki.png" alt="Rafiki Restaurante" className="welcome-logo" />
-        <h2>Bienvenido a Rafiki</h2>
-        <p>Escoge tu almuerzo del día, selecciona tus acompañantes y envíanos tu pedido por WhatsApp.</p>
+        <h2>{TEXTOS_APP.BIENVENIDA_TITULO}</h2>
+        <p>{TEXTOS_APP.BIENVENIDA_DESCRIPCION}</p>
 
         <div className="welcome-actions">
           <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
-            🛍️ Haz tu pedido aquí
+            {BOTONES.CLIENTE_PEDIR}
           </button>
         </div>
       </section>
@@ -28,18 +30,18 @@ export function AdminLogin({
 }) {
   return (
     <main style={{ maxWidth: 520, margin: "0 auto" }}>
-      <section className="card card-pad">
+      <Tarjeta>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div className="brand">🔐 Panel Rafiki</div>
-          <h2>Acceso administrativo</h2>
-          <p className="muted">Ingresa la clave para ver pedidos y editar el menú diario.</p>
+          <div className="brand">{TEXTOS_APP.PANEL_ADMIN_MARCA}</div>
+          <h2>{TEXTOS_APP.PANEL_ADMIN_TITULO}</h2>
+          <p className="muted">{TEXTOS_APP.PANEL_ADMIN_DESCRIPCION}</p>
         </div>
 
-        {errorClaveAdmin && <div className="alert alert-error">{errorClaveAdmin}</div>}
+        <Aviso mensaje={errorClaveAdmin} tipo="error" />
 
         <form onSubmit={validarClaveAdmin}>
           <label className="field">
-            <span>Clave del panel</span>
+            <span>{TEXTOS_APP.CLAVE_PANEL}</span>
             <input
               type="password"
               value={claveAdmin}
@@ -47,29 +49,29 @@ export function AdminLogin({
                 setClaveAdmin(e.target.value);
                 setErrorClaveAdmin("");
               }}
-              placeholder="Escribe la clave"
+              placeholder={TEXTOS_APP.CLAVE_PLACEHOLDER}
               autoFocus
             />
           </label>
 
-          <button type="submit" className="button" style={{ width: "100%" }}>
-            Entrar al panel
-          </button>
+          <Boton tipo="submit" full>
+            {BOTONES.ENTRAR_PANEL}
+          </Boton>
         </form>
 
-        <button
-          type="button"
+        <Boton
           onClick={() => {
             setClaveAdmin("");
             setErrorClaveAdmin("");
             navegar("/", "inicio");
           }}
-          className="button light"
-          style={{ width: "100%", marginTop: 12 }}
+          variante="light"
+          full
+          style={{ marginTop: 12 }}
         >
-          Volver al inicio
-        </button>
-      </section>
+          {BOTONES.VOLVER_INICIO}
+        </Boton>
+      </Tarjeta>
     </main>
   );
 }
