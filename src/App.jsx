@@ -41,6 +41,7 @@ import {
   textoAPlatosDetalle,
 } from "./utils/pedidos";
 import { BOTONES, CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS, TEXTOS_APP } from "./config/textos";
+import { describirActor, nombreRol, obtenerRolUsuario, primeraPestanaPermitida, usuarioPuede } from "./utils/authAdmin";
 
 
 const SolicitudProductos = lazy(() => import("./components/SolicitudProductos"));
@@ -110,6 +111,17 @@ export default function App() {
   const audioCtxRef = useRef(null);
   const alertaPedidoTimer = useRef(null);
 
+  const adminRol = useMemo(() => obtenerRolUsuario(adminUsuario), [adminUsuario]);
+  const adminNombreRol = nombreRol(adminRol);
+  const adminActor = describirActor(adminUsuario, adminAutenticado ? "Clave administrativa local" : "Sin sesión");
+  const puedeVerMenu = usuarioPuede(adminRol, "menu");
+  const puedeVerProductos = usuarioPuede(adminRol, "productos");
+  const puedeVerGenerador = usuarioPuede(adminRol, "generador");
+  const puedeVerRafa = usuarioPuede(adminRol, "rafa");
+  const puedeEliminarPedido = usuarioPuede(adminRol, "eliminar_pedido");
+  const puedeCambiarEstado = usuarioPuede(adminRol, "cambiar_estado");
+  const puedeFinalizarPendientes = usuarioPuede(adminRol, "finalizar_pendientes");
+
   const navegar = useCallback((ruta, nuevaVista) => {
     actualizarRuta(ruta);
     setVista(nuevaVista);
@@ -157,6 +169,14 @@ export default function App() {
       authListener?.subscription?.unsubscribe?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (!adminAutenticado) return;
+    const pestanaPermitida = primeraPestanaPermitida(adminRol);
+    if (adminTab !== "pedidos" && !usuarioPuede(adminRol, adminTab)) {
+      setAdminTab(pestanaPermitida);
+    }
+  }, [adminAutenticado, adminRol, adminTab]);
 
   const mostrarMensaje = useCallback((texto, tipo = "info") => {
     if (mensajeTimer.current) {
@@ -887,8 +907,34 @@ export default function App() {
     }
   }
 
+  const registrarAuditoria = useCallback(async ({ accion, pedido, detalle = {} }) => {
+    try {
+      const { error } = await supabase.from("auditoria_pedidos").insert({
+        pedido_id: pedido?.id ? String(pedido.id) : null,
+        codigo_pedido: pedido ? obtenerCodigoPedido(pedido) : null,
+        accion,
+        detalle,
+        usuario_email: adminUsuario?.email || null,
+        usuario_rol: adminRol,
+        actor: adminActor,
+        created_at: new Date().toISOString(),
+      });
+
+      if (error) {
+        console.warn("Auditoría no registrada:", error.message);
+      }
+    } catch (error) {
+      console.warn("Auditoría no registrada:", error?.message || error);
+    }
+  }, [adminActor, adminRol, adminUsuario]);
+
   const cambiarEstadoPedido = useCallback(async (id, estado) => {
     if (guardandoEstadoPedidoId) return;
+
+    if (!puedeCambiarEstado) {
+      mostrarMensaje("Tu rol no tiene permiso para cambiar el estado de pedidos.", "error");
+      return;
+    }
 
     const estadoNuevo = estado === "Finalizado" ? "Finalizado" : "Pendiente";
     const pedidoActual = pedidos.find((pedido) => pedido.id === id);
@@ -919,15 +965,25 @@ export default function App() {
       }
 
       setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      registrarAuditoria({
+        accion: estadoNuevo === "Finalizado" ? "pedido_entregado" : "pedido_pendiente",
+        pedido: data,
+        detalle: { estadoAnterior: estadoActual, estadoNuevo },
+      });
       mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como ${estadoNuevo === "Finalizado" ? "Entregado" : estadoNuevo}.`, "success");
     } finally {
       setGuardandoEstadoPedidoId(null);
     }
-  }, [guardandoEstadoPedidoId, pedidos, mostrarMensaje]);
+  }, [guardandoEstadoPedidoId, pedidos, mostrarMensaje, puedeCambiarEstado, registrarAuditoria]);
 
 
   const finalizarTodosPendientes = useCallback(async () => {
     if (finalizandoPendientes || guardandoEstadoPedidoId) return;
+
+    if (!puedeFinalizarPendientes) {
+      mostrarMensaje("Tu rol no tiene permiso para finalizar todos los pedidos.", "error");
+      return;
+    }
 
     const pendientesParaFinalizar = pedidosPendientes.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
 
@@ -959,14 +1015,24 @@ export default function App() {
       const mapaActualizados = new Map(actualizados.map((pedido) => [pedido.id, pedido]));
 
       setPedidos((actual) => actual.map((pedido) => mapaActualizados.get(pedido.id) || pedido));
+      await Promise.all((actualizados.length ? actualizados : pendientesParaFinalizar).map((pedido) => registrarAuditoria({
+        accion: "finalizacion_masiva",
+        pedido,
+        detalle: { totalSeleccionados: ids.length },
+      })));
       mostrarMensaje(`${actualizados.length || ids.length} pedidos pendientes marcados como entregados.`, "success");
     } finally {
       setFinalizandoPendientes(false);
     }
-  }, [finalizandoPendientes, guardandoEstadoPedidoId, pedidosPendientes, mostrarMensaje]);
+  }, [finalizandoPendientes, guardandoEstadoPedidoId, pedidosPendientes, mostrarMensaje, puedeFinalizarPendientes, registrarAuditoria]);
 
   const eliminarPedidoConClave = useCallback(async (id) => {
     if (eliminandoPedidoId) return;
+
+    if (!puedeEliminarPedido) {
+      mostrarMensaje("Tu rol no tiene permiso para eliminar pedidos.", "error");
+      return;
+    }
 
     const pedidoActual = pedidos.find((pedido) => pedido.id === id);
     const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
@@ -1000,11 +1066,16 @@ export default function App() {
       }
 
       setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      registrarAuditoria({
+        accion: "pedido_borrado",
+        pedido: data,
+        detalle: { estadoAnterior: obtenerEstadoPedido(pedidoActual || {}), requiereClaveLocal: true },
+      });
       mostrarMensaje(`Pedido #${codigoPedido} movido a Pedidos Borrados.`, "success");
     } finally {
       setEliminandoPedidoId(null);
     }
-  }, [eliminandoPedidoId, pedidos, mostrarMensaje]);
+  }, [eliminandoPedidoId, pedidos, mostrarMensaje, puedeEliminarPedido, registrarAuditoria]);
 
   function abrirPanelAdmin() {
     setErrorClaveAdmin("");
@@ -1048,6 +1119,7 @@ export default function App() {
       setAdminAutenticado(true);
       setAdminPassword("");
       setErrorClaveAdmin("");
+      setAdminTab(primeraPestanaPermitida(obtenerRolUsuario(data?.user)));
       navegar("/admin", "admin");
       return;
     }
@@ -1063,6 +1135,7 @@ export default function App() {
       setAdminAutenticado(true);
       setAdminPassword("");
       setErrorClaveAdmin("");
+      setAdminTab("pedidos");
       navegar("/admin", "admin");
       return;
     }
@@ -1634,6 +1707,7 @@ export default function App() {
                   <h1>Gestión de pedidos y ventas</h1>
                   <p className="muted">Control de pedidos, menú diario, solicitudes y estadísticas.</p>
                   {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
+                  <p className="muted small">Rol: <strong>{adminNombreRol}</strong></p>
                 </div>
                 <div className="nav nav-wrap">
                   <button type="button" onClick={() => navegar("/mesas", "mesas")}>
@@ -1651,37 +1725,45 @@ export default function App() {
                   Pedidos de hoy
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setAdminTab("menu")}
-                  className={adminTab === "menu" ? "active" : ""}
-                >
-                  Editar menú diario
-                </button>
+                {puedeVerMenu && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminTab("menu")}
+                    className={adminTab === "menu" ? "active" : ""}
+                  >
+                    Editar menú diario
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => setAdminTab("productos")}
-                  className={adminTab === "productos" ? "active" : ""}
-                >
-                  Solicitud de insumos
-                </button>
+                {puedeVerProductos && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminTab("productos")}
+                    className={adminTab === "productos" ? "active" : ""}
+                  >
+                    Solicitud de insumos
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => setAdminTab("generador")}
-                  className={adminTab === "generador" ? "active" : ""}
-                >
-                  Generador de menú
-                </button>
+                {puedeVerGenerador && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminTab("generador")}
+                    className={adminTab === "generador" ? "active" : ""}
+                  >
+                    Generador de menú
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => setAdminTab("rafa")}
-                  className={adminTab === "rafa" ? "active" : ""}
-                >
-                  Rafa
-                </button>
+                {puedeVerRafa && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminTab("rafa")}
+                    className={adminTab === "rafa" ? "active" : ""}
+                  >
+                    Rafa
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -1779,7 +1861,7 @@ export default function App() {
                     <div className="section-heading">
                       <h3>🟡 Pedidos pendientes</h3>
                       <div className="section-heading-actions">
-                        {pedidosPendientes.length > 0 && (
+                        {pedidosPendientes.length > 0 && puedeFinalizarPendientes && (
                           <button
                             type="button"
                             className="mini-btn green"
@@ -1800,7 +1882,7 @@ export default function App() {
                         pedidos={pedidosPendientes}
                         onCambiarEstado={cambiarEstadoPedido}
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-                        onEliminarPedido={eliminarPedidoConClave}
+                        onEliminarPedido={puedeEliminarPedido ? eliminarPedidoConClave : undefined}
                         eliminandoPedidoId={eliminandoPedidoId}
                       />
                     )}
@@ -1819,7 +1901,7 @@ export default function App() {
                         pedidos={pedidosFinalizados}
                         onCambiarEstado={cambiarEstadoPedido}
                         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-                        onEliminarPedido={eliminarPedidoConClave}
+                        onEliminarPedido={puedeEliminarPedido ? eliminarPedidoConClave : undefined}
                         eliminandoPedidoId={eliminandoPedidoId}
                       />
                     )}
@@ -1877,19 +1959,19 @@ export default function App() {
                 </section>
               )}
 
-              {adminTab === "productos" && (
+              {adminTab === "productos" && puedeVerProductos && (
                 <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
                   <SolicitudProductos />
                 </Suspense>
               )}
 
-              {adminTab === "generador" && (
+              {adminTab === "generador" && puedeVerGenerador && (
                 <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
                   <GeneradorMenu />
                 </Suspense>
               )}
 
-              {adminTab === "rafa" && (
+              {adminTab === "rafa" && puedeVerRafa && (
                 (adminUsuario || rafaAutenticado) ? (
                   <>
                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
@@ -1932,7 +2014,7 @@ export default function App() {
                 )
               )}
 
-              {adminTab === "menu" && (
+              {adminTab === "menu" && puedeVerMenu && (
                 <section className="card card-pad">
                   <h2>✏️ Editar menú diario</h2>
                   <p className="muted">
