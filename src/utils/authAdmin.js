@@ -33,12 +33,20 @@ export async function obtenerRolUsuarioDesdeTabla(supabase, usuario) {
     return ROL_POR_DEFECTO;
   }
 
+  const consultaRol = supabase
+    .from("usuarios_roles")
+    .select("rol")
+    .ilike("email", email)
+    .maybeSingle();
+
+  const tiempoMaximo = new Promise((resolve) => {
+    window.setTimeout(() => {
+      resolve({ data: null, error: new Error("Tiempo máximo consultando usuarios_roles") });
+    }, 6000);
+  });
+
   try {
-    const { data, error } = await supabase
-      .from("usuarios_roles")
-      .select("rol")
-      .ilike("email", email)
-      .maybeSingle();
+    const { data, error } = await Promise.race([consultaRol, tiempoMaximo]);
 
     if (!error) {
       const rolTabla = limpiarRol(data?.rol);
@@ -47,7 +55,7 @@ export async function obtenerRolUsuarioDesdeTabla(supabase, usuario) {
       }
     }
   } catch {
-    // Si la tabla no existe, no bloqueamos el panel: usamos el respaldo seguro.
+    // Si la tabla no existe, RLS bloquea o la red no responde, no bloqueamos la app.
   }
 
   return obtenerRolUsuario(usuario);

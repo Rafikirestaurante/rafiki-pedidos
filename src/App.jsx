@@ -138,7 +138,11 @@ export default function App() {
 
     async function revisarSesionAdmin() {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await conTiempoMaximo(
+          supabase.auth.getSession(),
+          6000,
+          "La revisión de sesión administrativa"
+        );
         if (!activo) return;
 
         const usuario = data?.session?.user || null;
@@ -388,6 +392,19 @@ export default function App() {
     ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
     : "#";
 
+  function conTiempoMaximo(promise, ms, nombreOperacion) {
+    let timerId;
+    const timeout = new Promise((_, reject) => {
+      timerId = window.setTimeout(() => {
+        reject(new Error(`${nombreOperacion} tardó demasiado. Revisa la conexión o Supabase.`));
+      }, ms);
+    });
+
+    return Promise.race([promise, timeout]).finally(() => {
+      if (timerId) window.clearTimeout(timerId);
+    });
+  }
+
   useEffect(() => {
     let cancelado = false;
 
@@ -395,13 +412,17 @@ export default function App() {
       setCargandoMenu(true);
 
       try {
-        const { data: menuData, error: menuError } = await supabase
-          .from("menu_diario")
-          .select("*")
-          .eq("activo", true)
-          .order("id", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const { data: menuData, error: menuError } = await conTiempoMaximo(
+          supabase
+            .from("menu_diario")
+            .select("*")
+            .eq("activo", true)
+            .order("id", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          8000,
+          "La carga del menú"
+        );
 
         if (cancelado) return;
 
@@ -466,12 +487,16 @@ export default function App() {
       try {
         const rango = obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
 
-        const { data: pedidosData, error: pedidosError } = await supabase
-          .from("pedidos")
-          .select("*")
-          .gte("created_at", rango.inicio)
-          .lt("created_at", rango.fin)
-          .order("created_at", { ascending: true });
+        const { data: pedidosData, error: pedidosError } = await conTiempoMaximo(
+          supabase
+            .from("pedidos")
+            .select("*")
+            .gte("created_at", rango.inicio)
+            .lt("created_at", rango.fin)
+            .order("created_at", { ascending: true }),
+          8000,
+          "La carga de pedidos"
+        );
 
         if (cancelado) return;
 
