@@ -4,7 +4,10 @@ import {
   calcularTotalItem,
   dinero,
   fechaISOColombia,
+  formatearFechaHora,
   normalizarTexto,
+  obtenerCliente,
+  obtenerCodigoPedido,
   obtenerEstadoPedido,
   obtenerItemsPedido
 } from "../utils/pedidos";
@@ -83,6 +86,109 @@ function crearResumenVentas(pedidos) {
   };
 }
 
+
+function esPagoPendiente(tipoPago) {
+  const texto = normalizarTexto(tipoPago);
+  return ["pendiente", "credito", "credito", "fiado", "debe", "despues", "pagar despues", "por pagar"].some((palabra) => texto.includes(palabra));
+}
+
+function obtenerNombreProductoCliente(item) {
+  const base = item.producto || item.plato || item.proteina || item.nombre || "Producto";
+  const detalles = [];
+
+  if (item.tipo && item.categoria === "cafeteria") detalles.push(item.tipo);
+  if (item.tamano) detalles.push(item.tamano);
+  if (item.base) detalles.push(`Base ${item.base}`);
+  if (item.acompanante) detalles.push(item.acompanante);
+  if (item.bebida) detalles.push(`Bebida ${item.bebida}`);
+
+  return detalles.length ? `${base} · ${detalles.join(" · ")}` : base;
+}
+
+function crearFilasClientes(pedidos) {
+  return pedidos.flatMap((pedido) => {
+    const items = obtenerItemsPedido(pedido);
+    const cliente = obtenerCliente(pedido);
+    const telefono = pedido.telefono || "";
+    const formaPago = pedido.tipo_pago || "No especificado";
+    const estado = obtenerEstadoPedido(pedido);
+    const base = {
+      idPedido: pedido.id || pedido.numero_pedido || pedido.created_at,
+      codigo: obtenerCodigoPedido(pedido),
+      fecha: pedido.created_at,
+      cliente,
+      telefono,
+      formaPago,
+      estado,
+      pagoPendiente: esPagoPendiente(formaPago),
+      ubicacion: pedido.ubicacion || pedido.mesa || "",
+      observaciones: pedido.observaciones || ""
+    };
+
+    if (!items.length) {
+      return [{
+        ...base,
+        producto: pedido.pedido_texto || "Pedido sin detalle de productos",
+        cantidad: 1,
+        total: Number(pedido.total) || 0
+      }];
+    }
+
+    return items.map((item, index) => ({
+      ...base,
+      idFila: `${base.idPedido}-${index}`,
+      producto: obtenerNombreProductoCliente(item),
+      cantidad: Number(item.cantidad) || 1,
+      total: calcularTotalItem(item),
+      observaciones: item.observacionesItem || item.observacionAcompanantes || base.observaciones
+    }));
+  });
+}
+
+function crearResumenClientes(filas) {
+  const mapa = new Map();
+
+  filas.forEach((fila) => {
+    const clave = `${normalizarTexto(fila.cliente)}|${normalizarTexto(fila.telefono)}`;
+    const actual = mapa.get(clave) || {
+      clave,
+      cliente: fila.cliente || "Cliente",
+      telefono: fila.telefono || "",
+      pedidos: new Set(),
+      cantidad: 0,
+      total: 0,
+      pendiente: 0,
+      ultimaCompra: fila.fecha
+    };
+
+    actual.pedidos.add(fila.codigo);
+    actual.cantidad += Number(fila.cantidad) || 0;
+    actual.total += Number(fila.total) || 0;
+    if (fila.pagoPendiente) actual.pendiente += Number(fila.total) || 0;
+    if (fila.fecha && (!actual.ultimaCompra || new Date(fila.fecha) > new Date(actual.ultimaCompra))) {
+      actual.ultimaCompra = fila.fecha;
+    }
+
+    mapa.set(clave, actual);
+  });
+
+  return Array.from(mapa.values())
+    .map((cliente) => ({ ...cliente, pedidos: cliente.pedidos.size }))
+    .sort((a, b) => b.total - a.total || b.cantidad - a.cantidad);
+}
+
+function filtrarFilasClientes(filas, busqueda) {
+  const texto = normalizarTexto(busqueda);
+  if (!texto) return filas;
+
+  return filas.filter((fila) => {
+    const contenido = [fila.cliente, fila.telefono, fila.producto, fila.formaPago, fila.ubicacion, fila.codigo]
+      .map(normalizarTexto)
+      .join(" ");
+    return contenido.includes(texto);
+  });
+}
+
 function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTotal = true }) {
   if (!items.length) return <p className="muted">{vacio}</p>;
 
@@ -107,6 +213,7 @@ export default function PanelRafaPrivado() {
   const [pedidosRafa, setPedidosRafa] = useState([]);
   const [cargandoRafa, setCargandoRafa] = useState(false);
   const [errorRafa, setErrorRafa] = useState("");
+  const [busquedaCliente, setBusquedaCliente] = useState("");
 
   const rangoRafa = useMemo(() => {
     const inicioTexto = modoFecha === "rango" ? (fechaInicioRafa || hoy) : (fechaRafa || hoy);
@@ -175,6 +282,13 @@ export default function PanelRafaPrivado() {
   const tituloPeriodo = modoFecha === "rango"
     ? `${rangoRafa.inicioTexto} al ${rangoRafa.finTexto}`
     : rangoRafa.inicioTexto;
+  const filasClientes = crearFilasClientes(pedidosValidos);
+  const filasClientesFiltradas = filtrarFilasClientes(filasClientes, busquedaCliente);
+  const resumenClientes = crearResumenClientes(filasClientesFiltradas);
+  const totalClientesFiltrados = resumenClientes.length;
+  const totalComprasCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.total) || 0), 0);
+  const totalCantidadCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
+  const totalPendienteCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (fila.pagoPendiente ? (Number(fila.total) || 0) : 0), 0);
 
 
   function escaparHtml(valor) {
@@ -378,6 +492,114 @@ export default function PanelRafaPrivado() {
         <div className="soft-box">
           <h3>Acompañantes más usados</h3>
           <ListaResumen items={resumenVentas.acompanantes.slice(0, 12)} mostrarTotal={false} />
+        </div>
+      </div>
+
+
+      <div className="soft-box" style={{ marginTop: 22 }}>
+        <div className="admin-top-row">
+          <div>
+            <h3>👤 Historial de clientes</h3>
+            <p className="muted">Busca por nombre, teléfono, producto, forma de pago o número de pedido.</p>
+          </div>
+        </div>
+
+        <label className="field" style={{ marginTop: 10 }}>
+          <span>Buscar cliente o compra</span>
+          <input
+            type="search"
+            value={busquedaCliente}
+            onChange={(e) => setBusquedaCliente(e.target.value)}
+            placeholder="Ej: Laura, pechuga, pendiente, 3001234567..."
+          />
+        </label>
+
+        <div className="admin-stats" style={{ marginTop: 14 }}>
+          <div className="stat-card"><span>Clientes encontrados</span><strong>{totalClientesFiltrados}</strong></div>
+          <div className="stat-card"><span>Productos comprados</span><strong>{totalCantidadCliente}</strong></div>
+          <div className="stat-card"><span>Total comprado</span><strong>{dinero(totalComprasCliente)}</strong></div>
+          <div className="stat-card"><span>Posible pendiente</span><strong>{dinero(totalPendienteCliente)}</strong></div>
+        </div>
+
+        {busquedaCliente.trim() && resumenClientes.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <h4>Resumen del cliente</h4>
+            <div className="pedidos-tabla-wrap">
+              <table className="pedidos-tabla-compacta">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Teléfono</th>
+                    <th>Pedidos</th>
+                    <th>Cantidad</th>
+                    <th>Total comprado</th>
+                    <th>Posible pendiente</th>
+                    <th>Última compra</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resumenClientes.slice(0, 12).map((cliente) => (
+                    <tr key={cliente.clave}>
+                      <td><strong>{cliente.cliente}</strong></td>
+                      <td>{cliente.telefono || "—"}</td>
+                      <td>{cliente.pedidos}</td>
+                      <td>{cliente.cantidad}</td>
+                      <td className="td-total">{dinero(cliente.total)}</td>
+                      <td className={cliente.pendiente > 0 ? "td-total" : ""}>{cliente.pendiente > 0 ? dinero(cliente.pendiente) : "—"}</td>
+                      <td>{formatearFechaHora(cliente.ultimaCompra)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: 14 }}>
+          <h4>Detalle de compras</h4>
+          {filasClientesFiltradas.length === 0 ? (
+            <p className="muted">No se encontraron compras con ese criterio en el periodo seleccionado.</p>
+          ) : (
+            <div className="pedidos-tabla-wrap">
+              <table className="pedidos-tabla-compacta">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Producto</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Pago</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filasClientesFiltradas.slice(0, 80).map((fila, index) => (
+                    <tr key={fila.idFila || `${fila.codigo}-${index}`}>
+                      <td>{formatearFechaHora(fila.fecha)}</td>
+                      <td><strong>{fila.codigo}</strong></td>
+                      <td>
+                        <strong>{fila.cliente}</strong>
+                        {fila.telefono && <small style={{ display: "block" }}>{fila.telefono}</small>}
+                      </td>
+                      <td>{fila.producto}</td>
+                      <td>{fila.cantidad}</td>
+                      <td className="td-total">{dinero(fila.total)}</td>
+                      <td>{fila.pagoPendiente ? "⚠️ " : ""}{fila.formaPago}</td>
+                      <td>{fila.estado}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {filasClientesFiltradas.length > 80 && (
+            <p className="muted" style={{ marginTop: 8 }}>Se muestran las primeras 80 líneas. Usa una búsqueda más específica para ver menos resultados.</p>
+          )}
+          <p className="muted" style={{ marginTop: 8 }}>
+            Nota: “Posible pendiente” se calcula según la forma de pago cuando contiene palabras como pendiente, crédito, fiado, debe o pagar después.
+          </p>
         </div>
       </div>
 
