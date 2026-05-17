@@ -1,5 +1,7 @@
 {
-  "version": "13G-2026-05-17",
+  "version": "13H-2026-05-17",
   "phase": "Fase 13G - Seguridad operativa PWA",
-  "releasedAt": "2026-05-17"
+  "releasedAt": "2026-05-17",
+  "fase": "13H - Experiencia móvil PWA",
+  "updatedAt": "2026-05-17"
 }
