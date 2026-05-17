@@ -1,15 +1,34 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || "").trim();
+const supabaseKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || "").trim();
 
 export const supabaseConfigOk = Boolean(supabaseUrl && supabaseKey);
+export const supabaseConfigMensaje =
+  "Faltan variables de Supabase. Revisa VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en Vercel y vuelve a desplegar sin caché.";
 
-// IMPORTANTE:
-// createClient() rompe toda la pantalla si las variables no llegan al build de Vercel.
-// Por eso usamos valores temporales seguros para que la app SIEMPRE abra y muestre el error,
-// en vez de quedarse en blanco.
-const urlSegura = supabaseUrl || "https://placeholder.supabase.co";
-const keySegura = supabaseKey || "placeholder-anon-key";
+function crearClienteSupabaseSeguro() {
+  if (supabaseConfigOk) {
+    return createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }
 
-export const supabase = createClient(urlSegura, keySegura);
+  console.error(supabaseConfigMensaje);
+
+  // Cliente de respaldo solo para que React no quede en blanco si faltan variables.
+  // La app muestra un error claro y evita consultas reales mientras supabaseConfigOk sea false.
+  return createClient("https://rafiki-config-incompleta.supabase.co", "rafiki-config-incompleta", {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
+export const supabase = crearClienteSupabaseSeguro();

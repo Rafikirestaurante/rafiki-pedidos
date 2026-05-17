@@ -1,9 +1,6 @@
-const CACHE_NAME = 'rafiki-pedidos-mesas-v1';
+const CACHE_NAME = 'rafiki-pedidos-mesas-v2';
+
 const APP_SHELL = [
-  '/',
-  '/mesas',
-  '/admin',
-  '/index.html',
   '/manifest.json',
   '/logo-rafiki.png',
   '/icon-192.png',
@@ -33,23 +30,25 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.hostname.includes('supabase')) return;
 
-  if (request.mode === 'navigate') {
+  // Las rutas de navegación y el index deben ir primero a red para evitar versiones viejas después de deploy.
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('/index.html')) {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
+      fetch(request, { cache: 'no-store' }).catch(() => caches.match('/index.html'))
     );
     return;
   }
 
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
-        const copy = response.clone();
+      const respuestaRed = fetch(request).then((response) => {
         if (response.ok && url.origin === self.location.origin) {
+          const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }
         return response;
       }).catch(() => cached);
+
+      return cached || respuestaRed;
     })
   );
 });

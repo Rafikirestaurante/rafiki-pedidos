@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "./supabaseClient";
+import { supabase, supabaseConfigOk, supabaseConfigMensaje } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./utils/navigation";
 import { InicioRafiki, AdminLogin } from "./components/screens/InicioAdmin";
@@ -62,6 +62,19 @@ const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
 const CLAVE_ELIMINAR_PEDIDO = import.meta.env.VITE_CLAVE_ELIMINAR_PEDIDO || "Rafiki1989";
 
 const MENU_CACHE_KEY = "rafikiMenuDiarioCache";
+
+function conTiempoMaximo(promise, ms, nombreOperacion) {
+  let timerId;
+  const timeout = new Promise((_, reject) => {
+    timerId = window.setTimeout(() => {
+      reject(new Error(`${nombreOperacion} tardó demasiado. Revisa la conexión o Supabase.`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timerId) window.clearTimeout(timerId);
+  });
+}
 
 function leerMenuCache() {
   try {
@@ -141,6 +154,7 @@ export default function App() {
   const menuHashRef = useRef("");
   const audioCtxRef = useRef(null);
   const alertaPedidoTimer = useRef(null);
+  const vistaRef = useRef(vista);
 
   const adminNombreRol = nombreRol(adminRol);
   const adminActor = describirActor(adminUsuario, adminAutenticado ? "Clave administrativa local" : "Sin sesión");
@@ -172,18 +186,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    vistaRef.current = vista;
+  }, [vista]);
+
+  useEffect(() => {
     let activo = true;
     const rutaAdmin = vista === "admin" || vista === "adminLogin";
     const haySesionTemporalAdmin = obtenerSesionActiva("rafikiAdminActivo");
 
-    if (!rutaAdmin && !haySesionTemporalAdmin) {
+    if (!supabaseConfigOk || (!rutaAdmin && !haySesionTemporalAdmin)) {
       setAdminAuthCargando(false);
       return () => {
         activo = false;
       };
     }
 
-    setAdminAuthCargando(true);
+    setAdminAuthCargando(rutaAdmin);
 
     async function revisarSesionAdmin() {
       try {
@@ -199,16 +217,25 @@ export default function App() {
 
         if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
           const rol = await cargarRolAdmin(usuario);
+          if (!activo) return;
           activarSesionAdmin(usuario, rol);
           if (window.location.pathname.replace(/\/$/, "") === "/admin") {
             setVista("admin");
           }
         } else if (usuario && !obtenerSesionActiva("rafikiAdminActivo")) {
           await supabase.auth.signOut();
+          if (!activo) return;
           setAdminRol("usuario");
           setAdminAutenticado(false);
         } else {
           setAdminRol("usuario");
+          setAdminAutenticado(false);
+        }
+      } catch (error) {
+        console.warn("No se pudo revisar la sesión administrativa:", error?.message || error);
+        if (activo && rutaAdmin) {
+          setAdminRol("usuario");
+          setAdminAutenticado(false);
         }
       } finally {
         if (activo) setAdminAuthCargando(false);
@@ -217,12 +244,24 @@ export default function App() {
 
     revisarSesionAdmin();
 
+    return () => {
+      activo = false;
+    };
+  }, [vista, cargarRolAdmin, activarSesionAdmin]);
+
+  useEffect(() => {
+    if (!supabaseConfigOk) return undefined;
+
+    let activo = true;
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!activo) return;
+
       const usuario = session?.user || null;
       setAdminUsuario(usuario);
 
       if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
         const rol = await cargarRolAdmin(usuario);
+        if (!activo) return;
         activarSesionAdmin(usuario, rol);
         setErrorClaveAdmin("");
         return;
@@ -230,7 +269,6 @@ export default function App() {
 
       if (!usuario) {
         setAdminRol("usuario");
-
         if (!obtenerSesionActiva("rafikiAdminActivo")) {
           setAdminAutenticado(false);
         }
@@ -241,7 +279,7 @@ export default function App() {
       activo = false;
       authListener?.subscription?.unsubscribe?.();
     };
-  }, [vista, cargarRolAdmin, activarSesionAdmin]);
+  }, [cargarRolAdmin, activarSesionAdmin]);
 
   useEffect(() => {
     if (!adminAutenticado) return;
@@ -449,25 +487,18 @@ export default function App() {
     ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
     : "#";
 
-  function conTiempoMaximo(promise, ms, nombreOperacion) {
-    let timerId;
-    const timeout = new Promise((_, reject) => {
-      timerId = window.setTimeout(() => {
-        reject(new Error(`${nombreOperacion} tardó demasiado. Revisa la conexión o Supabase.`));
-      }, ms);
-    });
-
-    return Promise.race([promise, timeout]).finally(() => {
-      if (timerId) window.clearTimeout(timerId);
-    });
-  }
-
   useEffect(() => {
     let cancelado = false;
 
     async function cargarMenuSeguro() {
       const hayCache = menuCacheDisponibleRef.current;
       setCargandoMenu(!hayCache);
+
+      if (!supabaseConfigOk) {
+        setCargandoMenu(false);
+        mostrarMensaje(supabaseConfigMensaje, "error");
+        return;
+      }
 
       try {
         const { data: menuData, error: menuError } = await conTiempoMaximo(
@@ -551,6 +582,12 @@ export default function App() {
 
     async function cargarPedidosSeguro() {
       setCargandoPedidos(true);
+
+      if (!supabaseConfigOk) {
+        setCargandoPedidos(false);
+        mostrarMensaje(supabaseConfigMensaje, "error");
+        return;
+      }
 
       try {
         const rango = obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
