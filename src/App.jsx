@@ -1065,10 +1065,6 @@ export default function App() {
                   >
                     Vista cliente
                   </button>
-
-                  <button type="button" onClick={() => navegar("/", "inicio")}>
-                    Inicio
-                  </button>
                 </div>
               )}
 
@@ -1566,12 +1562,6 @@ export default function App() {
                 <div className="nav nav-wrap">
                   <button type="button" onClick={() => navegar("/mesas", "mesas")}>
                     Panel mesas
-                  </button>
-                  <button type="button" onClick={() => navegar("/cliente", "cliente")}>
-                    Vista cliente
-                  </button>
-                  <button type="button" onClick={() => navegar("/", "inicio")}>
-                    Inicio
                   </button>
                 </div>
               </header>

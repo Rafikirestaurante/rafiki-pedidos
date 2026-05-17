@@ -12,10 +12,6 @@ export function InicioRafiki({ navegar }) {
           <button type="button" onClick={() => navegar("/cliente", "cliente")} className="welcome-button">
             🛍️ Haz tu pedido aquí
           </button>
-
-          <button type="button" onClick={() => navegar("/admin", "adminLogin")} className="welcome-secondary-button">
-            🔐 Panel administrativo
-          </button>
         </div>
       </section>
     </main>
