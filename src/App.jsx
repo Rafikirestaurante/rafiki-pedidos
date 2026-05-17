@@ -133,6 +133,14 @@ export default function App() {
     return rol;
   }, []);
 
+  const activarSesionAdmin = useCallback((usuario, rol) => {
+    guardarSesionTemporal("rafikiAdminActivo");
+    setAdminUsuario(usuario || null);
+    setAdminRol(rol || "usuario");
+    setAdminAutenticado(true);
+    setAdminTab(primeraPestanaPermitida(rol || "usuario"));
+  }, []);
+
   useEffect(() => {
     let activo = true;
 
@@ -148,10 +156,16 @@ export default function App() {
         const usuario = data?.session?.user || null;
         setAdminUsuario(usuario);
 
-        if (usuario) {
+        if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
           const rol = await cargarRolAdmin(usuario);
-          setAdminAutenticado(true);
-          setAdminTab(primeraPestanaPermitida(rol));
+          activarSesionAdmin(usuario, rol);
+          if (window.location.pathname.replace(/\/$/, "") === "/admin") {
+            setVista("admin");
+          }
+        } else if (usuario && !obtenerSesionActiva("rafikiAdminActivo")) {
+          await supabase.auth.signOut();
+          setAdminRol("usuario");
+          setAdminAutenticado(false);
         } else {
           setAdminRol("usuario");
         }
@@ -166,19 +180,20 @@ export default function App() {
       const usuario = session?.user || null;
       setAdminUsuario(usuario);
 
-      if (usuario) {
+      if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
         const rol = await cargarRolAdmin(usuario);
-        setAdminAutenticado(true);
-        setAdminTab(primeraPestanaPermitida(rol));
+        activarSesionAdmin(usuario, rol);
         setErrorClaveAdmin("");
         return;
       }
 
-      setAdminRol("usuario");
+      if (!usuario) {
+        setAdminRol("usuario");
 
-      if (!obtenerSesionActiva("rafikiAdminActivo")) {
-        setAdminAutenticado(false);
-        setRafaAutenticado(false);
+        if (!obtenerSesionActiva("rafikiAdminActivo")) {
+          setAdminAutenticado(false);
+          setRafaAutenticado(false);
+        }
       }
     });
 
@@ -186,7 +201,7 @@ export default function App() {
       activo = false;
       authListener?.subscription?.unsubscribe?.();
     };
-  }, [cargarRolAdmin]);
+  }, [cargarRolAdmin, activarSesionAdmin]);
 
   useEffect(() => {
     if (!adminAutenticado) return;
@@ -1146,23 +1161,24 @@ export default function App() {
         return;
       }
 
+      guardarSesionTemporal("rafikiAdminActivo");
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        localStorage.removeItem("rafikiAdminActivo");
         setErrorClaveAdmin(`No se pudo iniciar sesión: ${error.message}`);
         return;
       }
 
       const usuarioAutenticado = data?.user || null;
       const rol = await cargarRolAdmin(usuarioAutenticado);
-      setAdminUsuario(usuarioAutenticado);
-      setAdminAutenticado(true);
+      activarSesionAdmin(usuarioAutenticado, rol);
       setAdminPassword("");
       setErrorClaveAdmin("");
-      setAdminTab(primeraPestanaPermitida(rol));
       navegar("/admin", "admin");
       return;
     }
@@ -1174,13 +1190,9 @@ export default function App() {
     }
 
     if (password === CLAVE_ADMIN) {
-      guardarSesionTemporal("rafikiAdminActivo");
-      setAdminUsuario(null);
-      setAdminRol("admin");
-      setAdminAutenticado(true);
+      activarSesionAdmin(null, "admin");
       setAdminPassword("");
       setErrorClaveAdmin("");
-      setAdminTab("pedidos");
       navegar("/admin", "admin");
       return;
     }
@@ -1269,9 +1281,6 @@ export default function App() {
                     Panel admin
                   </button>
 
-                  <button type="button" onClick={() => navegar("/", "inicio")}>
-                    Inicio
-                  </button>
                 </div>
               )}
             </header>
