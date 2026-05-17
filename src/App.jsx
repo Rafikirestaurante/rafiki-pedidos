@@ -322,7 +322,9 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const cargando = cargandoMenu || cargandoPedidos || adminAuthCargando;
+  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin";
+  const cargando = vistaProtegidaAdmin && adminAuthCargando;
+  const cargandoDatosOperativos = cargandoMenu || cargandoPedidos;
 
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
@@ -1276,7 +1278,7 @@ export default function App() {
           )}
 
           {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
-          {cargando && <div className="card card-pad">Cargando datos de Rafiki...</div>}
+          {cargando && <div className="card card-pad">Verificando sesión administrativa...</div>}
 
           {!cargando && vista === "inicio" && <InicioRafiki navegar={navegar} />}
 
