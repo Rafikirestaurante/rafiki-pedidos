@@ -26,6 +26,33 @@ export function obtenerRolUsuario(usuario) {
   return PERMISOS_POR_ROL[rol] ? rol : ROL_POR_DEFECTO;
 }
 
+export async function obtenerRolUsuarioDesdeTabla(supabase, usuario) {
+  const email = String(usuario?.email || "").trim().toLowerCase();
+
+  if (!email) {
+    return ROL_POR_DEFECTO;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("usuarios_roles")
+      .select("rol")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (!error) {
+      const rolTabla = limpiarRol(data?.rol);
+      if (PERMISOS_POR_ROL[rolTabla]) {
+        return rolTabla;
+      }
+    }
+  } catch {
+    // Si la tabla no existe, no bloqueamos el panel: usamos el respaldo seguro.
+  }
+
+  return obtenerRolUsuario(usuario);
+}
+
 export function nombreRol(rol) {
   return NOMBRES_ROLES[rol] || NOMBRES_ROLES[ROL_POR_DEFECTO];
 }

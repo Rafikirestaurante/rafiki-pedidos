@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./utils/navigation";
@@ -41,7 +41,7 @@ import {
   textoAPlatosDetalle,
 } from "./utils/pedidos";
 import { BOTONES, CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS, TEXTOS_APP } from "./config/textos";
-import { describirActor, nombreRol, obtenerRolUsuario, primeraPestanaPermitida, usuarioPuede } from "./utils/authAdmin";
+import { describirActor, nombreRol, obtenerRolUsuarioDesdeTabla, primeraPestanaPermitida, usuarioPuede } from "./utils/authAdmin";
 
 
 const SolicitudProductos = lazy(() => import("./components/SolicitudProductos"));
@@ -70,6 +70,7 @@ export default function App() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminUsuario, setAdminUsuario] = useState(null);
+  const [adminRol, setAdminRol] = useState("usuario");
   const [adminAuthCargando, setAdminAuthCargando] = useState(true);
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
   const [rafaAutenticado, setRafaAutenticado] = useState(false);
@@ -111,7 +112,6 @@ export default function App() {
   const audioCtxRef = useRef(null);
   const alertaPedidoTimer = useRef(null);
 
-  const adminRol = useMemo(() => obtenerRolUsuario(adminUsuario), [adminUsuario]);
   const adminNombreRol = nombreRol(adminRol);
   const adminActor = describirActor(adminUsuario, adminAutenticado ? "Clave administrativa local" : "Sin sesión");
   const puedeVerMenu = usuarioPuede(adminRol, "menu");
@@ -127,6 +127,12 @@ export default function App() {
     setVista(nuevaVista);
   }, []);
 
+  const cargarRolAdmin = useCallback(async (usuario) => {
+    const rol = await obtenerRolUsuarioDesdeTabla(supabase, usuario);
+    setAdminRol(rol);
+    return rol;
+  }, []);
+
   useEffect(() => {
     let activo = true;
 
@@ -139,7 +145,11 @@ export default function App() {
         setAdminUsuario(usuario);
 
         if (usuario) {
+          const rol = await cargarRolAdmin(usuario);
           setAdminAutenticado(true);
+          setAdminTab(primeraPestanaPermitida(rol));
+        } else {
+          setAdminRol("usuario");
         }
       } finally {
         if (activo) setAdminAuthCargando(false);
@@ -148,15 +158,19 @@ export default function App() {
 
     revisarSesionAdmin();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const usuario = session?.user || null;
       setAdminUsuario(usuario);
 
       if (usuario) {
+        const rol = await cargarRolAdmin(usuario);
         setAdminAutenticado(true);
+        setAdminTab(primeraPestanaPermitida(rol));
         setErrorClaveAdmin("");
         return;
       }
+
+      setAdminRol("usuario");
 
       if (!obtenerSesionActiva("rafikiAdminActivo")) {
         setAdminAutenticado(false);
@@ -168,7 +182,7 @@ export default function App() {
       activo = false;
       authListener?.subscription?.unsubscribe?.();
     };
-  }, []);
+  }, [cargarRolAdmin]);
 
   useEffect(() => {
     if (!adminAutenticado) return;
@@ -1115,11 +1129,13 @@ export default function App() {
         return;
       }
 
-      setAdminUsuario(data?.user || null);
+      const usuarioAutenticado = data?.user || null;
+      const rol = await cargarRolAdmin(usuarioAutenticado);
+      setAdminUsuario(usuarioAutenticado);
       setAdminAutenticado(true);
       setAdminPassword("");
       setErrorClaveAdmin("");
-      setAdminTab(primeraPestanaPermitida(obtenerRolUsuario(data?.user)));
+      setAdminTab(primeraPestanaPermitida(rol));
       navegar("/admin", "admin");
       return;
     }
@@ -1132,6 +1148,8 @@ export default function App() {
 
     if (password === CLAVE_ADMIN) {
       guardarSesionTemporal("rafikiAdminActivo");
+      setAdminUsuario(null);
+      setAdminRol("admin");
       setAdminAutenticado(true);
       setAdminPassword("");
       setErrorClaveAdmin("");
@@ -1175,6 +1193,7 @@ export default function App() {
     await supabase.auth.signOut();
     setAdminAutenticado(false);
     setAdminUsuario(null);
+    setAdminRol("usuario");
     setAdminEmail("");
     setAdminPassword("");
     setRafaAutenticado(false);
