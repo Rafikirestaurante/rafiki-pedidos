@@ -1,7 +1,7 @@
 {
-  "version": "13H-FIX-2026-05-17",
-  "phase": "Fase 13G - Seguridad operativa PWA",
-  "releasedAt": "2026-05-17",
-  "fase": "13H - Experiencia móvil PWA",
-  "updatedAt": "2026-05-17"
+  "version": "14A-ESTABILIDAD-2026-05-18",
+  "phase": "Fase 14A - Estabilidad crítica cliente/PWA",
+  "releasedAt": "2026-05-18",
+  "fase": "14A - Estabilidad crítica cliente/PWA",
+  "updatedAt": "2026-05-18"
 }
