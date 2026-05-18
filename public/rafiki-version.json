@@ -1,7 +1,7 @@
 {
-  "version": "14B-DASHBOARD-RAFA-2026-05-18",
-  "phase": "Fase 14B - Dashboard Rafa",
+  "version": "14B-2-DASHBOARD-RAFA-PESTANAS-2026-05-18",
+  "phase": "Fase 14B-2 - Dashboard Rafa por pestañas",
   "releasedAt": "2026-05-18",
-  "fase": "14B - Dashboard Rafa",
-  "descripcion": "Dashboard ejecutivo solo lectura en sección Rafa: ventas por línea, horas, productos, pagos, origen y clientes."
+  "fase": "14B-2 - Dashboard Rafa con pestañas internas",
+  "descripcion": "Dashboard ejecutivo dentro de Rafa como pestaña interna, incluyendo mesa que más vende y ranking de mesas."
 }

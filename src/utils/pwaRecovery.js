@@ -23,17 +23,18 @@ export function mostrarPantallaRecuperacionPWA(error) {
       <div style="max-width:680px;margin:38px auto;background:white;border:2px solid #fed7aa;border-radius:22px;padding:22px;box-shadow:0 18px 45px rgba(0,0,0,.15);">
         <div style="font-size:38px;margin-bottom:8px;">⚠️</div>
         <h1 style="margin:0 0 10px;color:#9a3412;font-size:24px;">Rafiki Pedidos no pudo abrir correctamente</h1>
-        <p style="line-height:1.45;margin:0 0 14px;">Esto suele pasar cuando el celular conserva una versión antigua de la PWA o del Service Worker.</p>
+        <p style="line-height:1.45;margin:0 0 14px;">Esto suele pasar cuando el navegador conserva una versión antigua de la PWA, del Service Worker o de los archivos de JavaScript.</p>
         <div style="background:#fef2f2;color:#7f1d1d;border-radius:14px;padding:12px;font-size:13px;white-space:pre-wrap;margin-bottom:14px;">${mensaje.replace(/[<>&]/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
         <button id="rafiki-reset-pwa" style="width:100%;border:none;border-radius:999px;background:#f97316;color:white;font-size:17px;font-weight:900;padding:14px 18px;cursor:pointer;">Limpiar caché y abrir de nuevo</button>
-        <p style="font-size:13px;color:#78716c;line-height:1.4;margin:14px 0 0;">Si vuelve a fallar, elimina el icono instalado del celular y abre nuevamente la ruta /mesas desde Chrome.</p>
+        <p style="font-size:13px;color:#78716c;line-height:1.4;margin:14px 0 0;">Si vuelve a fallar, abre el navegador en modo incógnito o elimina el acceso instalado y vuelve a entrar a la misma ruta.</p>
       </div>
     </div>
   `;
 
   document.getElementById('rafiki-reset-pwa')?.addEventListener('click', async () => {
     await limpiarCachesYServiceWorkers();
-    const base = `${window.location.origin}/mesas?rafiki_reset=${Date.now()}`;
+    const rutaActual = window.location.pathname || '/mesas';
+    const base = `${window.location.origin}${rutaActual}?rafiki_reset=${Date.now()}`;
     window.location.replace(base);
   });
 }

@@ -436,6 +436,12 @@ export default function PanelRafaPrivado() {
   const totalBaseProductos = Math.max(...dashboardRafa.productosTop.map((item) => item.cantidad), 0);
   const totalBaseMesas = Math.max(...dashboardRafa.mesasTop.map((item) => item.total), 0);
 
+  function obtenerFechaAyer() {
+    const ayer = new Date(`${hoy}T00:00:00-05:00`);
+    ayer.setDate(ayer.getDate() - 1);
+    return fechaISOColombia(ayer);
+  }
+
   function aplicarPeriodoRapido(tipo) {
     const base = new Date(`${hoy}T00:00:00-05:00`);
     const iso = (fecha) => fechaISOColombia(fecha);
@@ -447,19 +453,18 @@ export default function PanelRafaPrivado() {
     }
 
     if (tipo === "ayer") {
-      const ayer = new Date(base);
-      ayer.setDate(ayer.getDate() - 1);
       setModoFecha("dia");
-      setFechaRafa(iso(ayer));
+      setFechaRafa(obtenerFechaAyer());
       return;
     }
 
-    const dias = Number(tipo) || 7;
-    const inicio = new Date(base);
-    inicio.setDate(inicio.getDate() - (dias - 1));
-    setModoFecha("rango");
-    setFechaInicioRafa(iso(inicio));
-    setFechaFinRafa(hoy);
+    if (tipo === 30) {
+      const inicio = new Date(base);
+      inicio.setDate(inicio.getDate() - 29);
+      setModoFecha("rango");
+      setFechaInicioRafa(iso(inicio));
+      setFechaFinRafa(hoy);
+    }
   }
 
 
@@ -600,31 +605,17 @@ export default function PanelRafaPrivado() {
           <button type="button" onClick={() => aplicarPeriodoRapido("hoy")} className={modoFecha === "dia" && fechaRafa === hoy ? "active" : ""}>
             Hoy
           </button>
-          <button type="button" onClick={() => aplicarPeriodoRapido("ayer")}>
+          <button type="button" onClick={() => aplicarPeriodoRapido("ayer")} className={modoFecha === "dia" && fechaRafa === obtenerFechaAyer() ? "active" : ""}>
             Ayer
           </button>
-          <button type="button" onClick={() => aplicarPeriodoRapido(7)}>
-            Últimos 7 días
-          </button>
-          <button type="button" onClick={() => aplicarPeriodoRapido(12)}>
-            Últimos 12 días
-          </button>
-          <button type="button" onClick={() => aplicarPeriodoRapido(30)}>
+          <button type="button" onClick={() => aplicarPeriodoRapido(30)} className={modoFecha === "rango" && fechaFinRafa === hoy ? "active" : ""}>
             Últimos 30 días
-          </button>
-          <button type="button" onClick={() => setModoFecha("dia")} className={modoFecha === "dia" ? "active" : ""}>
-            Un día
           </button>
           <button type="button" onClick={() => setModoFecha("rango")} className={modoFecha === "rango" ? "active" : ""}>
             Rango manual
           </button>
 
-          {modoFecha === "dia" ? (
-            <label className="calendario-filtro">
-              <span>Fecha</span>
-              <input type="date" value={fechaRafa} onChange={(e) => setFechaRafa(e.target.value)} />
-            </label>
-          ) : (
+          {modoFecha === "rango" && (
             <>
               <label className="calendario-filtro">
                 <span>Desde</span>
@@ -651,9 +642,6 @@ export default function PanelRafaPrivado() {
         </button>
         <button type="button" onClick={() => setPestanaRafa("clientes")} className={pestanaRafa === "clientes" ? "active" : ""}>
           👤 Clientes
-        </button>
-        <button type="button" onClick={() => setPestanaRafa("consolidado")} className={pestanaRafa === "consolidado" ? "active" : ""}>
-          🧾 Consolidado
         </button>
       </div>
 
@@ -776,6 +764,33 @@ export default function PanelRafaPrivado() {
         </div>
       </div>
 
+      <div className="soft-box" style={{ marginTop: 22 }}>
+        <h3>🧾 Consolidado</h3>
+        {resumenVentas.tabla.length === 0 ? (
+          <p className="muted">Todavía no hay ventas para este periodo.</p>
+        ) : (
+          <div className="pedidos-tabla-wrap">
+            <table className="pedidos-tabla-compacta">
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  <th>Cantidad</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resumenVentas.tabla.map((fila) => (
+                  <tr key={fila.nombre}>
+                    <td><strong>{fila.nombre}</strong></td>
+                    <td>{fila.cantidad}</td>
+                    <td className="td-total">{dinero(fila.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       </>
       )}
@@ -889,35 +904,6 @@ export default function PanelRafaPrivado() {
       </div>
       )}
 
-      {pestanaRafa === "consolidado" && (
-      <div className="soft-box" style={{ marginTop: 22 }}>
-        <h3>Tabla consolidada</h3>
-        {resumenVentas.tabla.length === 0 ? (
-          <p className="muted">Todavía no hay ventas para este periodo.</p>
-        ) : (
-          <div className="pedidos-tabla-wrap">
-            <table className="pedidos-tabla-compacta">
-              <thead>
-                <tr>
-                  <th>Categoría</th>
-                  <th>Cantidad</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resumenVentas.tabla.map((fila) => (
-                  <tr key={fila.nombre}>
-                    <td><strong>{fila.nombre}</strong></td>
-                    <td>{fila.cantidad}</td>
-                    <td className="td-total">{dinero(fila.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-      )}
     </section>
   );
 }

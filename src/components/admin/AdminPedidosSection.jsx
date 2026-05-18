@@ -50,13 +50,6 @@ export default function AdminPedidosSection({
             🔄 Actualizar pedidos
           </button>
 
-          <button
-            type="button"
-            className={sonidoActivado ? "button green" : "button warning"}
-            onClick={activarSonidoPedidos}
-          >
-            {sonidoActivado ? "🔔 Sonido activo" : "🔔 Activar sonido"}
-          </button>
         </div>
       </div>
 

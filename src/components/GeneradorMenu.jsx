@@ -159,7 +159,7 @@ export default function GeneradorMenu() {
       platos: platosParaGuardar,
       acompanantes: acompanantesParaGuardar,
       texto_generado: svgTexto,
-      observaciones: observaciones.trim() || null
+      observaciones: null
     };
 
     const { data: registroExistente, error: errorBuscar } = await supabase
@@ -232,7 +232,6 @@ export default function GeneradorMenu() {
         : [{ nombre: "", precio: "" }]
     );
     setAcompanantes(acompanantesRegistro.join("\n"));
-    setObservaciones(registro.observaciones || "");
     if (!opciones.silencioso) {
       setMensaje("Registro cargado en el generador. Puedes editarlo o descargarlo.");
     }
@@ -252,6 +251,15 @@ export default function GeneradorMenu() {
       <div className="generador-menu-grid">
         <div>
           <div className="box soft" style={{ marginTop: 0 }}>
+            <strong>Fecha del menú</strong>
+            <p className="muted small">Por defecto queda la fecha actual.</p>
+            <label className="field" style={{ marginTop: 10 }}>
+              <span>Fecha</span>
+              <input type="date" value={fechaMenu} onChange={(e) => setFechaMenu(e.target.value || fechaHoyISO())} />
+            </label>
+          </div>
+
+          <div className="box soft" style={{ marginTop: 14 }}>
             <strong>Platos del día</strong>
             <p className="muted small">Puedes agregar hasta 8 platos. Escribe el precio sin puntos si quieres.</p>
             {platos.map((plato, index) => (
@@ -282,35 +290,12 @@ export default function GeneradorMenu() {
             <textarea value={acompanantes} onChange={(e) => setAcompanantes(e.target.value)} rows={5} placeholder={"Arroz de maíz\nPuré\nEnsalada"} />
           </label>
 
-          <div className="box soft" style={{ marginTop: 14 }}>
-            <strong>Datos para historial</strong>
-            <p className="muted small">Este historial es solo del generador de imagen/texto. No modifica el menú de pedidos.</p>
-            <label className="field" style={{ marginTop: 10 }}>
-              <span>Fecha del menú</span>
-              <input type="date" value={fechaMenu} onChange={(e) => setFechaMenu(e.target.value)} />
-            </label>
-            <label className="field">
-              <span>Observaciones internas</span>
-              <textarea
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-                rows={2}
-                placeholder="Ejemplo: menú publicado en Instagram, menú con promoción, etc."
-              />
-            </label>
-          </div>
-
           <div className="box soft acciones-generador" style={{ marginTop: 14 }}>
             <strong>Acciones</strong>
-            <p className="muted small">Al descargar la imagen solo texto, también se guardará automáticamente en el historial.</p>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button type="button" className="button download-text-button" onClick={descargarSoloTexto} disabled={guardandoHistorial}>
-                {guardandoHistorial ? "Guardando..." : "Descargar solo texto"}
-              </button>
-              <button type="button" className="button light" onClick={() => guardarHistorialGenerador()} disabled={guardandoHistorial}>
-                {guardandoHistorial ? "Guardando..." : "Guardar historial"}
-              </button>
-            </div>
+            <p className="muted small">Guarda automáticamente en el historial y descarga la imagen solo texto.</p>
+            <button type="button" className="button download-text-button" onClick={descargarSoloTexto} disabled={guardandoHistorial}>
+              {guardandoHistorial ? "Guardando..." : "Guardar y descargar"}
+            </button>
           </div>
 
           {mensaje && <div className="alert alert-ok menu-action-message">{mensaje}</div>}

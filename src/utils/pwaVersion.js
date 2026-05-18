@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '14B-DASHBOARD-RAFA-2026-05-18';
+export const RAFIKI_APP_VERSION = '15A-LIMPIEZA-UI-2026-05-18';
 
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 
