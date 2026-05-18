@@ -1,7 +1,8 @@
 {
-  "version": "15D-RAFA-DASHBOARD-DETALLES-PERIODO-2026-05-18",
+  "version": "15D-FIX-DEPLOY-RAFA-DASHBOARD-2026-05-18",
   "phase": "Fase 15D - Rafa periodo y dashboard con detalle",
   "releasedAt": "2026-05-18",
-  "fase": "15D - Selector de periodo Rafa y recuadros clicables",
-  "descripcion": "Reordena el selector de periodo de Rafa para dejar Hoy, Ayer, Rango manual y Día como campo de fecha. Agrega detalle clicable en los recuadros principales del Dashboard."
+  "fase": "15D Fix Deploy",
+  "descripcion": "Reordena el selector de periodo de Rafa para dejar Hoy, Ayer, Rango manual y Día como campo de fecha. Agrega detalle clicable en los recuadros principales del Dashboard.",
+  "fecha": "2026-05-18"
 }
