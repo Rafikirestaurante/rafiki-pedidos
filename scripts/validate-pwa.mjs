@@ -60,7 +60,7 @@ assert(indexHtml.includes('apple-mobile-web-app-capable'), 'index.html: falta ap
 assert(indexHtml.includes('apple-touch-icon'), 'index.html: falta apple-touch-icon.');
 assert(viteConfig.includes('NetworkOnly') && viteConfig.includes('supabase.co'), 'vite.config.js: Supabase debe permanecer NetworkOnly.');
 assert(viteConfig.includes("registerType: 'prompt'"), 'vite.config.js: las actualizaciones deben seguir con prompt, no autoUpdate.');
-assert(version.version?.startsWith('13H-'), 'rafiki-version.json: versión debe corresponder a 13H.');
+assert(/^13[H-Z]-/.test(version.version || ''), 'rafiki-version.json: versión debe corresponder a una fase PWA vigente.');
 
 if (warnings.length) {
   console.log('Advertencias PWA:');

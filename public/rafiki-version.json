@@ -1,7 +1,7 @@
 {
-  "version": "13H-FIX-2026-05-17",
-  "phase": "Fase 13G - Seguridad operativa PWA",
+  "version": "13L-CIERRE-PWA-2026-05-17",
+  "phase": "Fase 13L - Cierre PWA",
   "releasedAt": "2026-05-17",
-  "fase": "13H - Experiencia móvil PWA",
-  "updatedAt": "2026-05-17"
+  "updatedAt": "2026-05-17",
+  "descripcion": "Cierre Fase 13: notificaciones internas, badge real y auditoría de versión PWA."
 }
