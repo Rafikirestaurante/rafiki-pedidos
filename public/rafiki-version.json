@@ -1,7 +1,7 @@
 {
-  "version": "14A-ESTABILIDAD-2026-05-18",
-  "phase": "Fase 14A - Estabilidad crítica cliente/PWA",
+  "version": "14B-DASHBOARD-RAFA-2026-05-18",
+  "phase": "Fase 14B - Dashboard Rafa",
   "releasedAt": "2026-05-18",
-  "fase": "14A - Estabilidad crítica cliente/PWA",
-  "updatedAt": "2026-05-18"
+  "fase": "14B - Dashboard Rafa",
+  "descripcion": "Dashboard ejecutivo solo lectura en sección Rafa: ventas por línea, horas, productos, pagos, origen y clientes."
 }
