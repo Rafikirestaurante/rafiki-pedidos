@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import {
   calcularTotalItem,
@@ -422,11 +422,11 @@ function CajaDashboard({ children, activa = false, onClick }) {
   );
 }
 
-function DetalleDashboard({ detalle, onCerrar }) {
+function DetalleDashboard({ detalle, onCerrar, detalleRef }) {
   if (!detalle) return null;
 
   return (
-    <div className="soft-box" style={{ marginTop: 16, borderColor: "#fdba74", background: "#fff7ed" }}>
+    <div ref={detalleRef} className="soft-box" style={{ marginTop: 20, borderColor: "#fdba74", background: "#fff7ed" }}>
       <div className="admin-top-row">
         <div>
           <h3>{detalle.titulo}</h3>
@@ -498,7 +498,8 @@ export default function PanelRafaPrivado() {
   const [errorRafa, setErrorRafa] = useState("");
   const [busquedaCliente, setBusquedaCliente] = useState("");
   const [pestanaRafa, setPestanaRafa] = useState("dashboard");
-  const [detalleDashboard, setDetalleDashboard] = useState("total");
+  const [detalleDashboard, setDetalleDashboard] = useState("");
+  const detalleDashboardRef = useRef(null);
 
   const rangoRafa = useMemo(() => {
     const inicioTexto = modoFecha === "rango" ? (fechaInicioRafa || hoy) : (fechaRafa || hoy);
@@ -604,173 +605,218 @@ export default function PanelRafaPrivado() {
   }
 
 
-  function crearDetalleDashboardSeleccionado(tipo) {
-    const filasPedidos = pedidosValidos
+  function seleccionarDetalleDashboard(tipo) {
+    setDetalleDashboard(tipo);
+    window.setTimeout(() => {
+      detalleDashboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
+
+  function obtenerTotalPedidoRafa(pedido) {
+    return Number(pedido.total) || obtenerItemsPedido(pedido).reduce((suma, item) => suma + calcularTotalItem(item), 0);
+  }
+
+  function obtenerProductosTextoPedido(pedido) {
+    const items = obtenerItemsPedido(pedido);
+    if (!items.length) return pedido.pedido_texto || "Sin detalle";
+    return items.map((item) => {
+      const cantidad = Number(item.cantidad) || 1;
+      return `${cantidad} x ${obtenerNombreProductoCliente(item)}`;
+    }).join(" · ");
+  }
+
+  function obtenerObservacionesPedidoRafa(pedido, item = null) {
+    return item?.observacionesItem || item?.observacionAcompanantes || pedido.observaciones || pedido.nota || "";
+  }
+
+  function crearFilaPedidoProfunda(pedido) {
+    const mesa = obtenerMesaValidaRafaPedido(pedido);
+    return [
+      obtenerCodigoPedido(pedido),
+      formatearFechaHora(pedido.created_at),
+      obtenerCliente(pedido),
+      mesa || "Para llevar",
+      obtenerProductosTextoPedido(pedido),
+      obtenerEstadoPedido(pedido),
+      obtenerEtiquetaPagoPedido(pedido),
+      dinero(obtenerTotalPedidoRafa(pedido))
+    ];
+  }
+
+  function crearFilasItemsProfundas(filtro = () => true) {
+    return pedidosValidos
       .slice()
       .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-      .map((pedido) => [
-        obtenerCodigoPedido(pedido),
-        formatearFechaHora(pedido.created_at),
-        obtenerCliente(pedido),
-        obtenerMesaValidaRafaPedido(pedido) || "Para llevar",
-        obtenerEstadoPedido(pedido),
-        dinero(Number(pedido.total) || obtenerItemsPedido(pedido).reduce((suma, item) => suma + calcularTotalItem(item), 0))
-      ]);
+      .flatMap((pedido) => {
+        const items = obtenerItemsPedido(pedido);
+        const mesa = obtenerMesaValidaRafaPedido(pedido);
+        const base = {
+          codigo: obtenerCodigoPedido(pedido),
+          fecha: formatearFechaHora(pedido.created_at),
+          cliente: obtenerCliente(pedido),
+          ubicacion: mesa || "Para llevar",
+          estado: obtenerEstadoPedido(pedido),
+          pago: obtenerEtiquetaPagoPedido(pedido)
+        };
 
-    if (tipo === "pedidos") {
-      return {
-        titulo: "Detalle de pedidos válidos",
-        descripcion: "Listado de pedidos del periodo seleccionado, excluyendo borrados.",
-        resumen: [
-          { label: "Pedidos", valor: totalPedidos },
-          { label: "Finalizados", valor: finalizados },
-          { label: "Pendientes", valor: pendientes }
-        ],
-        columnas: ["Pedido", "Fecha", "Cliente", "Ubicación", "Estado", "Total"],
-        filas: filasPedidos
-      };
-    }
+        if (!items.length) {
+          const filaVirtual = { categoria: "restaurante", producto: pedido.pedido_texto || "Pedido sin detalle" };
+          if (!filtro(pedido, filaVirtual)) return [];
+          return [[base.codigo, base.fecha, base.cliente, base.ubicacion, "Restaurante", obtenerNombreProductoCliente(filaVirtual), 1, base.estado, base.pago, dinero(obtenerTotalPedidoRafa(pedido)), obtenerObservacionesPedidoRafa(pedido)]];
+        }
 
-    if (tipo === "productos") {
-      return {
-        titulo: "Detalle de productos vendidos",
-        descripcion: "Productos agrupados por cantidad y valor vendido.",
-        resumen: [
-          { label: "Unidades", valor: totalItemsVendidos },
-          { label: "Productos diferentes", valor: dashboardRafa.productosTop.length },
-          { label: "Total vendido", valor: dinero(totalVentas) }
-        ],
-        columnas: ["Producto", "Cantidad", "Total"],
-        filas: dashboardRafa.productosTop.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
-      };
-    }
+        return items.filter((item) => filtro(pedido, item)).map((item) => [
+          base.codigo,
+          base.fecha,
+          base.cliente,
+          base.ubicacion,
+          obtenerLineaItemRafa(item),
+          obtenerNombreProductoCliente(item),
+          Number(item.cantidad) || 1,
+          base.estado,
+          base.pago,
+          dinero(calcularTotalItem(item)),
+          obtenerObservacionesPedidoRafa(pedido, item)
+        ]);
+      });
+  }
 
-    if (tipo === "restaurante") {
-      return {
-        titulo: "Detalle Restaurante",
-        descripcion: "Venta de restaurante agrupada por proteínas y almuerzos.",
-        resumen: [
-          { label: "Total restaurante", valor: dinero(resumenVentas.restaurante.total) },
-          { label: "Cantidad", valor: resumenVentas.restaurante.cantidad },
-          { label: "Participación", valor: `${dashboardRafa.participacionRestaurante}%` }
-        ],
-        columnas: ["Producto / grupo", "Cantidad", "Total"],
-        filas: resumenVentas.proteinas.length
-          ? resumenVentas.proteinas.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
-          : resumenVentas.tabla.filter((item) => item.nombre.includes("Restaurante")).map((item) => [item.nombre, item.cantidad, dinero(item.total)])
-      };
-    }
+  function crearFilasPedidosProfundas(filtro = () => true) {
+    return pedidosValidos
+      .slice()
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .filter(filtro)
+      .map(crearFilaPedidoProfunda);
+  }
 
-    if (tipo === "cafeteria") {
-      return {
-        titulo: "Detalle Cafetería",
-        descripcion: "Venta de cafetería agrupada por subcategorías.",
-        resumen: [
-          { label: "Total cafetería", valor: dinero(resumenVentas.cafeteria.total) },
-          { label: "Cantidad", valor: resumenVentas.cafeteria.cantidad },
-          { label: "Participación", valor: `${dashboardRafa.participacionCafeteria}%` }
-        ],
-        columnas: ["Subcategoría", "Cantidad", "Total"],
-        filas: resumenVentas.subcategoriasCafeteria.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
-      };
-    }
+  function crearDetalleDashboardSeleccionado(tipo) {
+    if (!tipo) return null;
 
-    if (tipo === "ticket") {
-      return {
-        titulo: "Detalle del ticket promedio",
-        descripcion: "Pedidos que forman el promedio del periodo.",
-        resumen: [
-          { label: "Total vendido", valor: dinero(totalVentas) },
-          { label: "Pedidos", valor: totalPedidos },
-          { label: "Ticket promedio", valor: dinero(promedioPedido) }
-        ],
-        columnas: ["Pedido", "Fecha", "Cliente", "Ubicación", "Estado", "Total"],
-        filas: filasPedidos
-      };
-    }
+    const columnasPedidos = ["Pedido", "Fecha", "Cliente", "Ubicación", "Productos", "Estado", "Pago", "Total"];
+    const columnasItems = ["Pedido", "Fecha", "Cliente", "Ubicación", "Línea", "Producto", "Cant.", "Estado", "Pago", "Total", "Obs."];
 
     if (tipo === "venta-linea") {
       return {
-        titulo: "Detalle venta por línea",
-        descripcion: "Restaurante y cafetería del periodo seleccionado.",
+        titulo: "Detalle profundo · Venta por línea",
+        descripcion: "Cada fila muestra los productos vendidos, separados por restaurante y cafetería.",
         resumen: [
-          { label: "Restaurante", valor: dinero(resumenVentas.restaurante.total) },
-          { label: "Cafetería", valor: dinero(resumenVentas.cafeteria.total) },
+          { label: "Restaurante", valor: `${resumenVentas.restaurante.cantidad} · ${dinero(resumenVentas.restaurante.total)}` },
+          { label: "Cafetería", valor: `${resumenVentas.cafeteria.cantidad} · ${dinero(resumenVentas.cafeteria.total)}` },
           { label: "Total", valor: dinero(totalVentas) }
         ],
-        columnas: ["Línea", "Cantidad", "Total"],
-        filas: [
-          ["Restaurante", resumenVentas.restaurante.cantidad, dinero(resumenVentas.restaurante.total)],
-          ["Cafetería", resumenVentas.cafeteria.cantidad, dinero(resumenVentas.cafeteria.total)]
-        ]
+        columnas: columnasItems,
+        filas: crearFilasItemsProfundas()
       };
     }
 
     if (tipo === "mesa-linea" || tipo === "llevar-linea") {
-      const grupo = tipo === "mesa-linea" ? dashboardRafa.resumenMesasVsLlevar.mesas : dashboardRafa.resumenMesasVsLlevar.llevar;
-      const tituloGrupo = tipo === "mesa-linea" ? "Pedidos en mesa" : "Pedidos para llevar";
+      const esMesa = tipo === "mesa-linea";
+      const grupo = esMesa ? dashboardRafa.resumenMesasVsLlevar.mesas : dashboardRafa.resumenMesasVsLlevar.llevar;
       return {
-        titulo: `Detalle ${tituloGrupo}`,
-        descripcion: "Separado entre restaurante y cafetería.",
+        titulo: `Detalle profundo · ${esMesa ? "Pedidos en mesa" : "Pedidos para llevar"}`,
+        descripcion: esMesa
+          ? "Pedidos detectados como mesas válidas: 1A, 1B, 2A, 2B, 3A, 3B, 4A, 4B y 5B."
+          : "Pedidos que no corresponden a las mesas válidas y se clasifican como para llevar.",
         resumen: [
-          { label: "Restaurante", valor: dinero(grupo.restaurante.total) },
-          { label: "Cafetería", valor: dinero(grupo.cafeteria.total) },
+          { label: "Restaurante", valor: `${grupo.restaurante.cantidad} · ${dinero(grupo.restaurante.total)}` },
+          { label: "Cafetería", valor: `${grupo.cafeteria.cantidad} · ${dinero(grupo.cafeteria.total)}` },
           { label: "Total", valor: dinero(grupo.restaurante.total + grupo.cafeteria.total) }
         ],
-        columnas: ["Línea", "Cantidad", "Total"],
-        filas: [
-          ["Restaurante", grupo.restaurante.cantidad, dinero(grupo.restaurante.total)],
-          ["Cafetería", grupo.cafeteria.cantidad, dinero(grupo.cafeteria.total)]
-        ]
+        columnas: columnasItems,
+        filas: crearFilasItemsProfundas((pedido) => Boolean(obtenerMesaValidaRafaPedido(pedido)) === esMesa)
       };
     }
 
     if (tipo === "horas") {
       return {
-        titulo: "Detalle ventas por hora",
-        descripcion: "Horas ordenadas del periodo seleccionado.",
-        resumen: [{ label: "Total vendido", valor: dinero(totalVentas) }],
-        columnas: ["Hora", "Pedidos", "Total"],
-        filas: dashboardRafa.horas.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+        titulo: "Detalle profundo · Ventas por hora",
+        descripcion: "Pedidos reales del periodo, ordenados del más reciente al más antiguo, con hora y detalle del pedido.",
+        resumen: [
+          { label: "Total vendido", valor: dinero(totalVentas) },
+          { label: "Horas con venta", valor: dashboardRafa.horas.length },
+          { label: "Mejor hora", valor: dashboardRafa.mejorHora ? `${dashboardRafa.mejorHora.nombre} · ${dinero(dashboardRafa.mejorHora.total)}` : "Sin datos" }
+        ],
+        columnas: ["Hora", ...columnasPedidos],
+        filas: pedidosValidos
+          .slice()
+          .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+          .map((pedido) => [`${obtenerHoraColombia(pedido.created_at)}:00`, ...crearFilaPedidoProfunda(pedido)])
+      };
+    }
+
+    if (tipo === "productos") {
+      return {
+        titulo: "Detalle profundo · Top productos",
+        descripcion: "Productos vendidos con el pedido, cliente, ubicación y observación asociada.",
+        resumen: [
+          { label: "Unidades", valor: totalItemsVendidos },
+          { label: "Productos diferentes", valor: dashboardRafa.productosTop.length },
+          { label: "Total vendido", valor: dinero(totalVentas) }
+        ],
+        columnas: columnasItems,
+        filas: crearFilasItemsProfundas()
       };
     }
 
     if (tipo === "mesas-top") {
       return {
-        titulo: "Detalle mesas que más venden",
-        descripcion: "Solo mesas válidas: 1A, 1B, 2A, 2B, 3A, 3B, 4A, 4B y 5B.",
-        resumen: [{ label: "Mesas con venta", valor: dashboardRafa.mesasTop.length }],
-        columnas: ["Mesa", "Pedidos", "Total"],
-        filas: dashboardRafa.mesasTop.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+        titulo: "Detalle profundo · Mesas que más venden",
+        descripcion: "Pedidos de mesas válidas con productos, cliente, estado, pago y total.",
+        resumen: [
+          { label: "Mesas con venta", valor: dashboardRafa.mesasTop.length },
+          { label: "Mesa líder", valor: dashboardRafa.mesaTop ? `${dashboardRafa.mesaTop.nombre} · ${dinero(dashboardRafa.mesaTop.total)}` : "Sin datos" }
+        ],
+        columnas: ["Mesa", ...columnasPedidos],
+        filas: pedidosValidos
+          .slice()
+          .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+          .filter((pedido) => obtenerMesaValidaRafaPedido(pedido))
+          .map((pedido) => [obtenerMesaValidaRafaPedido(pedido), ...crearFilaPedidoProfunda(pedido)])
       };
     }
 
-    if (tipo === "estados" || tipo === "pagos" || tipo === "origen") {
-      const config = {
-        estados: ["Detalle estados", dashboardRafa.ventasPorEstado, "Estado"],
-        pagos: ["Detalle métodos de pago", dashboardRafa.ventasPorPago, "Método"],
-        origen: ["Detalle origen de pedidos", dashboardRafa.ventasPorOrigen, "Origen"]
-      }[tipo];
+    if (tipo === "estados") {
       return {
-        titulo: config[0],
-        descripcion: "Resumen agrupado del periodo seleccionado.",
-        resumen: [{ label: "Total vendido", valor: dinero(totalVentas) }],
-        columnas: [config[2], "Pedidos", "Total"],
-        filas: config[1].map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+        titulo: "Detalle profundo · Estados",
+        descripcion: "Pedidos reales separados por estado para revisar pendientes, finalizados o inconsistencias.",
+        resumen: [
+          { label: "Finalizados", valor: finalizados },
+          { label: "Pendientes", valor: pendientes },
+          { label: "Pedidos", valor: totalPedidos }
+        ],
+        columnas: columnasPedidos,
+        filas: crearFilasPedidosProfundas()
       };
     }
 
-    return {
-      titulo: "Detalle de total vendido",
-      descripcion: "Resumen consolidado por línea del periodo seleccionado.",
-      resumen: [
-        { label: "Total vendido", valor: dinero(totalVentas) },
-        { label: "Restaurante", valor: dinero(resumenVentas.restaurante.total) },
-        { label: "Cafetería", valor: dinero(resumenVentas.cafeteria.total) }
-      ],
-      columnas: ["Categoría", "Cantidad", "Total"],
-      filas: resumenVentas.tabla.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
-    };
+    if (tipo === "pagos") {
+      return {
+        titulo: "Detalle profundo · Métodos de pago",
+        descripcion: "Pedidos reales con método de pago para revisar efectivo, transferencia, pendientes o no especificados.",
+        resumen: [
+          { label: "Métodos detectados", valor: dashboardRafa.ventasPorPago.length },
+          { label: "Total vendido", valor: dinero(totalVentas) }
+        ],
+        columnas: columnasPedidos,
+        filas: crearFilasPedidosProfundas()
+      };
+    }
+
+    if (tipo === "origen") {
+      return {
+        titulo: "Detalle profundo · Origen de pedidos",
+        descripcion: "Pedidos reales clasificados como mesa o para llevar según cliente/ubicación.",
+        resumen: [
+          { label: "Pedidos en mesa", valor: dashboardRafa.resumenMesasVsLlevar.mesas.restaurante.cantidad + dashboardRafa.resumenMesasVsLlevar.mesas.cafeteria.cantidad },
+          { label: "Para llevar", valor: dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.cantidad + dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.cantidad },
+          { label: "Total vendido", valor: dinero(totalVentas) }
+        ],
+        columnas: columnasPedidos,
+        filas: crearFilasPedidosProfundas()
+      };
+    }
+
+    return null;
   }
 
 
@@ -976,16 +1022,14 @@ export default function PanelRafaPrivado() {
           </div>
         </div>
 
-        <DetalleDashboard detalle={crearDetalleDashboardSeleccionado(detalleDashboard)} onCerrar={() => setDetalleDashboard("")} />
-
         <div className="grid-2" style={{ marginTop: 18 }}>
-          <CajaDashboard activa={detalleDashboard === "venta-linea"} onClick={() => setDetalleDashboard("venta-linea")}>
+          <CajaDashboard activa={detalleDashboard === "venta-linea"} onClick={() => seleccionarDetalleDashboard("venta-linea")}>
             <h3>🧾 Venta por línea</h3>
             <MiniBarra label="Restaurante" valor={resumenVentas.restaurante.total} total={totalVentas} detalle={`${resumenVentas.restaurante.cantidad} · ${dinero(resumenVentas.restaurante.total)}`} />
             <MiniBarra label="Cafetería" valor={resumenVentas.cafeteria.total} total={totalVentas} detalle={`${resumenVentas.cafeteria.cantidad} · ${dinero(resumenVentas.cafeteria.total)}`} />
           </CajaDashboard>
 
-          <CajaDashboard activa={detalleDashboard === "mesa-linea"} onClick={() => setDetalleDashboard("mesa-linea")}>
+          <CajaDashboard activa={detalleDashboard === "mesa-linea"} onClick={() => seleccionarDetalleDashboard("mesa-linea")}>
             <h3>🪑 Pedidos en mesa</h3>
             <MiniBarra label="Restaurante" valor={dashboardRafa.resumenMesasVsLlevar.mesas.restaurante.total} total={totalVentas} detalle={`${dashboardRafa.resumenMesasVsLlevar.mesas.restaurante.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.mesas.restaurante.total)}`} />
             <MiniBarra label="Cafetería" valor={dashboardRafa.resumenMesasVsLlevar.mesas.cafeteria.total} total={totalVentas} detalle={`${dashboardRafa.resumenMesasVsLlevar.mesas.cafeteria.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.mesas.cafeteria.total)}`} />
@@ -993,7 +1037,7 @@ export default function PanelRafaPrivado() {
         </div>
 
         <div className="grid-2" style={{ marginTop: 18 }}>
-          <CajaDashboard activa={detalleDashboard === "llevar-linea"} onClick={() => setDetalleDashboard("llevar-linea")}>
+          <CajaDashboard activa={detalleDashboard === "llevar-linea"} onClick={() => seleccionarDetalleDashboard("llevar-linea")}>
             <h3>🥡 Pedidos para llevar</h3>
             <MiniBarra label="Restaurante" valor={dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.total} total={totalVentas} detalle={`${dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.total)}`} />
             <MiniBarra label="Cafetería" valor={dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.total} total={totalVentas} detalle={`${dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.total)}`} />
@@ -1001,40 +1045,42 @@ export default function PanelRafaPrivado() {
         </div>
 
         <div className="grid-2" style={{ marginTop: 18 }}>
-          <CajaDashboard activa={detalleDashboard === "horas"} onClick={() => setDetalleDashboard("horas")}>
+          <CajaDashboard activa={detalleDashboard === "horas"} onClick={() => seleccionarDetalleDashboard("horas")}>
             <h3>⏱️ Ventas por hora</h3>
             <ListaDashboard items={dashboardRafa.horas} totalBase={totalBaseHoras || totalVentas} limite={8} />
           </CajaDashboard>
 
-          <CajaDashboard activa={detalleDashboard === "productos"} onClick={() => setDetalleDashboard("productos")}>
+          <CajaDashboard activa={detalleDashboard === "productos"} onClick={() => seleccionarDetalleDashboard("productos")}>
             <h3>🥇 Top productos</h3>
             <ListaDashboard items={dashboardRafa.productosTop} totalBase={totalBaseProductos || totalItemsVendidos} modo="cantidad" limite={8} />
           </CajaDashboard>
         </div>
 
         <div className="grid-2" style={{ marginTop: 18 }}>
-          <CajaDashboard activa={detalleDashboard === "mesas-top"} onClick={() => setDetalleDashboard("mesas-top")}>
+          <CajaDashboard activa={detalleDashboard === "mesas-top"} onClick={() => seleccionarDetalleDashboard("mesas-top")}>
             <h3>🪑 Mesas que más venden</h3>
             <ListaDashboard items={dashboardRafa.mesasTop} totalBase={totalBaseMesas || totalVentas} limite={8} />
           </CajaDashboard>
 
-          <CajaDashboard activa={detalleDashboard === "estados"} onClick={() => setDetalleDashboard("estados")}>
+          <CajaDashboard activa={detalleDashboard === "estados"} onClick={() => seleccionarDetalleDashboard("estados")}>
             <h3>📌 Estados</h3>
             <ListaDashboard items={dashboardRafa.ventasPorEstado} totalBase={totalVentas} limite={6} />
           </CajaDashboard>
         </div>
 
         <div className="grid-2" style={{ marginTop: 18 }}>
-          <CajaDashboard activa={detalleDashboard === "pagos"} onClick={() => setDetalleDashboard("pagos")}>
+          <CajaDashboard activa={detalleDashboard === "pagos"} onClick={() => seleccionarDetalleDashboard("pagos")}>
             <h3>💳 Métodos de pago</h3>
             <ListaDashboard items={dashboardRafa.ventasPorPago} totalBase={totalVentas} limite={6} />
           </CajaDashboard>
 
-          <CajaDashboard activa={detalleDashboard === "origen"} onClick={() => setDetalleDashboard("origen")}>
+          <CajaDashboard activa={detalleDashboard === "origen"} onClick={() => seleccionarDetalleDashboard("origen")}>
             <h3>📍 Origen de pedidos</h3>
             <ListaDashboard items={dashboardRafa.ventasPorOrigen} totalBase={totalVentas} limite={6} />
           </CajaDashboard>
         </div>
+
+        <DetalleDashboard detalle={crearDetalleDashboardSeleccionado(detalleDashboard)} onCerrar={() => setDetalleDashboard("")} detalleRef={detalleDashboardRef} />
       </div>
       )}
 
