@@ -1,7 +1,7 @@
 {
-  "version": "15B-DASHBOARD-RAFA-MESAS-LLEVAR-2026-05-18",
-  "phase": "Fase 15B - Dashboard Rafa mesas vs llevar",
+  "version": "15D-RAFA-DASHBOARD-DETALLES-PERIODO-2026-05-18",
+  "phase": "Fase 15D - Rafa periodo y dashboard con detalle",
   "releasedAt": "2026-05-18",
-  "fase": "15B - Dashboard Rafa con lógica de mesas y filtros",
-  "descripcion": "Agrega mesas válidas 1A a 5B usando cliente y ubicación, clasifica pedidos en mesa vs para llevar y separa restaurante/cafetería. Ajusta filtros de Rafa a Hoy, Ayer, Día y Rango manual."
+  "fase": "15D - Selector de periodo Rafa y recuadros clicables",
+  "descripcion": "Reordena el selector de periodo de Rafa para dejar Hoy, Ayer, Rango manual y Día como campo de fecha. Agrega detalle clicable en los recuadros principales del Dashboard."
 }

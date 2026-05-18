@@ -379,6 +379,78 @@ function ListaDashboard({ items, totalBase, modo = "dinero", limite = 6 }) {
   );
 }
 
+
+function TarjetaDashboard({ titulo, valor, onClick, activa = false }) {
+  return (
+    <button
+      type="button"
+      className="stat-card"
+      onClick={onClick}
+      style={{
+        textAlign: "left",
+        cursor: "pointer",
+        border: activa ? "2px solid #f97316" : undefined,
+        boxShadow: activa ? "0 8px 20px rgba(249, 115, 22, 0.18)" : undefined
+      }}
+      title="Ver detalle"
+    >
+      <span>{titulo}</span>
+      <strong>{valor}</strong>
+      <small className="muted">Ver detalle</small>
+    </button>
+  );
+}
+
+function DetalleDashboard({ detalle, onCerrar }) {
+  if (!detalle) return null;
+
+  return (
+    <div className="soft-box" style={{ marginTop: 16, borderColor: "#fdba74", background: "#fff7ed" }}>
+      <div className="admin-top-row">
+        <div>
+          <h3>{detalle.titulo}</h3>
+          {detalle.descripcion && <p className="muted">{detalle.descripcion}</p>}
+        </div>
+        <button type="button" className="button button-secondary" onClick={onCerrar}>
+          Cerrar
+        </button>
+      </div>
+
+      {detalle.resumen && (
+        <div className="admin-stats" style={{ marginTop: 12 }}>
+          {detalle.resumen.map((item) => (
+            <div className="stat-card" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.valor}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="tabla-scroll" style={{ marginTop: 14 }}>
+        <table className="tabla-admin">
+          <thead>
+            <tr>
+              {detalle.columnas.map((columna) => <th key={columna}>{columna}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {detalle.filas.length ? detalle.filas.map((fila, index) => (
+              <tr key={`${detalle.titulo}-${index}`}>
+                {fila.map((celda, idx) => <td key={idx}>{celda}</td>)}
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan={detalle.columnas.length}>Sin datos en este periodo.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTotal = true }) {
   if (!items.length) return <p className="muted">{vacio}</p>;
 
@@ -405,6 +477,7 @@ export default function PanelRafaPrivado() {
   const [errorRafa, setErrorRafa] = useState("");
   const [busquedaCliente, setBusquedaCliente] = useState("");
   const [pestanaRafa, setPestanaRafa] = useState("dashboard");
+  const [detalleDashboard, setDetalleDashboard] = useState("total");
 
   const rangoRafa = useMemo(() => {
     const inicioTexto = modoFecha === "rango" ? (fechaInicioRafa || hoy) : (fechaRafa || hoy);
@@ -507,6 +580,105 @@ export default function PanelRafaPrivado() {
       setFechaRafa(obtenerFechaAyer());
       return;
     }
+  }
+
+
+  function crearDetalleDashboardSeleccionado(tipo) {
+    const filasPedidos = pedidosValidos
+      .slice()
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .map((pedido) => [
+        obtenerCodigoPedido(pedido),
+        formatearFechaHora(pedido.created_at),
+        obtenerCliente(pedido),
+        obtenerMesaValidaRafaPedido(pedido) || "Para llevar",
+        obtenerEstadoPedido(pedido),
+        dinero(Number(pedido.total) || obtenerItemsPedido(pedido).reduce((suma, item) => suma + calcularTotalItem(item), 0))
+      ]);
+
+    if (tipo === "pedidos") {
+      return {
+        titulo: "Detalle de pedidos válidos",
+        descripcion: "Listado de pedidos del periodo seleccionado, excluyendo borrados.",
+        resumen: [
+          { label: "Pedidos", valor: totalPedidos },
+          { label: "Finalizados", valor: finalizados },
+          { label: "Pendientes", valor: pendientes }
+        ],
+        columnas: ["Pedido", "Fecha", "Cliente", "Ubicación", "Estado", "Total"],
+        filas: filasPedidos
+      };
+    }
+
+    if (tipo === "productos") {
+      return {
+        titulo: "Detalle de productos vendidos",
+        descripcion: "Productos agrupados por cantidad y valor vendido.",
+        resumen: [
+          { label: "Unidades", valor: totalItemsVendidos },
+          { label: "Productos diferentes", valor: dashboardRafa.productosTop.length },
+          { label: "Total vendido", valor: dinero(totalVentas) }
+        ],
+        columnas: ["Producto", "Cantidad", "Total"],
+        filas: dashboardRafa.productosTop.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+      };
+    }
+
+    if (tipo === "restaurante") {
+      return {
+        titulo: "Detalle Restaurante",
+        descripcion: "Venta de restaurante agrupada por proteínas y almuerzos.",
+        resumen: [
+          { label: "Total restaurante", valor: dinero(resumenVentas.restaurante.total) },
+          { label: "Cantidad", valor: resumenVentas.restaurante.cantidad },
+          { label: "Participación", valor: `${dashboardRafa.participacionRestaurante}%` }
+        ],
+        columnas: ["Producto / grupo", "Cantidad", "Total"],
+        filas: resumenVentas.proteinas.length
+          ? resumenVentas.proteinas.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+          : resumenVentas.tabla.filter((item) => item.nombre.includes("Restaurante")).map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+      };
+    }
+
+    if (tipo === "cafeteria") {
+      return {
+        titulo: "Detalle Cafetería",
+        descripcion: "Venta de cafetería agrupada por subcategorías.",
+        resumen: [
+          { label: "Total cafetería", valor: dinero(resumenVentas.cafeteria.total) },
+          { label: "Cantidad", valor: resumenVentas.cafeteria.cantidad },
+          { label: "Participación", valor: `${dashboardRafa.participacionCafeteria}%` }
+        ],
+        columnas: ["Subcategoría", "Cantidad", "Total"],
+        filas: resumenVentas.subcategoriasCafeteria.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+      };
+    }
+
+    if (tipo === "ticket") {
+      return {
+        titulo: "Detalle del ticket promedio",
+        descripcion: "Pedidos que forman el promedio del periodo.",
+        resumen: [
+          { label: "Total vendido", valor: dinero(totalVentas) },
+          { label: "Pedidos", valor: totalPedidos },
+          { label: "Ticket promedio", valor: dinero(promedioPedido) }
+        ],
+        columnas: ["Pedido", "Fecha", "Cliente", "Ubicación", "Estado", "Total"],
+        filas: filasPedidos
+      };
+    }
+
+    return {
+      titulo: "Detalle de total vendido",
+      descripcion: "Resumen consolidado por línea del periodo seleccionado.",
+      resumen: [
+        { label: "Total vendido", valor: dinero(totalVentas) },
+        { label: "Restaurante", valor: dinero(resumenVentas.restaurante.total) },
+        { label: "Cafetería", valor: dinero(resumenVentas.cafeteria.total) }
+      ],
+      columnas: ["Categoría", "Cantidad", "Total"],
+      filas: resumenVentas.tabla.map((item) => [item.nombre, item.cantidad, dinero(item.total)])
+    };
   }
 
 
@@ -650,19 +822,9 @@ export default function PanelRafaPrivado() {
           <button type="button" onClick={() => aplicarPeriodoRapido("ayer")} className={modoFecha === "dia" && fechaRafa === obtenerFechaAyer() ? "active" : ""}>
             Ayer
           </button>
-          <button type="button" onClick={() => setModoFecha("dia")} className={modoFecha === "dia" && fechaRafa !== hoy && fechaRafa !== obtenerFechaAyer() ? "active" : ""}>
-            Día
-          </button>
           <button type="button" onClick={() => setModoFecha("rango")} className={modoFecha === "rango" ? "active" : ""}>
             Rango manual
           </button>
-
-          {modoFecha === "dia" && (
-            <label className="calendario-filtro">
-              <span>Día</span>
-              <input type="date" value={fechaRafa} onChange={(e) => setFechaRafa(e.target.value)} />
-            </label>
-          )}
 
           {modoFecha === "rango" && (
             <>
@@ -676,6 +838,18 @@ export default function PanelRafaPrivado() {
               </label>
             </>
           )}
+
+          <label className="calendario-filtro">
+            <span>Día</span>
+            <input
+              type="date"
+              value={fechaRafa}
+              onChange={(e) => {
+                setModoFecha("dia");
+                setFechaRafa(e.target.value);
+              }}
+            />
+          </label>
         </div>
         <p className="muted" style={{ marginTop: 10 }}>
           Informe seleccionado: <strong>{tituloPeriodo}</strong>
@@ -711,13 +885,15 @@ export default function PanelRafaPrivado() {
         </div>
 
         <div className="admin-stats" style={{ marginTop: 14 }}>
-          <div className="stat-card"><span>Total vendido</span><strong>{dinero(totalVentas)}</strong></div>
-          <div className="stat-card"><span>Pedidos válidos</span><strong>{totalPedidos}</strong></div>
-          <div className="stat-card"><span>Productos vendidos</span><strong>{totalItemsVendidos}</strong></div>
-          <div className="stat-card"><span>Ticket promedio</span><strong>{dinero(promedioPedido)}</strong></div>
-          <div className="stat-card"><span>Restaurante</span><strong>{dashboardRafa.participacionRestaurante}%</strong></div>
-          <div className="stat-card"><span>Cafetería</span><strong>{dashboardRafa.participacionCafeteria}%</strong></div>
+          <TarjetaDashboard titulo="Total vendido" valor={dinero(totalVentas)} activa={detalleDashboard === "total"} onClick={() => setDetalleDashboard("total")} />
+          <TarjetaDashboard titulo="Pedidos válidos" valor={totalPedidos} activa={detalleDashboard === "pedidos"} onClick={() => setDetalleDashboard("pedidos")} />
+          <TarjetaDashboard titulo="Productos vendidos" valor={totalItemsVendidos} activa={detalleDashboard === "productos"} onClick={() => setDetalleDashboard("productos")} />
+          <TarjetaDashboard titulo="Ticket promedio" valor={dinero(promedioPedido)} activa={detalleDashboard === "ticket"} onClick={() => setDetalleDashboard("ticket")} />
+          <TarjetaDashboard titulo="Restaurante" valor={`${dashboardRafa.participacionRestaurante}%`} activa={detalleDashboard === "restaurante"} onClick={() => setDetalleDashboard("restaurante")} />
+          <TarjetaDashboard titulo="Cafetería" valor={`${dashboardRafa.participacionCafeteria}%`} activa={detalleDashboard === "cafeteria"} onClick={() => setDetalleDashboard("cafeteria")} />
         </div>
+
+        <DetalleDashboard detalle={crearDetalleDashboardSeleccionado(detalleDashboard)} onCerrar={() => setDetalleDashboard("")} />
 
         <div className="grid-2" style={{ marginTop: 18 }}>
           <div className="soft-box">
