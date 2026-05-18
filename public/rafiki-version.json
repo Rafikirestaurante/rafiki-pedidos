@@ -1,8 +1,8 @@
 {
-  "version": "15E-DASHBOARD-DETALLES-LIMITES-CLIENTE-2026-05-18",
-  "phase": "Fase 15E - Dashboard clicable y límites de observaciones",
+  "version": "16B-MODALES-RAFIKI-GLOBALES-2026-05-18",
+  "phase": "Fase 16B - Sistema global de modales Rafiki",
   "releasedAt": "2026-05-18",
-  "fase": "15E",
-  "descripcion": "Hace clicables los recuadros operativos del Dashboard Rafa y agrega límites de caracteres en observaciones del panel cliente.",
+  "fase": "16B",
+  "descripcion": "Reemplaza confirmaciones nativas del navegador por modales reutilizables con estética Rafiki para pedidos, insumos y pedidos offline.",
   "fecha": "2026-05-18"
 }
