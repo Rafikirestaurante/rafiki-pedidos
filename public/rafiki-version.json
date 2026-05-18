@@ -1,8 +1,8 @@
 {
-  "version": "15D-FIX-DEPLOY-RAFA-DASHBOARD-2026-05-18",
-  "phase": "Fase 15D - Rafa periodo y dashboard con detalle",
+  "version": "15E-DASHBOARD-DETALLES-LIMITES-CLIENTE-2026-05-18",
+  "phase": "Fase 15E - Dashboard clicable y límites de observaciones",
   "releasedAt": "2026-05-18",
-  "fase": "15D Fix Deploy",
-  "descripcion": "Reordena el selector de periodo de Rafa para dejar Hoy, Ayer, Rango manual y Día como campo de fecha. Agrega detalle clicable en los recuadros principales del Dashboard.",
+  "fase": "15E",
+  "descripcion": "Hace clicables los recuadros operativos del Dashboard Rafa y agrega límites de caracteres en observaciones del panel cliente.",
   "fecha": "2026-05-18"
 }
