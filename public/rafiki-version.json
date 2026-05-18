@@ -1,7 +1,7 @@
 {
-  "version": "15A-LIMPIEZA-UI-2026-05-18-FIX1",
-  "phase": "Fase 15A - Limpieza UI FIX caché",
+  "version": "15B-DASHBOARD-RAFA-MESAS-LLEVAR-2026-05-18",
+  "phase": "Fase 15B - Dashboard Rafa mesas vs llevar",
   "releasedAt": "2026-05-18",
-  "fase": "15A - Limpieza UI con corrección de versión",
-  "descripcion": "Corrige la validación de versiones para que la Fase 15A no sea bloqueada por una referencia antigua 14B. Mantiene los ajustes de limpieza visual, filtros, Rafa e interfaz del generador de menú."
+  "fase": "15B - Dashboard Rafa con lógica de mesas y filtros",
+  "descripcion": "Agrega mesas válidas 1A a 5B usando cliente y ubicación, clasifica pedidos en mesa vs para llevar y separa restaurante/cafetería. Ajusta filtros de Rafa a Hoy, Ayer, Día y Rango manual."
 }
