@@ -1,7 +1,7 @@
 {
-  "version": "14B-2-DASHBOARD-RAFA-PESTANAS-2026-05-18",
-  "phase": "Fase 14B-2 - Dashboard Rafa por pestañas",
+  "version": "15A-LIMPIEZA-UI-2026-05-18-FIX1",
+  "phase": "Fase 15A - Limpieza UI FIX caché",
   "releasedAt": "2026-05-18",
-  "fase": "14B-2 - Dashboard Rafa con pestañas internas",
-  "descripcion": "Dashboard ejecutivo dentro de Rafa como pestaña interna, incluyendo mesa que más vende y ranking de mesas."
+  "fase": "15A - Limpieza UI con corrección de versión",
+  "descripcion": "Corrige la validación de versiones para que la Fase 15A no sea bloqueada por una referencia antigua 14B. Mantiene los ajustes de limpieza visual, filtros, Rafa e interfaz del generador de menú."
 }
