@@ -15,6 +15,38 @@ const PERMISOS_POR_ROL = {
   usuario: ["pedidos", "menu", "productos", "generador", "cambiar_estado", "finalizar_pendientes"],
 };
 
+const STORAGE_ROL_ADMIN = "rafikiAdminRolCache";
+const ROL_CACHE_MS = 12 * 60 * 60 * 1000;
+
+function leerRolCache(email) {
+  try {
+    const normalizado = String(email || "").trim().toLowerCase();
+    if (!normalizado) return "";
+    const cache = JSON.parse(window.localStorage.getItem(STORAGE_ROL_ADMIN) || "null");
+    if (!cache || cache.email !== normalizado || !cache.rol || !cache.exp) return "";
+    if (Date.now() > cache.exp) {
+      window.localStorage.removeItem(STORAGE_ROL_ADMIN);
+      return "";
+    }
+    return PERMISOS_POR_ROL[cache.rol] ? cache.rol : "";
+  } catch {
+    return "";
+  }
+}
+
+function guardarRolCache(email, rol) {
+  try {
+    const normalizado = String(email || "").trim().toLowerCase();
+    if (!normalizado || !PERMISOS_POR_ROL[rol]) return;
+    window.localStorage.setItem(
+      STORAGE_ROL_ADMIN,
+      JSON.stringify({ email: normalizado, rol, exp: Date.now() + ROL_CACHE_MS })
+    );
+  } catch {
+    // No bloquea el panel si el navegador no permite localStorage.
+  }
+}
+
 function limpiarRol(valor) {
   return String(valor || "").trim().toLowerCase();
 }
@@ -51,18 +83,19 @@ export async function obtenerRolUsuarioDesdeTabla(supabase, usuario) {
 
     if (error) {
       console.warn("No se pudo leer usuarios_roles:", error.message || error);
-      return obtenerRolUsuario(usuario);
+      return leerRolCache(email) || obtenerRolUsuario(usuario);
     }
 
     const rolTabla = limpiarRol(data?.rol);
     if (PERMISOS_POR_ROL[rolTabla]) {
+      guardarRolCache(email, rolTabla);
       return rolTabla;
     }
 
-    return ROL_POR_DEFECTO;
+    return leerRolCache(email) || obtenerRolUsuario(usuario);
   } catch (error) {
     console.warn("Error inesperado leyendo usuarios_roles:", error?.message || error);
-    return obtenerRolUsuario(usuario);
+    return leerRolCache(email) || obtenerRolUsuario(usuario);
   }
 }
 

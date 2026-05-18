@@ -11,7 +11,7 @@ import {
 } from "../data/menuCafeteria";
 
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 
 export function limpiarTexto(valor, max = 120) {
   return String(valor || "")
@@ -41,6 +41,11 @@ export function obtenerSesionActiva(claveStorage) {
     if (!sesion?.v || !sesion?.exp || Date.now() > sesion.exp) {
       localStorage.removeItem(claveStorage);
       return false;
+    }
+
+    // Mantiene viva la sesión administrativa mientras el trabajador está usando el panel.
+    if (sesion.exp - Date.now() < 60 * 60 * 1000) {
+      guardarSesionTemporal(claveStorage);
     }
 
     return true;
