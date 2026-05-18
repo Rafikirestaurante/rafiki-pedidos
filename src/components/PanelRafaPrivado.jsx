@@ -191,6 +191,26 @@ function filtrarFilasClientes(filas, busqueda) {
 
 
 
+function obtenerMesaPedido(pedido) {
+  const candidatos = [
+    pedido.mesa,
+    pedido.numero_mesa,
+    pedido.mesa_numero,
+    pedido.ubicacion
+  ];
+
+  const valor = candidatos.find((item) => String(item || "").trim());
+  const texto = String(valor || "").trim();
+  if (!texto) return "";
+
+  const normalizado = normalizarTexto(texto);
+  const esPedidoMesa = normalizarTexto(pedido.origen || pedido.canal || pedido.tipo_pedido || "").includes("mesa") || normalizado.includes("mesa");
+  const esLlevar = normalizado.includes("llevar") || normalizado.includes("domicilio");
+
+  if (!esPedidoMesa || esLlevar) return "";
+  return texto;
+}
+
 function obtenerEtiquetaOrigenPedido(pedido) {
   const origen = normalizarTexto(pedido.origen || pedido.canal || pedido.fuente || pedido.tipo_pedido);
   const ubicacion = normalizarTexto(pedido.ubicacion || pedido.mesa || "");
@@ -228,6 +248,7 @@ function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resumenVent
   const porOrigen = new Map();
   const porEstado = new Map();
   const porProducto = new Map();
+  const porMesa = new Map();
 
   pedidos.forEach((pedido) => {
     const totalPedido = Number(pedido.total) || obtenerItemsPedido(pedido).reduce((suma, item) => suma + calcularTotalItem(item), 0);
@@ -235,6 +256,8 @@ function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resumenVent
     sumarEnMapa(porPago, obtenerEtiquetaPagoPedido(pedido), 1, totalPedido);
     sumarEnMapa(porOrigen, obtenerEtiquetaOrigenPedido(pedido), 1, totalPedido);
     sumarEnMapa(porEstado, obtenerEstadoPedido(pedido), 1, totalPedido);
+    const mesa = obtenerMesaPedido(pedido);
+    if (mesa) sumarEnMapa(porMesa, mesa, 1, totalPedido);
   });
 
   filasClientes.forEach((fila) => {
@@ -246,9 +269,11 @@ function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resumenVent
   const ventasPorOrigen = ordenarResumen(porOrigen);
   const ventasPorEstado = ordenarResumen(porEstado);
   const productosTop = ordenarResumen(porProducto).slice(0, 10);
+  const mesasTop = ordenarResumen(porMesa).slice(0, 10);
   const mejorHora = ordenarResumen(porHora)[0] || null;
   const productoTop = productosTop[0] || null;
   const clienteTop = resumenClientes[0] || null;
+  const mesaTop = mesasTop[0] || null;
   const totalVentas = (resumenVentas?.restaurante?.total || 0) + (resumenVentas?.cafeteria?.total || 0);
   const participacionRestaurante = totalVentas > 0 ? Math.round(((resumenVentas.restaurante.total || 0) / totalVentas) * 100) : 0;
   const participacionCafeteria = totalVentas > 0 ? Math.round(((resumenVentas.cafeteria.total || 0) / totalVentas) * 100) : 0;
@@ -259,9 +284,11 @@ function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resumenVent
     ventasPorOrigen,
     ventasPorEstado,
     productosTop,
+    mesasTop,
     mejorHora,
     productoTop,
     clienteTop,
+    mesaTop,
     participacionRestaurante,
     participacionCafeteria
   };
@@ -327,6 +354,7 @@ export default function PanelRafaPrivado() {
   const [cargandoRafa, setCargandoRafa] = useState(false);
   const [errorRafa, setErrorRafa] = useState("");
   const [busquedaCliente, setBusquedaCliente] = useState("");
+  const [pestanaRafa, setPestanaRafa] = useState("dashboard");
 
   const rangoRafa = useMemo(() => {
     const inicioTexto = modoFecha === "rango" ? (fechaInicioRafa || hoy) : (fechaRafa || hoy);
@@ -406,6 +434,7 @@ export default function PanelRafaPrivado() {
   const totalItemsVendidos = filasClientes.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
   const totalBaseHoras = Math.max(...dashboardRafa.horas.map((item) => item.total), 0);
   const totalBaseProductos = Math.max(...dashboardRafa.productosTop.map((item) => item.cantidad), 0);
+  const totalBaseMesas = Math.max(...dashboardRafa.mesasTop.map((item) => item.total), 0);
 
   function aplicarPeriodoRapido(tipo) {
     const base = new Date(`${hoy}T00:00:00-05:00`);
@@ -613,9 +642,25 @@ export default function PanelRafaPrivado() {
         </p>
       </div>
 
+      <div className="filtros-historial" style={{ marginBottom: 16 }}>
+        <button type="button" onClick={() => setPestanaRafa("dashboard")} className={pestanaRafa === "dashboard" ? "active" : ""}>
+          📊 Dashboard
+        </button>
+        <button type="button" onClick={() => setPestanaRafa("informe")} className={pestanaRafa === "informe" ? "active" : ""}>
+          📋 Informe
+        </button>
+        <button type="button" onClick={() => setPestanaRafa("clientes")} className={pestanaRafa === "clientes" ? "active" : ""}>
+          👤 Clientes
+        </button>
+        <button type="button" onClick={() => setPestanaRafa("consolidado")} className={pestanaRafa === "consolidado" ? "active" : ""}>
+          🧾 Consolidado
+        </button>
+      </div>
+
       {errorRafa && <div className="alert alert-error">{errorRafa}</div>}
       {cargandoRafa && <div className="alert alert-info">Cargando informe...</div>}
 
+      {pestanaRafa === "dashboard" && (
       <div className="soft-box" style={{ marginBottom: 22, borderColor: "#fed7aa", background: "linear-gradient(135deg, #fff7ed, #ffffff)" }}>
         <div className="admin-top-row">
           <div>
@@ -643,6 +688,7 @@ export default function PanelRafaPrivado() {
             <p><strong>Producto líder:</strong> {dashboardRafa.productoTop ? `${dashboardRafa.productoTop.nombre} · ${dashboardRafa.productoTop.cantidad}` : "Sin datos"}</p>
             <p><strong>Mejor hora:</strong> {dashboardRafa.mejorHora ? `${dashboardRafa.mejorHora.nombre} · ${dinero(dashboardRafa.mejorHora.total)}` : "Sin datos"}</p>
             <p><strong>Cliente líder:</strong> {dashboardRafa.clienteTop ? `${dashboardRafa.clienteTop.cliente} · ${dinero(dashboardRafa.clienteTop.total)}` : "Sin datos"}</p>
+            <p><strong>Mesa que más vende:</strong> {dashboardRafa.mesaTop ? `${dashboardRafa.mesaTop.nombre} · ${dinero(dashboardRafa.mesaTop.total)}` : "Sin datos"}</p>
             <p><strong>Pagos pendientes detectados:</strong> {dinero(totalPendienteCliente)}</p>
           </div>
 
@@ -667,6 +713,18 @@ export default function PanelRafaPrivado() {
 
         <div className="grid-2" style={{ marginTop: 18 }}>
           <div className="soft-box">
+            <h3>🪑 Mesas que más venden</h3>
+            <ListaDashboard items={dashboardRafa.mesasTop} totalBase={totalBaseMesas || totalVentas} limite={8} />
+          </div>
+
+          <div className="soft-box">
+            <h3>📌 Estados</h3>
+            <ListaDashboard items={dashboardRafa.ventasPorEstado} totalBase={totalVentas} limite={6} />
+          </div>
+        </div>
+
+        <div className="grid-2" style={{ marginTop: 18 }}>
+          <div className="soft-box">
             <h3>💳 Métodos de pago</h3>
             <ListaDashboard items={dashboardRafa.ventasPorPago} totalBase={totalVentas} limite={6} />
           </div>
@@ -677,7 +735,10 @@ export default function PanelRafaPrivado() {
           </div>
         </div>
       </div>
+      )}
 
+      {pestanaRafa === "informe" && (
+      <>
       <div className="admin-stats">
         <div className="stat-card"><span>Total vendido</span><strong>{dinero(totalVentas)}</strong></div>
         <div className="stat-card"><span>Restaurante</span><strong>{dinero(resumenVentas.restaurante.total)}</strong></div>
@@ -716,6 +777,10 @@ export default function PanelRafaPrivado() {
       </div>
 
 
+      </>
+      )}
+
+      {pestanaRafa === "clientes" && (
       <div className="soft-box" style={{ marginTop: 22 }}>
         <div className="admin-top-row">
           <div>
@@ -822,7 +887,9 @@ export default function PanelRafaPrivado() {
           </p>
         </div>
       </div>
+      )}
 
+      {pestanaRafa === "consolidado" && (
       <div className="soft-box" style={{ marginTop: 22 }}>
         <h3>Tabla consolidada</h3>
         {resumenVentas.tabla.length === 0 ? (
@@ -850,6 +917,7 @@ export default function PanelRafaPrivado() {
           </div>
         )}
       </div>
+      )}
     </section>
   );
 }
