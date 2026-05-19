@@ -1,0 +1,66 @@
+:root {
+  --rafiki-safe-top: env(safe-area-inset-top, 0px);
+  --rafiki-safe-right: env(safe-area-inset-right, 0px);
+  --rafiki-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --rafiki-safe-left: env(safe-area-inset-left, 0px);
+}
+
+html {
+  min-height: 100%;
+  background: #fff4e6;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #fff4e6;
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: rgba(249, 115, 22, 0.18);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+button {
+  min-height: 44px;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+@media (display-mode: standalone) {
+  body {
+    padding-top: var(--rafiki-safe-top);
+    padding-left: var(--rafiki-safe-left);
+    padding-right: var(--rafiki-safe-right);
+  }
+
+  #root {
+    min-height: calc(100vh - var(--rafiki-safe-top));
+  }
+}
+
+@media (max-width: 480px) {
+  .rafiki-pwa-floating-action {
+    left: max(12px, var(--rafiki-safe-left));
+    right: max(12px, var(--rafiki-safe-right));
+    bottom: max(12px, calc(var(--rafiki-safe-bottom) + 12px));
+    width: auto;
+  }
+
+  .rafiki-pwa-card {
+    left: max(12px, var(--rafiki-safe-left));
+    right: max(12px, var(--rafiki-safe-right));
+    max-width: none;
+  }
+}

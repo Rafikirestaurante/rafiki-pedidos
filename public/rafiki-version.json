@@ -1,8 +1,8 @@
 {
-  "version": "18-PRE-A-PWA-VERSIONADO-2026-05-18",
-  "phase": "Fase 18 Pre-A - PWA y versionado corregidos",
-  "releasedAt": "2026-05-18",
-  "fase": "18 Pre-A",
-  "descripcion": "Centraliza la version de la app, elimina el bloqueo repetitivo, mejora la limpieza de caches y refuerza la estrategia del Service Worker para evitar ciclos infinitos de actualizacion.",
-  "fecha": "2026-05-18"
+  "version": "18-PRE-A1-FIX-GUARDAR-MENU-2026-05-19",
+  "phase": "Fase 18 Pre-A1 - Fix guardar menu diario",
+  "releasedAt": "2026-05-19",
+  "fase": "18 Pre-A1",
+  "descripcion": "Corrige el guardado del menu diario en /admin, evita depender de select().single() al actualizar, sincroniza cache local y muestra confirmacion visible despues de guardar.",
+  "fecha": "2026-05-19"
 }
