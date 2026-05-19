@@ -1,8 +1,8 @@
 {
-  "version": "16C2-REALTIME-DIAGNOSTICO-ESTABLE-2026-05-18",
-  "phase": "Fase 16C-2 - Realtime estable con diagnóstico",
+  "version": "17A-REALTIME-HOOK-ESTABLE-2026-05-18",
+  "phase": "Fase 17A - Realtime extraído a hook estable",
   "releasedAt": "2026-05-18",
-  "fase": "16C-2",
-  "descripcion": "Refuerza Realtime con diagnóstico visible, recarga automática de respaldo, actualización en vivo de INSERT/UPDATE/DELETE y recuperación al volver internet o reabrir la pestaña.",
+  "fase": "17A",
+  "descripcion": "Extrae el sistema Realtime de pedidos a src/hooks/useRealtimePedidos.js, conservando listeners, reconexión, diagnóstico y polling de respaldo para reducir App.jsx y estabilizar el panel administrativo.",
   "fecha": "2026-05-18"
 }
