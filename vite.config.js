@@ -64,9 +64,11 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'logo-rafiki.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'],
       manifest: rafikiManifest,
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.hostname.includes('supabase.co'),
@@ -89,13 +91,38 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: ({ request }) => ['script', 'style', 'font'].includes(request.destination),
-            handler: 'StaleWhileRevalidate',
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
             options: {
-              cacheName: 'rafiki-static-assets',
+              cacheName: 'rafiki-pages-network-first',
+              networkTimeoutSeconds: 4,
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24
+              }
+            }
+          },
+          {
+            urlPattern: ({ url }) => url.pathname === '/rafiki-version.json' || url.pathname === '/manifest.webmanifest' || url.pathname === '/manifest.json',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'rafiki-pwa-metadata-network-first',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 10
+              }
+            }
+          },
+          {
+            urlPattern: ({ request }) => ['script', 'style', 'font'].includes(request.destination),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'rafiki-static-assets-network-first',
+              networkTimeoutSeconds: 4,
               expiration: {
                 maxEntries: 80,
-                maxAgeSeconds: 60 * 60 * 24 * 30
+                maxAgeSeconds: 60 * 60 * 24 * 7
               }
             }
           }

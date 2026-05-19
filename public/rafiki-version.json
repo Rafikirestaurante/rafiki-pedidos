@@ -1,8 +1,8 @@
 {
-  "version": "17D-ADMIN-ESTABLE-2026-05-18",
-  "phase": "Fase 17D - Admin estabilizado",
+  "version": "18-PRE-A-PWA-VERSIONADO-2026-05-18",
+  "phase": "Fase 18 Pre-A - PWA y versionado corregidos",
   "releasedAt": "2026-05-18",
-  "fase": "17D",
-  "descripcion": "Desactiva el bloqueo de versión anterior para evitar ciclos infinitos de caché en rutas internas. La app ya no queda atrapada en la pantalla de actualización.",
+  "fase": "18 Pre-A",
+  "descripcion": "Centraliza la version de la app, elimina el bloqueo repetitivo, mejora la limpieza de caches y refuerza la estrategia del Service Worker para evitar ciclos infinitos de actualizacion.",
   "fecha": "2026-05-18"
 }

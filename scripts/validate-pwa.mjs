@@ -60,7 +60,9 @@ assert(indexHtml.includes('apple-mobile-web-app-capable'), 'index.html: falta ap
 assert(indexHtml.includes('apple-touch-icon'), 'index.html: falta apple-touch-icon.');
 assert(viteConfig.includes('NetworkOnly') && viteConfig.includes('supabase.co'), 'vite.config.js: Supabase debe permanecer NetworkOnly.');
 assert(viteConfig.includes("registerType: 'prompt'"), 'vite.config.js: las actualizaciones deben seguir con prompt, no autoUpdate.');
-assert(version.version?.startsWith('13H-'), 'rafiki-version.json: versión debe corresponder a 13H.');
+assert(version.version === '18-PRE-A-PWA-VERSIONADO-2026-05-18', 'rafiki-version.json: versión debe corresponder a Fase 18 Pre-A.');
+assert(viteConfig.includes('skipWaiting: true') && viteConfig.includes('clientsClaim: true'), 'vite.config.js: Workbox debe activar skipWaiting y clientsClaim.');
+assert(viteConfig.includes('NetworkFirst') && viteConfig.includes('rafiki-pwa-metadata-network-first'), 'vite.config.js: metadata PWA debe usar NetworkFirst.');
 
 if (warnings.length) {
   console.log('Advertencias PWA:');
