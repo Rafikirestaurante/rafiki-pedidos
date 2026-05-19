@@ -10,6 +10,7 @@ import {
   acompanantesATexto,
   agruparPlatosPorCategoria,
   calcularTotalItem,
+  calcularTotalItems,
   consolidarPedidos,
   crearItemNuevo,
   crearLinkWhatsApp,
