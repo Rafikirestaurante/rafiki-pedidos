@@ -1,8 +1,8 @@
 {
-  "version": "17A2-REALTIME-HOOK-FIX-2026-05-18",
-  "phase": "Fase 17A2 - Fix Realtime hook estable",
+  "version": "17C-LIMPIEZA-CODIGO-MUERTO-2026-05-18",
+  "phase": "Fase 17C - Limpieza conservadora de código muerto",
   "releasedAt": "2026-05-18",
-  "fase": "17A",
-  "descripcion": "Corrige referencia colgante de Realtime después de extraer el hook y conserva listeners, reconexión, diagnóstico y polling de respaldo.",
+  "fase": "17C",
+  "descripcion": "Limpieza conservadora posterior a la extracción de hooks: elimina estados, imports y funciones sin uso claro en App.jsx, manteniendo Realtime y lógica de pedidos aislados.",
   "fecha": "2026-05-18"
 }

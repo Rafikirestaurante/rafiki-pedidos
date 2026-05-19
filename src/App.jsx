@@ -1,11 +1,10 @@
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase, supabaseConfigOk, supabaseConfigMensaje } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./utils/navigation";
 import { InicioRafiki, AdminLogin } from "./components/screens/InicioAdmin";
 import { CampoTexto, SelectorCantidad, useConfirmacion } from "./components/common";
-import { PedidoCocina } from "./components/PedidosAdmin";
-import { estadosPedido, MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
+import { MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
   acompanantesATexto,
   agruparPlatosPorCategoria,
@@ -16,12 +15,9 @@ import {
   crearLinkWhatsApp,
   crearMensajeWhatsAppPedido,
   dinero,
-  esDispositivoMovil,
   fechaISOColombia,
-  formatearFechaHora,
   guardarSesionTemporal,
   limpiarTelefonoWhatsApp,
-  limpiarTexto,
   obtenerCodigoPedido,
   esCategoriaSopa,
   valorParaLlevarItem,
@@ -35,7 +31,7 @@ import {
   platosATexto,
   textoAPlatosDetalle,
 } from "./utils/pedidos";
-import { BOTONES, CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS } from "./config/textos";
+import { BOTONES, MENSAJES_PEDIDOS } from "./config/textos";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import { describirActor, nombreRol, obtenerRolUsuarioDesdeTabla, primeraPestanaPermitida, usuarioPuede } from "./utils/authAdmin";
 import CargandoModulo from "./components/CargandoModulo";
@@ -77,8 +73,6 @@ export default function App() {
   const [ubicacion, setUbicacion] = useState("");
   const [tipoPago, setTipoPago] = useState("");
   const [observaciones, setObservaciones] = useState("");
-  const [mesa, setMesa] = useState("Mesa 1");
-  const [mesero, setMesero] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [busquedaDebounced, setBusquedaDebounced] = useState("");
   const [filtroPedidos, setFiltroPedidos] = useState("hoy");
@@ -368,8 +362,6 @@ export default function App() {
 
   const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
-  const cargandoDatosOperativos = vista === "admin" ? (cargandoMenu || cargandoPedidos) : cargandoMenu;
-
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
     [itemsPedido]
@@ -414,11 +406,6 @@ export default function App() {
   }, [pedidosFiltrados]);
 
   const consolidado = useMemo(() => consolidarPedidos(pedidosActivos), [pedidosActivos]);
-
-  const totalVendido = useMemo(() => {
-    return pedidosActivos.reduce((suma, pedido) => suma + Number(pedido.total || 0), 0);
-  }, [pedidosActivos]);
-
 
   const platosAgrupados = useMemo(
     () => agruparPlatosPorCategoria(menu.platos_detalle),
@@ -845,17 +832,6 @@ export default function App() {
     setPedidos,
     pedidoCoincideConFiltroActual,
   });
-
-  function abrirPanelAdmin() {
-    setErrorClaveAdmin("");
-    setAdminPassword("");
-    if (adminAutenticado) {
-      navegar("/admin", "admin");
-      return;
-    }
-
-    navegar("/admin", "adminLogin");
-  }
 
   async function validarClaveAdmin(e) {
     e.preventDefault();
