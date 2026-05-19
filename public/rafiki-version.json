@@ -1,8 +1,8 @@
 {
-  "version": "17C-LIMPIEZA-CODIGO-MUERTO-2026-05-18",
-  "phase": "Fase 17C - Limpieza conservadora de código muerto",
+  "version": "17C3-SIN-BLOQUEO-PWA-2026-05-18",
+  "phase": "Fase 17C3 - Versión PWA sin bloqueo operativo",
   "releasedAt": "2026-05-18",
-  "fase": "17C",
-  "descripcion": "Limpieza conservadora posterior a la extracción de hooks: elimina estados, imports y funciones sin uso claro en App.jsx, manteniendo Realtime y lógica de pedidos aislados.",
+  "fase": "17C3",
+  "descripcion": "Desactiva el bloqueo de versión anterior para evitar ciclos infinitos de caché en rutas internas. La app ya no queda atrapada en la pantalla de actualización.",
   "fecha": "2026-05-18"
 }

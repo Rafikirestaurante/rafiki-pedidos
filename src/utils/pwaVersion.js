@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '17A2-REALTIME-HOOK-FIX-2026-05-18';
+export const RAFIKI_APP_VERSION = '17C3-SIN-BLOQUEO-PWA-2026-05-18';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 
