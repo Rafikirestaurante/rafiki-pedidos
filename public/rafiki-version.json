@@ -1,8 +1,8 @@
 {
-  "version": "18-PRE-A1-FIX-GUARDAR-MENU-2026-05-19",
-  "phase": "Fase 18 Pre-A1 - Fix guardar menu diario",
+  "version": "18-PRE-A2-GUARDADO-MENU-ROBUSTO-2026-05-19",
+  "phase": "Fase 18 Pre-A2 - Guardado robusto menu diario",
   "releasedAt": "2026-05-19",
-  "fase": "18 Pre-A1",
-  "descripcion": "Corrige el guardado del menu diario en /admin, evita depender de select().single() al actualizar, sincroniza cache local y muestra confirmacion visible despues de guardar.",
+  "fase": "18 Pre-A2",
+  "descripcion": "Corrige de forma robusta el guardado del menu diario en /admin con timeout, fallback de columnas Supabase, confirmacion persistente y actualizacion de cache local.",
   "fecha": "2026-05-19"
 }
