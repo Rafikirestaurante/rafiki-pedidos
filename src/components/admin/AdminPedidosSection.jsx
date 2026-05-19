@@ -6,10 +6,9 @@ import { dinero, fechaISOColombia, obtenerCliente, obtenerCodigoPedido } from ".
 export default function AdminPedidosSection({
   tituloPedidos,
   setRecargaPedidos,
-  sonidoActivado,
-  activarSonidoPedidos,
   alertaPedidoNuevo,
   setAlertaPedidoNuevo,
+  estadoRealtimePedidos,
   filtroPedidos,
   setFiltroPedidos,
   fechaSeleccionada,
@@ -42,6 +41,13 @@ export default function AdminPedidosSection({
         </div>
 
         <div className="admin-actions-stack">
+          {estadoRealtimePedidos && (
+            <div className={`realtime-status realtime-${estadoRealtimePedidos.estado || "inactivo"}`}>
+              <strong>{estadoRealtimePedidos.texto || "Realtime"}</strong>
+              <span>{estadoRealtimePedidos.detalle || "Estado de conexión en vivo."}</span>
+            </div>
+          )}
+
           <button
             type="button"
             className="button light"

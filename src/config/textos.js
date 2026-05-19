@@ -21,8 +21,6 @@ export const TEXTOS_APP = {
 };
 
 export const MENSAJES_PEDIDOS = {
-  SONIDO_ACTIVADO: "Sonido de nuevos pedidos activado.",
-  SONIDO_BLOQUEADO: "El navegador bloqueó el sonido. Toca de nuevo el botón de activar sonido.",
   MENU_ACTUALIZADO: "Menú actualizado correctamente.",
   MENU_CREADO: "Menú creado correctamente.",
   SIN_PEDIDOS_PENDIENTES: "No hay pedidos pendientes para finalizar.",

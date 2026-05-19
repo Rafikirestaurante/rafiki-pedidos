@@ -472,4 +472,66 @@ export const appStyles = `
           .admin-tabs { grid-template-columns: 1fr 1fr; border-radius: 18px; }
           .admin-tabs button { font-size: 12px; padding: 12px 8px; }
         }
+/* Fase 16C-2: estado visible de Realtime en panel admin */
+.realtime-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(248, 250, 252, 0.82);
+  color: #334155;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.realtime-status strong {
+  font-size: 0.84rem;
+  color: #0f172a;
+}
+
+.realtime-status span {
+  color: #64748b;
+}
+
+.realtime-conectado {
+  border-color: rgba(22, 163, 74, 0.35);
+  background: rgba(240, 253, 244, 0.95);
+}
+
+.realtime-conectado strong {
+  color: #166534;
+}
+
+.realtime-conectando,
+.realtime-reconectando {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(255, 251, 235, 0.95);
+}
+
+.realtime-conectando strong,
+.realtime-reconectando strong {
+  color: #92400e;
+}
+
+.realtime-inactivo,
+.realtime-error {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(254, 242, 242, 0.95);
+}
+
+.realtime-inactivo strong,
+.realtime-error strong {
+  color: #991b1b;
+}
+
+@media (max-width: 720px) {
+  .realtime-status {
+    width: 100%;
+    max-width: none;
+  }
+}
 `;

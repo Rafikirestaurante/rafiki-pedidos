@@ -102,13 +102,16 @@ export default function App() {
   const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [recargaMenu, setRecargaMenu] = useState(0);
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
-  const [sonidoActivado, setSonidoActivado] = useState(false);
+  const [estadoRealtimePedidos, setEstadoRealtimePedidos] = useState({
+    estado: "inactivo",
+    texto: "Realtime inactivo",
+    detalle: "El panel administrativo no está abierto."
+  });
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
   const mensajeMenuTimer = useRef(null);
   const menuHashRef = useRef("");
-  const audioCtxRef = useRef(null);
   const alertaPedidoTimer = useRef(null);
   const vistaRef = useRef(vista);
   const filtroPedidosRef = useRef(filtroPedidos);
@@ -366,51 +369,6 @@ export default function App() {
     };
   }, []);
 
-  function activarSonidoPedidos() {
-    setSonidoActivado(true);
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext && !audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
-      }
-      reproducirSonidoPedido();
-      mostrarMensaje(MENSAJES_PEDIDOS.SONIDO_ACTIVADO, "success");
-    } catch {
-      mostrarMensaje(MENSAJES_PEDIDOS.SONIDO_BLOQUEADO, "warning");
-    }
-  }
-
-  function reproducirSonidoPedido() {
-    if (!sonidoActivado) return;
-
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = audioCtxRef.current || new AudioContext();
-      audioCtxRef.current = ctx;
-
-      if (ctx.state === "suspended") {
-        ctx.resume();
-      }
-
-      const tiempos = [0, 0.18, 0.36];
-      tiempos.forEach((inicio, index) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(index === 1 ? 880 : 660, ctx.currentTime + inicio);
-        gain.gain.setValueAtTime(0.001, ctx.currentTime + inicio);
-        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + inicio + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + inicio + 0.14);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + inicio);
-        osc.stop(ctx.currentTime + inicio + 0.16);
-      });
-    } catch {
-      // El aviso visual sigue funcionando aunque el sonido sea bloqueado.
-    }
-  }
-
   function mostrarAlertaPedidoNuevo(pedido) {
     setAlertaPedidoNuevo(pedido);
     if (alertaPedidoTimer.current) {
@@ -623,6 +581,11 @@ export default function App() {
 
     if (!debeCargarPedidos) {
       setCargandoPedidos(false);
+      setEstadoRealtimePedidos({
+        estado: "inactivo",
+        texto: "Realtime inactivo",
+        detalle: "Abre el panel administrativo para activar la conexión en vivo."
+      });
       return () => {
         cancelado = true;
       };
@@ -683,38 +646,140 @@ export default function App() {
   }, [vista, adminAutenticado, filtroPedidos, fechaSeleccionada, recargaPedidos]);
 
   useEffect(() => {
-    if (!adminAutenticado || vista !== "admin") return undefined;
+    if (!supabaseConfigOk || !adminAutenticado || vista !== "admin") {
+      setEstadoRealtimePedidos({
+        estado: "inactivo",
+        texto: "Realtime inactivo",
+        detalle: "Abre el panel administrativo para activar la conexión en vivo."
+      });
+      return undefined;
+    }
+
+    let canalActivo = true;
+    const nombreCanal = `${instanciaRealtimeRef.current}-pedidos`;
+
+    setEstadoRealtimePedidos({
+      estado: "conectando",
+      texto: "Conectando Realtime...",
+      detalle: "Preparando actualización automática de pedidos."
+    });
 
     const canal = supabase
-      .channel(`${instanciaRealtimeRef.current}-pedidos`)
+      .channel(nombreCanal)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "pedidos" },
+        { event: "*", schema: "public", table: "pedidos" },
         (payload) => {
-          const nuevoPedido = payload.new;
-          if (!nuevoPedido?.id) return;
+          const tipoEvento = payload.eventType;
+          const pedidoNuevo = payload.new;
+          const pedidoAnterior = payload.old;
+          const pedidoId = pedidoNuevo?.id || pedidoAnterior?.id;
 
-          const hoy = pedidoEsDeHoy(nuevoPedido);
+          if (!pedidoId) return;
 
-          if (pedidoCoincideConFiltroActual(nuevoPedido)) {
-            setPedidos((actual) => {
-              if (actual.some((pedido) => pedido.id === nuevoPedido.id)) return actual;
-              return [...actual, nuevoPedido];
-            });
+          if (tipoEvento === "DELETE") {
+            setPedidos((actual) => actual.filter((pedido) => pedido.id !== pedidoId));
+            setEstadoRealtimePedidos((actual) => ({
+              ...actual,
+              estado: "conectado",
+              texto: "Realtime conectado",
+              detalle: "Pedido eliminado recibido en vivo."
+            }));
+            return;
           }
 
-          if (hoy) {
-            reproducirSonidoPedido();
-            mostrarAlertaPedidoNuevo(nuevoPedido);
+          if (!pedidoNuevo?.id) return;
+
+          const coincideConFiltro = pedidoCoincideConFiltroActual(pedidoNuevo);
+
+          setPedidos((actual) => {
+            const existe = actual.some((pedido) => pedido.id === pedidoNuevo.id);
+
+            if (!coincideConFiltro) {
+              return existe ? actual.filter((pedido) => pedido.id !== pedidoNuevo.id) : actual;
+            }
+
+            if (existe) {
+              return actual.map((pedido) => (pedido.id === pedidoNuevo.id ? pedidoNuevo : pedido));
+            }
+
+            return [...actual, pedidoNuevo];
+          });
+
+          setEstadoRealtimePedidos((actual) => ({
+            ...actual,
+            estado: "conectado",
+            texto: "Realtime conectado",
+            detalle: tipoEvento === "INSERT" ? "Pedido nuevo recibido en vivo." : "Pedido actualizado en vivo."
+          }));
+
+          if (tipoEvento === "INSERT" && pedidoEsDeHoy(pedidoNuevo)) {
+            mostrarAlertaPedidoNuevo(pedidoNuevo);
           }
         }
       )
-      .subscribe();
+      .subscribe((estado) => {
+        if (!canalActivo) return;
+
+        if (estado === "SUBSCRIBED") {
+          setEstadoRealtimePedidos({
+            estado: "conectado",
+            texto: "Realtime conectado",
+            detalle: "Los pedidos deberían aparecer automáticamente."
+          });
+          setRecargaPedidos((actual) => actual + 1);
+          return;
+        }
+
+        if (estado === "CHANNEL_ERROR" || estado === "TIMED_OUT" || estado === "CLOSED") {
+          setEstadoRealtimePedidos({
+            estado: "reconectando",
+            texto: "Realtime reconectando",
+            detalle: "Si entra un pedido durante la reconexión, el sistema hará una recarga automática."
+          });
+          setRecargaPedidos((actual) => actual + 1);
+          return;
+        }
+
+        setEstadoRealtimePedidos({
+          estado: "conectando",
+          texto: "Conectando Realtime...",
+          detalle: `Estado técnico: ${estado}`
+        });
+      });
+
+    const recargaAlVolver = () => {
+      if (document.visibilityState === "visible" && vistaRef.current === "admin") {
+        setRecargaPedidos((actual) => actual + 1);
+      }
+    };
+
+    const recargaAlRecuperarInternet = () => {
+      setEstadoRealtimePedidos({
+        estado: "reconectando",
+        texto: "Internet recuperado",
+        detalle: "Recargando pedidos y revalidando conexión en vivo."
+      });
+      setRecargaPedidos((actual) => actual + 1);
+    };
+
+    const respaldoAutomatico = window.setInterval(() => {
+      if (vistaRef.current === "admin" && document.visibilityState === "visible") {
+        setRecargaPedidos((actual) => actual + 1);
+      }
+    }, 20000);
+
+    window.addEventListener("online", recargaAlRecuperarInternet);
+    document.addEventListener("visibilitychange", recargaAlVolver);
 
     return () => {
+      canalActivo = false;
+      window.clearInterval(respaldoAutomatico);
+      window.removeEventListener("online", recargaAlRecuperarInternet);
+      document.removeEventListener("visibilitychange", recargaAlVolver);
       supabase.removeChannel(canal);
     };
-  }, [adminAutenticado, vista, filtroPedidos, fechaSeleccionada, sonidoActivado]);
+  }, [adminAutenticado, vista]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -944,7 +1009,10 @@ export default function App() {
       }
 
       if (pedidoCoincideConFiltroActual(data)) {
-        setPedidos((actual) => [...actual, data]);
+        setPedidos((actual) => {
+          if (actual.some((pedido) => pedido.id === data.id)) return actual;
+          return [...actual, data];
+        });
       }
 
       setPedidoFinalizado(data);
@@ -1063,7 +1131,10 @@ export default function App() {
       }
 
       if (pedidoCoincideConFiltroActual(data)) {
-        setPedidos((actual) => [...actual, data]);
+        setPedidos((actual) => {
+          if (actual.some((pedido) => pedido.id === data.id)) return actual;
+          return [...actual, data];
+        });
       }
 
       mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} enviado a cocina para ${mesaLimpia}.`, "success");
@@ -1971,10 +2042,9 @@ export default function App() {
                 <AdminPedidosSection
                   tituloPedidos={tituloPedidos}
                   setRecargaPedidos={setRecargaPedidos}
-                  sonidoActivado={sonidoActivado}
-                  activarSonidoPedidos={activarSonidoPedidos}
                   alertaPedidoNuevo={alertaPedidoNuevo}
                   setAlertaPedidoNuevo={setAlertaPedidoNuevo}
+                  estadoRealtimePedidos={estadoRealtimePedidos}
                   filtroPedidos={filtroPedidos}
                   setFiltroPedidos={setFiltroPedidos}
                   fechaSeleccionada={fechaSeleccionada}

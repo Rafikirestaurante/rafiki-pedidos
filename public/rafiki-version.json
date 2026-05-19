@@ -1,8 +1,8 @@
 {
-  "version": "16B-MODALES-RAFIKI-GLOBALES-2026-05-18",
-  "phase": "Fase 16B - Sistema global de modales Rafiki",
+  "version": "16C2-REALTIME-DIAGNOSTICO-ESTABLE-2026-05-18",
+  "phase": "Fase 16C-2 - Realtime estable con diagnóstico",
   "releasedAt": "2026-05-18",
-  "fase": "16B",
-  "descripcion": "Reemplaza confirmaciones nativas del navegador por modales reutilizables con estética Rafiki para pedidos, insumos y pedidos offline.",
+  "fase": "16C-2",
+  "descripcion": "Refuerza Realtime con diagnóstico visible, recarga automática de respaldo, actualización en vivo de INSERT/UPDATE/DELETE y recuperación al volver internet o reabrir la pestaña.",
   "fecha": "2026-05-18"
 }

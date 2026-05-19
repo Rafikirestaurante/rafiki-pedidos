@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '16B-MODALES-RAFIKI-GLOBALES-2026-05-18';
+export const RAFIKI_APP_VERSION = '16C2-REALTIME-DIAGNOSTICO-ESTABLE-2026-05-18';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 
