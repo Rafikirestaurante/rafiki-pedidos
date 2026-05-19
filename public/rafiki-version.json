@@ -1,8 +1,8 @@
 {
-  "version": "17C3-SIN-BLOQUEO-PWA-2026-05-18",
-  "phase": "Fase 17C3 - Versión PWA sin bloqueo operativo",
+  "version": "17D-ADMIN-ESTABLE-2026-05-18",
+  "phase": "Fase 17D - Admin estabilizado",
   "releasedAt": "2026-05-18",
-  "fase": "17C3",
+  "fase": "17D",
   "descripcion": "Desactiva el bloqueo de versión anterior para evitar ciclos infinitos de caché en rutas internas. La app ya no queda atrapada en la pantalla de actualización.",
   "fecha": "2026-05-18"
 }
