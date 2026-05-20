@@ -81,14 +81,22 @@ export default function GeneradorMenu() {
     const image = new Image();
     image.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = ancho;
-      canvas.height = alto;
+      const anchoReal = image.naturalWidth || ancho;
+      const altoReal = image.naturalHeight || alto;
+
+      // Importante: el SVG del generador puede crecer cuando hay varios platos
+      // o acompañantes. Antes se forzaba a 1080x930/1080 y eso cortaba la
+      // sección de acompañantes en el PNG descargado. Ahora el canvas toma el
+      // tamaño real del SVG para exportar la imagen completa.
+      canvas.width = anchoReal;
+      canvas.height = altoReal;
+
       const ctx = canvas.getContext("2d");
       if (!transparente) {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
-      ctx.drawImage(image, 0, 0);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       const link = document.createElement("a");
       link.download = nombreArchivo;
       link.href = canvas.toDataURL("image/png");
