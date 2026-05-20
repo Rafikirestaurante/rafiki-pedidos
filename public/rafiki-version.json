@@ -1,8 +1,8 @@
 {
-  "version": "18-PRE-A2-GUARDADO-MENU-ROBUSTO-2026-05-19",
-  "phase": "Fase 18 Pre-A2 - Guardado robusto menu diario",
+  "version": "18A-ADMIN-ESTABLE-2026-05-19",
+  "phase": "Fase 18A - Nucleo estable del Admin",
   "releasedAt": "2026-05-19",
-  "fase": "18 Pre-A2",
-  "descripcion": "Corrige de forma robusta el guardado del menu diario en /admin con timeout, fallback de columnas Supabase, confirmacion persistente y actualizacion de cache local.",
+  "fase": "18A",
+  "descripcion": "Blindaje inicial del panel administrativo: Realtime con recargas controladas, carga de pedidos con fallback sin borrar datos visibles, loaders reales y estados de error recuperables.",
   "fecha": "2026-05-19"
 }
