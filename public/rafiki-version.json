@@ -1,8 +1,8 @@
 {
-  "version": "18A-ADMIN-ESTABLE-2026-05-19",
-  "phase": "Fase 18A - Nucleo estable del Admin",
+  "version": "18A1-REALTIME-NO-INVASIVO-2026-05-19",
+  "phase": "Fase 18A1 - Realtime no invasivo",
   "releasedAt": "2026-05-19",
-  "fase": "18A",
-  "descripcion": "Blindaje inicial del panel administrativo: Realtime con recargas controladas, carga de pedidos con fallback sin borrar datos visibles, loaders reales y estados de error recuperables.",
+  "fase": "18A1",
+  "descripcion": "Realtime deja de interrumpir pestañas del panel administrativo: no mueve a Pedidos de hoy, no recarga pedidos fuera de esa pestaña, muestra aviso de cambios pendientes y pausa recargas de menu mientras se edita.",
   "fecha": "2026-05-19"
 }
