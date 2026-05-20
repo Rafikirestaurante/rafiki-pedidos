@@ -61,6 +61,97 @@ export function obtenerPlatosSinPrecio(registro) {
 }
 
 
+export function normalizarTextoBusqueda(texto) {
+  return String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function nombreMenuEditor(texto) {
+  return String(texto || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+export function precioEditor(valor) {
+  return String(valor || "").replace(/[^\d]/g, "");
+}
+
+export function esSopaMenu(nombre) {
+  const limpio = normalizarTextoBusqueda(nombre);
+  return /\b(sancocho|ajiaco|sopa|sopas)\b/.test(limpio);
+}
+
+export function expandirPlatoMenuEditor(plato) {
+  const nombreOriginal = nombreMenuEditor(plato?.nombre);
+  const precio = precioEditor(plato?.precio);
+  if (!nombreOriginal) return [];
+
+  const nombreBusqueda = normalizarTextoBusqueda(nombreOriginal);
+
+  if (nombreBusqueda.includes("pechuga o cerdo")) {
+    const resto = nombreOriginal.replace(/pechuga\s+o\s+cerdo/i, "").replace(/\s+/g, " ").trim();
+    return [
+      { tipo: "pechuga", categoria: "Platos", nombre: `pechuga ${resto}`.replace(/\s+/g, " ").trim(), precio },
+      { tipo: "cerdo", categoria: "Platos", nombre: `cerdo ${resto}`.replace(/\s+/g, " ").trim(), precio }
+    ];
+  }
+
+  if (esSopaMenu(nombreOriginal)) {
+    return [{ tipo: "sopa", categoria: "Sopas", nombre: nombreOriginal, precio }];
+  }
+
+  if (/\bpechuga\b/.test(nombreBusqueda)) {
+    return [{ tipo: "pechuga", categoria: "Platos", nombre: nombreOriginal, precio }];
+  }
+
+  if (/\bcerdo\b/.test(nombreBusqueda)) {
+    return [{ tipo: "cerdo", categoria: "Platos", nombre: nombreOriginal, precio }];
+  }
+
+  return [{ tipo: "plato", categoria: "Platos", nombre: nombreOriginal, precio }];
+}
+
+const PRODUCTOS_FIJOS_MENU_EDITOR = [
+  { tipo: "pechuga", categoria: "Platos", nombre: "Pechuga Asada sin salsa", precio: "16000" },
+  { tipo: "cerdo", categoria: "Platos", nombre: "Cerdo Asado sin salsa", precio: "16000" },
+  { tipo: "sopa", categoria: "Sopas", nombre: "Sopas medianas sin arroz", precio: "7000" },
+  { tipo: "sopa", categoria: "Sopas", nombre: "Sopas medianas con arroz", precio: "9000" },
+  { tipo: "sopa", categoria: "Sopas", nombre: "Sancocho de pollo con arroz", precio: "15000" }
+];
+
+export function generarTextoEditorMenu(platos = []) {
+  const expandidos = platos.flatMap(expandirPlatoMenuEditor);
+  const ordenados = [
+    ...expandidos.filter((item) => item.tipo === "plato"),
+    ...expandidos.filter((item) => item.tipo === "pechuga"),
+    ...PRODUCTOS_FIJOS_MENU_EDITOR.filter((item) => item.tipo === "pechuga"),
+    ...expandidos.filter((item) => item.tipo === "cerdo"),
+    ...PRODUCTOS_FIJOS_MENU_EDITOR.filter((item) => item.tipo === "cerdo"),
+    ...expandidos.filter((item) => item.tipo === "sopa"),
+    ...PRODUCTOS_FIJOS_MENU_EDITOR.filter((item) => item.tipo === "sopa")
+  ];
+
+  return ordenados
+    .map((item) => `${item.categoria} | ${item.nombre}:${item.precio}`)
+    .join("\n");
+}
+
+export function dividirAcompananteEditor(linea) {
+  return String(linea || "")
+    .split(/\s+o\s+/i)
+    .map((item) => item.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+export function generarTextoAcompanantesEditor(acompanantes = []) {
+  const base = Array.isArray(acompanantes) ? acompanantes : limpiarLista(acompanantes);
+  const items = base.flatMap(dividirAcompananteEditor).filter(Boolean);
+  return [...items, "Solo esos dos"].join("\n");
+}
+
+
 export function escapeSvg(texto) {
   return String(texto || "")
     .replace(/&/g, "&amp;")

@@ -9,7 +9,9 @@ import {
   formatearFechaInformeMenu,
   obtenerPlatosSinPrecio,
   crearSvgMenu,
-  crearSvgMenuSoloTexto
+  crearSvgMenuSoloTexto,
+  generarTextoEditorMenu,
+  generarTextoAcompanantesEditor
 } from "../utils/generadorMenu";
 
 export default function GeneradorMenu() {
@@ -41,6 +43,9 @@ export default function GeneradorMenu() {
 
   const svgUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, [svg]);
   const svgTextoUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgTexto)}`, [svgTexto]);
+
+  const textoEditorMenu = useMemo(() => generarTextoEditorMenu(platosLimpios), [platosLimpios]);
+  const textoEditorAcompanantes = useMemo(() => generarTextoAcompanantesEditor(listaAcompanantes), [listaAcompanantes]);
 
   const informeUltimosMenus = useMemo(() => {
     const unicosPorFecha = new Map();
@@ -92,6 +97,27 @@ export default function GeneradorMenu() {
     };
     image.onerror = () => setMensaje("No se pudo descargar la imagen. Intenta de nuevo.");
     image.src = url;
+  }
+
+  async function copiarTextoGenerado(texto, mensajeOk) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(texto);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = texto;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setMensaje(mensajeOk);
+    } catch (error) {
+      setMensaje("No se pudo copiar automáticamente. Selecciona el texto y cópialo manualmente.");
+    }
   }
 
   async function descargarSoloTexto() {
@@ -298,6 +324,32 @@ export default function GeneradorMenu() {
             </button>
           </div>
 
+          <div className="box soft texto-editor-menu-box" style={{ marginTop: 14 }}>
+            <div className="generador-box-header">
+              <div>
+                <strong>Texto para Editor de Menú Diario</strong>
+                <p className="muted small" style={{ marginBottom: 0 }}>Copia este bloque y pégalo en el editor de menú diario.</p>
+              </div>
+              <button type="button" className="button light" onClick={() => copiarTextoGenerado(textoEditorMenu, "Texto de platos copiado correctamente.")}>
+                📋 Copiar platos
+              </button>
+            </div>
+            <textarea className="texto-editor-menu-output" value={textoEditorMenu} readOnly rows={12} />
+          </div>
+
+          <div className="box soft texto-editor-menu-box" style={{ marginTop: 14 }}>
+            <div className="generador-box-header">
+              <div>
+                <strong>Acompañantes para Editor</strong>
+                <p className="muted small" style={{ marginBottom: 0 }}>Los acompañantes con “o” se separan y siempre se agrega “Solo esos dos”.</p>
+              </div>
+              <button type="button" className="button light" onClick={() => copiarTextoGenerado(textoEditorAcompanantes, "Texto de acompañantes copiado correctamente.")}>
+                📋 Copiar acompañantes
+              </button>
+            </div>
+            <textarea className="texto-editor-menu-output" value={textoEditorAcompanantes} readOnly rows={7} />
+          </div>
+
           {mensaje && <div className="alert alert-ok menu-action-message">{mensaje}</div>}
         </div>
 
@@ -397,6 +449,9 @@ export default function GeneradorMenu() {
         .field span { font-weight: 900; color: #3f2a1d; }
         .field input, .field textarea, .box input { width: 100%; max-width: 100%; border: 1px solid #fed7aa; border-radius: 14px; padding: 12px 13px; font: inherit; outline: none; background: #fff; box-sizing: border-box; }
         .field input:focus, .field textarea:focus, .box input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12); }
+        .texto-editor-menu-box { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
+        .texto-editor-menu-output { width: 100%; margin-top: 12px; border: 1px solid #fed7aa; border-radius: 16px; background: #fff; color: #2f1b10; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 13px; line-height: 1.45; resize: vertical; box-sizing: border-box; white-space: pre; }
+        .texto-editor-menu-output:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12); outline: none; }
         .preview-menu-frame { width: 100%; max-width: 100%; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 28px rgba(124,45,18,0.16); background: #fff; }
         .preview-menu-frame img { max-width: 100%; height: auto; }
         .generador-box-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
