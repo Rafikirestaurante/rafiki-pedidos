@@ -15,15 +15,36 @@ import {
   guardarUltimoTextoEditorGenerador
 } from "../utils/generadorMenu";
 
+const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador";
+
+const PLATOS_GENERADOR_DEFECTO = [
+  { nombre: "Carne en posta", precio: "20000" },
+  { nombre: "Chuleta", precio: "19000" },
+  { nombre: "Pechuga asada", precio: "17500" }
+];
+
+const ACOMPANANTES_GENERADOR_DEFECTO = "Arroz de maíz\nPuré de papa\nEnsalada\nTajadas maduras";
+
+function leerBorradorGeneradorMenu() {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+
+  try {
+    const raw = window.localStorage.getItem(GENERADOR_MENU_DRAFT_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export default function GeneradorMenu() {
-  const [platos, setPlatos] = useState([
-    { nombre: "Carne en posta", precio: "20000" },
-    { nombre: "Chuleta", precio: "19000" },
-    { nombre: "Pechuga asada", precio: "17500" }
-  ]);
-  const [acompanantes, setAcompanantes] = useState("Arroz de maíz\nPuré de papa\nEnsalada\nTajadas maduras");
+  const borradorInicial = leerBorradorGeneradorMenu();
+  const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) && borradorInicial.platos.length ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
+  const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
   const [mensaje, setMensaje] = useState("");
-  const [fechaMenu, setFechaMenu] = useState(fechaHoyISO());
+  const [fechaMenu, setFechaMenu] = useState(() => borradorInicial?.fechaMenu || fechaHoyISO());
   const [observaciones, setObservaciones] = useState("");
   const [guardandoHistorial, setGuardandoHistorial] = useState(false);
   const [historial, setHistorial] = useState([]);
@@ -54,6 +75,24 @@ export default function GeneradorMenu() {
       acompanantesTexto: textoEditorAcompanantes
     });
   }, [textoEditorMenu, textoEditorAcompanantes]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.localStorage) return;
+
+    try {
+      window.localStorage.setItem(
+        GENERADOR_MENU_DRAFT_KEY,
+        JSON.stringify({
+          fechaMenu: fechaMenu || fechaHoyISO(),
+          platos,
+          acompanantes,
+          actualizadoEn: new Date().toISOString()
+        })
+      );
+    } catch {
+      // Si el navegador no permite guardar, la app continúa normalmente.
+    }
+  }, [fechaMenu, platos, acompanantes]);
 
   const informeUltimosMenus = useMemo(() => {
     const unicosPorFecha = new Map();
@@ -280,7 +319,7 @@ export default function GeneradorMenu() {
   }
 
   useEffect(() => {
-    cargarHistorialGenerador({ cargarUltimo: true });
+    cargarHistorialGenerador({ cargarUltimo: !borradorInicial });
   }, []);
 
   return (

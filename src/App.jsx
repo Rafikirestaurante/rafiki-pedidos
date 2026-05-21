@@ -55,6 +55,7 @@ const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
 const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
+const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "rafa"]);
 
 function leerAdminTabGuardada() {
@@ -76,9 +77,40 @@ function guardarAdminTabActiva(tab) {
   }
 }
 
+function leerBorradorEditorMenuDiario() {
+  try {
+    const raw = window.localStorage.getItem(MENU_EDITOR_DRAFT_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return data && typeof data === "object" ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarBorradorEditorMenuDiario(payload) {
+  try {
+    window.localStorage.setItem(MENU_EDITOR_DRAFT_KEY, JSON.stringify({
+      ...payload,
+      actualizadoEn: new Date().toISOString()
+    }));
+  } catch {
+    // El borrador es una ayuda operativa; no debe bloquear la app.
+  }
+}
+
+function borrarBorradorEditorMenuDiario() {
+  try {
+    window.localStorage.removeItem(MENU_EDITOR_DRAFT_KEY);
+  } catch {
+    // No bloquear si el navegador no permite limpiar localStorage.
+  }
+}
+
 export default function App() {
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
   const menuCacheDisponibleRef = useRef(hayMenuCacheValido());
+  const borradorEditorMenuRestauradoRef = useRef(false);
   const [vista, setVista] = useState(() => obtenerVistaInicial());
   const [adminTab, setAdminTab] = useState(() => leerAdminTabGuardada());
   const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
@@ -415,6 +447,40 @@ export default function App() {
   const irAPedidosYActualizar = useCallback(() => {
     cambiarAdminTabSeguro("pedidos");
   }, [cambiarAdminTabSeguro]);
+
+
+  useEffect(() => {
+    if (adminTab !== "menu" || borradorEditorMenuRestauradoRef.current) return;
+
+    const borrador = leerBorradorEditorMenuDiario();
+    if (borrador) {
+      if (borrador.menu && typeof borrador.menu === "object") {
+        setMenu((actual) => ({
+          ...actual,
+          ...borrador.menu,
+          fecha: borrador.menu.fecha || fechaISOColombia()
+        }));
+      }
+      if (typeof borrador.platosTexto === "string") setPlatosTexto(borrador.platosTexto);
+      if (typeof borrador.acompanantesTexto === "string") setAcompanantesTexto(borrador.acompanantesTexto);
+    }
+
+    borradorEditorMenuRestauradoRef.current = true;
+  }, [adminTab]);
+
+  useEffect(() => {
+    if (adminTab !== "menu") return;
+
+    guardarBorradorEditorMenuDiario({
+      menu: {
+        fecha: menu.fecha || fechaISOColombia(),
+        titulo: menu.titulo || "",
+        descripcion: menu.descripcion || ""
+      },
+      platosTexto,
+      acompanantesTexto
+    });
+  }, [adminTab, menu.fecha, menu.titulo, menu.descripcion, platosTexto, acompanantesTexto]);
 
   const descartarAvisoCambiosPedidos = useCallback(() => {
     setCambiosPedidosPendientes(false);
@@ -1004,6 +1070,7 @@ export default function App() {
       setItemsPedido([crearItemNuevo()]);
       setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
       setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
+      borrarBorradorEditorMenuDiario();
 
       mostrarMensajeMenu(
         eraEdicion

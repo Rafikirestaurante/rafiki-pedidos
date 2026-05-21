@@ -1,8 +1,8 @@
 {
-  "version": "19A5-MENU-DESDE-GENERADOR-2026-05-21",
-  "phase": "Fase 19A5 - Cargar menú diario desde generador",
+  "version": "19A6-FECHA-HOY-BORRADORES-2026-05-21",
+  "phase": "Fase 19A6 - Fecha actual, botón ayer y borradores temporales",
   "releasedAt": "2026-05-21",
-  "fase": "19A5",
-  "descripcion": "Corrige de raíz el regreso automático a Pedidos de hoy: la revalidación de sesión/Auth ya no reinicia la pestaña activa. Realtime inicia OFF por defecto y se limpia el ZIP final.",
+  "fase": "19A6",
+  "descripcion": "Deja fecha actual por defecto en generador e insumos, agrega botón Ayer en insumos pendientes y autoguarda borradores para evitar pérdida al salir brevemente de la app.",
   "fecha": "2026-05-21"
 }

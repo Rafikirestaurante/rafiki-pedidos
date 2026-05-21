@@ -11,7 +11,6 @@ import {
   crearMensajeCompraProveedores,
   crearMensajeSolicitudProductos,
   crearProductosSolicitudInicial,
-  fechaMananaColombia,
   guardarEstadoPendientesCompra,
   obtenerInsumosDeSolicitud,
   obtenerProductosPendientesDesdeSolicitudes,
@@ -20,17 +19,48 @@ import {
 } from "../utils/solicitudProductos";
 
 const WHATSAPP_SOLICITUD_INSUMOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_INSUMOS || "";
+const SOLICITUD_INSUMOS_DRAFT_KEY = "rafikiSolicitudInsumosBorrador";
+
+function fechaAyerColombia() {
+  const base = new Date(`${fechaISOColombia()}T00:00:00-05:00`);
+  base.setDate(base.getDate() - 1);
+  return fechaISOColombia(base);
+}
+
+function leerBorradorSolicitudInsumos() {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+
+  try {
+    const raw = window.localStorage.getItem(SOLICITUD_INSUMOS_DRAFT_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function borrarBorradorSolicitudInsumos() {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    window.localStorage.removeItem(SOLICITUD_INSUMOS_DRAFT_KEY);
+  } catch {
+    // No bloquea la operación si el navegador no permite limpiar el borrador.
+  }
+}
 
 export default function SolicitudProductos() {
+  const borradorInicial = leerBorradorSolicitudInsumos();
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
-  const [productosSolicitud, setProductosSolicitud] = useState(() => crearProductosSolicitudInicial());
-  const [fechaParaSolicitud, setFechaParaSolicitud] = useState(fechaMananaColombia());
-  const [observacionesSolicitud, setObservacionesSolicitud] = useState("");
+  const [productosSolicitud, setProductosSolicitud] = useState(() => Array.isArray(borradorInicial?.productosSolicitud) && borradorInicial.productosSolicitud.length ? borradorInicial.productosSolicitud : crearProductosSolicitudInicial());
+  const [fechaParaSolicitud, setFechaParaSolicitud] = useState(() => borradorInicial?.fechaParaSolicitud || fechaISOColombia());
+  const [observacionesSolicitud, setObservacionesSolicitud] = useState(() => borradorInicial?.observacionesSolicitud || "");
   const [mensajeSolicitud, setMensajeSolicitud] = useState({ texto: "", tipo: "info" });
   const [guardandoSolicitud, setGuardandoSolicitud] = useState(false);
   const [solicitudFinalizada, setSolicitudFinalizada] = useState(null);
-  const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState("");
-  const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState(CATEGORIA_SOLICITUD_DEFECTO);
+  const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState(() => borradorInicial?.nuevoProductoSolicitudNombre || "");
+  const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState(() => borradorInicial?.nuevoProductoSolicitudCategoria || CATEGORIA_SOLICITUD_DEFECTO);
   const [productoSolicitudEliminarId, setProductoSolicitudEliminarId] = useState("");
   const [vistaSolicitud, setVistaSolicitud] = useState("solicitar");
   const [solicitudesGuardadas, setSolicitudesGuardadas] = useState([]);
@@ -84,6 +114,26 @@ export default function SolicitudProductos() {
   useEffect(() => {
     guardarEstadoPendientesCompra(estadoPendientesCompra);
   }, [estadoPendientesCompra]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.localStorage) return;
+
+    try {
+      window.localStorage.setItem(
+        SOLICITUD_INSUMOS_DRAFT_KEY,
+        JSON.stringify({
+          productosSolicitud,
+          fechaParaSolicitud: fechaParaSolicitud || fechaISOColombia(),
+          observacionesSolicitud,
+          nuevoProductoSolicitudNombre,
+          nuevoProductoSolicitudCategoria,
+          actualizadoEn: new Date().toISOString()
+        })
+      );
+    } catch {
+      // El autoguardado no debe bloquear la solicitud de insumos.
+    }
+  }, [productosSolicitud, fechaParaSolicitud, observacionesSolicitud, nuevoProductoSolicitudNombre, nuevoProductoSolicitudCategoria]);
 
   useEffect(() => {
     verificarSolicitudDelDia();
@@ -403,6 +453,8 @@ export default function SolicitudProductos() {
       setSolicitudesGuardadas((actual) => [solicitudGuardada, ...actual]);
       setYaExisteSolicitudHoy(false);
 
+      borrarBorradorSolicitudInsumos();
+
       if (abrirWhatsApp) {
         const link = crearLinkWhatsApp(
           WHATSAPP_SOLICITUD_INSUMOS,
@@ -434,13 +486,14 @@ export default function SolicitudProductos() {
 
   function limpiarSolicitudProductos() {
     setProductosSolicitud(crearProductosSolicitudInicial());
-    setFechaParaSolicitud(fechaMananaColombia());
+    setFechaParaSolicitud(fechaISOColombia());
     setObservacionesSolicitud("");
     setNuevoProductoSolicitudNombre("");
     setNuevoProductoSolicitudCategoria(CATEGORIA_SOLICITUD_DEFECTO);
     setProductoSolicitudEliminarId("");
     setMensajeSolicitud({ texto: "", tipo: "info" });
     setSolicitudFinalizada(null);
+    borrarBorradorSolicitudInsumos();
   }
 
   return (
@@ -642,6 +695,18 @@ export default function SolicitudProductos() {
             </div>
 
             <div className="actions-inline">
+              <button
+                type="button"
+                onClick={() => {
+                  const ayer = fechaAyerColombia();
+                  setFechaConsultaSolicitudes(ayer);
+                  setMensajePendientes({ texto: "", tipo: "info" });
+                }}
+                className="button light"
+                disabled={cargandoPendientes}
+              >
+                Ayer
+              </button>
               <button type="button" onClick={() => cargarSolicitudesPendientesCompra(fechaConsultaSolicitudes)} className="button light" disabled={cargandoPendientes}>
                 {cargandoPendientes ? "Cargando..." : "Actualizar"}
               </button>
