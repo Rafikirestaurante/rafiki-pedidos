@@ -1,8 +1,8 @@
 {
-  "version": "18A1-REALTIME-NO-INVASIVO-2026-05-19",
-  "phase": "Fase 18A1 - Realtime no invasivo",
-  "releasedAt": "2026-05-19",
-  "fase": "18A1",
-  "descripcion": "Realtime deja de interrumpir pestañas del panel administrativo: no mueve a Pedidos de hoy, no recarga pedidos fuera de esa pestaña, muestra aviso de cambios pendientes y pausa recargas de menu mientras se edita.",
-  "fecha": "2026-05-19"
+  "version": "19A-REALTIME-MANUAL-ON-OFF-2026-05-20",
+  "phase": "Fase 19A - Realtime manual ON/OFF",
+  "releasedAt": "2026-05-20",
+  "fase": "19A",
+  "descripcion": "Agrega control operativo para activar o desactivar por completo el Realtime del panel administrativo desde Pedidos de hoy, junto al botón Actualizar pedidos.",
+  "fecha": "2026-05-20"
 }

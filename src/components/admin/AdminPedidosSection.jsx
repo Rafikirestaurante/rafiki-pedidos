@@ -11,6 +11,8 @@ function AdminPedidosSectionBase({
   alertaPedidoNuevo,
   setAlertaPedidoNuevo,
   estadoRealtimePedidos,
+  realtimeAdminActivo = true,
+  cambiarEstadoRealtimeAdmin,
   filtroPedidos,
   setFiltroPedidos,
   fechaSeleccionada,
@@ -55,13 +57,24 @@ function AdminPedidosSectionBase({
         <div className="admin-actions-stack">
           <AdminRealtimeStatus estadoRealtimePedidos={estadoRealtimePedidos} />
 
-          <button
-            type="button"
-            className="button light"
-            onClick={refrescarPedidos}
-          >
-            🔄 Actualizar pedidos
-          </button>
+          <div className="admin-actions-stack horizontal">
+            <button
+              type="button"
+              className="button light"
+              onClick={refrescarPedidos}
+            >
+              🔄 Actualizar pedidos
+            </button>
+
+            <button
+              type="button"
+              className={realtimeAdminActivo ? "button light realtime-toggle-on" : "button realtime-toggle-off"}
+              onClick={cambiarEstadoRealtimeAdmin}
+              title={realtimeAdminActivo ? "Desactivar actualizaciones en vivo" : "Activar actualizaciones en vivo"}
+            >
+              {realtimeAdminActivo ? "🟢 Realtime ON" : "⚪ Realtime OFF"}
+            </button>
+          </div>
         </div>
       </div>
 

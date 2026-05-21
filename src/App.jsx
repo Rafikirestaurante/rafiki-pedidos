@@ -87,6 +87,13 @@ export default function App() {
   const [errorCargaPedidos, setErrorCargaPedidos] = useState("");
   const [guardandoMenu, setGuardandoMenu] = useState(false);
   const [recargaPedidos, setRecargaPedidos] = useState(0);
+  const [realtimeAdminActivo, setRealtimeAdminActivo] = useState(() => {
+    try {
+      return localStorage.getItem("rafikiRealtimeAdminActivo") !== "false";
+    } catch {
+      return true;
+    }
+  });
   const [cambiosPedidosPendientes, setCambiosPedidosPendientes] = useState(false);
   const [mensajeCambiosPedidos, setMensajeCambiosPedidos] = useState("");
   const [recargaMenu, setRecargaMenu] = useState(0);
@@ -334,12 +341,34 @@ export default function App() {
     alertaPedidoTimer.current = setTimeout(() => setAlertaPedidoNuevo(null), 12000);
   }, []);
 
-  const realtimePuedeActualizarPedidos = vista === "admin" && adminAutenticado && adminTab === "pedidos";
+  const realtimePuedeActualizarPedidos = realtimeAdminActivo && vista === "admin" && adminAutenticado && adminTab === "pedidos";
+
+  const cambiarEstadoRealtimeAdmin = useCallback(() => {
+    setRealtimeAdminActivo((activoActual) => {
+      const siguienteEstado = !activoActual;
+      try {
+        localStorage.setItem("rafikiRealtimeAdminActivo", siguienteEstado ? "true" : "false");
+      } catch {
+        // Si localStorage no está disponible, el cambio sigue funcionando durante la sesión.
+      }
+
+      if (!siguienteEstado) {
+        setCambiosPedidosPendientes(false);
+        setMensajeCambiosPedidos("");
+        setAlertaPedidoNuevo(null);
+      } else if (vista === "admin" && adminAutenticado) {
+        setRecargaPedidos((actual) => actual + 1);
+      }
+
+      return siguienteEstado;
+    });
+  }, [adminAutenticado, vista]);
 
   const marcarCambiosPedidosPendientes = useCallback((detalle = "Hay nuevos cambios en pedidos.") => {
+    if (!realtimeAdminActivo) return;
     setCambiosPedidosPendientes(true);
     setMensajeCambiosPedidos(detalle);
-  }, []);
+  }, [realtimeAdminActivo]);
 
   const cambiarAdminTabSeguro = useCallback((tab) => {
     setAdminTab(tab);
@@ -361,7 +390,7 @@ export default function App() {
   }, []);
 
   const { estadoRealtimePedidos, pedidoCoincideConFiltroActual, instanciaRealtimeRef } = useRealtimePedidos({
-    activo: vista === "admin" && adminAutenticado,
+    activo: realtimeAdminActivo && vista === "admin" && adminAutenticado,
     filtroPedidos,
     fechaSeleccionada,
     setPedidos,
@@ -520,7 +549,7 @@ export default function App() {
   }, [recargaMenu]);
 
   useEffect(() => {
-    if (!supabaseConfigOk) return undefined;
+    if (!supabaseConfigOk || !realtimeAdminActivo) return undefined;
 
     const canalMenu = supabase
       .channel(`${instanciaRealtimeRef.current}-menu`)
@@ -537,7 +566,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(canalMenu);
     };
-  }, [adminTab]);
+  }, [adminTab, realtimeAdminActivo]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1599,6 +1628,8 @@ export default function App() {
                   alertaPedidoNuevo={alertaPedidoNuevo}
                   setAlertaPedidoNuevo={setAlertaPedidoNuevo}
                   estadoRealtimePedidos={estadoRealtimePedidos}
+                  realtimeAdminActivo={realtimeAdminActivo}
+                  cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
                   filtroPedidos={filtroPedidos}
                   setFiltroPedidos={setFiltroPedidos}
                   fechaSeleccionada={fechaSeleccionada}

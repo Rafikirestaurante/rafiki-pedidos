@@ -5,7 +5,7 @@ import { fechaISOColombia, pedidoEsDeHoy } from "../utils/pedidos";
 const ESTADO_REALTIME_INACTIVO = {
   estado: "inactivo",
   texto: "Realtime inactivo",
-  detalle: "Abre el panel administrativo para activar la conexión en vivo."
+  detalle: "Puedes activarlo desde el botón Realtime ON/OFF en Pedidos de hoy."
 };
 
 const RECARGA_MINIMA_MS = 3500;
