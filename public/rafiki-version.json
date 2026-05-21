@@ -1,8 +1,8 @@
 {
-  "version": "19A1-ADMIN-PEDIDOS-COMPACTO-2026-05-21",
-  "phase": "Fase 19A1 - Pedidos de hoy compacto",
+  "version": "19A4-FIX-TAB-PERSISTENTE-2026-05-21",
+  "phase": "Fase 19A4 - Fix tab admin persistente",
   "releasedAt": "2026-05-21",
-  "fase": "19A1",
-  "descripcion": "Compacta la cabecera de Pedidos de hoy, convierte el estado Realtime en un punto de color, alinea Actualizar datos y Realtime ON/OFF, y retira el banner de app instalada.",
+  "fase": "19A4",
+  "descripcion": "Corrige de raíz el regreso automático a Pedidos de hoy: la revalidación de sesión/Auth ya no reinicia la pestaña activa. Realtime inicia OFF por defecto y se limpia el ZIP final.",
   "fecha": "2026-05-21"
 }

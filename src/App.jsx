@@ -53,12 +53,33 @@ const GeneradorMenu = lazy(() => import("./components/GeneradorMenu"));
 const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
 const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
 
+const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
+const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "rafa"]);
+
+function leerAdminTabGuardada() {
+  try {
+    const tab = window.localStorage.getItem(ADMIN_TAB_STORAGE_KEY);
+    return ADMIN_TABS_VALIDAS.has(tab) ? tab : "pedidos";
+  } catch {
+    return "pedidos";
+  }
+}
+
+function guardarAdminTabActiva(tab) {
+  try {
+    if (ADMIN_TABS_VALIDAS.has(tab)) {
+      window.localStorage.setItem(ADMIN_TAB_STORAGE_KEY, tab);
+    }
+  } catch {
+    // No bloquea el panel si localStorage no está disponible.
+  }
+}
 
 export default function App() {
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
   const menuCacheDisponibleRef = useRef(hayMenuCacheValido());
   const [vista, setVista] = useState(() => obtenerVistaInicial());
-  const [adminTab, setAdminTab] = useState("pedidos");
+  const [adminTab, setAdminTab] = useState(() => leerAdminTabGuardada());
   const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
@@ -89,9 +110,9 @@ export default function App() {
   const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [realtimeAdminActivo, setRealtimeAdminActivo] = useState(() => {
     try {
-      return localStorage.getItem("rafikiRealtimeAdminActivo") !== "false";
+      return localStorage.getItem("rafikiRealtimeAdminActivo") === "true";
     } catch {
-      return true;
+      return false;
     }
   });
   const [cambiosPedidosPendientes, setCambiosPedidosPendientes] = useState(false);
@@ -128,12 +149,18 @@ export default function App() {
     return rol;
   }, []);
 
-  const activarSesionAdmin = useCallback((usuario, rol) => {
+  const activarSesionAdmin = useCallback((usuario, rol, opciones = {}) => {
+    const { preservarPestana = false } = opciones;
     guardarSesionTemporal("rafikiAdminActivo");
     setAdminUsuario(usuario || null);
     setAdminRol(rol || "usuario");
     setAdminAutenticado(true);
-    setAdminTab(primeraPestanaPermitida(rol || "usuario"));
+
+    if (!preservarPestana) {
+      const pestanaInicial = primeraPestanaPermitida(rol || "usuario");
+      guardarAdminTabActiva(pestanaInicial);
+      setAdminTab(pestanaInicial);
+    }
   }, []);
 
   useEffect(() => {
@@ -211,7 +238,7 @@ export default function App() {
         if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
           const rol = await cargarRolAdmin(usuario);
           if (!activo) return;
-          activarSesionAdmin(usuario, rol);
+          activarSesionAdmin(usuario, rol, { preservarPestana: true });
           if (window.location.pathname.replace(/\/$/, "") === "/admin") {
             setVista("admin");
           }
@@ -255,7 +282,7 @@ export default function App() {
       if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
         const rol = await cargarRolAdmin(usuario);
         if (!activo) return;
-        activarSesionAdmin(usuario, rol);
+        activarSesionAdmin(usuario, rol, { preservarPestana: true });
         setErrorClaveAdmin("");
         return;
       }
@@ -275,12 +302,14 @@ export default function App() {
   }, [cargarRolAdmin, activarSesionAdmin]);
 
   useEffect(() => {
-    if (!adminAutenticado) return;
+    if (!adminAutenticado || adminAuthCargando) return;
     const pestanaPermitida = primeraPestanaPermitida(adminRol);
-    if (adminTab !== "pedidos" && !usuarioPuede(adminRol, adminTab)) {
+
+    if (!usuarioPuede(adminRol, adminTab)) {
+      guardarAdminTabActiva(pestanaPermitida);
       setAdminTab(pestanaPermitida);
     }
-  }, [adminAutenticado, adminRol, adminTab]);
+  }, [adminAutenticado, adminAuthCargando, adminRol, adminTab]);
 
   const mostrarMensaje = useCallback((texto, tipo = "info") => {
     if (mensajeTimer.current) {
@@ -371,6 +400,8 @@ export default function App() {
   }, [realtimeAdminActivo]);
 
   const cambiarAdminTabSeguro = useCallback((tab) => {
+    if (!ADMIN_TABS_VALIDAS.has(tab)) return;
+    guardarAdminTabActiva(tab);
     setAdminTab(tab);
 
     if (tab === "pedidos") {
