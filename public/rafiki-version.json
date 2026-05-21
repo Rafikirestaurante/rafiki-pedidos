@@ -1,8 +1,8 @@
 {
-  "version": "19A-REALTIME-MANUAL-ON-OFF-2026-05-20",
-  "phase": "Fase 19A - Realtime manual ON/OFF",
-  "releasedAt": "2026-05-20",
-  "fase": "19A",
-  "descripcion": "Agrega control operativo para activar o desactivar por completo el Realtime del panel administrativo desde Pedidos de hoy, junto al botón Actualizar pedidos.",
-  "fecha": "2026-05-20"
+  "version": "19A1-ADMIN-PEDIDOS-COMPACTO-2026-05-21",
+  "phase": "Fase 19A1 - Pedidos de hoy compacto",
+  "releasedAt": "2026-05-21",
+  "fase": "19A1",
+  "descripcion": "Compacta la cabecera de Pedidos de hoy, convierte el estado Realtime en un punto de color, alinea Actualizar datos y Realtime ON/OFF, y retira el banner de app instalada.",
+  "fecha": "2026-05-21"
 }

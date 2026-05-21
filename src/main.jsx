@@ -5,7 +5,6 @@ import App from "./App.jsx";
 import InstallPWA from "./components/InstallPWA.jsx";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt.jsx";
 import PWAOfflineNotice from "./components/PWAOfflineNotice.jsx";
-import PWAInstalledBanner from "./components/PWAInstalledBanner.jsx";
 import PWAOldVersionGuard from "./components/PWAOldVersionGuard.jsx";
 import PedidosOfflineStatus from "./components/PedidosOfflineStatus.jsx";
 import { registerServiceWorker } from "./registerSW.js";
@@ -56,7 +55,6 @@ createRoot(document.getElementById("root")).render(
     <InstallPWA />
     <PWAUpdatePrompt />
     <PWAOfflineNotice />
-    <PWAInstalledBanner />
     <PWAOldVersionGuard />
     <PedidosOfflineStatus />
   </ErrorBoundary>

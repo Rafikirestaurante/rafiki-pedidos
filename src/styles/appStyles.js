@@ -476,66 +476,71 @@ export const appStyles = `
           .admin-tabs { grid-template-columns: 1fr 1fr; border-radius: 18px; }
           .admin-tabs button { font-size: 12px; padding: 12px 8px; }
         }
-/* Fase 16C-2: estado visible de Realtime en panel admin */
-.realtime-status {
+/* Fase 19A1: cabecera compacta de Pedidos de hoy */
+.admin-top-row-compact {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.admin-title-compact h2 {
+  margin-bottom: 4px;
+}
+
+.admin-title-compact p {
+  margin-bottom: 0;
+}
+
+.admin-actions-line {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 220px;
-  max-width: 320px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(248, 250, 252, 0.82);
-  color: #334155;
-  font-size: 0.82rem;
-  line-height: 1.25;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.realtime-status strong {
-  font-size: 0.84rem;
-  color: #0f172a;
+.admin-action-button {
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 13px;
+  white-space: nowrap;
 }
 
-.realtime-status span {
-  color: #64748b;
+.realtime-dot {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  flex: 0 0 12px;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  background: #94a3b8;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.35);
 }
 
 .realtime-conectado {
-  border-color: rgba(22, 163, 74, 0.35);
-  background: rgba(240, 253, 244, 0.95);
-}
-
-.realtime-conectado strong {
-  color: #166534;
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.26);
 }
 
 .realtime-conectando,
 .realtime-reconectando {
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(255, 251, 235, 0.95);
-}
-
-.realtime-conectando strong,
-.realtime-reconectando strong {
-  color: #92400e;
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.28);
 }
 
 .realtime-inactivo,
 .realtime-error {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(254, 242, 242, 0.95);
-}
-
-.realtime-inactivo strong,
-.realtime-error strong {
-  color: #991b1b;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.24);
 }
 
 @media (max-width: 720px) {
-  .realtime-status {
+  .admin-actions-line {
     width: 100%;
-    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .admin-actions-line .admin-action-button {
+    flex: 1 1 130px;
   }
 }
 `;

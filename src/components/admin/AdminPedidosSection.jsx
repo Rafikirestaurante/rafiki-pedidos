@@ -48,33 +48,31 @@ function AdminPedidosSectionBase({
 
   return (
     <section className="card card-pad">
-      <div className="admin-top-row">
-        <div>
+      <div className="admin-top-row admin-top-row-compact">
+        <div className="admin-title-compact">
           <h2>📋 {tituloPedidos}</h2>
-          <p className="muted">Vista organizada para preparar pedidos y revisar historial.</p>
+          <p className="muted small">Preparación, seguimiento e historial.</p>
         </div>
 
-        <div className="admin-actions-stack">
+        <div className="admin-actions-line">
           <AdminRealtimeStatus estadoRealtimePedidos={estadoRealtimePedidos} />
 
-          <div className="admin-actions-stack horizontal">
-            <button
-              type="button"
-              className="button light"
-              onClick={refrescarPedidos}
-            >
-              🔄 Actualizar pedidos
-            </button>
+          <button
+            type="button"
+            className="button light admin-action-button"
+            onClick={refrescarPedidos}
+          >
+            🔄 Actualizar datos
+          </button>
 
-            <button
-              type="button"
-              className={realtimeAdminActivo ? "button light realtime-toggle-on" : "button realtime-toggle-off"}
-              onClick={cambiarEstadoRealtimeAdmin}
-              title={realtimeAdminActivo ? "Desactivar actualizaciones en vivo" : "Activar actualizaciones en vivo"}
-            >
-              {realtimeAdminActivo ? "🟢 Realtime ON" : "⚪ Realtime OFF"}
-            </button>
-          </div>
+          <button
+            type="button"
+            className={realtimeAdminActivo ? "button light realtime-toggle-on admin-action-button" : "button realtime-toggle-off admin-action-button"}
+            onClick={cambiarEstadoRealtimeAdmin}
+            title={realtimeAdminActivo ? "Desactivar actualizaciones en vivo" : "Activar actualizaciones en vivo"}
+          >
+            {realtimeAdminActivo ? "Realtime ON" : "Realtime OFF"}
+          </button>
         </div>
       </div>
 
