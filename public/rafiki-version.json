@@ -1,8 +1,8 @@
 {
-  "version": "19A4-FIX-TAB-PERSISTENTE-2026-05-21",
-  "phase": "Fase 19A4 - Fix tab admin persistente",
+  "version": "19A5-MENU-DESDE-GENERADOR-2026-05-21",
+  "phase": "Fase 19A5 - Cargar menú diario desde generador",
   "releasedAt": "2026-05-21",
-  "fase": "19A4",
+  "fase": "19A5",
   "descripcion": "Corrige de raíz el regreso automático a Pedidos de hoy: la revalidación de sesión/Auth ya no reinicia la pestaña activa. Realtime inicia OFF por defecto y se limpia el ZIP final.",
   "fecha": "2026-05-21"
 }

@@ -21,6 +21,49 @@ export function fechaHoyISO() {
   return local.toISOString().slice(0, 10);
 }
 
+
+export const GENERADOR_MENU_EDITOR_STORAGE_KEY = "rafikiGeneradorMenuEditorUltimo";
+
+export function guardarUltimoTextoEditorGenerador({ platosTexto = "", acompanantesTexto = "" } = {}) {
+  if (typeof window === "undefined" || !window.localStorage) return false;
+
+  const payload = {
+    platosTexto: String(platosTexto || ""),
+    acompanantesTexto: String(acompanantesTexto || ""),
+    actualizadoEn: new Date().toISOString()
+  };
+
+  try {
+    window.localStorage.setItem(GENERADOR_MENU_EDITOR_STORAGE_KEY, JSON.stringify(payload));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function leerUltimoTextoEditorGenerador() {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+
+  try {
+    const crudo = window.localStorage.getItem(GENERADOR_MENU_EDITOR_STORAGE_KEY);
+    if (!crudo) return null;
+
+    const payload = JSON.parse(crudo);
+    const platosTexto = String(payload?.platosTexto || "").trim();
+    const acompanantesTexto = String(payload?.acompanantesTexto || "").trim();
+
+    if (!platosTexto && !acompanantesTexto) return null;
+
+    return {
+      platosTexto,
+      acompanantesTexto,
+      actualizadoEn: payload?.actualizadoEn || null
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function normalizarPlatos(platos) {
   return platos
     .map((plato) => ({

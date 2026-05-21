@@ -46,6 +46,7 @@ import AdminPedidosSection from "./components/admin/AdminPedidosSection";
 import { useRealtimePedidos } from "./hooks/useRealtimePedidos";
 import { usePedidos } from "./hooks/usePedidos";
 import { useAdminPedidos } from "./hooks/useAdminPedidos";
+import { leerUltimoTextoEditorGenerador } from "./utils/generadorMenu";
 
 
 const SolicitudProductos = lazy(() => import("./components/SolicitudProductos"));
@@ -861,6 +862,33 @@ export default function App() {
 
     const ultimoError = errores[errores.length - 1];
     throw new Error(ultimoError?.message || "Supabase no aceptó el guardado del menú diario.");
+  }
+
+  function traerTextoDesdeGeneradorMenu() {
+    const ultimoTexto = leerUltimoTextoEditorGenerador();
+
+    if (!ultimoTexto) {
+      mostrarMensajeMenu(
+        "No encontré texto reciente del Generador de menú. Abre el generador, ajusta los platos y acompañantes, y vuelve a intentar.",
+        "warning",
+        { persistente: true }
+      );
+      return;
+    }
+
+    if (ultimoTexto.platosTexto) {
+      setPlatosTexto(ultimoTexto.platosTexto);
+    }
+
+    if (ultimoTexto.acompanantesTexto) {
+      setAcompanantesTexto(ultimoTexto.acompanantesTexto);
+    }
+
+    mostrarMensajeMenu(
+      "✅ Texto del Generador de menú cargado. Revisa y presiona Guardar menú del día para publicarlo.",
+      "success",
+      { persistente: true }
+    );
   }
 
   async function guardarMenu() {
@@ -1712,6 +1740,21 @@ export default function App() {
                   <p className="muted">
                     Aquí modificas los platos, precios, categorías y acompañantes disponibles para los clientes.
                   </p>
+
+                  <div className="box soft" style={{ marginBottom: 14 }}>
+                    <strong>Traer desde Generador de menú</strong>
+                    <p className="muted small" style={{ margin: "4px 0 10px" }}>
+                      Carga automáticamente el texto de platos del día y acompañantes generado en la sección Generador.
+                    </p>
+                    <button
+                      type="button"
+                      className="button light"
+                      onClick={traerTextoDesdeGeneradorMenu}
+                      style={{ width: "100%" }}
+                    >
+                      📥 Traer platos y acompañantes del generador
+                    </button>
+                  </div>
 
                   <CampoTexto
                     etiqueta="Fecha"

@@ -11,7 +11,8 @@ import {
   crearSvgMenu,
   crearSvgMenuSoloTexto,
   generarTextoEditorMenu,
-  generarTextoAcompanantesEditor
+  generarTextoAcompanantesEditor,
+  guardarUltimoTextoEditorGenerador
 } from "../utils/generadorMenu";
 
 export default function GeneradorMenu() {
@@ -46,6 +47,13 @@ export default function GeneradorMenu() {
 
   const textoEditorMenu = useMemo(() => generarTextoEditorMenu(platosLimpios), [platosLimpios]);
   const textoEditorAcompanantes = useMemo(() => generarTextoAcompanantesEditor(listaAcompanantes), [listaAcompanantes]);
+
+  useEffect(() => {
+    guardarUltimoTextoEditorGenerador({
+      platosTexto: textoEditorMenu,
+      acompanantesTexto: textoEditorAcompanantes
+    });
+  }, [textoEditorMenu, textoEditorAcompanantes]);
 
   const informeUltimosMenus = useMemo(() => {
     const unicosPorFecha = new Map();

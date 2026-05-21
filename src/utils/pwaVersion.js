@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '19A4-FIX-TAB-PERSISTENTE-2026-05-21';
+export const RAFIKI_APP_VERSION = '19A5-MENU-DESDE-GENERADOR-2026-05-21';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 export const RAFIKI_PWA_REFRESH_KEY = 'rafikiPwaUltimaLimpieza';
