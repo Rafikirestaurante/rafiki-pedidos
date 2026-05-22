@@ -147,6 +147,74 @@ export function ConfirmModal({
   );
 }
 
+export function AlertModal({
+  abierto,
+  tipo = "info",
+  titulo = "Aviso Rafiki",
+  mensaje = "",
+  textoCerrar = "Entendido",
+  onCerrar
+}) {
+  if (!abierto) return null;
+
+  const claseTipo = `rafiki-modal-${tipo}`;
+  const icono = ICONOS_CONFIRMACION[tipo] || ICONOS_CONFIRMACION.info;
+  const lineas = String(mensaje || "").split("\n");
+
+  return (
+    <div className="rafiki-modal-backdrop" role="presentation" onMouseDown={onCerrar}>
+      <div
+        className={`rafiki-modal-card ${claseTipo}`}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="rafiki-alert-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="rafiki-modal-icon" aria-hidden="true">{icono}</div>
+        <h3 id="rafiki-alert-title">{titulo}</h3>
+        <div className="rafiki-modal-message">
+          {lineas.map((linea, index) => (
+            <p key={`${linea}-${index}`}>{linea || "\u00A0"}</p>
+          ))}
+        </div>
+        <div className="rafiki-modal-actions rafiki-modal-actions-single">
+          <button type="button" className={`button rafiki-modal-confirm ${claseTipo}`} onClick={onCerrar} autoFocus>
+            {textoCerrar}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function useAlertaRafiki() {
+  const [opciones, setOpciones] = useState(null);
+
+  const cerrar = useCallback(() => {
+    setOpciones(null);
+  }, []);
+
+  const mostrar = useCallback((configuracion = {}) => {
+    setOpciones({
+      tipo: "info",
+      titulo: "Aviso Rafiki",
+      mensaje: "",
+      textoCerrar: "Entendido",
+      ...configuracion
+    });
+  }, []);
+
+  const modal = (
+    <AlertModal
+      abierto={Boolean(opciones)}
+      {...(opciones || {})}
+      onCerrar={cerrar}
+    />
+  );
+
+  return [mostrar, modal];
+}
+
 export function useConfirmacion() {
   const [opciones, setOpciones] = useState(null);
 

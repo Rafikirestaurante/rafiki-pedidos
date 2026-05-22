@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '19A6-FECHA-HOY-BORRADORES-2026-05-21';
+export const RAFIKI_APP_VERSION = '19A7-ALERTAS-MODAL-CENTRALIZADAS-2026-05-21';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 export const RAFIKI_PWA_REFRESH_KEY = 'rafikiPwaUltimaLimpieza';

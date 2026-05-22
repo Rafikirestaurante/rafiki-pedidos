@@ -3,7 +3,7 @@ import { supabase } from "../supabaseClient";
 import { crearLinkWhatsApp, fechaISOColombia, generarId, normalizarTexto } from "../utils/pedidos";
 import { BOTONES, CONFIRMACIONES_INSUMOS, MENSAJES_INSUMOS } from "../config/textos";
 import CampoTexto from "./insumos/CampoTexto";
-import { useConfirmacion } from "./common";
+import { useAlertaRafiki, useConfirmacion } from "./common";
 import { CATEGORIA_SOLICITUD_DEFECTO, categoriasSolicitudProductos } from "../data/solicitudProductosData";
 import {
   agruparProductosSolicitud,
@@ -20,6 +20,19 @@ import {
 
 const WHATSAPP_SOLICITUD_INSUMOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_INSUMOS || "";
 const SOLICITUD_INSUMOS_DRAFT_KEY = "rafikiSolicitudInsumosBorrador";
+
+function tituloAlertaInsumos(tipo, contexto = "solicitud") {
+  if (tipo === "error") return contexto === "pendientes" ? "Revisar insumos pendientes" : "Revisar solicitud";
+  if (tipo === "warning" || tipo === "advertencia") return "Falta un paso";
+  if (tipo === "success" || tipo === "exito") return "Acción realizada";
+  return contexto === "pendientes" ? "Aviso de insumos pendientes" : "Aviso de solicitud";
+}
+
+function normalizarTipoAlerta(tipo) {
+  if (tipo === "warning") return "advertencia";
+  if (tipo === "success") return "exito";
+  return tipo || "info";
+}
 
 function fechaAyerColombia() {
   const base = new Date(`${fechaISOColombia()}T00:00:00-05:00`);
@@ -53,6 +66,7 @@ function borrarBorradorSolicitudInsumos() {
 export default function SolicitudProductos() {
   const borradorInicial = leerBorradorSolicitudInsumos();
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [productosSolicitud, setProductosSolicitud] = useState(() => Array.isArray(borradorInicial?.productosSolicitud) && borradorInicial.productosSolicitud.length ? borradorInicial.productosSolicitud : crearProductosSolicitudInicial());
   const [fechaParaSolicitud, setFechaParaSolicitud] = useState(() => borradorInicial?.fechaParaSolicitud || fechaISOColombia());
   const [observacionesSolicitud, setObservacionesSolicitud] = useState(() => borradorInicial?.observacionesSolicitud || "");
@@ -69,6 +83,26 @@ export default function SolicitudProductos() {
   const [mensajePendientes, setMensajePendientes] = useState({ texto: "", tipo: "info" });
   const [fechaConsultaSolicitudes, setFechaConsultaSolicitudes] = useState(fechaISOColombia());
   const [yaExisteSolicitudHoy, setYaExisteSolicitudHoy] = useState(false);
+
+  useEffect(() => {
+    if (!mensajeSolicitud.texto) return;
+    const tipo = normalizarTipoAlerta(mensajeSolicitud.tipo);
+    mostrarAlertaRafiki({
+      tipo,
+      titulo: tituloAlertaInsumos(tipo, "solicitud"),
+      mensaje: mensajeSolicitud.texto
+    });
+  }, [mensajeSolicitud, mostrarAlertaRafiki]);
+
+  useEffect(() => {
+    if (!mensajePendientes.texto) return;
+    const tipo = normalizarTipoAlerta(mensajePendientes.tipo);
+    mostrarAlertaRafiki({
+      tipo,
+      titulo: tituloAlertaInsumos(tipo, "pendientes"),
+      mensaje: mensajePendientes.texto
+    });
+  }, [mensajePendientes, mostrarAlertaRafiki]);
 
   const productosSolicitudSeleccionados = useMemo(
     () => obtenerProductosSolicitudSeleccionados(productosSolicitud),
@@ -499,6 +533,7 @@ export default function SolicitudProductos() {
   return (
     <>
       {modalConfirmacionRafiki}
+      {modalAlertaRafiki}
       <section className="card card-pad">
       <div className="admin-top-row">
         <div>

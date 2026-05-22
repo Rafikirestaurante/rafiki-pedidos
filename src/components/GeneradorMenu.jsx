@@ -14,6 +14,7 @@ import {
   generarTextoAcompanantesEditor,
   guardarUltimoTextoEditorGenerador
 } from "../utils/generadorMenu";
+import { useAlertaRafiki } from "./common";
 
 const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador";
 
@@ -24,6 +25,21 @@ const PLATOS_GENERADOR_DEFECTO = [
 ];
 
 const ACOMPANANTES_GENERADOR_DEFECTO = "Arroz de maíz\nPuré de papa\nEnsalada\nTajadas maduras";
+
+function tipoAlertaGenerador(texto) {
+  const normalizado = String(texto || "").toLowerCase();
+  if (normalizado.includes("no se pudo") || normalizado.includes("error")) return "error";
+  if (normalizado.includes("selecciona") || normalizado.includes("agrega")) return "advertencia";
+  if (normalizado.includes("correctamente") || normalizado.includes("guardad") || normalizado.includes("descargad") || normalizado.includes("copiad")) return "exito";
+  return "info";
+}
+
+function tituloAlertaGenerador(tipo) {
+  if (tipo === "error") return "Revisar generador";
+  if (tipo === "advertencia") return "Falta un paso";
+  if (tipo === "exito") return "Acción realizada";
+  return "Aviso del generador";
+}
 
 function leerBorradorGeneradorMenu() {
   if (typeof window === "undefined" || !window.localStorage) return null;
@@ -41,6 +57,7 @@ function leerBorradorGeneradorMenu() {
 
 export default function GeneradorMenu() {
   const borradorInicial = leerBorradorGeneradorMenu();
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) && borradorInicial.platos.length ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
   const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
   const [mensaje, setMensaje] = useState("");
@@ -49,6 +66,16 @@ export default function GeneradorMenu() {
   const [guardandoHistorial, setGuardandoHistorial] = useState(false);
   const [historial, setHistorial] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+  useEffect(() => {
+    if (!mensaje) return;
+    const tipo = tipoAlertaGenerador(mensaje);
+    mostrarAlertaRafiki({
+      tipo,
+      titulo: tituloAlertaGenerador(tipo),
+      mensaje
+    });
+  }, [mensaje, mostrarAlertaRafiki]);
 
   const platosLimpios = platos.filter((p) => p.nombre.trim());
   const listaAcompanantes = limpiarLista(acompanantes);
@@ -323,7 +350,9 @@ export default function GeneradorMenu() {
   }, []);
 
   return (
-    <section className="card card-pad generador-menu">
+    <>
+      {modalAlertaRafiki}
+      <section className="card card-pad generador-menu">
       <div>
         <h2>🎨 Generador de menú Rafiki</h2>
         <p className="muted">Crea una imagen solo texto del menú para usarla en WhatsApp, Instagram o sobre una plantilla.</p>
@@ -542,6 +571,7 @@ export default function GeneradorMenu() {
           .plato-menu-row .button { width: 100%; }
         }
       `}</style>
-    </section>
+      </section>
+    </>
   );
 }

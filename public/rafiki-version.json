@@ -1,8 +1,8 @@
 {
-  "version": "19A6-FECHA-HOY-BORRADORES-2026-05-21",
-  "phase": "Fase 19A6 - Fecha actual, botón ayer y borradores temporales",
+  "version": "19A7-ALERTAS-MODAL-CENTRALIZADAS-2026-05-21",
+  "phase": "Fase 19A7 - Alertas conectadas al modal Rafiki",
   "releasedAt": "2026-05-21",
-  "fase": "19A6",
-  "descripcion": "Deja fecha actual por defecto en generador e insumos, agrega botón Ayer en insumos pendientes y autoguarda borradores para evitar pérdida al salir brevemente de la app.",
+  "fase": "19A7",
+  "descripcion": "Centraliza avisos operativos del Generador de menú y Solicitud/Insumos pendientes en el sistema de modal Rafiki, manteniendo los mensajes inline como respaldo visual.",
   "fecha": "2026-05-21"
 }
