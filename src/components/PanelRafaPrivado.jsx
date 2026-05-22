@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
+import CatalogoRafa from "./CatalogoRafa";
 import {
   calcularTotalItem,
   dinero,
@@ -1004,10 +1005,15 @@ export default function PanelRafaPrivado() {
         <button type="button" onClick={() => setPestanaRafa("clientes")} className={pestanaRafa === "clientes" ? "active" : ""}>
           👤 Clientes
         </button>
+        <button type="button" onClick={() => setPestanaRafa("catalogo")} className={pestanaRafa === "catalogo" ? "active" : ""}>
+          🧾 Catálogo
+        </button>
       </div>
 
       {errorRafa && <div className="alert alert-error">{errorRafa}</div>}
       {cargandoRafa && <div className="alert alert-info">Cargando informe...</div>}
+
+      {pestanaRafa === "catalogo" && <CatalogoRafa />}
 
       {pestanaRafa === "dashboard" && (
       <div className="soft-box" style={{ marginBottom: 22, borderColor: "#fed7aa", background: "linear-gradient(135deg, #fff7ed, #ffffff)" }}>

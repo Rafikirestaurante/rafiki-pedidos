@@ -1,8 +1,8 @@
 {
-  "version": "19A7-ALERTAS-MODAL-CENTRALIZADAS-2026-05-21",
-  "phase": "Fase 19A7 - Alertas conectadas al modal Rafiki",
+  "version": "19A8-CATALOGO-RAFA-INICIAL-2026-05-22",
+  "phase": "Fase 19A8 - Catálogo Rafa inicial",
   "releasedAt": "2026-05-21",
-  "fase": "19A7",
+  "fase": "19A8",
   "descripcion": "Centraliza avisos operativos del Generador de menú y Solicitud/Insumos pendientes en el sistema de modal Rafiki, manteniendo los mensajes inline como respaldo visual.",
   "fecha": "2026-05-21"
 }
