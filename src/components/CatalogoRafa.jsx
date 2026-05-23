@@ -89,41 +89,65 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggle }) {
   if (!items.length) return <div className="alert alert-info">No hay registros con ese filtro.</div>;
 
   return (
-    <div className="pedidos-tabla-wrap" style={{ marginTop: 12 }}>
-      <table className="pedidos-tabla-compacta">
-        <thead>
-          <tr>
-            <th>Estado</th>
-            {tipo === "productos" && <th>Línea</th>}
-            <th>Categoría</th>
-            <th>Nombre</th>
-            {tipo === "productos" && <th>Precio</th>}
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.55 }}>
-              <td>
-                <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggle(item.id)}>
-                  {item.activo ? "Activo" : "Oculto"}
-                </button>
-              </td>
-              {tipo === "productos" && <td>{item.linea}</td>}
-              <td>{item.categoria}</td>
-              <td><strong>{item.nombre}</strong></td>
-              {tipo === "productos" && <td>{item.precio ? `$ ${dineroCatalogo(item.precio)}` : "—"}</td>}
-              <td>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" className="button button-small" onClick={() => onEditar(item)}>Editar</button>
-                  <button type="button" className="button button-small button-danger" onClick={() => onEliminar(item.id)}>Eliminar</button>
-                </div>
-              </td>
+    <>
+      <div className="pedidos-tabla-wrap catalogo-tabla-desktop" style={{ marginTop: 12 }}>
+        <table className="pedidos-tabla-compacta">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              {tipo === "productos" && <th>Línea</th>}
+              <th>Categoría</th>
+              <th>Nombre</th>
+              {tipo === "productos" && <th>Precio</th>}
+              <th>Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.55 }}>
+                <td>
+                  <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggle(item.id)}>
+                    {item.activo ? "Activo" : "Oculto"}
+                  </button>
+                </td>
+                {tipo === "productos" && <td>{item.linea}</td>}
+                <td>{item.categoria}</td>
+                <td><strong>{item.nombre}</strong></td>
+                {tipo === "productos" && <td>{item.precio ? `$ ${dineroCatalogo(item.precio)}` : "—"}</td>}
+                <td>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button type="button" className="button button-small" onClick={() => onEditar(item)}>Editar</button>
+                    <button type="button" className="button button-small button-danger" onClick={() => onEliminar(item.id)}>Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="catalogo-cards-mobile">
+        {items.map((item) => (
+          <article key={item.id} className="catalogo-card" style={{ opacity: item.activo ? 1 : 0.6 }}>
+            <div className="catalogo-card-head">
+              <strong>{item.nombre}</strong>
+              <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggle(item.id)}>
+                {item.activo ? "Activo" : "Oculto"}
+              </button>
+            </div>
+            <div className="catalogo-card-meta">
+              {tipo === "productos" && <span>{item.linea}</span>}
+              <span>{item.categoria}</span>
+              {tipo === "productos" && <span>{item.precio ? `$ ${dineroCatalogo(item.precio)}` : "Sin precio"}</span>}
+            </div>
+            <div className="catalogo-card-actions">
+              <button type="button" className="button button-small" onClick={() => onEditar(item)}>Editar</button>
+              <button type="button" className="button button-small button-danger" onClick={() => onEliminar(item.id)}>Eliminar</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -237,7 +261,7 @@ export default function CatalogoRafa() {
   }
 
   return (
-    <div className="soft-box" style={{ borderColor: "#bbf7d0", background: "linear-gradient(135deg, #f0fdf4, #ffffff)" }}>
+    <div className="soft-box catalogo-rafa" style={{ borderColor: "#bbf7d0", background: "linear-gradient(135deg, #f0fdf4, #ffffff)" }}>
       <div className="admin-top-row">
         <div>
           <h3>🧾 Catálogo Rafa</h3>
@@ -249,7 +273,7 @@ export default function CatalogoRafa() {
       <div className="filtros-historial" style={{ marginTop: 14 }}>
         <button type="button" onClick={() => cambiarTipo("productos")} className={tipo === "productos" ? "active" : ""}>Productos</button>
         <button type="button" onClick={() => cambiarTipo("insumos")} className={tipo === "insumos" ? "active" : ""}>Insumos</button>
-        <input type="search" placeholder="Buscar por nombre, categoría o línea" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={{ minWidth: 240 }} />
+        <input type="search" placeholder="Buscar por nombre, categoría o línea" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="catalogo-busqueda" />
       </div>
 
       <form onSubmit={guardar} className="soft-box" style={{ marginTop: 14, background: "#fff" }}>

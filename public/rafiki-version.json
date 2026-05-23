@@ -1,8 +1,7 @@
 {
-  "version": "19A9-CATALOGO-ADMIN-RAFA-ORDEN-2026-05-23",
-  "phase": "Fase 19A9 - Catálogo en admin y orden Rafa",
-  "releasedAt": "2026-05-23",
-  "fase": "19A9",
-  "descripcion": "Mueve Catálogo a sección principal de /admin protegida para administrador y reordena Rafa para abrir primero en Informe, luego Dashboard y Clientes.",
-  "fecha": "2026-05-23"
+  "version": "19A10-DASHBOARD-CATALOGO-MOVIL-2026-05-23",
+  "phase": "Fase 19A10 - Dashboard y Catálogo móvil",
+  "date": "2026-05-23",
+  "fase": "19A10",
+  "description": "Ventas por hora 7 a.m. a 6 p.m., toggle para tablas del dashboard y Catálogo optimizado para celular."
 }

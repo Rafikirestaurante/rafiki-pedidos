@@ -278,20 +278,37 @@ function obtenerEtiquetaPagoPedido(pedido) {
 }
 
 function obtenerHoraColombia(fecha) {
-  if (!fecha) return "Sin hora";
+  if (!fecha) return null;
   try {
-    return new Intl.DateTimeFormat("es-CO", {
+    const hora = new Intl.DateTimeFormat("es-CO", {
       timeZone: "America/Bogota",
       hour: "2-digit",
       hour12: false
     }).format(new Date(fecha));
+    const numero = Number(hora);
+    return Number.isFinite(numero) ? numero : null;
   } catch {
-    return "Sin hora";
+    return null;
   }
 }
 
+function etiquetaHoraDashboard(hora) {
+  const sufijo = hora < 12 ? "a. m." : "p. m.";
+  const hora12 = hora === 12 ? 12 : hora > 12 ? hora - 12 : hora;
+  return `${hora12}:00 ${sufijo}`;
+}
+
+function crearMapaHorasDashboard() {
+  const mapa = new Map();
+  for (let hora = 7; hora <= 18; hora += 1) {
+    const nombre = etiquetaHoraDashboard(hora);
+    mapa.set(nombre, { nombre, cantidad: 0, total: 0, orden: hora });
+  }
+  return mapa;
+}
+
 function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resumenVentas) {
-  const porHora = new Map();
+  const porHora = crearMapaHorasDashboard();
   const porPago = new Map();
   const porOrigen = new Map();
   const porEstado = new Map();
@@ -301,7 +318,10 @@ function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resumenVent
 
   pedidos.forEach((pedido) => {
     const totalPedido = Number(pedido.total) || obtenerItemsPedido(pedido).reduce((suma, item) => suma + calcularTotalItem(item), 0);
-    sumarEnMapa(porHora, `${obtenerHoraColombia(pedido.created_at)}:00`, 1, totalPedido);
+    const horaPedido = obtenerHoraColombia(pedido.created_at);
+    if (horaPedido >= 7 && horaPedido <= 18) {
+      sumarEnMapa(porHora, etiquetaHoraDashboard(horaPedido), 1, totalPedido);
+    }
     sumarEnMapa(porPago, obtenerEtiquetaPagoPedido(pedido), 1, totalPedido);
     sumarEnMapa(porOrigen, obtenerEtiquetaOrigenPedido(pedido), 1, totalPedido);
     sumarEnMapa(porEstado, obtenerEstadoPedido(pedido), 1, totalPedido);
@@ -313,7 +333,7 @@ function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resumenVent
     sumarEnMapa(porProducto, fila.producto, Number(fila.cantidad) || 1, Number(fila.total) || 0);
   });
 
-  const horas = ordenarResumen(porHora).sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
+  const horas = Array.from(porHora.values()).sort((a, b) => (a.orden || 0) - (b.orden || 0));
   const ventasPorPago = ordenarResumen(porPago);
   const ventasPorOrigen = ordenarResumen(porOrigen);
   const ventasPorEstado = ordenarResumen(porEstado);
@@ -499,6 +519,10 @@ export default function PanelRafaPrivado() {
   const [busquedaCliente, setBusquedaCliente] = useState("");
   const [pestanaRafa, setPestanaRafa] = useState("informe");
   const [detalleDashboard, setDetalleDashboard] = useState("");
+  const [mostrarTablasDashboard, setMostrarTablasDashboard] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("rafikiMostrarTablasDashboard") === "true";
+  });
   const detalleDashboardRef = useRef(null);
 
   const rangoRafa = useMemo(() => {
@@ -604,6 +628,14 @@ export default function PanelRafaPrivado() {
     }
   }
 
+
+  function alternarTablasDashboard(valor) {
+    setMostrarTablasDashboard(valor);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("rafikiMostrarTablasDashboard", valor ? "true" : "false");
+    }
+    if (!valor) setDetalleDashboard("");
+  }
 
   function seleccionarDetalleDashboard(tipo) {
     setDetalleDashboard(tipo);
@@ -1019,6 +1051,17 @@ export default function PanelRafaPrivado() {
           <div style={{ textAlign: "right" }}>
             <span className="badge badge-finalizado">Solo lectura</span>
             <p className="muted" style={{ marginTop: 6 }}>Pedidos borrados excluidos</p>
+            <label className="field-label" style={{ marginTop: 10, alignItems: "flex-end" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
+                <input
+                  type="checkbox"
+                  checked={mostrarTablasDashboard}
+                  onChange={(e) => alternarTablasDashboard(e.target.checked)}
+                  style={{ width: 18, height: 18 }}
+                />
+                Mostrar tablas
+              </span>
+            </label>
           </div>
         </div>
 
@@ -1050,37 +1093,48 @@ export default function PanelRafaPrivado() {
             <ListaDashboard items={dashboardRafa.horas} totalBase={totalBaseHoras || totalVentas} limite={8} />
           </CajaDashboard>
 
-          <CajaDashboard activa={detalleDashboard === "productos"} onClick={() => seleccionarDetalleDashboard("productos")}>
-            <h3>🥇 Top productos</h3>
-            <ListaDashboard items={dashboardRafa.productosTop} totalBase={totalBaseProductos || totalItemsVendidos} modo="cantidad" limite={8} />
-          </CajaDashboard>
+          {mostrarTablasDashboard ? (
+            <CajaDashboard activa={detalleDashboard === "productos"} onClick={() => seleccionarDetalleDashboard("productos")}>
+              <h3>🥇 Top productos</h3>
+              <ListaDashboard items={dashboardRafa.productosTop} totalBase={totalBaseProductos || totalItemsVendidos} modo="cantidad" limite={8} />
+            </CajaDashboard>
+          ) : (
+            <div className="soft-box" style={{ background: "#fff", borderColor: "#e5e7eb" }}>
+              <h3>📋 Tablas del dashboard ocultas</h3>
+              <p className="muted">Activa “Mostrar tablas” cuando quieras revisar top productos, mesas, estados, métodos de pago y origen.</p>
+            </div>
+          )}
         </div>
 
-        <div className="grid-2" style={{ marginTop: 18 }}>
-          <CajaDashboard activa={detalleDashboard === "mesas-top"} onClick={() => seleccionarDetalleDashboard("mesas-top")}>
-            <h3>🪑 Mesas que más venden</h3>
-            <ListaDashboard items={dashboardRafa.mesasTop} totalBase={totalBaseMesas || totalVentas} limite={8} />
-          </CajaDashboard>
+        {mostrarTablasDashboard && (
+          <>
+            <div className="grid-2" style={{ marginTop: 18 }}>
+              <CajaDashboard activa={detalleDashboard === "mesas-top"} onClick={() => seleccionarDetalleDashboard("mesas-top")}>
+                <h3>🪑 Mesas que más venden</h3>
+                <ListaDashboard items={dashboardRafa.mesasTop} totalBase={totalBaseMesas || totalVentas} limite={8} />
+              </CajaDashboard>
 
-          <CajaDashboard activa={detalleDashboard === "estados"} onClick={() => seleccionarDetalleDashboard("estados")}>
-            <h3>📌 Estados</h3>
-            <ListaDashboard items={dashboardRafa.ventasPorEstado} totalBase={totalVentas} limite={6} />
-          </CajaDashboard>
-        </div>
+              <CajaDashboard activa={detalleDashboard === "estados"} onClick={() => seleccionarDetalleDashboard("estados")}>
+                <h3>📌 Estados</h3>
+                <ListaDashboard items={dashboardRafa.ventasPorEstado} totalBase={totalVentas} limite={6} />
+              </CajaDashboard>
+            </div>
 
-        <div className="grid-2" style={{ marginTop: 18 }}>
-          <CajaDashboard activa={detalleDashboard === "pagos"} onClick={() => seleccionarDetalleDashboard("pagos")}>
-            <h3>💳 Métodos de pago</h3>
-            <ListaDashboard items={dashboardRafa.ventasPorPago} totalBase={totalVentas} limite={6} />
-          </CajaDashboard>
+            <div className="grid-2" style={{ marginTop: 18 }}>
+              <CajaDashboard activa={detalleDashboard === "pagos"} onClick={() => seleccionarDetalleDashboard("pagos")}>
+                <h3>💳 Métodos de pago</h3>
+                <ListaDashboard items={dashboardRafa.ventasPorPago} totalBase={totalVentas} limite={6} />
+              </CajaDashboard>
 
-          <CajaDashboard activa={detalleDashboard === "origen"} onClick={() => seleccionarDetalleDashboard("origen")}>
-            <h3>📍 Origen de pedidos</h3>
-            <ListaDashboard items={dashboardRafa.ventasPorOrigen} totalBase={totalVentas} limite={6} />
-          </CajaDashboard>
-        </div>
+              <CajaDashboard activa={detalleDashboard === "origen"} onClick={() => seleccionarDetalleDashboard("origen")}>
+                <h3>📍 Origen de pedidos</h3>
+                <ListaDashboard items={dashboardRafa.ventasPorOrigen} totalBase={totalVentas} limite={6} />
+              </CajaDashboard>
+            </div>
 
-        <DetalleDashboard detalle={crearDetalleDashboardSeleccionado(detalleDashboard)} onCerrar={() => setDetalleDashboard("")} detalleRef={detalleDashboardRef} />
+            <DetalleDashboard detalle={crearDetalleDashboardSeleccionado(detalleDashboard)} onCerrar={() => setDetalleDashboard("")} detalleRef={detalleDashboardRef} />
+          </>
+        )}
       </div>
       )}
 
