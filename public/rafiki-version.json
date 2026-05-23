@@ -1,7 +1,7 @@
 {
-  "version": "19A11-IMPRIMIR-MENU-TICKET-2026-05-23",
-  "phase": "Fase 19A11 - Imprimir menú como tiquete",
+  "version": "19A12-MENU-TICKET-SENCILLO-2026-05-23",
+  "phase": "Fase 19A12 - Menú ticket sencillo",
   "date": "2026-05-23",
-  "fase": "19A11",
+  "fase": "19A12",
   "description": "Botón para imprimir el menú del día en formato tipo tiquete desde Editar menú diario."
 }

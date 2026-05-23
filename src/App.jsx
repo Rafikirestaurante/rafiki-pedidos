@@ -981,16 +981,12 @@ export default function App() {
         .replace(/'/g, "&#039;");
 
     const platosHtml = resultadoPlatos.platos
-      .map((plato) => {
-        const categoria = plato.categoria ? `<div class="categoria">${escaparHtml(plato.categoria)}</div>` : "";
-        return `
+      .map((plato) => `
           <div class="item">
             <div class="nombre">${escaparHtml(plato.nombre)}</div>
             <div class="precio">$ ${dinero(plato.precio).replace("$", "").trim()}</div>
           </div>
-          ${categoria}
-        `;
-      })
+        `)
       .join("");
 
     const acompanantesHtml = acompanantes
@@ -1014,27 +1010,27 @@ export default function App() {
       font-family: Arial, Helvetica, sans-serif;
       color: #111;
       background: #fff;
-      font-size: 12px;
-      line-height: 1.25;
+      font-size: 11px;
+      line-height: 1.18;
     }
     .ticket { width: 50mm; max-width: 50mm; margin: 0 auto; }
     .center { text-align: center; }
-    .brand { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
-    .titulo { font-size: 15px; font-weight: 800; margin-top: 3px; }
-    .fecha { font-size: 11px; margin-top: 3px; }
-    .linea { border-top: 1px dashed #111; margin: 8px 0; }
-    .descripcion { font-size: 11px; text-align: center; margin: 6px 0; }
-    .seccion { font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px; }
-    .item { display: flex; justify-content: space-between; gap: 6px; margin: 5px 0 1px; }
-    .nombre { font-size: 12px; font-weight: 800; flex: 1; }
-    .precio { font-size: 12px; font-weight: 900; white-space: nowrap; }
+    .brand { font-size: 17px; font-weight: 900; letter-spacing: 1px; }
+    .titulo { font-size: 13px; font-weight: 800; margin-top: 3px; }
+    .fecha { font-size: 10px; margin-top: 3px; }
+    .linea { border-top: 1px dashed #111; margin: 6px 0; }
+    .descripcion { font-size: 10px; text-align: center; margin: 6px 0; }
+    .seccion { font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px; }
+    .item { display: flex; justify-content: space-between; gap: 5px; margin: 3px 0; }
+    .nombre { font-size: 11px; font-weight: 800; flex: 1; }
+    .precio { font-size: 11px; font-weight: 900; white-space: nowrap; }
     .categoria { font-size: 9px; color: #333; margin-bottom: 4px; text-transform: uppercase; }
     ul { margin: 0; padding-left: 14px; }
-    li { font-size: 12px; margin: 3px 0; font-weight: 700; }
-    .nota { font-size: 10px; margin-top: 8px; text-align: center; }
+    li { font-size: 11px; margin: 2px 0; font-weight: 700; }
+    .nota { font-size: 9px; margin-top: 8px; text-align: center; }
     @media screen {
       body { background: #f5f5f5; padding: 12px; }
-      .ticket { background: #fff; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+      .ticket { background: #fff; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
     }
   </style>
 </head>
@@ -1047,7 +1043,7 @@ export default function App() {
     </div>
     ${descripcionTexto ? `<div class="descripcion">${escaparHtml(descripcionTexto)}</div>` : ""}
     <div class="linea"></div>
-    ${resultadoPlatos.platos.length ? `<div class="seccion">Platos del día</div>${platosHtml}<div class="linea"></div>` : ""}
+    ${resultadoPlatos.platos.length ? `${platosHtml}<div class="linea"></div>` : ""}
     ${acompanantes.length ? `<div class="seccion">Acompañantes</div><ul>${acompanantesHtml}</ul><div class="linea"></div>` : ""}
     <div class="nota">Menú sujeto a disponibilidad.</div>
   </div>
@@ -1941,17 +1937,17 @@ export default function App() {
                     <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
                       <button
                         type="button"
-                        className="button light"
+                        className="button"
                         onClick={traerTextoDesdeGeneradorMenu}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", fontWeight: 900 }}
                       >
                         📥 Traer platos y acompañantes del generador
                       </button>
                       <button
                         type="button"
-                        className="button secondary"
+                        className="button light"
                         onClick={imprimirMenuDiarioTicket}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", padding: "8px 10px", fontSize: 13 }}
                       >
                         🧾 Imprimir menú del día
                       </button>
