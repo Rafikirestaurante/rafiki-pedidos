@@ -875,6 +875,66 @@ export default function PanelRafaPrivado() {
     `).join("");
   }
 
+
+  function generarTextoWhatsappInformeRafa() {
+    const lineas = [
+      `📋 *Informe Rafa*`,
+      `Periodo: ${tituloPeriodo}`,
+      ``,
+      `💰 *Total vendido:* ${dinero(totalVentas)}`,
+      `🍽️ Restaurante: ${resumenVentas.restaurante.cantidad} · ${dinero(resumenVentas.restaurante.total)}`,
+      `☕ Cafetería: ${resumenVentas.cafeteria.cantidad} · ${dinero(resumenVentas.cafeteria.total)}`,
+      `🧾 Pedidos válidos: ${totalPedidos}`,
+      `✅ Finalizados: ${finalizados}`,
+      `⏳ Pendientes: ${pendientes}`,
+      `📊 Promedio por pedido: ${dinero(promedioPedido)}`
+    ];
+
+    if (resumenVentas.proteinas.length) {
+      lineas.push(``, `🥇 *Proteínas más vendidas:*`);
+      resumenVentas.proteinas.slice(0, 6).forEach((item) => {
+        lineas.push(`• ${item.nombre}: ${item.cantidad} · ${dinero(item.total)}`);
+      });
+    }
+
+    if (resumenVentas.acompanantes.length) {
+      lineas.push(``, `🥗 *Acompañantes más usados:*`);
+      resumenVentas.acompanantes.slice(0, 6).forEach((item) => {
+        lineas.push(`• ${item.nombre}: ${item.cantidad}`);
+      });
+    }
+
+    if (resumenVentas.subcategoriasCafeteria.length) {
+      lineas.push(``, `☕ *Cafetería por subcategoría:*`);
+      resumenVentas.subcategoriasCafeteria.slice(0, 6).forEach((item) => {
+        lineas.push(`• ${item.nombre}: ${item.cantidad} · ${dinero(item.total)}`);
+      });
+    }
+
+    lineas.push(``, `_Generado desde Rafiki Pedidos_`);
+    return lineas.join("\n");
+  }
+
+  async function compartirInformeWhatsappRafa() {
+    if (!pedidosValidos.length) {
+      setErrorRafa("No hay pedidos válidos para compartir en este periodo.");
+      return;
+    }
+
+    const texto = generarTextoWhatsappInformeRafa();
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(texto);
+      }
+    } catch {
+      // Si el navegador no permite copiar, igual abrimos WhatsApp con el texto.
+    }
+
+    const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   function generarInformePdfRafa() {
     const fechaGeneracion = new Date().toLocaleString("es-CO", {
       dateStyle: "short",
@@ -978,9 +1038,14 @@ export default function PanelRafaPrivado() {
           <h2>🔒 Panel Rafa</h2>
           <p className="muted">Resumen gerencial de ventas por restaurante, cafetería y subcategorías.</p>
         </div>
-        <button type="button" className="button" onClick={generarInformePdfRafa} disabled={cargandoRafa || pedidosValidos.length === 0}>
-          📄 Generar PDF
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <button type="button" className="button-secondary" onClick={compartirInformeWhatsappRafa} disabled={cargandoRafa || pedidosValidos.length === 0}>
+            📲 Compartir WhatsApp
+          </button>
+          <button type="button" className="button" onClick={generarInformePdfRafa} disabled={cargandoRafa || pedidosValidos.length === 0}>
+            📄 Generar PDF
+          </button>
+        </div>
       </div>
 
       <div className="soft-box" style={{ marginBottom: 16 }}>
@@ -1090,7 +1155,7 @@ export default function PanelRafaPrivado() {
         <div className="grid-2" style={{ marginTop: 18 }}>
           <CajaDashboard activa={detalleDashboard === "horas"} onClick={() => seleccionarDetalleDashboard("horas")}>
             <h3>⏱️ Ventas por hora</h3>
-            <ListaDashboard items={dashboardRafa.horas} totalBase={totalBaseHoras || totalVentas} limite={8} />
+            <ListaDashboard items={dashboardRafa.horas} totalBase={totalBaseHoras || totalVentas} limite={12} />
           </CajaDashboard>
 
           {mostrarTablasDashboard ? (
