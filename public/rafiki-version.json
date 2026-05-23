@@ -1,7 +1,7 @@
 {
-  "version": "19A10-DASHBOARD-CATALOGO-MOVIL-2026-05-23",
-  "phase": "Fase 19A10 - Dashboard y Catálogo móvil",
+  "version": "19A11-IMPRIMIR-MENU-TICKET-2026-05-23",
+  "phase": "Fase 19A11 - Imprimir menú como tiquete",
   "date": "2026-05-23",
-  "fase": "19A10",
-  "description": "Ventas por hora 7 a.m. a 6 p.m., toggle para tablas del dashboard y Catálogo optimizado para celular."
+  "fase": "19A11",
+  "description": "Botón para imprimir el menú del día en formato tipo tiquete desde Editar menú diario."
 }

@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '19A10-DASHBOARD-CATALOGO-MOVIL-2026-05-23';
+export const RAFIKI_APP_VERSION = '19A11-IMPRIMIR-MENU-TICKET-2026-05-23';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 export const RAFIKI_PWA_REFRESH_KEY = 'rafikiPwaUltimaLimpieza';

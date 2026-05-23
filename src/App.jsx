@@ -959,6 +959,121 @@ export default function App() {
     );
   }
 
+  function imprimirMenuDiarioTicket() {
+    const resultadoPlatos = textoAPlatosDetalle(platosTexto, { estricto: false });
+    const acompanantes = limpiarAcompanantesMenu(listaPorLineas(acompanantesTexto));
+
+    if (resultadoPlatos.platos.length === 0 && acompanantes.length === 0) {
+      mostrarMensajeMenu(
+        "No hay platos ni acompañantes para imprimir. Primero carga o escribe el menú del día.",
+        "warning",
+        { persistente: true }
+      );
+      return;
+    }
+
+    const escaparHtml = (valor) =>
+      String(valor || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    const platosHtml = resultadoPlatos.platos
+      .map((plato) => {
+        const categoria = plato.categoria ? `<div class="categoria">${escaparHtml(plato.categoria)}</div>` : "";
+        return `
+          <div class="item">
+            <div class="nombre">${escaparHtml(plato.nombre)}</div>
+            <div class="precio">$ ${dinero(plato.precio).replace("$", "").trim()}</div>
+          </div>
+          ${categoria}
+        `;
+      })
+      .join("");
+
+    const acompanantesHtml = acompanantes
+      .map((item) => `<li>${escaparHtml(item)}</li>`)
+      .join("");
+
+    const fechaTexto = menu.fecha || fechaISOColombia();
+    const tituloTexto = menu.titulo || "Menú del día";
+    const descripcionTexto = menu.descripcion || "";
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Menú Rafiki</title>
+  <style>
+    @page { size: 58mm auto; margin: 4mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #111;
+      background: #fff;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+    .ticket { width: 50mm; max-width: 50mm; margin: 0 auto; }
+    .center { text-align: center; }
+    .brand { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
+    .titulo { font-size: 15px; font-weight: 800; margin-top: 3px; }
+    .fecha { font-size: 11px; margin-top: 3px; }
+    .linea { border-top: 1px dashed #111; margin: 8px 0; }
+    .descripcion { font-size: 11px; text-align: center; margin: 6px 0; }
+    .seccion { font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px; }
+    .item { display: flex; justify-content: space-between; gap: 6px; margin: 5px 0 1px; }
+    .nombre { font-size: 12px; font-weight: 800; flex: 1; }
+    .precio { font-size: 12px; font-weight: 900; white-space: nowrap; }
+    .categoria { font-size: 9px; color: #333; margin-bottom: 4px; text-transform: uppercase; }
+    ul { margin: 0; padding-left: 14px; }
+    li { font-size: 12px; margin: 3px 0; font-weight: 700; }
+    .nota { font-size: 10px; margin-top: 8px; text-align: center; }
+    @media screen {
+      body { background: #f5f5f5; padding: 12px; }
+      .ticket { background: #fff; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket">
+    <div class="center">
+      <div class="brand">RAFIKI</div>
+      <div class="titulo">${escaparHtml(tituloTexto)}</div>
+      <div class="fecha">${escaparHtml(fechaTexto)}</div>
+    </div>
+    ${descripcionTexto ? `<div class="descripcion">${escaparHtml(descripcionTexto)}</div>` : ""}
+    <div class="linea"></div>
+    ${resultadoPlatos.platos.length ? `<div class="seccion">Platos del día</div>${platosHtml}<div class="linea"></div>` : ""}
+    ${acompanantes.length ? `<div class="seccion">Acompañantes</div><ul>${acompanantesHtml}</ul><div class="linea"></div>` : ""}
+    <div class="nota">Menú sujeto a disponibilidad.</div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => window.print(), 250);
+    });
+  </script>
+</body>
+</html>`;
+
+    const ventana = window.open("", "_blank", "width=360,height=640");
+    if (!ventana) {
+      mostrarMensajeMenu(
+        "El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para Rafiki e intenta de nuevo.",
+        "warning",
+        { persistente: true }
+      );
+      return;
+    }
+
+    ventana.document.open();
+    ventana.document.write(html);
+    ventana.document.close();
+  }
+
   async function guardarMenu() {
     if (guardandoMenu) return;
 
@@ -1823,14 +1938,24 @@ export default function App() {
                     <p className="muted small" style={{ margin: "4px 0 10px" }}>
                       Carga automáticamente el texto de platos del día y acompañantes generado en la sección Generador.
                     </p>
-                    <button
-                      type="button"
-                      className="button light"
-                      onClick={traerTextoDesdeGeneradorMenu}
-                      style={{ width: "100%" }}
-                    >
-                      📥 Traer platos y acompañantes del generador
-                    </button>
+                    <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                      <button
+                        type="button"
+                        className="button light"
+                        onClick={traerTextoDesdeGeneradorMenu}
+                        style={{ width: "100%" }}
+                      >
+                        📥 Traer platos y acompañantes del generador
+                      </button>
+                      <button
+                        type="button"
+                        className="button secondary"
+                        onClick={imprimirMenuDiarioTicket}
+                        style={{ width: "100%" }}
+                      >
+                        🧾 Imprimir menú del día
+                      </button>
+                    </div>
                   </div>
 
                   <CampoTexto
