@@ -9,6 +9,7 @@ export default function AdminHeaderTabs({
   puedeVerProductos,
   puedeVerGenerador,
   puedeVerRafa,
+  puedeVerCatalogo,
   cerrarPanelAdmin,
   navegar,
 }) {
@@ -65,6 +66,16 @@ export default function AdminHeaderTabs({
             className={adminTab === "generador" ? "active" : ""}
           >
             Generador de menú
+          </button>
+        )}
+
+        {puedeVerCatalogo && (
+          <button
+            type="button"
+            onClick={() => setAdminTab("catalogo")}
+            className={adminTab === "catalogo" ? "active" : ""}
+          >
+            Catálogo
           </button>
         )}
 

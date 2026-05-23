@@ -53,10 +53,11 @@ const SolicitudProductos = lazy(() => import("./components/SolicitudProductos"))
 const GeneradorMenu = lazy(() => import("./components/GeneradorMenu"));
 const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
 const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
+const CatalogoRafa = lazy(() => import("./components/CatalogoRafa"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
-const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "rafa"]);
+const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "rafa"]);
 
 function leerAdminTabGuardada() {
   try {
@@ -167,6 +168,7 @@ export default function App() {
   const puedeVerProductos = usuarioPuede(adminRol, "productos");
   const puedeVerGenerador = usuarioPuede(adminRol, "generador");
   const puedeVerRafa = usuarioPuede(adminRol, "rafa");
+  const puedeVerCatalogo = usuarioPuede(adminRol, "catalogo");
   const puedeEliminarPedido = usuarioPuede(adminRol, "eliminar_pedido");
   const puedeCambiarEstado = usuarioPuede(adminRol, "cambiar_estado");
   const puedeFinalizarPendientes = usuarioPuede(adminRol, "finalizar_pendientes");
@@ -1724,6 +1726,7 @@ export default function App() {
                 puedeVerProductos={puedeVerProductos}
                 puedeVerGenerador={puedeVerGenerador}
                 puedeVerRafa={puedeVerRafa}
+                puedeVerCatalogo={puedeVerCatalogo}
                 cerrarPanelAdmin={cerrarPanelAdmin}
                 navegar={navegar}
               />
@@ -1792,6 +1795,13 @@ export default function App() {
               {adminTab === "generador" && puedeVerGenerador && (
                 <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
                   <GeneradorMenu />
+                </Suspense>
+              )}
+
+
+              {adminTab === "catalogo" && puedeVerCatalogo && (
+                <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
+                  <CatalogoRafa />
                 </Suspense>
               )}
 

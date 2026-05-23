@@ -11,7 +11,7 @@ export const NOMBRES_ROLES = {
 };
 
 const PERMISOS_POR_ROL = {
-  admin: ["pedidos", "menu", "productos", "generador", "rafa", "eliminar_pedido", "cambiar_estado", "finalizar_pendientes"],
+  admin: ["pedidos", "menu", "productos", "generador", "catalogo", "rafa", "eliminar_pedido", "cambiar_estado", "finalizar_pendientes"],
   usuario: ["pedidos", "menu", "productos", "generador", "cambiar_estado", "finalizar_pendientes"],
 };
 
@@ -108,7 +108,7 @@ export function usuarioPuede(rol, permiso) {
 }
 
 export function primeraPestanaPermitida(rol) {
-  const orden = ["pedidos", "menu", "productos", "generador", "rafa"];
+  const orden = ["pedidos", "menu", "productos", "generador", "catalogo", "rafa"];
   return orden.find((permiso) => usuarioPuede(rol, permiso)) || "pedidos";
 }
 

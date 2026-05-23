@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '19A8-CATALOGO-RAFA-INICIAL-2026-05-22';
+export const RAFIKI_APP_VERSION = '19A9-CATALOGO-ADMIN-RAFA-ORDEN-2026-05-23';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 export const RAFIKI_PWA_REFRESH_KEY = 'rafikiPwaUltimaLimpieza';
