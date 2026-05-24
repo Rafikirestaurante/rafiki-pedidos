@@ -1,7 +1,7 @@
 {
-  "version": "21C-CATALOGO-INSUMOS-SUPABASE-FALLBACK-2026-05-24",
-  "phase": "Fase 21C - Solicitud de insumos conectada a catálogo Supabase con fallback local",
+  "version": "21E-CATALOGO-INSUMOS-ADMIN-SUPABASE-2026-05-24",
+  "phase": "Fase 21E - Catálogo admin de insumos conectado a Supabase con respaldo local",
   "date": "2026-05-24",
-  "fase": "21C",
-  "description": "La pantalla Solicitud de insumos carga el catálogo activo desde Supabase y usa la lista local como respaldo si la BD no responde o no tiene insumos activos."
+  "fase": "21E",
+  "description": "Admin > Catálogo > Insumos ahora carga, crea, edita, activa y oculta insumos contra catalogo_insumos en Supabase. Si Supabase falla, conserva respaldo local para evitar bloqueo operativo."
 }

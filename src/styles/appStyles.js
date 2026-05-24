@@ -543,6 +543,78 @@ export const appStyles = `
     flex: 1 1 130px;
   }
 }
+
+/* Fase 21E2: Catálogo con tarjetas seleccionables tipo /cliente */
+.catalogo-selector-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.catalogo-selector-card {
+  width: 100%;
+  border: 1.5px solid #e7e5e4;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: #292524;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.catalogo-selector-card:hover {
+  transform: translateY(-1px);
+  border-color: #fdba74;
+  box-shadow: 0 12px 26px rgba(249, 115, 22, 0.12);
+}
+
+.catalogo-selector-card.active {
+  border-color: #f97316;
+  background: linear-gradient(135deg, #fff7ed, #ffffff);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12), 0 14px 28px rgba(249, 115, 22, 0.14);
+}
+
+.catalogo-selector-icono {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  font-size: 22px;
+  flex: 0 0 auto;
+}
+
+.catalogo-selector-card strong,
+.catalogo-selector-card small {
+  display: block;
+}
+
+.catalogo-selector-card strong {
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.catalogo-selector-card small {
+  margin-top: 3px;
+  color: #78716c;
+  font-weight: 800;
+}
+
+.catalogo-busqueda-field {
+  background: #ffffff;
+  border: 1.5px solid #e7e5e4;
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
 /* Fase 19A10: Catálogo optimizado para celular */
 .catalogo-busqueda {
   min-width: 240px;
@@ -568,14 +640,17 @@ export const appStyles = `
     width: 100%;
   }
 
-  .catalogo-rafa .filtros-historial {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  .catalogo-selector-tarjetas {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .catalogo-selector-card {
+    padding: 13px;
+    border-radius: 16px;
   }
 
   .catalogo-busqueda {
-    grid-column: 1 / -1;
     min-width: 0;
     width: 100%;
   }

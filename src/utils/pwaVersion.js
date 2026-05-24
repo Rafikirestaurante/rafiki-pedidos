@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '21C-CATALOGO-INSUMOS-SUPABASE-FALLBACK-2026-05-24';
+export const RAFIKI_APP_VERSION = '21E-CATALOGO-INSUMOS-ADMIN-SUPABASE-2026-05-24';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 export const RAFIKI_PWA_REFRESH_KEY = 'rafikiPwaUltimaLimpieza';
