@@ -5,7 +5,6 @@ import { cargarCatalogoProductosAdmin } from "../services/catalogoProductosServi
 import {
   limpiarLista,
   limpiarPrecio,
-  precioVisible,
   fechaHoyISO,
   normalizarPlatos,
   formatearFechaInformeMenu,
@@ -178,6 +177,17 @@ export default function GeneradorMenu() {
   const svgUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, [svg]);
   const svgTextoUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgTexto)}`, [svgTexto]);
 
+
+  const nombresPlatosSeleccionados = useMemo(
+    () => new Set(platos.map((plato) => normalizarTextoCatalogo(plato.nombre)).filter(Boolean)),
+    [platos]
+  );
+
+  const nombresAcompanantesSeleccionados = useMemo(
+    () => new Set(listaAcompanantes.map((nombre) => normalizarTextoCatalogo(nombre)).filter(Boolean)),
+    [listaAcompanantes]
+  );
+
   const textoEditorMenu = useMemo(() => generarTextoEditorMenu(platosLimpios), [platosLimpios]);
   const textoEditorAcompanantes = useMemo(() => generarTextoAcompanantesEditor(listaAcompanantes), [listaAcompanantes]);
 
@@ -235,21 +245,23 @@ export default function GeneradorMenu() {
     setPlatos((actual) => actual.filter((_, i) => i !== index));
   }
 
-  function agregarProductoCatalogoAlMenu(producto, precioPorDefecto = "") {
+  function alternarProductoCatalogoAlMenu(producto, precioPorDefecto = "") {
     if (!producto?.nombre) return;
     setPlatos((actual) => {
-      const existe = actual.some((plato) => normalizarTextoCatalogo(plato.nombre) === normalizarTextoCatalogo(producto.nombre));
-      if (existe) return actual;
-      return [...actual, { nombre: producto.nombre, precio: precioTextoProducto(producto, precioPorDefecto) }].slice(0, 8);
+      const claveProducto = normalizarTextoCatalogo(producto.nombre);
+      const existe = actual.some((plato) => normalizarTextoCatalogo(plato.nombre) === claveProducto);
+      if (existe) return actual.filter((plato) => normalizarTextoCatalogo(plato.nombre) !== claveProducto);
+      return [...actual, { nombre: producto.nombre, precio: precioTextoProducto(producto, precioPorDefecto) }].slice(0, 12);
     });
   }
 
-  function agregarAcompananteCatalogo(producto) {
+  function alternarAcompananteCatalogo(producto) {
     if (!producto?.nombre) return;
     setAcompanantes((actual) => {
       const lista = limpiarLista(actual);
-      const existe = lista.some((item) => normalizarTextoCatalogo(item) === normalizarTextoCatalogo(producto.nombre));
-      if (existe) return actual;
+      const claveProducto = normalizarTextoCatalogo(producto.nombre);
+      const existe = lista.some((item) => normalizarTextoCatalogo(item) === claveProducto);
+      if (existe) return lista.filter((item) => normalizarTextoCatalogo(item) !== claveProducto).join("\n");
       return [...lista, producto.nombre].join("\n");
     });
   }
@@ -485,83 +497,140 @@ export default function GeneradorMenu() {
             </div>
 
             <div className="selector-catalogo-grid">
-              <div className="selector-catalogo-col">
+              <div className="category-block selector-catalogo-col">
+                <h3 className="category-title">🍽️ Platos</h3>
                 <label className="field selector-catalogo-search">
-                  <span>🍽️ Platos</span>
                   <input type="search" value={busquedaPlatos} onChange={(e) => setBusquedaPlatos(e.target.value)} placeholder="Buscar plato" />
                 </label>
-                <div className="selector-catalogo-lista">
-                  {platosFiltradosCatalogo.slice(0, 18).map((producto) => (
-                    <button key={producto.id} type="button" className="selector-catalogo-item" onClick={() => agregarProductoCatalogoAlMenu(producto, "")} title="Agregar al menú del día">
-                      <strong>{producto.nombre}</strong>
-                      {producto.precio ? <small>$ {precioVisible(producto.precio)}</small> : <small>Sin precio</small>}
-                    </button>
-                  ))}
+                <div className="productos-chips selector-catalogo-chips">
+                  {platosFiltradosCatalogo.map((producto) => {
+                    const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+                    return (
+                      <span key={producto.id} className="producto-chip-wrap">
+                        <button
+                          type="button"
+                          className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
+                          onClick={() => alternarProductoCatalogoAlMenu(producto, "")}
+                          title={seleccionado ? "Quitar del menú del día" : "Agregar al menú del día"}
+                        >
+                          {seleccionado ? "✓ " : "+ "}{producto.nombre}
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="selector-catalogo-col">
+              <div className="category-block selector-catalogo-col">
+                <h3 className="category-title">🍲 Sopas</h3>
                 <label className="field selector-catalogo-search">
-                  <span>🍲 Sopas</span>
                   <input type="search" value={busquedaSopas} onChange={(e) => setBusquedaSopas(e.target.value)} placeholder="Buscar sopa" />
                 </label>
-                <div className="selector-catalogo-lista">
-                  {sopasFiltradasCatalogo.slice(0, 14).map((producto) => (
-                    <button key={producto.id} type="button" className="selector-catalogo-item" onClick={() => agregarProductoCatalogoAlMenu(producto, "")} title="Agregar al menú del día">
-                      <strong>{producto.nombre}</strong>
-                      {producto.precio ? <small>$ {precioVisible(producto.precio)}</small> : <small>Sin precio</small>}
-                    </button>
-                  ))}
+                <div className="productos-chips selector-catalogo-chips">
+                  {sopasFiltradasCatalogo.map((producto) => {
+                    const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+                    return (
+                      <span key={producto.id} className="producto-chip-wrap">
+                        <button
+                          type="button"
+                          className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
+                          onClick={() => alternarProductoCatalogoAlMenu(producto, "")}
+                          title={seleccionado ? "Quitar del menú del día" : "Agregar al menú del día"}
+                        >
+                          {seleccionado ? "✓ " : "+ "}{producto.nombre}
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="selector-catalogo-col">
+              <div className="category-block selector-catalogo-col">
+                <h3 className="category-title">🥗 Acompañantes</h3>
                 <label className="field selector-catalogo-search">
-                  <span>🥗 Acompañantes</span>
                   <input type="search" value={busquedaAcompanantes} onChange={(e) => setBusquedaAcompanantes(e.target.value)} placeholder="Buscar acompañante" />
                 </label>
-                <div className="selector-catalogo-lista">
-                  {acompanantesFiltradosCatalogo.slice(0, 18).map((producto) => (
-                    <button key={producto.id} type="button" className="selector-catalogo-item" onClick={() => agregarAcompananteCatalogo(producto)} title="Agregar acompañante">
-                      <strong>{producto.nombre}</strong>
-                      <small>Agregar</small>
-                    </button>
-                  ))}
+                <div className="productos-chips selector-catalogo-chips">
+                  {acompanantesFiltradosCatalogo.map((producto) => {
+                    const seleccionado = nombresAcompanantesSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+                    return (
+                      <span key={producto.id} className="producto-chip-wrap">
+                        <button
+                          type="button"
+                          className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
+                          onClick={() => alternarAcompananteCatalogo(producto)}
+                          title={seleccionado ? "Quitar acompañante" : "Agregar acompañante"}
+                        >
+                          {seleccionado ? "✓ " : "+ "}{producto.nombre}
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="box soft" style={{ marginTop: 14 }}>
-            <strong>Platos del día</strong>
-            <p className="muted small">Puedes agregar hasta 8 platos. Escribe el precio sin puntos si quieres.</p>
-            {platos.map((plato, index) => (
-              <div key={index} className="plato-menu-row">
-                <input
-                  value={plato.nombre}
-                  onChange={(e) => actualizarPlato(index, "nombre", e.target.value)}
-                  placeholder="Nombre del plato"
-                />
-                <input
-                  value={plato.precio}
-                  onChange={(e) => actualizarPlato(index, "precio", e.target.value)}
-                  placeholder="Precio"
-                  inputMode="numeric"
-                />
-                <button type="button" className="button light" onClick={() => quitarPlato(index)} title="Quitar plato" style={{ padding: "10px 0" }}>
-                  ×
-                </button>
+          <div className="box soft resumen-menu-dia" style={{ marginTop: 14 }}>
+            <div className="generador-box-header">
+              <div>
+                <strong>Resumen del menú seleccionado</strong>
+                <p className="muted small" style={{ marginBottom: 0 }}>
+                  Aquí se colocan los precios de los platos del día. Los acompañantes quedan sin precio.
+                </p>
               </div>
-            ))}
-            <button type="button" className="button light" onClick={agregarPlato} style={{ marginTop: 12 }} disabled={platos.length >= 8}>
-              + Agregar plato
-            </button>
-          </div>
+              <span className="badge">{platosLimpios.length} platos · {listaAcompanantes.length} acompañantes</span>
+            </div>
 
-          <label className="field" style={{ marginTop: 14 }}>
-            <span>Acompañantes</span>
-            <textarea value={acompanantes} onChange={(e) => setAcompanantes(e.target.value)} rows={5} placeholder={"Arroz de maíz\nPuré\nEnsalada"} />
-          </label>
+            {platos.length === 0 ? (
+              <div className="alert alert-info" style={{ marginTop: 12 }}>Selecciona platos o sopas desde el catálogo.</div>
+            ) : (
+              <div className="resumen-precios-lista">
+                {platos.map((plato, index) => (
+                  <div key={`${plato.nombre || "plato"}-${index}`} className="plato-menu-row resumen-plato-row">
+                    <input
+                      value={plato.nombre}
+                      onChange={(e) => actualizarPlato(index, "nombre", e.target.value)}
+                      placeholder="Nombre del plato"
+                    />
+                    <input
+                      value={plato.precio}
+                      onChange={(e) => actualizarPlato(index, "precio", e.target.value)}
+                      placeholder="Precio"
+                      inputMode="numeric"
+                    />
+                    <button type="button" className="button light" onClick={() => quitarPlato(index)} title="Quitar plato" style={{ padding: "10px 0" }}>
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button type="button" className="button light" onClick={agregarPlato} style={{ marginTop: 12 }} disabled={platos.length >= 12}>
+              + Agregar manual
+            </button>
+
+            <div className="resumen-acompanantes-box">
+              <strong>Acompañantes seleccionados</strong>
+              {listaAcompanantes.length ? (
+                <div className="resumen-acompanantes-chips">
+                  {listaAcompanantes.map((nombre) => (
+                    <button key={nombre} type="button" className="producto-chip selected" onClick={() => alternarAcompananteCatalogo({ nombre })} title="Quitar acompañante">
+                      ✓ {nombre}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted small" style={{ marginBottom: 0 }}>Selecciona acompañantes desde el catálogo.</p>
+              )}
+            </div>
+
+            <label className="field acompanantes-manual-field" style={{ marginTop: 14 }}>
+              <span>Ajuste manual de acompañantes</span>
+              <textarea value={acompanantes} onChange={(e) => setAcompanantes(e.target.value)} rows={4} placeholder={"Arroz de maíz\nPuré\nEnsalada"} />
+            </label>
+          </div>
 
           <div className="box soft acciones-generador" style={{ marginTop: 14 }}>
             <strong>Acciones</strong>
@@ -718,13 +787,17 @@ export default function GeneradorMenu() {
 
         .selector-catalogo-menu { border-color: #fed7aa; background: linear-gradient(135deg, #fff7ed, #ffffff); }
         .selector-catalogo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
-        .selector-catalogo-col { min-width: 0; }
-        .selector-catalogo-search { margin: 0 0 8px; }
-        .selector-catalogo-lista { display: grid; gap: 7px; max-height: 285px; overflow: auto; padding: 3px; }
-        .selector-catalogo-item { width: 100%; border: 1px solid #fed7aa; background: #fff; border-radius: 14px; padding: 9px 10px; text-align: left; display: flex; justify-content: space-between; gap: 8px; align-items: center; cursor: pointer; color: #3f2a1d; box-shadow: 0 4px 12px rgba(124, 45, 18, 0.06); }
-        .selector-catalogo-item:hover { transform: translateY(-1px); border-color: #fb923c; background: #fff7ed; }
-        .selector-catalogo-item strong { font-size: 12.5px; line-height: 1.25; }
-        .selector-catalogo-item small { flex: 0 0 auto; color: #9a3412; font-weight: 800; font-size: 11px; }
+        .selector-catalogo-col { min-width: 0; background: rgba(255,255,255,0.72); border: 1px solid #fed7aa; border-radius: 18px; padding: 12px; }
+        .selector-catalogo-search { margin: 0 0 10px; }
+        .selector-catalogo-search input { padding: 10px 12px; }
+        .selector-catalogo-chips { max-height: 310px; overflow: auto; padding: 2px; align-content: start; }
+        .selector-catalogo-chip { font-size: 12.5px; line-height: 1.2; }
+        .resumen-menu-dia { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
+        .resumen-precios-lista { display: grid; gap: 8px; margin-top: 12px; }
+        .resumen-plato-row { margin-top: 0; }
+        .resumen-acompanantes-box { margin-top: 14px; padding: 12px; border: 1px dashed #fdba74; border-radius: 18px; background: #fff; }
+        .resumen-acompanantes-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .acompanantes-manual-field textarea { min-height: 92px; }
         @media (max-width: 860px) {
           .generador-menu-grid { grid-template-columns: 1fr !important; gap: 16px; }
           .selector-catalogo-grid { grid-template-columns: 1fr; }

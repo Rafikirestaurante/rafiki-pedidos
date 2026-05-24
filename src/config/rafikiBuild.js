@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD_INFO = {
-  version: '21I-GENERADOR-MENU-CATALOGO-RESTAURANTE-2026-05-24',
-  phase: 'Fase 21I - Generador conectado a catálogo restaurante',
+  version: '21J-GENERADOR-MENU-SELECTOR-RESUMEN-PRECIOS-2026-05-24',
+  phase: 'Fase 21J - Generador de menú optimizado con resumen de precios',
   date: '2026-05-24',
-  fase: '21I',
+  fase: '21J',
   description:
-    'Conecta el Generador de Menú al Catálogo Restaurante en Supabase con selector visual de platos, sopas y acompañantes, manteniendo fallback local.'
+    'Optimiza el Generador de Menú: selector visual tipo solicitud de insumos, catálogo sin precios visibles y resumen inferior para asignar precios antes de guardar/descargar.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD_INFO.version;
