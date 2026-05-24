@@ -134,12 +134,12 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggle }) {
 }
 
 export default function CatalogoRafa() {
-  const [tipo, setTipo] = useState("productos");
+  const [tipo, setTipo] = useState("productos_restaurante");
   const [busqueda, setBusqueda] = useState("");
   const [productos, setProductos] = useState(() => leerStorage(STORAGE_CATALOGO_PRODUCTOS, PRODUCTOS_INICIALES));
   const [insumos, setInsumos] = useState(() => leerStorage(STORAGE_CATALOGO_INSUMOS, INSUMOS_INICIALES));
   const [editandoId, setEditandoId] = useState("");
-  const [form, setForm] = useState({ linea: "Cafetería", categoria: "", nombre: "", precio: "" });
+  const [form, setForm] = useState({ linea: "Restaurante", categoria: "", nombre: "", precio: "" });
   const [mensaje, setMensaje] = useState("");
   const [cargandoInsumos, setCargandoInsumos] = useState(false);
   const [cargandoProductos, setCargandoProductos] = useState(false);
@@ -147,10 +147,17 @@ export default function CatalogoRafa() {
   const [fuenteProductos, setFuenteProductos] = useState("local");
   const [guardando, setGuardando] = useState(false);
 
-  const listaActual = tipo === "productos" ? productos : insumos;
-  const categoriasProducto = useMemo(() => [...new Set(productos.map((item) => item.categoria).filter(Boolean))].sort(), [productos]);
+  const esProductosRestaurante = tipo === "productos_restaurante";
+  const esProductosCafeteria = tipo === "productos_cafeteria";
+  const esProductos = esProductosRestaurante || esProductosCafeteria;
+  const lineaTipo = esProductosRestaurante ? "Restaurante" : esProductosCafeteria ? "Cafetería" : "";
+
+  const productosRestaurante = useMemo(() => productos.filter((item) => item.linea === "Restaurante"), [productos]);
+  const productosCafeteria = useMemo(() => productos.filter((item) => item.linea === "Cafetería"), [productos]);
+  const listaActual = esProductosRestaurante ? productosRestaurante : esProductosCafeteria ? productosCafeteria : insumos;
+  const categoriasProducto = useMemo(() => [...new Set(listaActual.map((item) => item.categoria).filter(Boolean))].sort(), [listaActual]);
   const categoriasInsumo = useMemo(() => [...new Set([...categoriasSolicitudProductos, ...insumos.map((item) => item.categoria).filter(Boolean)])].sort(), [insumos]);
-  const categoriasActuales = tipo === "productos" ? categoriasProducto : categoriasInsumo;
+  const categoriasActuales = esProductos ? categoriasProducto : categoriasInsumo;
 
   const listaFiltrada = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -220,7 +227,9 @@ export default function CatalogoRafa() {
 
   function reiniciarFormulario(nuevoTipo = tipo) {
     setEditandoId("");
-    setForm({ linea: "Cafetería", categoria: nuevoTipo === "productos" ? "" : CATEGORIA_SOLICITUD_DEFECTO_FALLBACK, nombre: "", precio: "", unidadBase: "und", proveedor: "" });
+    const esNuevoProductos = nuevoTipo === "productos_restaurante" || nuevoTipo === "productos_cafeteria";
+    const linea = nuevoTipo === "productos_restaurante" ? "Restaurante" : nuevoTipo === "productos_cafeteria" ? "Cafetería" : "";
+    setForm({ linea, categoria: esNuevoProductos ? "" : CATEGORIA_SOLICITUD_DEFECTO_FALLBACK, nombre: "", precio: "", unidadBase: "und", proveedor: "" });
   }
 
   function cambiarTipo(nuevoTipo) {
@@ -228,7 +237,9 @@ export default function CatalogoRafa() {
     setBusqueda("");
     setMensaje("");
     setEditandoId("");
-    setForm({ linea: "Cafetería", categoria: nuevoTipo === "productos" ? "" : CATEGORIA_SOLICITUD_DEFECTO_FALLBACK, nombre: "", precio: "", unidadBase: "und", proveedor: "" });
+    const esNuevoProductos = nuevoTipo === "productos_restaurante" || nuevoTipo === "productos_cafeteria";
+    const linea = nuevoTipo === "productos_restaurante" ? "Restaurante" : nuevoTipo === "productos_cafeteria" ? "Cafetería" : "";
+    setForm({ linea, categoria: esNuevoProductos ? "" : CATEGORIA_SOLICITUD_DEFECTO_FALLBACK, nombre: "", precio: "", unidadBase: "und", proveedor: "" });
   }
 
   async function guardar(e) {
@@ -240,7 +251,7 @@ export default function CatalogoRafa() {
       return;
     }
 
-    if (tipo === "productos") {
+    if (esProductos) {
       setGuardando(true);
       const ordenSiguienteProducto = Math.max(0, ...productos.map((item) => Number(item.orden || 0))) + 1;
 
@@ -254,14 +265,14 @@ export default function CatalogoRafa() {
             throw new Error("Este producto existe solo en el respaldo local. Vuelve a cargar Supabase antes de editarlo en BD.");
           }
           productoGuardado = await actualizarProductoCatalogoAdmin(actual.catalogoId || actual.id, {
-            linea: form.linea || "Cafetería",
+            linea: lineaTipo || form.linea || "Cafetería",
             categoria,
             nombre,
             precio: form.precio
           });
         } else {
           productoGuardado = await crearProductoCatalogoAdmin({
-            linea: form.linea || "Cafetería",
+            linea: lineaTipo || form.linea || "Cafetería",
             categoria,
             nombre,
             precio: form.precio,
@@ -281,7 +292,7 @@ export default function CatalogoRafa() {
         const nuevoLocal = {
           id: editandoId || `${Date.now()}-${normalizarId(nombre)}`,
           catalogoId: null,
-          linea: form.linea || "Cafetería",
+          linea: lineaTipo || form.linea || "Cafetería",
           categoria,
           nombre,
           precio: form.precio === "" ? "" : Number(form.precio),
@@ -373,7 +384,7 @@ export default function CatalogoRafa() {
   async function eliminar(id) {
     const confirmar = window.confirm(tipo === "insumos" ? "¿Ocultar este insumo en el catálogo de Supabase?" : "¿Eliminar este registro del catálogo local?");
     if (!confirmar) return;
-    if (tipo === "productos") {
+    if (esProductos) {
       const actual = productos.find((item) => item.id === id);
       try {
         if (!supabaseConfigOk) throw new Error(supabaseConfigMensaje);
@@ -412,7 +423,7 @@ export default function CatalogoRafa() {
   }
 
   async function toggle(id) {
-    if (tipo === "productos") {
+    if (esProductos) {
       const actual = productos.find((item) => item.id === id);
       const nuevoActivoProducto = !actual?.activo;
       try {
@@ -471,7 +482,7 @@ export default function CatalogoRafa() {
       <div className="admin-top-row">
         <div>
           <h3>🧾 Catálogo Rafa</h3>
-          <p className="muted">Listado editable de productos e insumos. Productos e insumos conectados a Supabase con respaldo local seguro.</p>
+          <p className="muted">Listado editable de productos restaurante, productos cafetería e insumos. Conectado a Supabase con respaldo local seguro.</p>
         </div>
         <button type="button" className="button button-secondary" onClick={restaurarBase}>Restaurar base</button>
       </div>
@@ -479,14 +490,26 @@ export default function CatalogoRafa() {
       <div className="catalogo-selector-tarjetas" style={{ marginTop: 14 }}>
         <button
           type="button"
-          onClick={() => cambiarTipo("productos")}
-          className={`catalogo-selector-card ${tipo === "productos" ? "active" : ""}`}
-          aria-pressed={tipo === "productos"}
+          onClick={() => cambiarTipo("productos_restaurante")}
+          className={`catalogo-selector-card ${tipo === "productos_restaurante" ? "active" : ""}`}
+          aria-pressed={tipo === "productos_restaurante"}
         >
           <span className="catalogo-selector-icono">🍽️</span>
           <span>
-            <strong>Productos</strong>
-            <small>{productos.length} registros</small>
+            <strong>Productos Restaurante</strong>
+            <small>{productosRestaurante.length} registros</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => cambiarTipo("productos_cafeteria")}
+          className={`catalogo-selector-card ${tipo === "productos_cafeteria" ? "active" : ""}`}
+          aria-pressed={tipo === "productos_cafeteria"}
+        >
+          <span className="catalogo-selector-icono">☕</span>
+          <span>
+            <strong>Productos Cafetería</strong>
+            <small>{productosCafeteria.length} registros</small>
           </span>
         </button>
         <button
@@ -508,28 +531,25 @@ export default function CatalogoRafa() {
         <input type="search" placeholder="Nombre, categoría o línea" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="catalogo-busqueda" />
       </label>
 
-      {tipo === "productos" && (
+      {esProductos && (
         <div className="alert alert-info" style={{ marginTop: 12 }}>
           {cargandoProductos ? "Cargando productos desde Supabase..." : fuenteProductos === "bd" ? "Productos conectados a Supabase." : "Productos usando respaldo local."}
         </div>
       )}
 
-      {tipo === "insumos" && (
+      {!esProductos && (
         <div className="alert alert-info" style={{ marginTop: 12 }}>
           {cargandoInsumos ? "Cargando insumos desde Supabase..." : fuenteInsumos === "bd" ? "Insumos conectados a Supabase." : "Insumos usando respaldo local."}
         </div>
       )}
 
       <form onSubmit={guardar} className="soft-box" style={{ marginTop: 14, background: "#fff" }}>
-        <h4>{editandoId ? "Editar registro" : `Agregar ${tipo === "productos" ? "producto" : "insumo"}`}</h4>
+        <h4>{editandoId ? "Editar registro" : `Agregar ${esProductos ? "producto" : "insumo"}`}</h4>
         <div className="grid-2" style={{ marginTop: 10 }}>
-          {tipo === "productos" && (
+          {esProductos && (
             <label className="field-label">
               Línea
-              <select value={form.linea} onChange={(e) => setForm((prev) => ({ ...prev, linea: e.target.value }))}>
-                <option value="Cafetería">Cafetería</option>
-                <option value="Restaurante">Restaurante</option>
-              </select>
+              <input value={lineaTipo} readOnly />
             </label>
           )}
           <label className="field-label">
@@ -543,7 +563,7 @@ export default function CatalogoRafa() {
             Nombre
             <input value={form.nombre} onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))} placeholder="Nombre del producto o insumo" />
           </label>
-          {tipo === "insumos" && (
+          {!esProductos && (
             <>
               <label className="field-label">
                 Unidad base
@@ -555,7 +575,7 @@ export default function CatalogoRafa() {
               </label>
             </>
           )}
-          {tipo === "productos" && (
+          {esProductos && (
             <label className="field-label">
               Precio
               <input type="number" min="0" step="100" value={form.precio} onChange={(e) => setForm((prev) => ({ ...prev, precio: e.target.value }))} placeholder="Opcional" />
@@ -570,7 +590,7 @@ export default function CatalogoRafa() {
 
       {mensaje && <div className="alert alert-info" style={{ marginTop: 12 }}>{mensaje}</div>}
       <p className="muted" style={{ marginTop: 12 }}>{listaFiltrada.length} de {listaActual.length} registros visibles.</p>
-      <CatalogoTabla items={listaFiltrada} tipo={tipo} onEditar={editar} onEliminar={eliminar} onToggle={toggle} />
+      <CatalogoTabla items={listaFiltrada} tipo={esProductos ? "productos" : "insumos"} onEditar={editar} onEliminar={eliminar} onToggle={toggle} />
     </div>
   );
 }

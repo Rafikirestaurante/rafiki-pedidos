@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD_INFO = {
-  version: '21G4B-FIX-BUILD-PWA-WORKBOX-2026-05-24',
-  phase: 'Fase 21G4B - Fix build PWA Workbox',
+  version: '21H-CATALOGO-RESTAURANTE-SEPARADO-2026-05-24',
+  phase: 'Fase 21H - Catálogo restaurante separado',
   date: '2026-05-24',
-  fase: '21G4B',
+  fase: '21H',
   description:
-    'Corrige configuracion Workbox removiendo networkTimeoutSeconds de NetworkOnly y mantiene estabilizacion PWA/cache.'
+    'Separa el Catálogo Rafa en Productos Restaurante, Productos Cafetería e Insumos; agrega base de productos restaurante para futuro generador de menú.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD_INFO.version;
