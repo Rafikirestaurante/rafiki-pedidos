@@ -1,7 +1,7 @@
 {
-  "version": "21G4-ESTABILIZACION-PWA-CACHE-2026-05-24",
-  "phase": "Fase 21G4 - Estabilizacion definitiva PWA/cache",
+  "version": "21G4B-FIX-BUILD-PWA-WORKBOX-2026-05-24",
+  "phase": "Fase 21G4B - Fix build PWA Workbox",
   "date": "2026-05-24",
-  "fase": "21G4",
+  "fase": "21G4B",
   "description": "Centraliza versionado, evita ciclos de actualizacion, limpia caches viejos y separa metadatos PWA/datos dinamicos del precache."
 }

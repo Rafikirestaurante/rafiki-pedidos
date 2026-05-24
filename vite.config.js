@@ -76,8 +76,7 @@ export default defineConfig({
             handler: 'NetworkOnly',
             method: 'GET',
             options: {
-              cacheName: 'rafiki-supabase-network-only',
-              networkTimeoutSeconds: 10
+              cacheName: 'rafiki-supabase-network-only'
             }
           },
           {
