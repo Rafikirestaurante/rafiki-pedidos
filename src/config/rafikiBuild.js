@@ -1,10 +1,7 @@
-export const RAFIKI_BUILD_INFO = {
-  version: '21J-GENERADOR-MENU-SELECTOR-RESUMEN-PRECIOS-2026-05-24',
-  phase: 'Fase 21J - Generador de menú optimizado con resumen de precios',
-  date: '2026-05-24',
-  fase: '21J',
-  description:
-    'Optimiza el Generador de Menú: selector visual tipo solicitud de insumos, catálogo sin precios visibles y resumen inferior para asignar precios antes de guardar/descargar.'
+export const RAFIKI_BUILD = {
+  version: "21J2-GENERADOR-MENU-LISTA-LIMPIA-SUBCATEGORIAS-2026-05-24",
+  phase: "Fase 21J2 - Generador de menú con lista limpia y subcategorías visuales",
+  date: "2026-05-24",
+  fase: "21J2",
+  description: "Ajusta el selector del Generador de Menú a un listado limpio tipo Solicitud de insumos, sin scroll interno ni cuadros anidados, con subcategorías visuales para platos.",
 };
-
-export const RAFIKI_APP_VERSION = RAFIKI_BUILD_INFO.version;

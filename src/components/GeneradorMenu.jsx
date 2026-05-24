@@ -36,6 +36,42 @@ function normalizarTextoCatalogo(texto) {
     .trim();
 }
 
+
+function clasificarPlatoVisual(producto) {
+  const nombre = producto?.nombre || "";
+  const normalizado = normalizarTextoCatalogo(nombre);
+  if (normalizado.startsWith("pechuga o cerdo")) return "pechugaCerdo";
+  if (normalizado.startsWith("pastas")) return "pastas";
+  return "guisos";
+}
+
+function nombreVisualPlato(producto) {
+  const nombre = String(producto?.nombre || "").trim();
+  const tipo = clasificarPlatoVisual(producto);
+
+  if (tipo === "pechugaCerdo") {
+    return nombre
+      .replace(/^Pechuga o cerdo\s+en\s+/i, "")
+      .replace(/^Pechuga o cerdo\s+/i, "")
+      .replace(/^salsa\s+/i, "Salsa ")
+      .trim();
+  }
+
+  if (tipo === "pastas") {
+    return nombre.replace(/^Pastas\s*/i, "").trim();
+  }
+
+  return nombre;
+}
+
+function agruparPlatosVisuales(productos) {
+  return [
+    { key: "pechugaCerdo", titulo: "Pechuga y cerdo", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "pechugaCerdo") },
+    { key: "pastas", titulo: "Pastas", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "pastas") },
+    { key: "guisos", titulo: "Guisos", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "guisos") }
+  ].filter((grupo) => grupo.productos.length > 0);
+}
+
 function productosRestauranteFallback() {
   return PRODUCTOS_CATALOGO_FALLBACK
     .filter((item) => item.linea === "Restaurante" && item.activo !== false)
@@ -153,6 +189,8 @@ export default function GeneradorMenu() {
     const q = normalizarTextoCatalogo(busquedaPlatos);
     return q ? catalogoPlatos.filter((item) => normalizarTextoCatalogo(item.nombre).includes(q)) : catalogoPlatos;
   }, [catalogoPlatos, busquedaPlatos]);
+
+  const gruposPlatosVisuales = useMemo(() => agruparPlatosVisuales(platosFiltradosCatalogo), [platosFiltradosCatalogo]);
 
   const sopasFiltradasCatalogo = useMemo(() => {
     const q = normalizarTextoCatalogo(busquedaSopas);
@@ -496,36 +534,46 @@ export default function GeneradorMenu() {
               <span className={fuenteCatalogo === "bd" ? "badge badge-finalizado" : "badge"}>{fuenteCatalogo === "bd" ? "BD" : "Local"}</span>
             </div>
 
-            <div className="selector-catalogo-grid">
-              <div className="category-block selector-catalogo-col">
-                <h3 className="category-title">🍽️ Platos</h3>
-                <label className="field selector-catalogo-search">
-                  <input type="search" value={busquedaPlatos} onChange={(e) => setBusquedaPlatos(e.target.value)} placeholder="Buscar plato" />
-                </label>
-                <div className="productos-chips selector-catalogo-chips">
-                  {platosFiltradosCatalogo.map((producto) => {
-                    const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
-                    return (
-                      <span key={producto.id} className="producto-chip-wrap">
-                        <button
-                          type="button"
-                          className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
-                          onClick={() => alternarProductoCatalogoAlMenu(producto, "")}
-                          title={seleccionado ? "Quitar del menú del día" : "Agregar al menú del día"}
-                        >
-                          {seleccionado ? "✓ " : "+ "}{producto.nombre}
-                        </button>
-                      </span>
-                    );
-                  })}
+            <div className="selector-catalogo-lista-limpia">
+              <section className="selector-catalogo-section">
+                <div className="selector-catalogo-section-head">
+                  <h3 className="category-title">🍽️ Platos</h3>
+                  <label className="field selector-catalogo-search">
+                    <input type="search" value={busquedaPlatos} onChange={(e) => setBusquedaPlatos(e.target.value)} placeholder="Buscar plato" />
+                  </label>
                 </div>
-              </div>
 
-              <div className="category-block selector-catalogo-col">
-                <h3 className="category-title">🍲 Sopas</h3>
-                <label className="field selector-catalogo-search">
-                  <input type="search" value={busquedaSopas} onChange={(e) => setBusquedaSopas(e.target.value)} placeholder="Buscar sopa" />
-                </label>
+                {gruposPlatosVisuales.map((grupo) => (
+                  <div key={grupo.key} className="selector-subcategoria-visual">
+                    <h4>{grupo.titulo}</h4>
+                    <div className="productos-chips selector-catalogo-chips">
+                      {grupo.productos.map((producto) => {
+                        const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+                        return (
+                          <span key={producto.id} className="producto-chip-wrap">
+                            <button
+                              type="button"
+                              className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
+                              onClick={() => alternarProductoCatalogoAlMenu(producto, "")}
+                              title={seleccionado ? "Quitar del menú del día" : "Agregar al menú del día"}
+                            >
+                              {seleccionado ? "✓ " : "+ "}{nombreVisualPlato(producto)}
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </section>
+
+              <section className="selector-catalogo-section">
+                <div className="selector-catalogo-section-head">
+                  <h3 className="category-title">🍲 Sopas</h3>
+                  <label className="field selector-catalogo-search">
+                    <input type="search" value={busquedaSopas} onChange={(e) => setBusquedaSopas(e.target.value)} placeholder="Buscar sopa" />
+                  </label>
+                </div>
                 <div className="productos-chips selector-catalogo-chips">
                   {sopasFiltradasCatalogo.map((producto) => {
                     const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
@@ -543,13 +591,15 @@ export default function GeneradorMenu() {
                     );
                   })}
                 </div>
-              </div>
+              </section>
 
-              <div className="category-block selector-catalogo-col">
-                <h3 className="category-title">🥗 Acompañantes</h3>
-                <label className="field selector-catalogo-search">
-                  <input type="search" value={busquedaAcompanantes} onChange={(e) => setBusquedaAcompanantes(e.target.value)} placeholder="Buscar acompañante" />
-                </label>
+              <section className="selector-catalogo-section">
+                <div className="selector-catalogo-section-head">
+                  <h3 className="category-title">🥗 Acompañantes</h3>
+                  <label className="field selector-catalogo-search">
+                    <input type="search" value={busquedaAcompanantes} onChange={(e) => setBusquedaAcompanantes(e.target.value)} placeholder="Buscar acompañante" />
+                  </label>
+                </div>
                 <div className="productos-chips selector-catalogo-chips">
                   {acompanantesFiltradosCatalogo.map((producto) => {
                     const seleccionado = nombresAcompanantesSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
@@ -567,7 +617,7 @@ export default function GeneradorMenu() {
                     );
                   })}
                 </div>
-              </div>
+              </section>
             </div>
           </div>
 
@@ -786,12 +836,16 @@ export default function GeneradorMenu() {
         .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
 
         .selector-catalogo-menu { border-color: #fed7aa; background: linear-gradient(135deg, #fff7ed, #ffffff); }
-        .selector-catalogo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
-        .selector-catalogo-col { min-width: 0; background: rgba(255,255,255,0.72); border: 1px solid #fed7aa; border-radius: 18px; padding: 12px; }
-        .selector-catalogo-search { margin: 0 0 10px; }
+        .selector-catalogo-lista-limpia { display: flex; flex-direction: column; gap: 18px; margin-top: 14px; }
+        .selector-catalogo-section { padding-top: 2px; border-top: 1px solid #fed7aa; }
+        .selector-catalogo-section:first-child { border-top: 0; padding-top: 0; }
+        .selector-catalogo-section-head { display: grid; grid-template-columns: minmax(160px, 0.45fr) minmax(220px, 1fr); gap: 12px; align-items: end; margin-bottom: 10px; }
+        .selector-catalogo-search { margin: 0; }
         .selector-catalogo-search input { padding: 10px 12px; }
-        .selector-catalogo-chips { max-height: 310px; overflow: auto; padding: 2px; align-content: start; }
+        .selector-catalogo-chips { padding: 2px 0; align-content: start; margin-bottom: 8px; }
         .selector-catalogo-chip { font-size: 12.5px; line-height: 1.2; }
+        .selector-subcategoria-visual { margin-top: 10px; }
+        .selector-subcategoria-visual h4 { margin: 0 0 8px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
         .resumen-menu-dia { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
         .resumen-precios-lista { display: grid; gap: 8px; margin-top: 12px; }
         .resumen-plato-row { margin-top: 0; }
@@ -800,7 +854,7 @@ export default function GeneradorMenu() {
         .acompanantes-manual-field textarea { min-height: 92px; }
         @media (max-width: 860px) {
           .generador-menu-grid { grid-template-columns: 1fr !important; gap: 16px; }
-          .selector-catalogo-grid { grid-template-columns: 1fr; }
+          .selector-catalogo-section-head { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
           .generador-menu.card-pad { padding: 14px !important; border-radius: 22px; }
