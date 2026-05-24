@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { PRODUCTOS_CATALOGO_FALLBACK } from "../data/catalogoProductosData";
+import { cargarCatalogoProductosAdmin } from "../services/catalogoProductosService";
 import {
   limpiarLista,
   limpiarPrecio,
@@ -25,6 +27,32 @@ const PLATOS_GENERADOR_DEFECTO = [
 ];
 
 const ACOMPANANTES_GENERADOR_DEFECTO = "Arroz de maíz\nPuré de papa\nEnsalada\nTajadas maduras";
+
+function normalizarTextoCatalogo(texto) {
+  return String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function productosRestauranteFallback() {
+  return PRODUCTOS_CATALOGO_FALLBACK
+    .filter((item) => item.linea === "Restaurante" && item.activo !== false)
+    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
+}
+
+function filtrarCatalogoMenu(productos, categoria) {
+  return productos
+    .filter((item) => item.linea === "Restaurante" && item.categoria === categoria && item.activo !== false)
+    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
+}
+
+function precioTextoProducto(producto, precioPorDefecto = "") {
+  const precio = producto?.precio === null || producto?.precio === undefined || producto?.precio === "" ? precioPorDefecto : producto.precio;
+  return precio === null || precio === undefined ? "" : String(precio);
+}
 
 function tipoAlertaGenerador(texto) {
   const normalizado = String(texto || "").toLowerCase();
@@ -66,6 +94,45 @@ export default function GeneradorMenu() {
   const [guardandoHistorial, setGuardandoHistorial] = useState(false);
   const [historial, setHistorial] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
+  const [catalogoRestaurante, setCatalogoRestaurante] = useState(() => productosRestauranteFallback());
+  const [fuenteCatalogo, setFuenteCatalogo] = useState("local");
+  const [cargandoCatalogo, setCargandoCatalogo] = useState(false);
+  const [busquedaPlatos, setBusquedaPlatos] = useState("");
+  const [busquedaSopas, setBusquedaSopas] = useState("");
+  const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarCatalogoRestaurante() {
+      setCargandoCatalogo(true);
+      const resultado = await cargarCatalogoProductosAdmin();
+      if (!activo) return;
+
+      if (resultado.ok && resultado.productos?.length) {
+        const restaurante = resultado.productos
+          .filter((item) => item.linea === "Restaurante" && item.activo !== false)
+          .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
+        if (restaurante.length) {
+          setCatalogoRestaurante(restaurante);
+          setFuenteCatalogo("bd");
+        } else {
+          setCatalogoRestaurante(productosRestauranteFallback());
+          setFuenteCatalogo("local");
+        }
+      } else {
+        setCatalogoRestaurante(productosRestauranteFallback());
+        setFuenteCatalogo("local");
+      }
+
+      setCargandoCatalogo(false);
+    }
+
+    cargarCatalogoRestaurante();
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!mensaje) return;
@@ -79,6 +146,24 @@ export default function GeneradorMenu() {
 
   const platosLimpios = platos.filter((p) => p.nombre.trim());
   const listaAcompanantes = limpiarLista(acompanantes);
+  const catalogoPlatos = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Platos"), [catalogoRestaurante]);
+  const catalogoSopas = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Sopas"), [catalogoRestaurante]);
+  const catalogoAcompanantes = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Acompañantes"), [catalogoRestaurante]);
+
+  const platosFiltradosCatalogo = useMemo(() => {
+    const q = normalizarTextoCatalogo(busquedaPlatos);
+    return q ? catalogoPlatos.filter((item) => normalizarTextoCatalogo(item.nombre).includes(q)) : catalogoPlatos;
+  }, [catalogoPlatos, busquedaPlatos]);
+
+  const sopasFiltradasCatalogo = useMemo(() => {
+    const q = normalizarTextoCatalogo(busquedaSopas);
+    return q ? catalogoSopas.filter((item) => normalizarTextoCatalogo(item.nombre).includes(q)) : catalogoSopas;
+  }, [catalogoSopas, busquedaSopas]);
+
+  const acompanantesFiltradosCatalogo = useMemo(() => {
+    const q = normalizarTextoCatalogo(busquedaAcompanantes);
+    return q ? catalogoAcompanantes.filter((item) => normalizarTextoCatalogo(item.nombre).includes(q)) : catalogoAcompanantes;
+  }, [catalogoAcompanantes, busquedaAcompanantes]);
 
   const svg = useMemo(
     () => crearSvgMenu({ platos: platosLimpios, acompanantes: listaAcompanantes }),
@@ -148,6 +233,25 @@ export default function GeneradorMenu() {
 
   function quitarPlato(index) {
     setPlatos((actual) => actual.filter((_, i) => i !== index));
+  }
+
+  function agregarProductoCatalogoAlMenu(producto, precioPorDefecto = "") {
+    if (!producto?.nombre) return;
+    setPlatos((actual) => {
+      const existe = actual.some((plato) => normalizarTextoCatalogo(plato.nombre) === normalizarTextoCatalogo(producto.nombre));
+      if (existe) return actual;
+      return [...actual, { nombre: producto.nombre, precio: precioTextoProducto(producto, precioPorDefecto) }].slice(0, 8);
+    });
+  }
+
+  function agregarAcompananteCatalogo(producto) {
+    if (!producto?.nombre) return;
+    setAcompanantes((actual) => {
+      const lista = limpiarLista(actual);
+      const existe = lista.some((item) => normalizarTextoCatalogo(item) === normalizarTextoCatalogo(producto.nombre));
+      if (existe) return actual;
+      return [...lista, producto.nombre].join("\n");
+    });
   }
 
   function descargarDesdeSvg(url, nombreArchivo, mensajeOk, transparente = false, ancho = 1080, alto = 1080) {
@@ -369,6 +473,65 @@ export default function GeneradorMenu() {
             </label>
           </div>
 
+          <div className="box soft selector-catalogo-menu" style={{ marginTop: 14 }}>
+            <div className="generador-box-header">
+              <div>
+                <strong>Seleccionar desde Catálogo Restaurante</strong>
+                <p className="muted small" style={{ marginBottom: 0 }}>
+                  {cargandoCatalogo ? "Cargando catálogo..." : fuenteCatalogo === "bd" ? "Usando productos activos de Supabase." : "Usando respaldo local del catálogo."}
+                </p>
+              </div>
+              <span className={fuenteCatalogo === "bd" ? "badge badge-finalizado" : "badge"}>{fuenteCatalogo === "bd" ? "BD" : "Local"}</span>
+            </div>
+
+            <div className="selector-catalogo-grid">
+              <div className="selector-catalogo-col">
+                <label className="field selector-catalogo-search">
+                  <span>🍽️ Platos</span>
+                  <input type="search" value={busquedaPlatos} onChange={(e) => setBusquedaPlatos(e.target.value)} placeholder="Buscar plato" />
+                </label>
+                <div className="selector-catalogo-lista">
+                  {platosFiltradosCatalogo.slice(0, 18).map((producto) => (
+                    <button key={producto.id} type="button" className="selector-catalogo-item" onClick={() => agregarProductoCatalogoAlMenu(producto, "")} title="Agregar al menú del día">
+                      <strong>{producto.nombre}</strong>
+                      {producto.precio ? <small>$ {precioVisible(producto.precio)}</small> : <small>Sin precio</small>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="selector-catalogo-col">
+                <label className="field selector-catalogo-search">
+                  <span>🍲 Sopas</span>
+                  <input type="search" value={busquedaSopas} onChange={(e) => setBusquedaSopas(e.target.value)} placeholder="Buscar sopa" />
+                </label>
+                <div className="selector-catalogo-lista">
+                  {sopasFiltradasCatalogo.slice(0, 14).map((producto) => (
+                    <button key={producto.id} type="button" className="selector-catalogo-item" onClick={() => agregarProductoCatalogoAlMenu(producto, "")} title="Agregar al menú del día">
+                      <strong>{producto.nombre}</strong>
+                      {producto.precio ? <small>$ {precioVisible(producto.precio)}</small> : <small>Sin precio</small>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="selector-catalogo-col">
+                <label className="field selector-catalogo-search">
+                  <span>🥗 Acompañantes</span>
+                  <input type="search" value={busquedaAcompanantes} onChange={(e) => setBusquedaAcompanantes(e.target.value)} placeholder="Buscar acompañante" />
+                </label>
+                <div className="selector-catalogo-lista">
+                  {acompanantesFiltradosCatalogo.slice(0, 18).map((producto) => (
+                    <button key={producto.id} type="button" className="selector-catalogo-item" onClick={() => agregarAcompananteCatalogo(producto)} title="Agregar acompañante">
+                      <strong>{producto.nombre}</strong>
+                      <small>Agregar</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="box soft" style={{ marginTop: 14 }}>
             <strong>Platos del día</strong>
             <p className="muted small">Puedes agregar hasta 8 platos. Escribe el precio sin puntos si quieres.</p>
@@ -552,8 +715,19 @@ export default function GeneradorMenu() {
         .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.3; overflow-wrap: normal; word-break: normal; hyphens: none; white-space: normal; }
         .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
         .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
+
+        .selector-catalogo-menu { border-color: #fed7aa; background: linear-gradient(135deg, #fff7ed, #ffffff); }
+        .selector-catalogo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+        .selector-catalogo-col { min-width: 0; }
+        .selector-catalogo-search { margin: 0 0 8px; }
+        .selector-catalogo-lista { display: grid; gap: 7px; max-height: 285px; overflow: auto; padding: 3px; }
+        .selector-catalogo-item { width: 100%; border: 1px solid #fed7aa; background: #fff; border-radius: 14px; padding: 9px 10px; text-align: left; display: flex; justify-content: space-between; gap: 8px; align-items: center; cursor: pointer; color: #3f2a1d; box-shadow: 0 4px 12px rgba(124, 45, 18, 0.06); }
+        .selector-catalogo-item:hover { transform: translateY(-1px); border-color: #fb923c; background: #fff7ed; }
+        .selector-catalogo-item strong { font-size: 12.5px; line-height: 1.25; }
+        .selector-catalogo-item small { flex: 0 0 auto; color: #9a3412; font-weight: 800; font-size: 11px; }
         @media (max-width: 860px) {
           .generador-menu-grid { grid-template-columns: 1fr !important; gap: 16px; }
+          .selector-catalogo-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
           .generador-menu.card-pad { padding: 14px !important; border-radius: 22px; }

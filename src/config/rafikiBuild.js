@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD_INFO = {
-  version: '21H-CATALOGO-RESTAURANTE-SEPARADO-2026-05-24',
-  phase: 'Fase 21H - Catálogo restaurante separado',
+  version: '21I-GENERADOR-MENU-CATALOGO-RESTAURANTE-2026-05-24',
+  phase: 'Fase 21I - Generador conectado a catálogo restaurante',
   date: '2026-05-24',
-  fase: '21H',
+  fase: '21I',
   description:
-    'Separa el Catálogo Rafa en Productos Restaurante, Productos Cafetería e Insumos; agrega base de productos restaurante para futuro generador de menú.'
+    'Conecta el Generador de Menú al Catálogo Restaurante en Supabase con selector visual de platos, sopas y acompañantes, manteniendo fallback local.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD_INFO.version;
