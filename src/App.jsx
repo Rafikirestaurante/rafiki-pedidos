@@ -34,7 +34,7 @@ import {
 import { BOTONES } from "./config/textos";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import { describirActor, nombreRol, obtenerRolUsuarioDesdeTabla, primeraPestanaPermitida, usuarioPuede } from "./utils/authAdmin";
-import CargandoModulo from "./components/CargandoModulo";
+import CargandoModulo from "./components/layout/CargandoModulo";
 import { conTiempoMaximo } from "./utils/async";
 import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "./utils/menuCache";
 import {
@@ -57,6 +57,7 @@ const CatalogoRafa = lazy(() => import("./components/CatalogoRafa"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
+const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
 const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "rafa"]);
 
 function leerAdminTabGuardada() {
@@ -144,7 +145,7 @@ export default function App() {
   const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [realtimeAdminActivo, setRealtimeAdminActivo] = useState(() => {
     try {
-      return localStorage.getItem("rafikiRealtimeAdminActivo") === "true";
+      return window.localStorage.getItem(REALTIME_ADMIN_STORAGE_KEY) === "true";
     } catch {
       return false;
     }
@@ -372,14 +373,14 @@ export default function App() {
     }
   }, []);
 
-  function irAElemento(id) {
+  const irAElemento = useCallback((id) => {
     setTimeout(() => {
       const elemento = document.getElementById(id);
       if (elemento) {
         elemento.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }, 160);
-  }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -411,7 +412,7 @@ export default function App() {
     setRealtimeAdminActivo((activoActual) => {
       const siguienteEstado = !activoActual;
       try {
-        localStorage.setItem("rafikiRealtimeAdminActivo", siguienteEstado ? "true" : "false");
+        window.localStorage.setItem(REALTIME_ADMIN_STORAGE_KEY, siguienteEstado ? "true" : "false");
       } catch {
         // Si localStorage no está disponible, el cambio sigue funcionando durante la sesión.
       }
@@ -471,17 +472,21 @@ export default function App() {
   }, [adminTab]);
 
   useEffect(() => {
-    if (adminTab !== "menu") return;
+    if (adminTab !== "menu") return undefined;
 
-    guardarBorradorEditorMenuDiario({
-      menu: {
-        fecha: menu.fecha || fechaISOColombia(),
-        titulo: menu.titulo || "",
-        descripcion: menu.descripcion || ""
-      },
-      platosTexto,
-      acompanantesTexto
-    });
+    const guardarBorradorTimer = window.setTimeout(() => {
+      guardarBorradorEditorMenuDiario({
+        menu: {
+          fecha: menu.fecha || fechaISOColombia(),
+          titulo: menu.titulo || "",
+          descripcion: menu.descripcion || ""
+        },
+        platosTexto,
+        acompanantesTexto
+      });
+    }, 500);
+
+    return () => window.clearTimeout(guardarBorradorTimer);
   }, [adminTab, menu.fecha, menu.titulo, menu.descripcion, platosTexto, acompanantesTexto]);
 
   const descartarAvisoCambiosPedidos = useCallback(() => {
@@ -646,7 +651,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [recargaMenu]);
+  }, [mostrarMensaje, recargaMenu]);
 
   useEffect(() => {
     if (!supabaseConfigOk || !realtimeAdminActivo) return undefined;
@@ -1408,13 +1413,13 @@ export default function App() {
                             </div>
 
                             <div className="progress-bar-wrap">
-                              {pasos.map((_, i) => (
-                                <div key={i} className={`progress-step ${i <= pasoActual ? "done" : ""}`} />
+                              {pasos.map((nombre, i) => (
+                                <div key={`barra-${nombre}`} className={`progress-step ${i <= pasoActual ? "done" : ""}`} />
                               ))}
                             </div>
                             <div className="progress-labels">
                               {pasos.map((nombre, i) => (
-                                <span key={i} className={`progress-label ${i <= pasoActual ? "done" : ""}`}>{nombre}</span>
+                                <span key={`etiqueta-${nombre}`} className={`progress-label ${i <= pasoActual ? "done" : ""}`}>{nombre}</span>
                               ))}
                             </div>
 

@@ -162,7 +162,7 @@ function crearResumenVentas(pedidos) {
 
 function esPagoPendiente(tipoPago) {
   const texto = normalizarTexto(tipoPago);
-  return ["pendiente", "credito", "credito", "fiado", "debe", "despues", "pagar despues", "por pagar"].some((palabra) => texto.includes(palabra));
+  return ["pendiente", "credito", "fiado", "debe", "despues", "pagar despues", "por pagar"].some((palabra) => texto.includes(palabra));
 }
 
 function obtenerNombreProductoCliente(item) {
