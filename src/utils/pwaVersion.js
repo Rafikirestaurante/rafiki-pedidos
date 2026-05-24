@@ -1,4 +1,4 @@
-export const RAFIKI_APP_VERSION = '20D-MODULARIZAR-FLUJO-CLIENTE-2026-05-23';
+export const RAFIKI_APP_VERSION = '20D3-FIX-CICLO-ACTUALIZACION-PWA-2026-05-24';
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
 export const RAFIKI_VERSION_STORAGE_KEY = 'rafikiAppVersion';
 export const RAFIKI_PWA_REFRESH_KEY = 'rafikiPwaUltimaLimpieza';

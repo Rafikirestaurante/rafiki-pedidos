@@ -1,7 +1,7 @@
 {
-  "version": "20D2-FIX-FECHA-ACTUAL-MENU-ADMIN-2026-05-24",
-  "phase": "Fase 20D2 - Fecha actual obligatoria en menú admin",
+  "version": "20D3-FIX-CICLO-ACTUALIZACION-PWA-2026-05-24",
+  "phase": "Fase 20D3 - Corrección ciclo de actualización PWA",
   "date": "2026-05-24",
-  "fase": "20D2",
-  "description": "Corrige el editor de menú diario y el generador para iniciar con la fecha actual de Colombia, evitando que borradores o caché restauren fechas anteriores."
+  "fase": "20D3",
+  "description": "Sincroniza la versión interna de la app con el archivo público rafiki-version.json para evitar que el aviso de nueva versión reaparezca después de limpiar caché y actualizar."
 }
