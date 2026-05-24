@@ -246,6 +246,16 @@ export default function App() {
     const rutaAdmin = vista === "admin" || vista === "adminLogin";
     const haySesionTemporalAdmin = obtenerSesionActiva("rafikiAdminActivo");
 
+    const enviarALoginAdmin = () => {
+      localStorage.removeItem("rafikiAdminActivo");
+      setAdminRol("usuario");
+      setAdminUsuario(null);
+      setAdminAutenticado(false);
+      if (rutaAdmin) {
+        setVista("adminLogin");
+      }
+    };
+
     if (!supabaseConfigOk || (!rutaAdmin && !haySesionTemporalAdmin)) {
       setAdminAuthCargando(false);
       return () => {
@@ -277,17 +287,14 @@ export default function App() {
         } else if (usuario && !obtenerSesionActiva("rafikiAdminActivo")) {
           await supabase.auth.signOut();
           if (!activo) return;
-          setAdminRol("usuario");
-          setAdminAutenticado(false);
+          enviarALoginAdmin();
         } else {
-          setAdminRol("usuario");
-          setAdminAutenticado(false);
+          enviarALoginAdmin();
         }
       } catch (error) {
         console.warn("No se pudo revisar la sesión administrativa:", error?.message || error);
         if (activo && rutaAdmin) {
-          setAdminRol("usuario");
-          setAdminAutenticado(false);
+          enviarALoginAdmin();
         }
       } finally {
         if (activo) setAdminAuthCargando(false);
