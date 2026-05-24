@@ -1,7 +1,11 @@
-export const RAFIKI_BUILD = {
-  version: "21J2-GENERADOR-MENU-LISTA-LIMPIA-SUBCATEGORIAS-2026-05-24",
-  phase: "Fase 21J2 - Generador de menú con lista limpia y subcategorías visuales",
-  date: "2026-05-24",
-  fase: "21J2",
-  description: "Ajusta el selector del Generador de Menú a un listado limpio tipo Solicitud de insumos, sin scroll interno ni cuadros anidados, con subcategorías visuales para platos.",
+export const RAFIKI_BUILD_INFO = {
+  version: '21J3-FIX-BUILD-GENERADOR-MENU-LISTA-LIMPIA-2026-05-24',
+  phase: 'Fase 21J3 - Fix build generador de menú lista limpia',
+  date: '2026-05-24',
+  fase: '21J3',
+  description:
+    'Corrige exportación de versión PWA y mantiene el Generador de Menú con listado limpio, subcategorías visuales y selector sin cuadros anidados.'
 };
+
+export const RAFIKI_BUILD = RAFIKI_BUILD_INFO;
+export const RAFIKI_APP_VERSION = RAFIKI_BUILD_INFO.version;
