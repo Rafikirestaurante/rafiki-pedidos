@@ -1,7 +1,7 @@
 {
-  "version": "19A13-DASHBOARD-HORAS-WHATSAPP-2026-05-23",
-  "phase": "Fase 19A13 - Dashboard horas y WhatsApp",
+  "version": "20D-MODULARIZAR-FLUJO-CLIENTE-2026-05-23",
+  "phase": "Fase 20D - Modularización flujo cliente",
   "date": "2026-05-23",
-  "fase": "19A13",
-  "description": "Ventas por hora completas de 7 a.m. a 6 p.m. y botón para compartir Informe Rafa por WhatsApp."
+  "fase": "20D",
+  "description": "Extracción conservadora del flujo cliente y confirmación a componentes separados, sin tocar realtime, offline ni Supabase."
 }
