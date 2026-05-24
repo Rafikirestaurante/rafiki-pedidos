@@ -69,13 +69,15 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
+        globIgnores: ['**/rafiki-version.json', '**/manifest.json'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.hostname.includes('supabase.co'),
             handler: 'NetworkOnly',
             method: 'GET',
             options: {
-              cacheName: 'rafiki-supabase-network-only'
+              cacheName: 'rafiki-supabase-network-only',
+              networkTimeoutSeconds: 10
             }
           },
           {
@@ -103,11 +105,14 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: ({ url }) => url.pathname === '/rafiki-version.json' || url.pathname === '/manifest.webmanifest' || url.pathname === '/manifest.json',
+            urlPattern: ({ url }) =>
+              url.pathname === '/rafiki-version.json' ||
+              url.pathname === '/manifest.webmanifest' ||
+              url.pathname === '/manifest.json',
             handler: 'NetworkFirst',
             options: {
               cacheName: 'rafiki-pwa-metadata-network-first',
-              networkTimeoutSeconds: 3,
+              networkTimeoutSeconds: 2,
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 10

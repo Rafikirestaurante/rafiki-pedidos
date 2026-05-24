@@ -1,8 +1,11 @@
 import { registerSW } from 'virtual:pwa-register';
+import { puedeMostrarAvisoNuevaVersion } from './utils/pwaVersion.js';
 
 let actualizarPWA = null;
 
 function avisarNuevaVersion(versionRemota = '') {
+  if (!puedeMostrarAvisoNuevaVersion()) return;
+
   window.dispatchEvent(
     new CustomEvent('rafiki:nueva-version-disponible', {
       detail: {

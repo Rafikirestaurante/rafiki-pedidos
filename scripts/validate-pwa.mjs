@@ -32,6 +32,7 @@ const manifest = readJson('public/manifest.json');
 const version = readJson('public/rafiki-version.json');
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const viteConfig = fs.readFileSync(path.join(root, 'vite.config.js'), 'utf8');
+const buildConfig = fs.readFileSync(path.join(root, 'src/config/rafikiBuild.js'), 'utf8');
 
 assert(manifest.name === 'Rafiki Pedidos', 'Manifest: nombre inesperado.');
 assert(manifest.start_url?.startsWith('/mesas'), 'Manifest: start_url debe iniciar en /mesas.');
@@ -63,6 +64,8 @@ assert(viteConfig.includes("registerType: 'prompt'"), 'vite.config.js: las actua
 assert(/^(1[89]|20|21)[A-Z0-9-]*-2026-05-[0-9]{2}$/.test(version.version), 'rafiki-version.json: versión debe corresponder a Fase 18, 19, 20 o 21.');
 assert(viteConfig.includes('skipWaiting: true') && viteConfig.includes('clientsClaim: true'), 'vite.config.js: Workbox debe activar skipWaiting y clientsClaim.');
 assert(viteConfig.includes('NetworkFirst') && viteConfig.includes('rafiki-pwa-metadata-network-first'), 'vite.config.js: metadata PWA debe usar NetworkFirst.');
+assert(viteConfig.includes('globIgnores') && viteConfig.includes('rafiki-version.json'), 'vite.config.js: rafiki-version.json no debe quedar precacheado.');
+assert(buildConfig.includes(version.version), 'src/config/rafikiBuild.js: la versión central debe coincidir con public/rafiki-version.json.');
 
 if (warnings.length) {
   console.log('Advertencias PWA:');

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { esRutaInternaPWA } from '../utils/pwa.js';
-import { consultarVersionRemota, esVersionRemotaMasNueva, guardarVersionActual, RAFIKI_APP_VERSION } from '../utils/pwaVersion.js';
+import { consultarVersionRemota, esVersionRemotaMasNueva, guardarVersionActual, puedeMostrarAvisoNuevaVersion, RAFIKI_APP_VERSION } from '../utils/pwaVersion.js';
 
 /**
  * Fase 18 Pre-A:
@@ -23,6 +23,8 @@ export default function PWAOldVersionGuard() {
         if (!activo) return;
 
         if (esVersionRemotaMasNueva(remota?.version, RAFIKI_APP_VERSION)) {
+          if (!puedeMostrarAvisoNuevaVersion()) return;
+
           window.dispatchEvent(
             new CustomEvent('rafiki:nueva-version-disponible', {
               detail: {
