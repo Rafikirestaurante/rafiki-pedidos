@@ -1,7 +1,7 @@
 {
-  "version": "21G-CATALOGO-PRODUCTOS-BD-FALLBACK-2026-05-24",
-  "phase": "Fase 21G - Catálogo de productos conectado a Supabase con respaldo local",
+  "version": "21G2-FIX-PWA-MESAS-CATALOGO-PRODUCTOS-2026-05-24",
+  "phase": "Fase 21G2 - Corrección PWA y productos de catálogo en mesas",
   "date": "2026-05-24",
-  "fase": "21G",
-  "description": "Admin > Catálogo > Productos ahora carga, crea, edita, activa y oculta productos contra catalogo_productos en Supabase. Si Supabase falla, conserva respaldo local para evitar bloqueo operativo. No conecta todavía el flujo /cliente ni impresión."
+  "fase": "21G2",
+  "description": "Corrige desincronización de versión PWA y permite que Panel Mesas use productos activos de catalogo_productos con respaldo local."
 }

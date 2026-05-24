@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   calcularTotalItem,
   calcularTotalItems,
@@ -29,6 +29,8 @@ import {
   CAFETERIA_POSTRES,
   CAFETERIA_SANDWICHES
 } from "../data/menuCafeteria";
+import { PRODUCTOS_CATALOGO_FALLBACK } from "../data/catalogoProductosData";
+import { cargarCatalogoProductosAdmin } from "../services/catalogoProductosService";
 import { SelectorCantidad } from "./common";
 import ConfirmacionPedidoMesa from "./mesas/ConfirmacionPedidoMesa";
 import MesaTabs from "./mesas/MesaTabs";
@@ -37,6 +39,63 @@ import {
   irAElementoMesas,
   vibracionCortaMesas
 } from "../utils/mesas";
+
+const STORAGE_CATALOGO_PRODUCTOS_MESAS = "rafiki_catalogo_productos_v1";
+
+function leerProductosCatalogoStorageMesas() {
+  if (typeof window === "undefined") return PRODUCTOS_CATALOGO_FALLBACK;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_CATALOGO_PRODUCTOS_MESAS);
+    if (!raw) return PRODUCTOS_CATALOGO_FALLBACK;
+    const data = JSON.parse(raw);
+    return Array.isArray(data) && data.length ? data : PRODUCTOS_CATALOGO_FALLBACK;
+  } catch {
+    return PRODUCTOS_CATALOGO_FALLBACK;
+  }
+}
+
+function guardarProductosCatalogoStorageMesas(productos) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_CATALOGO_PRODUCTOS_MESAS, JSON.stringify(productos));
+  } catch {
+    // Respaldo silencioso: si localStorage falla, seguimos con el fallback importado.
+  }
+}
+
+function normalizarTextoCatalogo(texto) {
+  return String(texto || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function productosCatalogoPorCategoria(productos, categoria, fallback = [], { soloConPrecio = true } = {}) {
+  const categoriaNormalizada = normalizarTextoCatalogo(categoria);
+  const filtrados = (productos || [])
+    .filter((producto) => producto?.activo !== false)
+    .filter((producto) => normalizarTextoCatalogo(producto?.linea || "Cafetería") === "cafeteria")
+    .filter((producto) => normalizarTextoCatalogo(producto?.categoria) === categoriaNormalizada)
+    .filter((producto) => !soloConPrecio || Number(producto?.precio || 0) > 0)
+    .sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0) || String(a?.nombre || "").localeCompare(String(b?.nombre || ""), "es"))
+    .map((producto) => ({ nombre: producto.nombre, precio: Number(producto.precio || 0) }));
+
+  return filtrados.length ? filtrados : fallback;
+}
+
+function saboresCatalogoPorCategoria(productos, categoria, fallback = []) {
+  const categoriaNormalizada = normalizarTextoCatalogo(categoria);
+  const filtrados = (productos || [])
+    .filter((producto) => producto?.activo !== false)
+    .filter((producto) => normalizarTextoCatalogo(producto?.linea || "Cafetería") === "cafeteria")
+    .filter((producto) => normalizarTextoCatalogo(producto?.categoria) === categoriaNormalizada)
+    .sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0) || String(a?.nombre || "").localeCompare(String(b?.nombre || ""), "es"))
+    .map((producto) => producto.nombre)
+    .filter(Boolean);
+
+  return filtrados.length ? filtrados : fallback;
+}
 
 export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar }) {
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
@@ -66,6 +125,58 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [postreSeleccionado, setPostreSeleccionado] = useState("");
   const [pedidoMesaConfirmado, setPedidoMesaConfirmado] = useState(null);
   const [cantidadCafeteria, setCantidadCafeteria] = useState(1);
+  const [catalogoProductosMesa, setCatalogoProductosMesa] = useState(() => leerProductosCatalogoStorageMesas());
+
+  useEffect(() => {
+    let activo = true;
+
+    cargarCatalogoProductosAdmin()
+      .then((resultado) => {
+        if (!activo || !resultado?.ok || !Array.isArray(resultado.productos) || !resultado.productos.length) return;
+        setCatalogoProductosMesa(resultado.productos);
+        guardarProductosCatalogoStorageMesas(resultado.productos);
+      })
+      .catch(() => {
+        // No bloquea mesas: conserva catálogo local/fallback si Supabase no responde.
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  const cafeteriaParfaitTamanos = useMemo(
+    () => productosCatalogoPorCategoria(catalogoProductosMesa, "Parfait", CAFETERIA_PARFAIT_TAMANOS),
+    [catalogoProductosMesa]
+  );
+  const cafeteriaDesayunos = useMemo(
+    () => productosCatalogoPorCategoria(catalogoProductosMesa, "Desayunos", CAFETERIA_DESAYUNOS),
+    [catalogoProductosMesa]
+  );
+  const cafeteriaSandwiches = useMemo(
+    () => productosCatalogoPorCategoria(catalogoProductosMesa, "Sándwiches y fritos", CAFETERIA_SANDWICHES),
+    [catalogoProductosMesa]
+  );
+  const cafeteriaBebidasCalientes = useMemo(
+    () => productosCatalogoPorCategoria(catalogoProductosMesa, "Bebidas", CAFETERIA_BEBIDAS_CALIENTES),
+    [catalogoProductosMesa]
+  );
+  const cafeteriaPostres = useMemo(
+    () => productosCatalogoPorCategoria(catalogoProductosMesa, "Postres y ensaladas", CAFETERIA_POSTRES),
+    [catalogoProductosMesa]
+  );
+  const cafeteriaBatidosCremososSabores = useMemo(
+    () => saboresCatalogoPorCategoria(catalogoProductosMesa, "Batidos cremosos", CAFETERIA_BATIDOS_CREMOSOS_SABORES),
+    [catalogoProductosMesa]
+  );
+  const cafeteriaBatidosRefrescantesSabores = useMemo(
+    () => saboresCatalogoPorCategoria(catalogoProductosMesa, "Batidos refrescantes", CAFETERIA_BATIDOS_REFRESCANTES_SABORES),
+    [catalogoProductosMesa]
+  );
+  const cafeteriaJugosTradicionalesSabores = useMemo(
+    () => saboresCatalogoPorCategoria(catalogoProductosMesa, "Jugos tradicionales", CAFETERIA_JUGOS_TRADICIONALES_SABORES),
+    [catalogoProductosMesa]
+  );
 
   const itemsAlmuerzoMesa = useMemo(
     () => itemsMesa.filter((item) => item.categoria !== "cafeteria"),
@@ -278,7 +389,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       return;
     }
 
-    const precioBase = precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait);
+    const precioBase = precioPorNombre(cafeteriaParfaitTamanos, tamanoParfait);
     const extraFrutas = frutasParfait.length === 3 ? 1000 : 0;
     const frutasSeleccionadas = [...frutasParfait];
     const descripcionParfait = `Parfait ${tamanoParfait} - Frutas: ${frutasSeleccionadas.join(", ")}`;
@@ -352,7 +463,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       return;
     }
 
-    const desayunoPrincipal = CAFETERIA_DESAYUNOS.some((item) => item.nombre === desayunoSeleccionado);
+    const desayunoPrincipal = cafeteriaDesayunos.some((item) => item.nombre === desayunoSeleccionado);
     if (desayunoPrincipal && !acompananteDesayuno) {
       setErrorMesa("Selecciona el acompañante del desayuno.");
       return;
@@ -363,7 +474,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       return;
     }
 
-    const precioBase = precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado);
+    const precioBase = precioPorNombre([...cafeteriaDesayunos, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado);
     const precioAdicionales = adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0);
 
     agregarItemCafeteria(crearItemCafeteria({
@@ -663,7 +774,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               <div className="cafeteria-panel fade-step">
                 <h3>Parfait</h3>
                 <div className="option-grid">
-                  {CAFETERIA_PARFAIT_TAMANOS.map((item) => (
+                  {cafeteriaParfaitTamanos.map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setTamanoParfait(item.nombre)} className={`option ${tamanoParfait === item.nombre ? "selected" : ""}`}>
                       <div>{item.nombre}</div>
                       <small>{dinero(item.precio)}</small>
@@ -696,7 +807,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
                 <div className="total-row compact-total-row">
                   <span>Subtotal parfait</span>
-                  <strong>{dinero((precioPorNombre(CAFETERIA_PARFAIT_TAMANOS, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0)) * cantidadCafeteria)}</strong>
+                  <strong>{dinero((precioPorNombre(cafeteriaParfaitTamanos, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0)) * cantidadCafeteria)}</strong>
                 </div>
                 <button type="button" className="button add-meal" onClick={agregarParfaitMesa}>+agregar otro producto</button>
               </div>
@@ -722,10 +833,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     <h4>Sabor</h4>
                     <div className="chips">
                       {(tipoBatido === "cremoso"
-                        ? CAFETERIA_BATIDOS_CREMOSOS_SABORES
+                        ? cafeteriaBatidosCremososSabores
                         : tipoBatido === "refrescante"
-                          ? CAFETERIA_BATIDOS_REFRESCANTES_SABORES
-                          : CAFETERIA_JUGOS_TRADICIONALES_SABORES
+                          ? cafeteriaBatidosRefrescantesSabores
+                          : cafeteriaJugosTradicionalesSabores
                       ).map((sabor) => (
                         <button key={sabor} type="button" onClick={() => setSaborBatido(sabor)} className={`chip ${saborBatido === sabor ? "selected" : ""}`}>{saborBatido === sabor ? "✓ " : "+ "}{sabor}</button>
                       ))}
@@ -777,7 +888,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               <div className="cafeteria-panel fade-step">
                 <h3>Desayunos</h3>
                 <div className="option-grid">
-                  {CAFETERIA_DESAYUNOS.map((item) => (
+                  {cafeteriaDesayunos.map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setDesayunoSeleccionado(item.nombre)} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
                       <div>{item.nombre}</div>
                       <small>{dinero(item.precio)}</small>
@@ -815,7 +926,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
                 <div className="total-row compact-total-row">
                   <span>Subtotal desayuno</span>
-                  <strong>{dinero((precioPorNombre([...CAFETERIA_DESAYUNOS, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0)) * cantidadCafeteria)}</strong>
+                  <strong>{dinero((precioPorNombre([...cafeteriaDesayunos, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0)) * cantidadCafeteria)}</strong>
                 </div>
                 <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+agregar otro producto</button>
               </div>
@@ -825,7 +936,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               <div className="cafeteria-panel fade-step">
                 <h3>Comida</h3>
                 <div className="option-grid">
-                  {CAFETERIA_SANDWICHES.map((item) => (
+                  {cafeteriaSandwiches.map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setSandwichSeleccionado(item.nombre)} className={`option ${sandwichSeleccionado === item.nombre ? "selected" : ""}`}>
                       <div>{item.nombre}</div>
                       <small>{dinero(item.precio)}</small>
@@ -840,7 +951,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     onChange={setCantidadCafeteria}
                   />
                 </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado))}>+agregar otro producto</button>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado))}>+agregar otro producto</button>
               </div>
             )}
 
@@ -848,7 +959,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               <div className="cafeteria-panel fade-step">
                 <h3>Bebidas</h3>
                 <div className="option-grid">
-                  {CAFETERIA_BEBIDAS_CALIENTES.map((item) => (
+                  {cafeteriaBebidasCalientes.map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setBebidaCalienteSeleccionada(item.nombre)} className={`option ${bebidaCalienteSeleccionada === item.nombre ? "selected" : ""}`}>
                       <div>{item.nombre}</div>
                       <small>{dinero(item.precio)}</small>
@@ -863,7 +974,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     onChange={setCantidadCafeteria}
                   />
                 </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada))}>+agregar otro producto</button>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada))}>+agregar otro producto</button>
               </div>
             )}
 
@@ -871,7 +982,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               <div className="cafeteria-panel fade-step">
                 <h3>Postres y frutas</h3>
                 <div className="option-grid">
-                  {CAFETERIA_POSTRES.map((item) => (
+                  {cafeteriaPostres.map((item) => (
                     <button key={item.nombre} type="button" onClick={() => setPostreSeleccionado(item.nombre)} className={`option ${postreSeleccionado === item.nombre ? "selected" : ""}`}>
                       <div>{item.nombre}</div>
                       <small>{dinero(item.precio)}</small>
@@ -886,7 +997,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     onChange={setCantidadCafeteria}
                   />
                 </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado))}>+agregar otro producto</button>
+                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado))}>+agregar otro producto</button>
               </div>
             )}
 
@@ -896,9 +1007,9 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                 if (subcategoriaCafeteria === "parfait") agregarParfaitMesa("resumen");
                 if (subcategoriaCafeteria === "batidos") agregarBatidoMesa("resumen");
                 if (subcategoriaCafeteria === "desayunos") agregarDesayunoMesa("resumen");
-                if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(CAFETERIA_SANDWICHES, sandwichSeleccionado), "resumen");
-                if (subcategoriaCafeteria === "bebidas") agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(CAFETERIA_BEBIDAS_CALIENTES, bebidaCalienteSeleccionada), "resumen");
-                if (subcategoriaCafeteria === "postres") agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(CAFETERIA_POSTRES, postreSeleccionado), "resumen");
+                if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado), "resumen");
+                if (subcategoriaCafeteria === "bebidas") agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada), "resumen");
+                if (subcategoriaCafeteria === "postres") agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado), "resumen");
               }}
               className="button continue-button"
               style={{ marginTop: 12, background: "#16a34a" }}
