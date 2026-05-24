@@ -1,7 +1,7 @@
 {
-  "version": "21G2-FIX-PWA-MESAS-CATALOGO-PRODUCTOS-2026-05-24",
-  "phase": "Fase 21G2 - Corrección PWA y productos de catálogo en mesas",
+  "version": "21G3-ADMIN-TABLAS-ADICIONALES-MESAS-2026-05-24",
+  "phase": "Fase 21G3 - Ajustes admin y adicionales en mesas",
   "date": "2026-05-24",
-  "fase": "21G2",
-  "description": "Corrige desincronización de versión PWA y permite que Panel Mesas use productos activos de catalogo_productos con respaldo local."
+  "fase": "21G3",
+  "description": "Corrige navegación Fin en tablas de Pedidos de hoy y agrega adicionales de almuerzo en Panel Mesas desde catalogo_productos con respaldo local."
 }

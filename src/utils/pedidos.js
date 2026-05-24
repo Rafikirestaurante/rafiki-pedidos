@@ -488,7 +488,12 @@ function buscarPrecioCanonical(lista, nombreNormalizado) {
 export function precioBaseItem(item) {
   const precioActual = Number(item?.precio || item?.precioPlato || item?.precioProteina || 0);
 
-  if (!esItemCafeteria(item)) return precioActual;
+  if (!esItemCafeteria(item)) {
+    const adicionalesAlmuerzo = Array.isArray(item?.adicionalesAlmuerzo)
+      ? item.adicionalesAlmuerzo.reduce((suma, adicional) => suma + Number(adicional.precio || 0), 0)
+      : 0;
+    return precioActual + adicionalesAlmuerzo;
+  }
 
   const tipo = normalizarTexto(item?.tipo);
   const nombreCompleto = normalizarTexto(item?.producto || item?.plato || item?.proteina || item?.nombre);
@@ -718,6 +723,10 @@ export function crearDatosTicketPedido(pedido, opciones = {}) {
           const limpio = textoMayusculasTicket(acompanante);
           if (limpio && !acompanantes.includes(limpio)) acompanantes.push(limpio);
         });
+      }
+
+      if (Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length) {
+        productos.push(`  ADICIONALES: ${item.adicionalesAlmuerzo.map((adicional) => `${textoMayusculasTicket(adicional.nombre || adicional)}${Number(adicional.precio || 0) ? ` ${dinero(adicional.precio)}` : ""}`).join(", ")}`);
       }
 
       if (item.observacionAcompanantes?.trim()) {

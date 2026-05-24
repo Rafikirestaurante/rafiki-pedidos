@@ -71,11 +71,12 @@ function normalizarTextoCatalogo(texto) {
     .trim();
 }
 
-function productosCatalogoPorCategoria(productos, categoria, fallback = [], { soloConPrecio = true } = {}) {
+function productosCatalogoPorCategoria(productos, categoria, fallback = [], { soloConPrecio = true, linea = "Cafetería" } = {}) {
   const categoriaNormalizada = normalizarTextoCatalogo(categoria);
+  const lineaNormalizada = normalizarTextoCatalogo(linea);
   const filtrados = (productos || [])
     .filter((producto) => producto?.activo !== false)
-    .filter((producto) => normalizarTextoCatalogo(producto?.linea || "Cafetería") === "cafeteria")
+    .filter((producto) => normalizarTextoCatalogo(producto?.linea || "Cafetería") === lineaNormalizada)
     .filter((producto) => normalizarTextoCatalogo(producto?.categoria) === categoriaNormalizada)
     .filter((producto) => !soloConPrecio || Number(producto?.precio || 0) > 0)
     .sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0) || String(a?.nombre || "").localeCompare(String(b?.nombre || ""), "es"))
@@ -126,6 +127,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [pedidoMesaConfirmado, setPedidoMesaConfirmado] = useState(null);
   const [cantidadCafeteria, setCantidadCafeteria] = useState(1);
   const [catalogoProductosMesa, setCatalogoProductosMesa] = useState(() => leerProductosCatalogoStorageMesas());
+  const [adicionalesAlmuerzoAbiertos, setAdicionalesAlmuerzoAbiertos] = useState({});
 
   useEffect(() => {
     let activo = true;
@@ -175,6 +177,18 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   );
   const cafeteriaJugosTradicionalesSabores = useMemo(
     () => saboresCatalogoPorCategoria(catalogoProductosMesa, "Jugos tradicionales", CAFETERIA_JUGOS_TRADICIONALES_SABORES),
+    [catalogoProductosMesa]
+  );
+  const restauranteAdicionalesAlmuerzo = useMemo(
+    () => productosCatalogoPorCategoria(
+      catalogoProductosMesa,
+      "Adicionales almuerzo",
+      [
+        { nombre: "Papas Fritas", precio: 5000 },
+        { nombre: "Porción de Pechuga o cerdo", precio: 7000 }
+      ],
+      { linea: "Restaurante" }
+    ),
     [catalogoProductosMesa]
   );
 
@@ -253,6 +267,27 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
         return { ...item, acompanantes: nuevosAcompanantes };
       })
     );
+  }
+
+  function alternarAdicionalAlmuerzoMesa(id, adicional) {
+    vibracionCortaMesas();
+    setItemsMesa((actual) =>
+      actual.map((item) => {
+        if (item.id !== id) return item;
+        const actuales = Array.isArray(item.adicionalesAlmuerzo) ? item.adicionalesAlmuerzo : [];
+        const existe = actuales.some((x) => x.nombre === adicional.nombre);
+        return {
+          ...item,
+          adicionalesAlmuerzo: existe
+            ? actuales.filter((x) => x.nombre !== adicional.nombre)
+            : [...actuales, { nombre: adicional.nombre, precio: Number(adicional.precio || 0) }]
+        };
+      })
+    );
+  }
+
+  function alternarPanelAdicionalesAlmuerzo(id) {
+    setAdicionalesAlmuerzoAbiertos((actual) => ({ ...actual, [id]: !actual[id] }));
   }
 
   function agregarAlmuerzoMesa() {
@@ -671,6 +706,36 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                         )}
                       </div>
 
+                      <div className="mesa-adicionales-almuerzo">
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={() => alternarPanelAdicionalesAlmuerzo(item.id)}
+                        >
+                          {adicionalesAlmuerzoAbiertos[item.id] ? "Ocultar adicionales" : "+ Adicionales"}
+                        </button>
+
+                        {adicionalesAlmuerzoAbiertos[item.id] && (
+                          <div className="chips adicionales-almuerzo-chips">
+                            {restauranteAdicionalesAlmuerzo.map((adicional) => {
+                              const adicionalesItem = Array.isArray(item.adicionalesAlmuerzo) ? item.adicionalesAlmuerzo : [];
+                              const seleccionado = adicionalesItem.some((x) => x.nombre === adicional.nombre);
+
+                              return (
+                                <button
+                                  key={adicional.nombre}
+                                  type="button"
+                                  onClick={() => alternarAdicionalAlmuerzoMesa(item.id, adicional)}
+                                  className={`chip ${seleccionado ? "selected" : ""}`}
+                                >
+                                  {seleccionado ? "✓ " : "+ "}{adicional.nombre} · {dinero(adicional.precio)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
                     </div>
                   )}
 
@@ -1077,6 +1142,9 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                       <>
                         {item.categoria && <p>Categoría: {item.categoria}</p>}
                         {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                        {!itemEsSopa && Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length > 0 && (
+                          <p>Adicionales: {item.adicionalesAlmuerzo.map((x) => `${x.nombre} ${dinero(x.precio)}`).join(", ")}</p>
+                        )}
                         {!itemEsSopa && item.observacionAcompanantes?.trim() && (
                           <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                         )}

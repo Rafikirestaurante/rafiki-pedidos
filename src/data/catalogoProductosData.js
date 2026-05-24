@@ -46,5 +46,7 @@ export const PRODUCTOS_CATALOGO_FALLBACK = [
   crearProductoCatalogo("Cerdo asado sin salsa", "Platos", 16000, "Restaurante", 201),
   crearProductoCatalogo("Sopas medianas sin arroz", "Sopas", 7000, "Restaurante", 210),
   crearProductoCatalogo("Sopas medianas con arroz", "Sopas", 9000, "Restaurante", 211),
-  crearProductoCatalogo("Sancocho de pollo con arroz", "Sopas", 15000, "Restaurante", 212)
+  crearProductoCatalogo("Sancocho de pollo con arroz", "Sopas", 15000, "Restaurante", 212),
+  crearProductoCatalogo("Papas Fritas", "Adicionales almuerzo", 5000, "Restaurante", 220),
+  crearProductoCatalogo("Porción de Pechuga o cerdo", "Adicionales almuerzo", 7000, "Restaurante", 221)
 ];

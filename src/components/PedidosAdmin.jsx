@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   calcularTotalItem,
   crearLinkWhatsApp,
@@ -240,16 +240,20 @@ export function resumirItemsPedidoCompacto(pedido) {
     const acomp = Array.isArray(item.acompanantes) && item.acompanantes.length > 0
       ? ` · ${item.acompanantes.join(", ")}`
       : "";
+    const adicionalesAlmuerzo = Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length > 0
+      ? ` · Adicionales: ${item.adicionalesAlmuerzo.map((x) => `${x.nombre || x}${Number(x.precio || 0) ? ` ${dinero(x.precio)}` : ""}`).join(", ")}`
+      : "";
     const obsAcomp = item.observacionAcompanantes?.trim()
       ? ` · Obs: ${item.observacionAcompanantes.trim()}`
       : "";
     const empaque = textoParaLlevarItem(item) ? ` · ${textoParaLlevarItem(item)}` : "";
-    return `${cantidad} x ${nombre}${acomp}${obsAcomp}${empaque}`;
+    return `${cantidad} x ${nombre}${acomp}${adicionalesAlmuerzo}${obsAcomp}${empaque}`;
   }).join(" + ");
 }
 
 function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, pedidosPorPagina = 15 }) {
   const [paginaActual, setPaginaActual] = useState(1);
+  const tablaRef = useRef(null);
   const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
 
   useEffect(() => {
@@ -278,13 +282,20 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
     setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1));
   }, [totalPaginas]);
 
+  const mantenerTablaEnVista = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      tablaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
   const irPaginaFinal = useCallback(() => {
     setPaginaActual(totalPaginas);
-  }, [totalPaginas]);
+    mantenerTablaEnVista();
+  }, [mantenerTablaEnVista, totalPaginas]);
 
   return (
     <>
-    <div className="pedidos-tabla-wrap">
+    <div className="pedidos-tabla-wrap" ref={tablaRef}>
       <table className="pedidos-tabla-compacta">
         <thead>
           <tr>
