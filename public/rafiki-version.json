@@ -1,7 +1,7 @@
 {
-  "version": "20D-MODULARIZAR-FLUJO-CLIENTE-2026-05-23",
-  "phase": "Fase 20D - Modularización flujo cliente",
-  "date": "2026-05-23",
-  "fase": "20D",
-  "description": "Extracción conservadora del flujo cliente y confirmación a componentes separados, sin tocar realtime, offline ni Supabase."
+  "version": "20D2-FIX-FECHA-ACTUAL-MENU-ADMIN-2026-05-24",
+  "phase": "Fase 20D2 - Fecha actual obligatoria en menú admin",
+  "date": "2026-05-24",
+  "fase": "20D2",
+  "description": "Corrige el editor de menú diario y el generador para iniciar con la fecha actual de Colombia, evitando que borradores o caché restauren fechas anteriores."
 }

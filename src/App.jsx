@@ -97,6 +97,13 @@ function guardarBorradorEditorMenuDiario(payload) {
   }
 }
 
+function menuConFechaActual(menuBase) {
+  return {
+    ...menuBase,
+    fecha: fechaISOColombia()
+  };
+}
+
 function borrarBorradorEditorMenuDiario() {
   try {
     window.localStorage.removeItem(MENU_EDITOR_DRAFT_KEY);
@@ -464,7 +471,7 @@ export default function App() {
         setMenu((actual) => ({
           ...actual,
           ...borrador.menu,
-          fecha: borrador.menu.fecha || fechaISOColombia()
+          fecha: fechaISOColombia()
         }));
       }
       if (typeof borrador.platosTexto === "string") setPlatosTexto(borrador.platosTexto);
@@ -475,12 +482,21 @@ export default function App() {
   }, [adminTab]);
 
   useEffect(() => {
+    if (vista !== "admin" || !adminAutenticado || adminTab !== "menu") return;
+
+    setMenu((actual) => {
+      const fechaActual = fechaISOColombia();
+      return actual.fecha === fechaActual ? actual : { ...actual, fecha: fechaActual };
+    });
+  }, [vista, adminAutenticado, adminTab]);
+
+  useEffect(() => {
     if (adminTab !== "menu") return undefined;
 
     const guardarBorradorTimer = window.setTimeout(() => {
       guardarBorradorEditorMenuDiario({
         menu: {
-          fecha: menu.fecha || fechaISOColombia(),
+          fecha: fechaISOColombia(),
           titulo: menu.titulo || "",
           descripcion: menu.descripcion || ""
         },
@@ -620,7 +636,7 @@ export default function App() {
 
           if (menuHashRef.current !== nuevoHash) {
             menuHashRef.current = nuevoHash;
-            setMenu(menuNormalizado);
+            setMenu(adminTab === "menu" ? menuConFechaActual(menuNormalizado) : menuNormalizado);
             guardarMenuCache(menuNormalizado);
             menuCacheDisponibleRef.current = true;
             setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
@@ -654,7 +670,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [mostrarMensaje, recargaMenu]);
+  }, [adminTab, mostrarMensaje, recargaMenu]);
 
   useEffect(() => {
     if (!supabaseConfigOk || !realtimeAdminActivo) return undefined;

@@ -61,7 +61,7 @@ export default function GeneradorMenu() {
   const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) && borradorInicial.platos.length ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
   const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
   const [mensaje, setMensaje] = useState("");
-  const [fechaMenu, setFechaMenu] = useState(() => borradorInicial?.fechaMenu || fechaHoyISO());
+  const [fechaMenu, setFechaMenu] = useState(() => fechaHoyISO());
   const [observaciones, setObservaciones] = useState("");
   const [guardandoHistorial, setGuardandoHistorial] = useState(false);
   const [historial, setHistorial] = useState([]);
