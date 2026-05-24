@@ -1,13 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  CAFETERIA_BATIDOS_CREMOSOS_SABORES,
-  CAFETERIA_BATIDOS_REFRESCANTES_SABORES,
-  CAFETERIA_BEBIDAS_CALIENTES,
-  CAFETERIA_DESAYUNOS,
-  CAFETERIA_JUGOS_TRADICIONALES_SABORES,
-  CAFETERIA_POSTRES,
-  CAFETERIA_SANDWICHES
-} from "../data/menuCafeteria";
+import { PRODUCTOS_CATALOGO_FALLBACK } from "../data/catalogoProductosData";
 import { categoriasSolicitudProductos, productosRestauranteBase } from "../data/solicitudProductosData";
 import { supabaseConfigOk, supabaseConfigMensaje } from "../supabaseClient";
 import {
@@ -15,6 +7,11 @@ import {
   cargarCatalogoInsumosAdmin,
   crearInsumoCatalogoAdmin
 } from "../services/catalogoInsumosService";
+import {
+  actualizarProductoCatalogoAdmin,
+  cargarCatalogoProductosAdmin,
+  crearProductoCatalogoAdmin
+} from "../services/catalogoProductosService";
 
 const STORAGE_CATALOGO_INSUMOS = "rafiki_catalogo_insumos_v1";
 const STORAGE_CATALOGO_PRODUCTOS = "rafiki_catalogo_productos_v1";
@@ -46,17 +43,6 @@ function guardarStorage(clave, data) {
   window.localStorage.setItem(clave, JSON.stringify(data));
 }
 
-function crearProducto(nombre, categoria, precio = "", linea = "Cafetería") {
-  return {
-    id: `${normalizarId(linea)}-${normalizarId(categoria)}-${normalizarId(nombre)}`,
-    linea,
-    categoria,
-    nombre,
-    precio: precio === "" || precio == null ? "" : Number(precio),
-    activo: true
-  };
-}
-
 function crearInsumo(nombre, categoria) {
   return {
     id: `${normalizarId(categoria)}-${normalizarId(nombre)}`,
@@ -71,23 +57,7 @@ function crearInsumo(nombre, categoria) {
   };
 }
 
-const PRODUCTOS_INICIALES = [
-  crearProducto("Parfait 12 oz", "Parfait", 12500),
-  crearProducto("Parfait 16 oz", "Parfait", 16000),
-  crearProducto("Parfait 22 oz", "Parfait", 19000),
-  ...CAFETERIA_DESAYUNOS.map((p) => crearProducto(p.nombre, "Desayunos", p.precio)),
-  ...CAFETERIA_SANDWICHES.map((p) => crearProducto(p.nombre, "Sándwiches y fritos", p.precio)),
-  ...CAFETERIA_POSTRES.map((p) => crearProducto(p.nombre, "Postres y ensaladas", p.precio)),
-  ...CAFETERIA_BEBIDAS_CALIENTES.map((p) => crearProducto(p.nombre, "Bebidas", p.precio)),
-  ...CAFETERIA_BATIDOS_CREMOSOS_SABORES.map((nombre) => crearProducto(nombre, "Batidos cremosos")),
-  ...CAFETERIA_BATIDOS_REFRESCANTES_SABORES.map((nombre) => crearProducto(nombre, "Batidos refrescantes")),
-  ...CAFETERIA_JUGOS_TRADICIONALES_SABORES.map((nombre) => crearProducto(nombre, "Jugos tradicionales")),
-  crearProducto("Pechuga asada sin salsa", "Platos", 16000, "Restaurante"),
-  crearProducto("Cerdo asado sin salsa", "Platos", 16000, "Restaurante"),
-  crearProducto("Sopas medianas sin arroz", "Sopas", 7000, "Restaurante"),
-  crearProducto("Sopas medianas con arroz", "Sopas", 9000, "Restaurante"),
-  crearProducto("Sancocho de pollo con arroz", "Sopas", 15000, "Restaurante")
-];
+const PRODUCTOS_INICIALES = PRODUCTOS_CATALOGO_FALLBACK;
 
 const INSUMOS_INICIALES = productosRestauranteBase.map((item) => crearInsumo(item.nombre, item.categoria));
 
@@ -172,7 +142,9 @@ export default function CatalogoRafa() {
   const [form, setForm] = useState({ linea: "Cafetería", categoria: "", nombre: "", precio: "" });
   const [mensaje, setMensaje] = useState("");
   const [cargandoInsumos, setCargandoInsumos] = useState(false);
+  const [cargandoProductos, setCargandoProductos] = useState(false);
   const [fuenteInsumos, setFuenteInsumos] = useState("local");
+  const [fuenteProductos, setFuenteProductos] = useState("local");
   const [guardando, setGuardando] = useState(false);
 
   const listaActual = tipo === "productos" ? productos : insumos;
@@ -189,10 +161,34 @@ export default function CatalogoRafa() {
   useEffect(() => {
     let activo = true;
 
+    async function cargarProductosDesdeSupabase() {
+      if (!supabaseConfigOk) {
+        setFuenteProductos("local");
+        return;
+      }
+
+      setCargandoProductos(true);
+      const resultado = await cargarCatalogoProductosAdmin();
+      if (!activo) return;
+
+      if (resultado.ok && resultado.productos.length > 0) {
+        setProductos(resultado.productos);
+        guardarStorage(STORAGE_CATALOGO_PRODUCTOS, resultado.productos);
+        setFuenteProductos("bd");
+      } else {
+        setFuenteProductos("local");
+        if (resultado.mensaje) {
+          setMensaje(`No se pudo cargar productos desde Supabase. Se mantiene respaldo local. Detalle: ${resultado.mensaje}`);
+        }
+      }
+
+      setCargandoProductos(false);
+    }
+
     async function cargarInsumosDesdeSupabase() {
       if (!supabaseConfigOk) {
         setFuenteInsumos("local");
-        setMensaje(`Catálogo de insumos usando respaldo local: ${supabaseConfigMensaje}`);
+        setMensaje(`Catálogo usando respaldo local: ${supabaseConfigMensaje}`);
         return;
       }
 
@@ -214,6 +210,7 @@ export default function CatalogoRafa() {
       setCargandoInsumos(false);
     }
 
+    cargarProductosDesdeSupabase();
     cargarInsumosDesdeSupabase();
 
     return () => {
@@ -244,19 +241,65 @@ export default function CatalogoRafa() {
     }
 
     if (tipo === "productos") {
-      const nuevo = {
-        id: editandoId || `${Date.now()}-${normalizarId(nombre)}`,
-        linea: form.linea || "Cafetería",
-        categoria,
-        nombre,
-        precio: form.precio === "" ? "" : Number(form.precio),
-        activo: true
-      };
-      const actualizados = editandoId ? productos.map((item) => item.id === editandoId ? { ...item, ...nuevo, id: item.id, activo: item.activo } : item) : [nuevo, ...productos];
-      setProductos(actualizados);
-      guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
-      setMensaje(editandoId ? "Producto actualizado localmente." : "Producto agregado localmente.");
-      reiniciarFormulario();
+      setGuardando(true);
+      const ordenSiguienteProducto = Math.max(0, ...productos.map((item) => Number(item.orden || 0))) + 1;
+
+      try {
+        if (!supabaseConfigOk) throw new Error(supabaseConfigMensaje);
+
+        let productoGuardado;
+        if (editandoId) {
+          const actual = productos.find((item) => item.id === editandoId);
+          if (!actual?.catalogoId && actual?.origenCatalogo !== "bd") {
+            throw new Error("Este producto existe solo en el respaldo local. Vuelve a cargar Supabase antes de editarlo en BD.");
+          }
+          productoGuardado = await actualizarProductoCatalogoAdmin(actual.catalogoId || actual.id, {
+            linea: form.linea || "Cafetería",
+            categoria,
+            nombre,
+            precio: form.precio
+          });
+        } else {
+          productoGuardado = await crearProductoCatalogoAdmin({
+            linea: form.linea || "Cafetería",
+            categoria,
+            nombre,
+            precio: form.precio,
+            orden: ordenSiguienteProducto
+          });
+        }
+
+        const actualizados = editandoId
+          ? productos.map((item) => item.id === editandoId ? { ...item, ...productoGuardado, activo: item.activo } : item)
+          : [productoGuardado, ...productos];
+        setProductos(actualizados);
+        guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+        setFuenteProductos("bd");
+        setMensaje(editandoId ? "Producto actualizado en Supabase." : "Producto creado en Supabase.");
+        reiniciarFormulario();
+      } catch (error) {
+        const nuevoLocal = {
+          id: editandoId || `${Date.now()}-${normalizarId(nombre)}`,
+          catalogoId: null,
+          linea: form.linea || "Cafetería",
+          categoria,
+          nombre,
+          precio: form.precio === "" ? "" : Number(form.precio),
+          activo: true,
+          orden: ordenSiguienteProducto,
+          origenCatalogo: "local"
+        };
+        const actualizados = editandoId
+          ? productos.map((item) => item.id === editandoId ? { ...item, ...nuevoLocal, id: item.id, activo: item.activo } : item)
+          : [nuevoLocal, ...productos];
+        setProductos(actualizados);
+        guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+        setFuenteProductos("local");
+        setMensaje(`No se pudo guardar producto en Supabase. Cambio guardado como respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+        reiniciarFormulario();
+      } finally {
+        setGuardando(false);
+      }
       return;
     }
 
@@ -331,10 +374,22 @@ export default function CatalogoRafa() {
     const confirmar = window.confirm(tipo === "insumos" ? "¿Ocultar este insumo en el catálogo de Supabase?" : "¿Eliminar este registro del catálogo local?");
     if (!confirmar) return;
     if (tipo === "productos") {
-      const actualizados = productos.filter((item) => item.id !== id);
-      setProductos(actualizados);
-      guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
-      setMensaje("Registro eliminado.");
+      const actual = productos.find((item) => item.id === id);
+      try {
+        if (!supabaseConfigOk) throw new Error(supabaseConfigMensaje);
+        if (!actual?.catalogoId && actual?.origenCatalogo !== "bd") throw new Error("Este producto solo existe en el respaldo local.");
+        const productoActualizado = await actualizarProductoCatalogoAdmin(actual.catalogoId || actual.id, { activo: false });
+        const actualizados = productos.map((item) => item.id === id ? { ...item, ...productoActualizado, activo: false } : item);
+        setProductos(actualizados);
+        guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+        setMensaje("Producto ocultado en Supabase.");
+      } catch (error) {
+        const actualizados = productos.filter((item) => item.id !== id);
+        setProductos(actualizados);
+        guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+        setFuenteProductos("local");
+        setMensaje(`No se pudo actualizar Supabase. Se eliminó solo del respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+      }
       return;
     }
 
@@ -358,9 +413,23 @@ export default function CatalogoRafa() {
 
   async function toggle(id) {
     if (tipo === "productos") {
-      const actualizados = productos.map((item) => item.id === id ? { ...item, activo: !item.activo } : item);
-      setProductos(actualizados);
-      guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+      const actual = productos.find((item) => item.id === id);
+      const nuevoActivoProducto = !actual?.activo;
+      try {
+        if (!supabaseConfigOk) throw new Error(supabaseConfigMensaje);
+        if (!actual?.catalogoId && actual?.origenCatalogo !== "bd") throw new Error("Este producto solo existe en el respaldo local.");
+        const productoActualizado = await actualizarProductoCatalogoAdmin(actual.catalogoId || actual.id, { activo: nuevoActivoProducto });
+        const actualizados = productos.map((item) => item.id === id ? { ...item, ...productoActualizado, activo: nuevoActivoProducto } : item);
+        setProductos(actualizados);
+        guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+        setMensaje(nuevoActivoProducto ? "Producto activado en Supabase." : "Producto ocultado en Supabase.");
+      } catch (error) {
+        const actualizados = productos.map((item) => item.id === id ? { ...item, activo: nuevoActivoProducto } : item);
+        setProductos(actualizados);
+        guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+        setFuenteProductos("local");
+        setMensaje(`Cambio aplicado solo en respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+      }
       return;
     }
 
@@ -392,7 +461,8 @@ export default function CatalogoRafa() {
       setInsumos(INSUMOS_INICIALES);
       guardarStorage(STORAGE_CATALOGO_INSUMOS, INSUMOS_INICIALES);
     }
-    setMensaje(fuenteInsumos === "bd" ? "Productos restaurados. Los insumos siguen conectados a Supabase." : "Catálogo base restaurado.");
+    setFuenteProductos("local");
+    setMensaje(fuenteInsumos === "bd" ? "Productos restaurados localmente. Los insumos siguen conectados a Supabase." : "Catálogo base restaurado localmente.");
     reiniciarFormulario();
   }
 
@@ -401,7 +471,7 @@ export default function CatalogoRafa() {
       <div className="admin-top-row">
         <div>
           <h3>🧾 Catálogo Rafa</h3>
-          <p className="muted">Listado editable de productos e insumos. Insumos conectado a Supabase con respaldo local seguro.</p>
+          <p className="muted">Listado editable de productos e insumos. Productos e insumos conectados a Supabase con respaldo local seguro.</p>
         </div>
         <button type="button" className="button button-secondary" onClick={restaurarBase}>Restaurar base</button>
       </div>
@@ -437,6 +507,12 @@ export default function CatalogoRafa() {
         <span>🔎 Buscar en catálogo</span>
         <input type="search" placeholder="Nombre, categoría o línea" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="catalogo-busqueda" />
       </label>
+
+      {tipo === "productos" && (
+        <div className="alert alert-info" style={{ marginTop: 12 }}>
+          {cargandoProductos ? "Cargando productos desde Supabase..." : fuenteProductos === "bd" ? "Productos conectados a Supabase." : "Productos usando respaldo local."}
+        </div>
+      )}
 
       {tipo === "insumos" && (
         <div className="alert alert-info" style={{ marginTop: 12 }}>

@@ -1,7 +1,7 @@
 {
-  "version": "21E-CATALOGO-INSUMOS-ADMIN-SUPABASE-2026-05-24",
-  "phase": "Fase 21E - Catálogo admin de insumos conectado a Supabase con respaldo local",
+  "version": "21G-CATALOGO-PRODUCTOS-BD-FALLBACK-2026-05-24",
+  "phase": "Fase 21G - Catálogo de productos conectado a Supabase con respaldo local",
   "date": "2026-05-24",
-  "fase": "21E",
-  "description": "Admin > Catálogo > Insumos ahora carga, crea, edita, activa y oculta insumos contra catalogo_insumos en Supabase. Si Supabase falla, conserva respaldo local para evitar bloqueo operativo."
+  "fase": "21G",
+  "description": "Admin > Catálogo > Productos ahora carga, crea, edita, activa y oculta productos contra catalogo_productos en Supabase. Si Supabase falla, conserva respaldo local para evitar bloqueo operativo. No conecta todavía el flujo /cliente ni impresión."
 }
