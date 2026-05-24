@@ -6,11 +6,15 @@ import CampoTexto from "./insumos/CampoTexto";
 import { useAlertaRafiki, useConfirmacion } from "./common";
 import { CATEGORIA_SOLICITUD_DEFECTO, categoriasSolicitudProductos } from "../data/solicitudProductosData";
 import {
+  cargarCatalogoInsumosSolicitud,
+  crearProductosSolicitudFallback,
+  reconciliarCatalogoConSolicitudActual
+} from "../services/catalogoInsumosService";
+import {
   agruparProductosSolicitud,
   cargarEstadoPendientesCompra,
   crearMensajeCompraProveedores,
   crearMensajeSolicitudProductos,
-  crearProductosSolicitudInicial,
   guardarEstadoPendientesCompra,
   obtenerInsumosDeSolicitud,
   obtenerProductosPendientesDesdeSolicitudes,
@@ -67,7 +71,7 @@ export default function SolicitudProductos() {
   const borradorInicial = leerBorradorSolicitudInsumos();
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
-  const [productosSolicitud, setProductosSolicitud] = useState(() => Array.isArray(borradorInicial?.productosSolicitud) && borradorInicial.productosSolicitud.length ? borradorInicial.productosSolicitud : crearProductosSolicitudInicial());
+  const [productosSolicitud, setProductosSolicitud] = useState(() => Array.isArray(borradorInicial?.productosSolicitud) && borradorInicial.productosSolicitud.length ? borradorInicial.productosSolicitud : crearProductosSolicitudFallback());
   const [fechaParaSolicitud, setFechaParaSolicitud] = useState(() => borradorInicial?.fechaParaSolicitud || fechaISOColombia());
   const [observacionesSolicitud, setObservacionesSolicitud] = useState(() => borradorInicial?.observacionesSolicitud || "");
   const [mensajeSolicitud, setMensajeSolicitud] = useState({ texto: "", tipo: "info" });
@@ -83,6 +87,39 @@ export default function SolicitudProductos() {
   const [mensajePendientes, setMensajePendientes] = useState({ texto: "", tipo: "info" });
   const [fechaConsultaSolicitudes, setFechaConsultaSolicitudes] = useState(fechaISOColombia());
   const [yaExisteSolicitudHoy, setYaExisteSolicitudHoy] = useState(false);
+  const [catalogoInsumos, setCatalogoInsumos] = useState({
+    cargando: true,
+    fuente: "local",
+    mensaje: "Cargando catálogo de insumos..."
+  });
+
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarCatalogo() {
+      const resultado = await cargarCatalogoInsumosSolicitud();
+      if (!activo) return;
+
+      setProductosSolicitud((actual) =>
+        reconciliarCatalogoConSolicitudActual(resultado.productos, actual)
+      );
+
+      setCatalogoInsumos({
+        cargando: false,
+        fuente: resultado.fuente,
+        mensaje: resultado.ok
+          ? resultado.mensaje
+          : `Usando lista local de respaldo. Motivo: ${resultado.mensaje}`
+      });
+    }
+
+    cargarCatalogo();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!mensajeSolicitud.texto) return;
@@ -113,6 +150,15 @@ export default function SolicitudProductos() {
     () => agruparProductosSolicitud(productosSolicitud),
     [productosSolicitud]
   );
+
+  const categoriasSolicitudDisponibles = useMemo(() => {
+    const categorias = new Set(categoriasSolicitudProductos);
+    productosSolicitud.forEach((producto) => {
+      const categoria = String(producto?.categoria || "").trim();
+      if (categoria) categorias.add(categoria);
+    });
+    return Array.from(categorias);
+  }, [productosSolicitud]);
 
   const productosPendientesCompra = useMemo(() => {
     const pendientesBase = obtenerProductosPendientesDesdeSolicitudes(solicitudesGuardadas, fechaConsultaSolicitudes);
@@ -519,7 +565,14 @@ export default function SolicitudProductos() {
   }
 
   function limpiarSolicitudProductos() {
-    setProductosSolicitud(crearProductosSolicitudInicial());
+    setProductosSolicitud((actual) =>
+      actual.map((producto) => ({
+        ...producto,
+        cantidad: "",
+        nota: "",
+        seleccionada: false
+      }))
+    );
     setFechaParaSolicitud(fechaISOColombia());
     setObservacionesSolicitud("");
     setNuevoProductoSolicitudNombre("");
@@ -590,6 +643,14 @@ export default function SolicitudProductos() {
 
                       <div className="alert alert-info">
                         Puedes hacer varias solicitudes en el día, siempre que no repitas el mismo insumo.
+                        <br />
+                        <span className="small">
+                          {catalogoInsumos.cargando
+                            ? "Cargando catálogo..."
+                            : catalogoInsumos.fuente === "bd"
+                              ? "Catálogo conectado a Supabase."
+                              : "Catálogo local de respaldo activo."}
+                        </span>
                       </div>
 
                       {mensajeSolicitud.texto && (
@@ -676,7 +737,7 @@ export default function SolicitudProductos() {
                             value={nuevoProductoSolicitudCategoria}
                             onChange={(e) => setNuevoProductoSolicitudCategoria(e.target.value)}
                           >
-                            {categoriasSolicitudProductos.map((categoria) => (
+                            {categoriasSolicitudDisponibles.map((categoria) => (
                               <option key={categoria} value={categoria}>
                                 {categoria}
                               </option>

@@ -1,7 +1,7 @@
 {
-  "version": "20D3-FIX-CICLO-ACTUALIZACION-PWA-2026-05-24",
-  "phase": "Fase 20D3 - Corrección ciclo de actualización PWA",
+  "version": "21C-CATALOGO-INSUMOS-SUPABASE-FALLBACK-2026-05-24",
+  "phase": "Fase 21C - Solicitud de insumos conectada a catálogo Supabase con fallback local",
   "date": "2026-05-24",
-  "fase": "20D3",
-  "description": "Sincroniza la versión interna de la app con el archivo público rafiki-version.json para evitar que el aviso de nueva versión reaparezca después de limpiar caché y actualizar."
+  "fase": "21C",
+  "description": "La pantalla Solicitud de insumos carga el catálogo activo desde Supabase y usa la lista local como respaldo si la BD no responde o no tiene insumos activos."
 }
