@@ -727,7 +727,6 @@ export const appStyles = `
   }
 }
 
-`;
 
 .catalogo-resumen-mini {
   display: flex;
@@ -770,3 +769,4 @@ export const appStyles = `
     width: 100%;
   }
 }
+`;
