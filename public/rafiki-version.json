@@ -1,7 +1,7 @@
 {
-  "version": "22A-22B-22D-CATALOGO-ACTIVO-AGOTADO-PRECIO-2026-05-25",
-  "phase": "Fase 22A-22B-22D - Catálogo operativo",
+  "version": "22O-22N-ESTABILIDAD-PWA-RENDIMIENTO-2026-05-25",
+  "phase": "Fase 22O/22N - Optimización rendimiento y PWA",
   "date": "2026-05-25",
-  "fase": "22A-22B-22D",
-  "description": "Agrega control de productos activos/inactivos, agotados temporalmente y edición rápida de precios desde Catálogo Rafa."
+  "fase": "22O/22N",
+  "description": "Reduce recargas innecesarias, estabiliza aviso de versión PWA, evita pantallas de recuperación por fallos de red normales y mejora carga de pedidos solo en la pestaña correspondiente."
 }

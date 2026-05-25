@@ -681,26 +681,49 @@ export default function App() {
   useEffect(() => {
     if (!supabaseConfigOk || !realtimeAdminActivo) return undefined;
 
+    let ultimaRecargaMenu = 0;
+    let recargaMenuPendiente = null;
+
+    const pedirRecargaMenu = () => {
+      if (adminTabRef.current === "menu") return;
+
+      const ahora = Date.now();
+      const tiempoDesdeUltima = ahora - ultimaRecargaMenu;
+
+      if (tiempoDesdeUltima >= 2000) {
+        ultimaRecargaMenu = ahora;
+        setRecargaMenu((actual) => actual + 1);
+        return;
+      }
+
+      if (recargaMenuPendiente) return;
+
+      recargaMenuPendiente = window.setTimeout(() => {
+        recargaMenuPendiente = null;
+        if (adminTabRef.current === "menu") return;
+        ultimaRecargaMenu = Date.now();
+        setRecargaMenu((actual) => actual + 1);
+      }, 2000 - tiempoDesdeUltima);
+    };
+
     const canalMenu = supabase
       .channel(`${instanciaRealtimeRef.current}-menu`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "menu_diario" },
-        () => {
-          if (adminTab === "menu") return;
-          setRecargaMenu((actual) => actual + 1);
-        }
+        pedirRecargaMenu
       )
       .subscribe();
 
     return () => {
+      if (recargaMenuPendiente) window.clearTimeout(recargaMenuPendiente);
       supabase.removeChannel(canalMenu);
     };
-  }, [adminTab, realtimeAdminActivo]);
+  }, [realtimeAdminActivo]);
 
   useEffect(() => {
     let cancelado = false;
-    const debeCargarPedidos = vista === "admin" && adminAutenticado;
+    const debeCargarPedidos = vista === "admin" && adminAutenticado && adminTab === "pedidos";
 
     if (!debeCargarPedidos) {
       setCargandoPedidos(false);
@@ -770,7 +793,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [vista, adminAutenticado, filtroPedidos, fechaSeleccionada, recargaPedidos]);
+  }, [vista, adminAutenticado, adminTab, filtroPedidos, fechaSeleccionada, recargaPedidos]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>

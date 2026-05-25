@@ -50,13 +50,13 @@ export function mostrarPantallaRecuperacionPWA(error) {
 export function activarRecuperacionPWA() {
   window.addEventListener('error', (event) => {
     const texto = event?.message || '';
-    const esChunk = /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|MIME type|module/i.test(texto);
+    const esChunk = /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|MIME type|dynamically imported module|chunk/i.test(texto);
     if (esChunk) mostrarPantallaRecuperacionPWA(event.error || event);
   });
 
   window.addEventListener('unhandledrejection', (event) => {
     const texto = event?.reason?.message || String(event?.reason || '');
-    const esChunk = /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|fetch/i.test(texto);
+    const esChunk = /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|MIME type|dynamically imported module|chunk/i.test(texto);
     if (esChunk) mostrarPantallaRecuperacionPWA(event.reason || event);
   });
 }

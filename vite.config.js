@@ -64,8 +64,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'logo-rafiki.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'],
       manifest: rafikiManifest,
       workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
+        skipWaiting: false,
+        clientsClaim: false,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
