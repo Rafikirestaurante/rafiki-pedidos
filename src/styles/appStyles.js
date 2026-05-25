@@ -728,3 +728,45 @@ export const appStyles = `
 }
 
 `;
+
+.catalogo-resumen-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.catalogo-resumen-mini span {
+  border: 1px solid #bbf7d0;
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 12.5px;
+  color: #166534;
+}
+
+.catalogo-filtros-avanzados {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.7fr) minmax(150px, 1fr) minmax(150px, 0.9fr) minmax(150px, 0.9fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.catalogo-filtros-avanzados .field,
+.catalogo-filtros-avanzados .field-label {
+  margin: 0;
+}
+
+.catalogo-limpiar-filtros {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .catalogo-filtros-avanzados {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogo-limpiar-filtros {
+    width: 100%;
+  }
+}

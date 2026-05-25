@@ -174,6 +174,9 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggleActivo, onTo
 export default function CatalogoRafa() {
   const [tipo, setTipo] = useState("productos_restaurante");
   const [busqueda, setBusqueda] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
+  const [estadoFiltro, setEstadoFiltro] = useState("todos");
+  const [ordenFiltro, setOrdenFiltro] = useState("categoria");
   const [productos, setProductos] = useState(() => leerStorage(STORAGE_CATALOGO_PRODUCTOS, PRODUCTOS_INICIALES));
   const [insumos, setInsumos] = useState(() => leerStorage(STORAGE_CATALOGO_INSUMOS, INSUMOS_INICIALES));
   const [editandoId, setEditandoId] = useState("");
@@ -197,11 +200,53 @@ export default function CatalogoRafa() {
   const categoriasInsumo = useMemo(() => [...new Set([...categoriasSolicitudProductos, ...insumos.map((item) => item.categoria).filter(Boolean)])].sort(), [insumos]);
   const categoriasActuales = esProductos ? categoriasProducto : categoriasInsumo;
 
+  const resumenCatalogo = useMemo(() => {
+    const activos = listaActual.filter((item) => item.activo !== false).length;
+    const inactivos = listaActual.filter((item) => item.activo === false).length;
+    const agotados = esProductos ? listaActual.filter((item) => item.agotado).length : 0;
+    return { activos, inactivos, agotados, total: listaActual.length };
+  }, [esProductos, listaActual]);
+
   const listaFiltrada = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return listaActual;
-    return listaActual.filter((item) => [item.linea, item.categoria, item.nombre].filter(Boolean).join(" ").toLowerCase().includes(q));
-  }, [busqueda, listaActual]);
+    const terminos = busqueda
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const filtrados = listaActual.filter((item) => {
+      const texto = [item.linea, item.categoria, item.nombre, item.proveedor, item.unidadBase]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      const coincideBusqueda = terminos.length === 0 || terminos.every((termino) => texto.includes(termino));
+      const coincideCategoria = categoriaFiltro === "todas" || item.categoria === categoriaFiltro;
+      const coincideEstado =
+        estadoFiltro === "todos" ||
+        (estadoFiltro === "activos" && item.activo !== false && !item.agotado) ||
+        (estadoFiltro === "inactivos" && item.activo === false) ||
+        (estadoFiltro === "agotados" && Boolean(item.agotado));
+
+      return coincideBusqueda && coincideCategoria && coincideEstado;
+    });
+
+    return [...filtrados].sort((a, b) => {
+      if (ordenFiltro === "nombre") return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
+      if (ordenFiltro === "precio") return Number(b.precio || 0) - Number(a.precio || 0);
+      if (ordenFiltro === "estado") return Number(a.activo === false) - Number(b.activo === false) || Number(b.agotado || 0) - Number(a.agotado || 0);
+      return String(a.categoria || "").localeCompare(String(b.categoria || ""), "es") || Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
+    });
+  }, [busqueda, categoriaFiltro, estadoFiltro, listaActual, ordenFiltro]);
+
+  const filtrosActivos = Boolean(busqueda.trim()) || categoriaFiltro !== "todas" || estadoFiltro !== "todos" || ordenFiltro !== "categoria";
+
+  function limpiarFiltrosCatalogo() {
+    setBusqueda("");
+    setCategoriaFiltro("todas");
+    setEstadoFiltro("todos");
+    setOrdenFiltro("categoria");
+  }
 
   useEffect(() => {
     let activo = true;
@@ -273,6 +318,9 @@ export default function CatalogoRafa() {
   function cambiarTipo(nuevoTipo) {
     setTipo(nuevoTipo);
     setBusqueda("");
+    setCategoriaFiltro("todas");
+    setEstadoFiltro("todos");
+    setOrdenFiltro("categoria");
     setMensaje("");
     setEditandoId("");
     const esNuevoProductos = nuevoTipo === "productos_restaurante" || nuevoTipo === "productos_cafeteria";
@@ -610,10 +658,47 @@ export default function CatalogoRafa() {
         </button>
       </div>
 
-      <label className="field catalogo-busqueda-field" style={{ marginTop: 12 }}>
-        <span>🔎 Buscar en catálogo</span>
-        <input type="search" placeholder="Nombre, categoría o línea" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="catalogo-busqueda" />
-      </label>
+      <div className="catalogo-resumen-mini" style={{ marginTop: 12 }}>
+        <span><strong>{resumenCatalogo.total}</strong> registros</span>
+        <span><strong>{resumenCatalogo.activos}</strong> activos</span>
+        <span><strong>{resumenCatalogo.inactivos}</strong> inactivos</span>
+        {esProductos && <span><strong>{resumenCatalogo.agotados}</strong> agotados</span>}
+      </div>
+
+      <div className="catalogo-filtros-avanzados" style={{ marginTop: 12 }}>
+        <label className="field catalogo-busqueda-field">
+          <span>🔎 Buscar en catálogo</span>
+          <input type="search" placeholder="Ej: pechuga asada, sopa arroz, parfait" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="catalogo-busqueda" />
+        </label>
+        <label className="field-label">
+          Categoría
+          <select value={categoriaFiltro} onChange={(e) => setCategoriaFiltro(e.target.value)}>
+            <option value="todas">Todas</option>
+            {categoriasActuales.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
+        </label>
+        <label className="field-label">
+          Estado
+          <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}>
+            <option value="todos">Todos</option>
+            <option value="activos">Activos disponibles</option>
+            <option value="inactivos">Inactivos</option>
+            {esProductos && <option value="agotados">Agotados</option>}
+          </select>
+        </label>
+        <label className="field-label">
+          Ordenar por
+          <select value={ordenFiltro} onChange={(e) => setOrdenFiltro(e.target.value)}>
+            <option value="categoria">Categoría / orden</option>
+            <option value="nombre">Nombre</option>
+            {esProductos && <option value="precio">Precio mayor a menor</option>}
+            <option value="estado">Estado</option>
+          </select>
+        </label>
+        <button type="button" className="button button-secondary catalogo-limpiar-filtros" onClick={limpiarFiltrosCatalogo} disabled={!filtrosActivos}>
+          Limpiar filtros
+        </button>
+      </div>
 
       {esProductos && (
         <div className="alert alert-info" style={{ marginTop: 12 }}>
