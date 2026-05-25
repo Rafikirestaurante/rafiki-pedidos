@@ -121,13 +121,13 @@ function ordenarAcompanantesResumen(items = []) {
 
 function productosRestauranteFallback() {
   return PRODUCTOS_CATALOGO_FALLBACK
-    .filter((item) => item.linea === "Restaurante" && item.activo !== false)
+    .filter((item) => item.linea === "Restaurante" && item.activo !== false && item.agotado !== true)
     .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
 }
 
 function filtrarCatalogoMenu(productos, categoria) {
   return productos
-    .filter((item) => item.linea === "Restaurante" && item.categoria === categoria && item.activo !== false)
+    .filter((item) => item.linea === "Restaurante" && item.categoria === categoria && item.activo !== false && item.agotado !== true)
     .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
 }
 
@@ -195,7 +195,7 @@ export default function GeneradorMenu() {
 
       if (resultado.ok && resultado.productos?.length) {
         const restaurante = resultado.productos
-          .filter((item) => item.linea === "Restaurante" && item.activo !== false)
+          .filter((item) => item.linea === "Restaurante" && item.activo !== false && item.agotado !== true)
           .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
         if (restaurante.length) {
           setCatalogoRestaurante(restaurante);

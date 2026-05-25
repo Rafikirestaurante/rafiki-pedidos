@@ -75,7 +75,7 @@ function productosCatalogoPorCategoria(productos, categoria, fallback = [], { so
   const categoriaNormalizada = normalizarTextoCatalogo(categoria);
   const lineaNormalizada = normalizarTextoCatalogo(linea);
   const filtrados = (productos || [])
-    .filter((producto) => producto?.activo !== false)
+    .filter((producto) => producto?.activo !== false && producto?.agotado !== true)
     .filter((producto) => normalizarTextoCatalogo(producto?.linea || "Cafetería") === lineaNormalizada)
     .filter((producto) => normalizarTextoCatalogo(producto?.categoria) === categoriaNormalizada)
     .filter((producto) => !soloConPrecio || Number(producto?.precio || 0) > 0)
@@ -88,7 +88,7 @@ function productosCatalogoPorCategoria(productos, categoria, fallback = [], { so
 function saboresCatalogoPorCategoria(productos, categoria, fallback = []) {
   const categoriaNormalizada = normalizarTextoCatalogo(categoria);
   const filtrados = (productos || [])
-    .filter((producto) => producto?.activo !== false)
+    .filter((producto) => producto?.activo !== false && producto?.agotado !== true)
     .filter((producto) => normalizarTextoCatalogo(producto?.linea || "Cafetería") === "cafeteria")
     .filter((producto) => normalizarTextoCatalogo(producto?.categoria) === categoriaNormalizada)
     .sort((a, b) => Number(a?.orden || 0) - Number(b?.orden || 0) || String(a?.nombre || "").localeCompare(String(b?.nombre || ""), "es"))

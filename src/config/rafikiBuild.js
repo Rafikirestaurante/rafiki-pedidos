@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD_INFO = {
-  version: '21J7-FIX-GUARDAR-MENU-DIARIO-2026-05-25',
-  phase: 'Fase 21J7 - Fix guardar menú diario',
+  version: '22A-22B-22D-CATALOGO-ACTIVO-AGOTADO-PRECIO-2026-05-25',
+  phase: 'Fase 22A-22B-22D - Catálogo operativo',
   date: '2026-05-25',
-  fase: '21J7',
+  fase: '22A-22B-22D',
   description:
-    'Corrige el guardado del menú diario restaurando la utilidad de limpieza de acompañantes usada por el editor de menú.'
+    'Agrega control de productos activos/inactivos, agotados temporalmente y edición rápida de precios desde Catálogo Rafa.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD_INFO.version;

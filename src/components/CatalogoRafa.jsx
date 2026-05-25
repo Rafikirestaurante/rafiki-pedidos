@@ -67,7 +67,7 @@ function dineroCatalogo(valor) {
   return numero.toLocaleString("es-CO", { maximumFractionDigits: 0 });
 }
 
-function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggle }) {
+function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggleActivo, onToggleAgotado, onPrecioRapido }) {
   if (!items.length) return <div className="alert alert-info">No hay registros con ese filtro.</div>;
 
   return (
@@ -77,6 +77,7 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggle }) {
           <thead>
             <tr>
               <th>Estado</th>
+              {tipo === "productos" && <th>Agotado</th>}
               {tipo === "productos" && <th>Línea</th>}
               <th>Categoría</th>
               <th>Nombre</th>
@@ -88,14 +89,33 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggle }) {
             {items.map((item) => (
               <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.55 }}>
                 <td>
-                  <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggle(item.id)}>
-                    {item.activo ? "Activo" : "Oculto"}
+                  <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggleActivo(item.id)}>
+                    {item.activo ? "Activo" : "Inactivo"}
                   </button>
                 </td>
+                {tipo === "productos" && (
+                  <td>
+                    <button type="button" className={item.agotado ? "badge badge-pendiente" : "badge badge-finalizado"} onClick={() => onToggleAgotado(item.id)}>
+                      {item.agotado ? "Agotado" : "Disponible"}
+                    </button>
+                  </td>
+                )}
                 {tipo === "productos" && <td>{item.linea}</td>}
                 <td>{item.categoria}</td>
                 <td><strong>{item.nombre}</strong></td>
-                {tipo === "productos" && <td>{item.precio ? `$ ${dineroCatalogo(item.precio)}` : "—"}</td>}
+                {tipo === "productos" && (
+                  <td>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={item.precio ?? ""}
+                      onChange={(e) => onPrecioRapido(item.id, e.target.value)}
+                      className="catalogo-precio-rapido"
+                      aria-label={`Precio de ${item.nombre}`}
+                    />
+                  </td>
+                )}
                 <td>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button type="button" className="button button-small" onClick={() => onEditar(item)}>Editar</button>
@@ -113,16 +133,34 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggle }) {
           <article key={item.id} className="catalogo-card" style={{ opacity: item.activo ? 1 : 0.6 }}>
             <div className="catalogo-card-head">
               <strong>{item.nombre}</strong>
-              <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggle(item.id)}>
-                {item.activo ? "Activo" : "Oculto"}
+              <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggleActivo(item.id)}>
+                {item.activo ? "Activo" : "Inactivo"}
               </button>
             </div>
             <div className="catalogo-card-meta">
               {tipo === "productos" && <span>{item.linea}</span>}
               <span>{item.categoria}</span>
-              {tipo === "productos" && <span>{item.precio ? `$ ${dineroCatalogo(item.precio)}` : "Sin precio"}</span>}
+              {tipo === "productos" && <span>{item.agotado ? "Agotado temporal" : "Disponible"}</span>}
             </div>
+            {tipo === "productos" && (
+              <label className="field-label" style={{ marginTop: 8 }}>
+                Precio rápido
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={item.precio ?? ""}
+                  onChange={(e) => onPrecioRapido(item.id, e.target.value)}
+                  className="catalogo-precio-rapido"
+                />
+              </label>
+            )}
             <div className="catalogo-card-actions">
+              {tipo === "productos" && (
+                <button type="button" className={item.agotado ? "button button-small button-secondary" : "button button-small"} onClick={() => onToggleAgotado(item.id)}>
+                  {item.agotado ? "Marcar disponible" : "Marcar agotado"}
+                </button>
+              )}
               <button type="button" className="button button-small" onClick={() => onEditar(item)}>Editar</button>
               <button type="button" className="button button-small button-danger" onClick={() => onEliminar(item.id)}>Eliminar</button>
             </div>
@@ -297,6 +335,7 @@ export default function CatalogoRafa() {
           nombre,
           precio: form.precio === "" ? "" : Number(form.precio),
           activo: true,
+          agotado: false,
           orden: ordenSiguienteProducto,
           origenCatalogo: "local"
         };
@@ -422,7 +461,7 @@ export default function CatalogoRafa() {
     }
   }
 
-  async function toggle(id) {
+  async function toggleActivo(id) {
     if (esProductos) {
       const actual = productos.find((item) => item.id === id);
       const nuevoActivoProducto = !actual?.activo;
@@ -462,6 +501,51 @@ export default function CatalogoRafa() {
       setMensaje(`Cambio aplicado solo en respaldo local. Detalle: ${error?.message || "error desconocido"}`);
     }
   }
+
+  async function toggleAgotado(id) {
+    const actual = productos.find((item) => item.id === id);
+    if (!actual) return;
+    const nuevoAgotado = !actual.agotado;
+
+    try {
+      if (!supabaseConfigOk) throw new Error(supabaseConfigMensaje);
+      if (!actual?.catalogoId && actual?.origenCatalogo !== "bd") throw new Error("Este producto solo existe en el respaldo local.");
+      const productoActualizado = await actualizarProductoCatalogoAdmin(actual.catalogoId || actual.id, { agotado: nuevoAgotado });
+      const actualizados = productos.map((item) => item.id === id ? { ...item, ...productoActualizado, agotado: nuevoAgotado } : item);
+      setProductos(actualizados);
+      guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+      setMensaje(nuevoAgotado ? "Producto marcado como agotado temporalmente." : "Producto marcado como disponible.");
+    } catch (error) {
+      const actualizados = productos.map((item) => item.id === id ? { ...item, agotado: nuevoAgotado } : item);
+      setProductos(actualizados);
+      guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+      setFuenteProductos("local");
+      setMensaje(`Cambio aplicado solo en respaldo local. Para guardar agotados en Supabase agrega la columna agotado. Detalle: ${error?.message || "error desconocido"}`);
+    }
+  }
+
+  async function precioRapido(id, valor) {
+    const actual = productos.find((item) => item.id === id);
+    if (!actual) return;
+    const precio = valor === "" ? "" : Number(valor);
+    const actualizadosRapidos = productos.map((item) => item.id === id ? { ...item, precio } : item);
+    setProductos(actualizadosRapidos);
+    guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizadosRapidos);
+
+    try {
+      if (!supabaseConfigOk) throw new Error(supabaseConfigMensaje);
+      if (!actual?.catalogoId && actual?.origenCatalogo !== "bd") throw new Error("Este producto solo existe en el respaldo local.");
+      const productoActualizado = await actualizarProductoCatalogoAdmin(actual.catalogoId || actual.id, { precio });
+      const actualizados = actualizadosRapidos.map((item) => item.id === id ? { ...item, ...productoActualizado, precio } : item);
+      setProductos(actualizados);
+      guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
+      setMensaje("Precio actualizado.");
+    } catch (error) {
+      setFuenteProductos("local");
+      setMensaje(`Precio cambiado solo en respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+    }
+  }
+
 
   function restaurarBase() {
     const confirmar = window.confirm("¿Restaurar el catálogo base? Esto reemplaza los cambios locales de esta sección.");
@@ -590,7 +674,15 @@ export default function CatalogoRafa() {
 
       {mensaje && <div className="alert alert-info" style={{ marginTop: 12 }}>{mensaje}</div>}
       <p className="muted" style={{ marginTop: 12 }}>{listaFiltrada.length} de {listaActual.length} registros visibles.</p>
-      <CatalogoTabla items={listaFiltrada} tipo={esProductos ? "productos" : "insumos"} onEditar={editar} onEliminar={eliminar} onToggle={toggle} />
+      <CatalogoTabla
+        items={listaFiltrada}
+        tipo={esProductos ? "productos" : "insumos"}
+        onEditar={editar}
+        onEliminar={eliminar}
+        onToggleActivo={toggleActivo}
+        onToggleAgotado={toggleAgotado}
+        onPrecioRapido={precioRapido}
+      />
     </div>
   );
 }

@@ -624,6 +624,16 @@ export const appStyles = `
   display: none;
 }
 
+.catalogo-precio-rapido {
+  width: 110px;
+  min-width: 90px;
+  border: 1.5px solid #fed7aa;
+  border-radius: 12px;
+  padding: 7px 8px;
+  font-weight: 800;
+  background: #fffaf5;
+}
+
 @media (max-width: 720px) {
   .catalogo-rafa {
     padding: 12px !important;
@@ -703,12 +713,16 @@ export const appStyles = `
 
   .catalogo-card-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
     margin-top: 12px;
   }
 
   .catalogo-card-actions .button {
+    width: 100%;
+  }
+
+  .catalogo-precio-rapido {
     width: 100%;
   }
 }
