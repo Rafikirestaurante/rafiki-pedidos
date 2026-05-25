@@ -282,16 +282,9 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
     setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1));
   }, [totalPaginas]);
 
-  const mantenerTablaEnVista = useCallback(() => {
-    window.requestAnimationFrame(() => {
-      tablaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, []);
-
   const irPaginaFinal = useCallback(() => {
     setPaginaActual(totalPaginas);
-    mantenerTablaEnVista();
-  }, [mantenerTablaEnVista, totalPaginas]);
+  }, [totalPaginas]);
 
   return (
     <>

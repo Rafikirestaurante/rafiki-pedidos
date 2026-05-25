@@ -1,7 +1,7 @@
 {
-  "version": "22M2-FIX-UI-CATALOGO-MOVIL-2026-05-25",
-  "phase": "Fase 22M2 - Fix visual catálogo móvil y contraste",
+  "version": "22M4-RESUMEN-MENU-ORDEN-MANUAL-2026-05-25",
+  "phase": "Fase 22M4 - Resumen de menú con orden manual",
   "date": "2026-05-25",
-  "fase": "22M2",
-  "notes": "Corrige contraste de estados activo/disponible/agotado en Catálogo Rafa y compacta acciones móviles para no tapar productos o insumos."
+  "fase": "22M4",
+  "notes": "Permite agregar platos debajo de cualquier fila del resumen y ordenar manualmente o con regla Rafiki, manteniendo el orden en la imagen y el historial."
 }

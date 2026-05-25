@@ -228,18 +228,9 @@ export default function GeneradorMenu() {
     });
   }, [mensaje, mostrarAlertaRafiki]);
 
-  const platosLimpios = useMemo(() => ordenarPlatosResumen(platos.filter((p) => p.nombre.trim())), [platos]);
+  const platosLimpios = useMemo(() => platos.filter((p) => p.nombre.trim()), [platos]);
   const listaAcompanantes = useMemo(() => ordenarAcompanantesResumen(limpiarLista(acompanantes)), [acompanantes]);
-  const platosResumenConIndice = useMemo(() =>
-    platos
-      .map((plato, index) => ({ plato, index }))
-      .sort((a, b) => {
-        const orden = ordenPlatoResumen(a.plato) - ordenPlatoResumen(b.plato);
-        if (orden !== 0) return orden;
-        return String(a.plato?.nombre || "").localeCompare(String(b.plato?.nombre || ""), "es", { sensitivity: "base" });
-      }),
-    [platos]
-  );
+  const platosResumenConIndice = useMemo(() => platos.map((plato, index) => ({ plato, index })), [platos]);
   const catalogoPlatos = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Platos").filter((item) => !esProductoOcultoGenerador(item)), [catalogoRestaurante]);
   const catalogoSopas = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Sopas").filter((item) => !esProductoOcultoGenerador(item)), [catalogoRestaurante]);
   const catalogoAcompanantes = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Acompañantes"), [catalogoRestaurante]);
@@ -335,7 +326,32 @@ export default function GeneradorMenu() {
   }
 
   function agregarPlato() {
-    setPlatos((actual) => [...actual, { nombre: "", precio: "" }].slice(0, 8));
+    setPlatos((actual) => [...actual, { nombre: "", precio: "" }].slice(0, 12));
+  }
+
+  function agregarPlatoDespues(index) {
+    setPlatos((actual) => {
+      if (actual.length >= 12) return actual;
+      const copia = [...actual];
+      copia.splice(index + 1, 0, { nombre: "", precio: "" });
+      return copia;
+    });
+  }
+
+  function moverPlato(index, direccion) {
+    setPlatos((actual) => {
+      const destino = index + direccion;
+      if (destino < 0 || destino >= actual.length) return actual;
+      const copia = [...actual];
+      const [item] = copia.splice(index, 1);
+      copia.splice(destino, 0, item);
+      return copia;
+    });
+  }
+
+  function ordenarPlatosConReglaRafiki() {
+    setPlatos((actual) => ordenarPlatosResumen(actual));
+    setMensaje("Resumen ordenado con la regla Rafiki.");
   }
 
   function quitarPlato(index) {
@@ -710,7 +726,7 @@ export default function GeneradorMenu() {
               <div>
                 <strong>Resumen del menú seleccionado</strong>
                 <p className="muted small" style={{ marginBottom: 0 }}>
-                  Aquí se colocan los precios de los platos del día. Primero selecciona arriba y luego actualiza este resumen.
+                  Aquí puedes ajustar precios, agregar algo después de cualquier plato y ordenar el menú como debe salir impreso.
                 </p>
               </div>
               <span className="badge">{platosLimpios.length} platos · {listaAcompanantes.length} acompañantes</span>
@@ -719,6 +735,9 @@ export default function GeneradorMenu() {
             <div className="resumen-menu-actions">
               <button type="button" className="button" onClick={actualizarResumenDesdeSeleccion}>
                 Actualizar resumen con selección
+              </button>
+              <button type="button" className="button light resumen-clear-button" onClick={ordenarPlatosConReglaRafiki} disabled={platos.length < 2}>
+                Orden Rafiki
               </button>
               <button type="button" className="button light resumen-clear-button" onClick={borrarSeleccionCompleta}>
                 Borrar selección
@@ -742,9 +761,20 @@ export default function GeneradorMenu() {
                       placeholder="Precio"
                       inputMode="numeric"
                     />
-                    <button type="button" className="button light resumen-delete-button" onClick={() => quitarPlato(index)} title="Quitar plato">
-                      ×
-                    </button>
+                    <div className="resumen-row-actions">
+                      <button type="button" className="button light resumen-order-button" onClick={() => moverPlato(index, -1)} disabled={index === 0} title="Subir plato">
+                        ↑
+                      </button>
+                      <button type="button" className="button light resumen-order-button" onClick={() => moverPlato(index, 1)} disabled={index === platos.length - 1} title="Bajar plato">
+                        ↓
+                      </button>
+                      <button type="button" className="button light resumen-order-button" onClick={() => agregarPlatoDespues(index)} disabled={platos.length >= 12} title="Agregar debajo">
+                        +
+                      </button>
+                      <button type="button" className="button light resumen-delete-button" onClick={() => quitarPlato(index)} title="Quitar plato">
+                        ×
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -943,8 +973,11 @@ export default function GeneradorMenu() {
         .resumen-menu-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
         .resumen-clear-button { width: auto !important; padding: 8px 10px !important; font-size: 12px; opacity: 0.86; }
         .resumen-precios-lista { display: grid; gap: 8px; margin-top: 12px; }
-        .resumen-plato-row { margin-top: 0; }
-        .resumen-delete-button { width: 32px !important; height: 32px !important; min-height: 32px !important; padding: 0 !important; border-radius: 999px !important; font-size: 16px !important; line-height: 1 !important; justify-self: center; }
+        .resumen-plato-row { margin-top: 0; grid-template-columns: minmax(180px, 1fr) 120px auto; align-items: center; }
+        .resumen-row-actions { display: flex; flex-wrap: nowrap; gap: 4px; justify-content: flex-end; align-items: center; }
+        .resumen-order-button, .resumen-delete-button { width: 30px !important; height: 30px !important; min-height: 30px !important; padding: 0 !important; border-radius: 999px !important; font-size: 14px !important; line-height: 1 !important; }
+        .resumen-order-button:disabled { opacity: 0.35; cursor: not-allowed; }
+        .resumen-delete-button { font-size: 16px !important; }
         .resumen-acompanantes-box { margin-top: 14px; padding: 12px; border: 1px dashed #fdba74; border-radius: 18px; background: #fff; }
         .resumen-acompanantes-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
         .acompanantes-manual-field textarea { min-height: 92px; }
@@ -966,7 +999,9 @@ export default function GeneradorMenu() {
         }
         @media (max-width: 420px) {
           .plato-menu-row { grid-template-columns: minmax(0, 1fr) 88px 30px; }
-          .plato-menu-row .button.resumen-delete-button { width: 30px !important; height: 30px !important; min-height: 30px !important; }
+          .plato-menu-row .button.resumen-order-button, .plato-menu-row .button.resumen-delete-button { width: 28px !important; height: 28px !important; min-height: 28px !important; }
+          .resumen-plato-row { grid-template-columns: 1fr 92px; }
+          .resumen-row-actions { grid-column: 1 / -1; justify-content: flex-start; }
         }
       `}</style>
       </section>
