@@ -679,8 +679,8 @@ export const appStyles = `
   .catalogo-card {
     background: #fff;
     border: 1px solid #fed7aa;
-    border-radius: 16px;
-    padding: 12px;
+    border-radius: 14px;
+    padding: 10px;
     box-shadow: 0 8px 18px rgba(0,0,0,0.04);
   }
 
@@ -693,6 +693,14 @@ export const appStyles = `
 
   .catalogo-card-head strong {
     line-height: 1.25;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .catalogo-card-head .badge {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    font-size: 11.5px;
   }
 
   .catalogo-card-meta {
@@ -712,20 +720,44 @@ export const appStyles = `
   }
 
   .catalogo-card-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
   }
 
   .catalogo-card-actions .button {
-    width: 100%;
+    width: auto;
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: 12px;
+    line-height: 1.1;
+    flex: 0 0 auto;
   }
 
   .catalogo-precio-rapido {
     width: 100%;
   }
 }
+
+.catalogo-tabla-desktop .badge,
+.catalogo-card .badge {
+  color: #111827 !important;
+}
+
+.catalogo-tabla-desktop .badge-finalizado,
+.catalogo-card .badge-finalizado {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.catalogo-tabla-desktop .badge-pendiente,
+.catalogo-card .badge-pendiente {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #111827 !important;
+}
+
 
 
 .catalogo-resumen-mini {
