@@ -188,9 +188,19 @@ export function dividirAcompananteEditor(linea) {
     .filter(Boolean);
 }
 
+function tipoOrdenAcompananteEditor(nombre) {
+  const normalizado = normalizarTextoBusqueda(nombre);
+  if (normalizado.startsWith("arroz")) return 0;
+  if (normalizado.startsWith("ensalada")) return 2;
+  return 1;
+}
+
 export function generarTextoAcompanantesEditor(acompanantes = []) {
   const base = Array.isArray(acompanantes) ? acompanantes : limpiarLista(acompanantes);
-  const items = base.flatMap(dividirAcompananteEditor).filter(Boolean);
+  const items = base
+    .flatMap(dividirAcompananteEditor)
+    .filter(Boolean)
+    .sort((a, b) => tipoOrdenAcompananteEditor(a) - tipoOrdenAcompananteEditor(b));
   return [...items, "Solo esos dos"].join("\n");
 }
 

@@ -17,15 +17,20 @@ import {
 } from "../utils/generadorMenu";
 import { useAlertaRafiki } from "./common";
 
-const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador";
+const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador21J4";
 
-const PLATOS_GENERADOR_DEFECTO = [
-  { nombre: "Carne en posta", precio: "20000" },
-  { nombre: "Chuleta", precio: "19000" },
-  { nombre: "Pechuga asada", precio: "17500" }
+const PLATOS_GENERADOR_DEFECTO = [];
+
+const ACOMPANANTES_GENERADOR_DEFECTO = "";
+
+const PRODUCTOS_OCULTOS_GENERADOR = [
+  "Pechuga asada sin Salsa",
+  "Cerdo asado sin salsa",
+  "Sopas medianas sin arroz",
+  "Sopas medianas con arroz",
+  "Sancocho de pollo",
+  "Sancocho de pollo con arroz"
 ];
-
-const ACOMPANANTES_GENERADOR_DEFECTO = "Arroz de maíz\nPuré de papa\nEnsalada\nTajadas maduras";
 
 function normalizarTextoCatalogo(texto) {
   return String(texto || "")
@@ -36,6 +41,11 @@ function normalizarTextoCatalogo(texto) {
     .trim();
 }
 
+
+function esProductoOcultoGenerador(producto) {
+  const clave = normalizarTextoCatalogo(producto?.nombre || producto);
+  return PRODUCTOS_OCULTOS_GENERADOR.some((nombre) => normalizarTextoCatalogo(nombre) === clave);
+}
 
 function clasificarPlatoVisual(producto) {
   const nombre = producto?.nombre || "";
@@ -68,7 +78,7 @@ function agruparPlatosVisuales(productos) {
   return [
     { key: "pechugaCerdo", titulo: "Pechuga y cerdo", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "pechugaCerdo") },
     { key: "pastas", titulo: "Pastas", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "pastas") },
-    { key: "guisos", titulo: "Guisos", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "guisos") }
+    { key: "guisos", titulo: "Guisos y demás", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "guisos") }
   ].filter((grupo) => grupo.productos.length > 0);
 }
 
@@ -135,6 +145,8 @@ export default function GeneradorMenu() {
   const [busquedaPlatos, setBusquedaPlatos] = useState("");
   const [busquedaSopas, setBusquedaSopas] = useState("");
   const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
+  const [seleccionCatalogoPlatos, setSeleccionCatalogoPlatos] = useState([]);
+  const [seleccionCatalogoAcompanantes, setSeleccionCatalogoAcompanantes] = useState([]);
 
   useEffect(() => {
     let activo = true;
@@ -181,8 +193,8 @@ export default function GeneradorMenu() {
 
   const platosLimpios = platos.filter((p) => p.nombre.trim());
   const listaAcompanantes = limpiarLista(acompanantes);
-  const catalogoPlatos = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Platos"), [catalogoRestaurante]);
-  const catalogoSopas = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Sopas"), [catalogoRestaurante]);
+  const catalogoPlatos = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Platos").filter((item) => !esProductoOcultoGenerador(item)), [catalogoRestaurante]);
+  const catalogoSopas = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Sopas").filter((item) => !esProductoOcultoGenerador(item)), [catalogoRestaurante]);
   const catalogoAcompanantes = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Acompañantes"), [catalogoRestaurante]);
 
   const platosFiltradosCatalogo = useMemo(() => {
@@ -217,13 +229,13 @@ export default function GeneradorMenu() {
 
 
   const nombresPlatosSeleccionados = useMemo(
-    () => new Set(platos.map((plato) => normalizarTextoCatalogo(plato.nombre)).filter(Boolean)),
-    [platos]
+    () => new Set(seleccionCatalogoPlatos.map((plato) => normalizarTextoCatalogo(plato.nombre)).filter(Boolean)),
+    [seleccionCatalogoPlatos]
   );
 
   const nombresAcompanantesSeleccionados = useMemo(
-    () => new Set(listaAcompanantes.map((nombre) => normalizarTextoCatalogo(nombre)).filter(Boolean)),
-    [listaAcompanantes]
+    () => new Set(seleccionCatalogoAcompanantes.map((item) => normalizarTextoCatalogo(item.nombre || item)).filter(Boolean)),
+    [seleccionCatalogoAcompanantes]
   );
 
   const textoEditorMenu = useMemo(() => generarTextoEditorMenu(platosLimpios), [platosLimpios]);
@@ -283,25 +295,50 @@ export default function GeneradorMenu() {
     setPlatos((actual) => actual.filter((_, i) => i !== index));
   }
 
-  function alternarProductoCatalogoAlMenu(producto, precioPorDefecto = "") {
+  function alternarProductoCatalogoAlMenu(producto) {
     if (!producto?.nombre) return;
-    setPlatos((actual) => {
+    setSeleccionCatalogoPlatos((actual) => {
       const claveProducto = normalizarTextoCatalogo(producto.nombre);
       const existe = actual.some((plato) => normalizarTextoCatalogo(plato.nombre) === claveProducto);
       if (existe) return actual.filter((plato) => normalizarTextoCatalogo(plato.nombre) !== claveProducto);
-      return [...actual, { nombre: producto.nombre, precio: precioTextoProducto(producto, precioPorDefecto) }].slice(0, 12);
+      return [...actual, producto].slice(0, 12);
     });
   }
 
   function alternarAcompananteCatalogo(producto) {
     if (!producto?.nombre) return;
-    setAcompanantes((actual) => {
-      const lista = limpiarLista(actual);
+    setSeleccionCatalogoAcompanantes((actual) => {
       const claveProducto = normalizarTextoCatalogo(producto.nombre);
-      const existe = lista.some((item) => normalizarTextoCatalogo(item) === claveProducto);
-      if (existe) return lista.filter((item) => normalizarTextoCatalogo(item) !== claveProducto).join("\n");
-      return [...lista, producto.nombre].join("\n");
+      const existe = actual.some((item) => normalizarTextoCatalogo(item.nombre || item) === claveProducto);
+      if (existe) return actual.filter((item) => normalizarTextoCatalogo(item.nombre || item) !== claveProducto);
+      return [...actual, producto];
     });
+  }
+
+  function actualizarResumenDesdeSeleccion() {
+    const preciosActuales = new Map(platos.map((plato) => [normalizarTextoCatalogo(plato.nombre), plato.precio]));
+    setPlatos(
+      seleccionCatalogoPlatos.map((producto) => ({
+        nombre: producto.nombre,
+        precio: preciosActuales.get(normalizarTextoCatalogo(producto.nombre)) || ""
+      }))
+    );
+    setAcompanantes(seleccionCatalogoAcompanantes.map((producto) => producto.nombre || producto).join("\n"));
+    setMensaje("Resumen actualizado con la selección del catálogo.");
+  }
+
+  function borrarSeleccionCompleta() {
+    setSeleccionCatalogoPlatos([]);
+    setSeleccionCatalogoAcompanantes([]);
+    setPlatos([]);
+    setAcompanantes("");
+    setMensaje("Selección del generador borrada.");
+  }
+
+  function quitarAcompananteResumen(nombre) {
+    const clave = normalizarTextoCatalogo(nombre);
+    setAcompanantes((actual) => limpiarLista(actual).filter((item) => normalizarTextoCatalogo(item) !== clave).join("\n"));
+    setSeleccionCatalogoAcompanantes((actual) => actual.filter((item) => normalizarTextoCatalogo(item.nombre || item) !== clave));
   }
 
   function descargarDesdeSvg(url, nombreArchivo, mensajeOk, transparente = false, ancho = 1080, alto = 1080) {
@@ -554,7 +591,7 @@ export default function GeneradorMenu() {
                             <button
                               type="button"
                               className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
-                              onClick={() => alternarProductoCatalogoAlMenu(producto, "")}
+                              onClick={() => alternarProductoCatalogoAlMenu(producto)}
                               title={seleccionado ? "Quitar del menú del día" : "Agregar al menú del día"}
                             >
                               {seleccionado ? "✓ " : "+ "}{nombreVisualPlato(producto)}
@@ -582,7 +619,7 @@ export default function GeneradorMenu() {
                         <button
                           type="button"
                           className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
-                          onClick={() => alternarProductoCatalogoAlMenu(producto, "")}
+                          onClick={() => alternarProductoCatalogoAlMenu(producto)}
                           title={seleccionado ? "Quitar del menú del día" : "Agregar al menú del día"}
                         >
                           {seleccionado ? "✓ " : "+ "}{producto.nombre}
@@ -626,10 +663,19 @@ export default function GeneradorMenu() {
               <div>
                 <strong>Resumen del menú seleccionado</strong>
                 <p className="muted small" style={{ marginBottom: 0 }}>
-                  Aquí se colocan los precios de los platos del día. Los acompañantes quedan sin precio.
+                  Aquí se colocan los precios de los platos del día. Primero selecciona arriba y luego actualiza este resumen.
                 </p>
               </div>
               <span className="badge">{platosLimpios.length} platos · {listaAcompanantes.length} acompañantes</span>
+            </div>
+
+            <div className="resumen-menu-actions">
+              <button type="button" className="button" onClick={actualizarResumenDesdeSeleccion}>
+                Actualizar resumen con selección
+              </button>
+              <button type="button" className="button light resumen-clear-button" onClick={borrarSeleccionCompleta}>
+                Borrar selección
+              </button>
             </div>
 
             {platos.length === 0 ? (
@@ -649,7 +695,7 @@ export default function GeneradorMenu() {
                       placeholder="Precio"
                       inputMode="numeric"
                     />
-                    <button type="button" className="button light" onClick={() => quitarPlato(index)} title="Quitar plato" style={{ padding: "10px 0" }}>
+                    <button type="button" className="button light resumen-delete-button" onClick={() => quitarPlato(index)} title="Quitar plato">
                       ×
                     </button>
                   </div>
@@ -666,7 +712,7 @@ export default function GeneradorMenu() {
               {listaAcompanantes.length ? (
                 <div className="resumen-acompanantes-chips">
                   {listaAcompanantes.map((nombre) => (
-                    <button key={nombre} type="button" className="producto-chip selected" onClick={() => alternarAcompananteCatalogo({ nombre })} title="Quitar acompañante">
+                    <button key={nombre} type="button" className="producto-chip selected" onClick={() => quitarAcompananteResumen(nombre)} title="Quitar acompañante">
                       ✓ {nombre}
                     </button>
                   ))}
@@ -847,8 +893,11 @@ export default function GeneradorMenu() {
         .selector-subcategoria-visual { margin-top: 10px; }
         .selector-subcategoria-visual h4 { margin: 0 0 8px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
         .resumen-menu-dia { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
+        .resumen-menu-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+        .resumen-clear-button { width: auto !important; padding: 8px 10px !important; font-size: 12px; opacity: 0.86; }
         .resumen-precios-lista { display: grid; gap: 8px; margin-top: 12px; }
         .resumen-plato-row { margin-top: 0; }
+        .resumen-delete-button { width: 32px !important; height: 32px !important; min-height: 32px !important; padding: 0 !important; border-radius: 999px !important; font-size: 16px !important; line-height: 1 !important; justify-self: center; }
         .resumen-acompanantes-box { margin-top: 14px; padding: 12px; border: 1px dashed #fdba74; border-radius: 18px; background: #fff; }
         .resumen-acompanantes-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
         .acompanantes-manual-field textarea { min-height: 92px; }
@@ -862,14 +911,15 @@ export default function GeneradorMenu() {
           .plato-menu-row { grid-template-columns: minmax(0, 1fr) 92px 34px; gap: 6px; }
           .box.soft input, .field input, .field textarea { padding: 10px 8px; font-size: 14px; }
           .acciones-generador .button, .generador-menu .button { width: 100%; justify-content: center; }
+          .generador-menu .resumen-clear-button, .generador-menu .resumen-delete-button { width: auto !important; }
           .history-menu-item { align-items: flex-start; flex-direction: column; }
           .preview-menu-frame { border-radius: 18px; }
           .informe-menu-tabla { min-width: 1080px; }
           .informe-menu-tabla td { width: 165px; min-width: 165px; max-width: 165px; padding: 10px; }
         }
         @media (max-width: 420px) {
-          .plato-menu-row { grid-template-columns: 1fr; }
-          .plato-menu-row .button { width: 100%; }
+          .plato-menu-row { grid-template-columns: minmax(0, 1fr) 88px 30px; }
+          .plato-menu-row .button.resumen-delete-button { width: 30px !important; height: 30px !important; min-height: 30px !important; }
         }
       `}</style>
       </section>

@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD_INFO = {
-  version: '21J3-FIX-BUILD-GENERADOR-MENU-LISTA-LIMPIA-2026-05-24',
-  phase: 'Fase 21J3 - Fix build generador de menú lista limpia',
+  version: '21J4-GENERADOR-MENU-ORDEN-SELECCION-SEGURA-2026-05-24',
+  phase: 'Fase 21J4 - Generador de menú con selección segura y orden fijo',
   date: '2026-05-24',
-  fase: '21J3',
+  fase: '21J4',
   description:
-    'Corrige exportación de versión PWA y mantiene el Generador de Menú con listado limpio, subcategorías visuales y selector sin cuadros anidados.'
+    'Oculta productos fijos del selector, evita selección por defecto, agrega actualización/borrado del resumen y ordena el texto para editor.'
 };
 
 export const RAFIKI_BUILD = RAFIKI_BUILD_INFO;
