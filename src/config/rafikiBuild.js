@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD_INFO = {
-  version: '21J4-GENERADOR-MENU-ORDEN-SELECCION-SEGURA-2026-05-24',
-  phase: 'Fase 21J4 - Generador de menú con selección segura y orden fijo',
+  version: '21J5-GENERADOR-MENU-RESUMEN-ORDENADO-LIMPIEZA-MD-2026-05-24',
+  phase: 'Fase 21J5 - Resumen ordenado y limpieza de archivos de fase',
   date: '2026-05-24',
-  fase: '21J4',
+  fase: '21J5',
   description:
-    'Oculta productos fijos del selector, evita selección por defecto, agrega actualización/borrado del resumen y ordena el texto para editor.'
+    'Ordena automáticamente el resumen del menú seleccionado y conserva solo los últimos 10 archivos Markdown de fase.'
 };
 
 export const RAFIKI_BUILD = RAFIKI_BUILD_INFO;

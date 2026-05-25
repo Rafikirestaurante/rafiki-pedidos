@@ -17,7 +17,7 @@ import {
 } from "../utils/generadorMenu";
 import { useAlertaRafiki } from "./common";
 
-const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador21J4";
+const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador21J5";
 
 const PLATOS_GENERADOR_DEFECTO = [];
 
@@ -80,6 +80,43 @@ function agruparPlatosVisuales(productos) {
     { key: "pastas", titulo: "Pastas", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "pastas") },
     { key: "guisos", titulo: "Guisos y demás", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "guisos") }
   ].filter((grupo) => grupo.productos.length > 0);
+}
+
+
+function esSopaResumen(nombre) {
+  const normalizado = normalizarTextoCatalogo(nombre?.nombre || nombre);
+  return /\b(ajiaco|mote|mondongo|costilla|gallina|paticas|sancocho|sopa|sopas)\b/.test(normalizado);
+}
+
+function ordenPlatoResumen(plato) {
+  const normalizado = normalizarTextoCatalogo(plato?.nombre || plato);
+  if (esSopaResumen(plato)) return 3;
+  if (normalizado.startsWith("pechuga o cerdo") || normalizado.startsWith("pechuga ") || normalizado.startsWith("cerdo ")) return 2;
+  if (normalizado.startsWith("pastas")) return 1;
+  return 0;
+}
+
+function ordenarPlatosResumen(platos = []) {
+  return [...platos].sort((a, b) => {
+    const orden = ordenPlatoResumen(a) - ordenPlatoResumen(b);
+    if (orden !== 0) return orden;
+    return String(a?.nombre || a).localeCompare(String(b?.nombre || b), "es", { sensitivity: "base" });
+  });
+}
+
+function ordenAcompananteResumen(nombre) {
+  const normalizado = normalizarTextoCatalogo(nombre?.nombre || nombre);
+  if (normalizado.startsWith("arroz")) return 0;
+  if (normalizado.startsWith("ensalada")) return 2;
+  return 1;
+}
+
+function ordenarAcompanantesResumen(items = []) {
+  return [...items].sort((a, b) => {
+    const orden = ordenAcompananteResumen(a) - ordenAcompananteResumen(b);
+    if (orden !== 0) return orden;
+    return String(a?.nombre || a).localeCompare(String(b?.nombre || b), "es", { sensitivity: "base" });
+  });
 }
 
 function productosRestauranteFallback() {
@@ -191,8 +228,18 @@ export default function GeneradorMenu() {
     });
   }, [mensaje, mostrarAlertaRafiki]);
 
-  const platosLimpios = platos.filter((p) => p.nombre.trim());
-  const listaAcompanantes = limpiarLista(acompanantes);
+  const platosLimpios = useMemo(() => ordenarPlatosResumen(platos.filter((p) => p.nombre.trim())), [platos]);
+  const listaAcompanantes = useMemo(() => ordenarAcompanantesResumen(limpiarLista(acompanantes)), [acompanantes]);
+  const platosResumenConIndice = useMemo(() =>
+    platos
+      .map((plato, index) => ({ plato, index }))
+      .sort((a, b) => {
+        const orden = ordenPlatoResumen(a.plato) - ordenPlatoResumen(b.plato);
+        if (orden !== 0) return orden;
+        return String(a.plato?.nombre || "").localeCompare(String(b.plato?.nombre || ""), "es", { sensitivity: "base" });
+      }),
+    [platos]
+  );
   const catalogoPlatos = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Platos").filter((item) => !esProductoOcultoGenerador(item)), [catalogoRestaurante]);
   const catalogoSopas = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Sopas").filter((item) => !esProductoOcultoGenerador(item)), [catalogoRestaurante]);
   const catalogoAcompanantes = useMemo(() => filtrarCatalogoMenu(catalogoRestaurante, "Acompañantes"), [catalogoRestaurante]);
@@ -317,13 +364,13 @@ export default function GeneradorMenu() {
 
   function actualizarResumenDesdeSeleccion() {
     const preciosActuales = new Map(platos.map((plato) => [normalizarTextoCatalogo(plato.nombre), plato.precio]));
-    setPlatos(
-      seleccionCatalogoPlatos.map((producto) => ({
-        nombre: producto.nombre,
-        precio: preciosActuales.get(normalizarTextoCatalogo(producto.nombre)) || ""
-      }))
-    );
-    setAcompanantes(seleccionCatalogoAcompanantes.map((producto) => producto.nombre || producto).join("\n"));
+    const platosOrdenados = ordenarPlatosResumen(seleccionCatalogoPlatos).map((producto) => ({
+      nombre: producto.nombre,
+      precio: preciosActuales.get(normalizarTextoCatalogo(producto.nombre)) || ""
+    }));
+    const acompanantesOrdenados = ordenarAcompanantesResumen(seleccionCatalogoAcompanantes).map((producto) => producto.nombre || producto);
+    setPlatos(platosOrdenados);
+    setAcompanantes(acompanantesOrdenados.join("\n"));
     setMensaje("Resumen actualizado con la selección del catálogo.");
   }
 
@@ -682,7 +729,7 @@ export default function GeneradorMenu() {
               <div className="alert alert-info" style={{ marginTop: 12 }}>Selecciona platos o sopas desde el catálogo.</div>
             ) : (
               <div className="resumen-precios-lista">
-                {platos.map((plato, index) => (
+                {platosResumenConIndice.map(({ plato, index }) => (
                   <div key={`${plato.nombre || "plato"}-${index}`} className="plato-menu-row resumen-plato-row">
                     <input
                       value={plato.nombre}
