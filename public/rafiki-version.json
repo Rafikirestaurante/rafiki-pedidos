@@ -1,7 +1,7 @@
 {
-  "version": "21J5-GENERADOR-MENU-RESUMEN-ORDENADO-LIMPIEZA-MD-2026-05-24",
-  "phase": "Fase 21J5 - Resumen ordenado y limpieza de archivos de fase",
+  "version": "21J6-GENERADOR-MENU-RESUMEN-ORDENADO-LIMPIEZA-MD-2026-05-24",
+  "phase": "Fase 21J6 - Resumen ordenado y limpieza de archivos de fase",
   "date": "2026-05-24",
-  "fase": "21J5",
+  "fase": "21J6",
   "description": "Ordena automáticamente el resumen del menú seleccionado y conserva solo los últimos 10 archivos Markdown de fase."
 }

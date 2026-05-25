@@ -4,7 +4,6 @@ import {
   calcularTotalItem,
   dinero,
   esCategoriaSopa,
-  limpiarAcompanantesMenu,
   textoParaLlevarItem,
   valorParaLlevarItem,
 } from "../../utils/pedidos";

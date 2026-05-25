@@ -118,6 +118,7 @@ export default function App() {
   const borradorEditorMenuRestauradoRef = useRef(false);
   const [vista, setVista] = useState(() => obtenerVistaInicial());
   const [adminTab, setAdminTab] = useState(() => leerAdminTabGuardada());
+  const adminTabRef = useRef(adminTab);
   const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
@@ -583,6 +584,10 @@ export default function App() {
 
   const hayBusquedaPedidos = busqueda.trim().length > 0;
 
+  useEffect(() => {
+    adminTabRef.current = adminTab;
+  }, [adminTab]);
+
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
   const whatsappRafikiDisponible = Boolean(limpiarTelefonoWhatsApp(WHATSAPP_RAFIKI));
 
@@ -636,7 +641,7 @@ export default function App() {
 
           if (menuHashRef.current !== nuevoHash) {
             menuHashRef.current = nuevoHash;
-            setMenu(adminTab === "menu" ? menuConFechaActual(menuNormalizado) : menuNormalizado);
+            setMenu(adminTabRef.current === "menu" ? menuConFechaActual(menuNormalizado) : menuNormalizado);
             guardarMenuCache(menuNormalizado);
             menuCacheDisponibleRef.current = true;
             setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
@@ -670,7 +675,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [adminTab, mostrarMensaje, recargaMenu]);
+  }, [mostrarMensaje, recargaMenu]);
 
   useEffect(() => {
     if (!supabaseConfigOk || !realtimeAdminActivo) return undefined;
