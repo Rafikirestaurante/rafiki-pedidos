@@ -15,6 +15,7 @@ import {
   dinero,
   fechaISOColombia,
   guardarSesionTemporal,
+  limpiarAcompanantesMenu,
   limpiarTelefonoWhatsApp,
   esCategoriaSopa,
   listaPorLineas,
