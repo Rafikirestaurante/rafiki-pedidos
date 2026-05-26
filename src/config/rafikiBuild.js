@@ -5,3 +5,5 @@ export const RAFIKI_BUILD = {
   fase: '22G1',
   notes: 'Agrega en Admin Pedidos hoy un recuadro de mesas fijas con los últimos 2 pedidos por mesa y una vista completa por mesa.'
 };
+
+export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
