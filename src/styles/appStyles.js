@@ -268,6 +268,42 @@ export const appStyles = `
         .paginacion-botones strong { color: #9a3412; white-space: nowrap; }
         @media (max-width: 720px) { .paginacion-pedidos { align-items: stretch; flex-direction: column; } .paginacion-botones { justify-content: space-between; } }
 
+
+        .admin-mesas-hoy-card { margin: 14px 0 18px; border: 1px solid #fed7aa; background: linear-gradient(135deg, #fff7ed, #fffbeb); border-radius: 24px; padding: 14px; box-shadow: 0 8px 22px rgba(124,45,18,0.06); }
+        .admin-mesas-hoy-title { margin: 0 0 12px !important; align-items: center; }
+        .admin-mesas-hoy-title h4 { margin: 0; color: #7c2d12; font-size: 18px; }
+        .admin-mesas-hoy-title p { margin: 2px 0 0; }
+        .admin-mesas-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .admin-mesa-card { display: flex; flex-direction: column; gap: 9px; min-height: 205px; border: 1px solid #fed7aa; background: #fff; border-radius: 20px; padding: 12px; }
+        .admin-mesa-card.con-pedidos { box-shadow: inset 0 0 0 2px #ffedd5; }
+        .admin-mesa-card.sin-pedidos { opacity: 0.72; }
+        .admin-mesa-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .admin-mesa-card-head strong { display: inline-flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 15px; background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; font-size: 18px; font-weight: 900; }
+        .admin-mesa-card-head span { border: 1px solid #fed7aa; background: #fff7ed; color: #9a3412; border-radius: 999px; padding: 6px 9px; font-size: 11px; font-weight: 900; }
+        .admin-mesa-ultimos { display: grid; gap: 7px; flex: 1; }
+        .admin-mesa-pedido-mini { border: 1px solid #f5f5f4; background: #fafaf9; border-radius: 14px; padding: 8px; }
+        .admin-mesa-pedido-mini div { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+        .admin-mesa-pedido-mini strong { color: #c2410c; font-size: 12px; }
+        .admin-mesa-pedido-mini span { color: #78716c; font-size: 10px; font-weight: 800; text-align: right; }
+        .admin-mesa-pedido-mini p { margin: 0; color: #44403c; font-size: 11px; font-weight: 800; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .admin-mesa-pedido-mini b { display: block; margin-top: 4px; color: #16a34a; font-size: 12px; }
+        .admin-mesa-vacia { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 86px; border: 1px dashed #fed7aa; border-radius: 16px; background: #fff7ed; color: #9a3412; font-size: 12px; font-weight: 900; text-align: center; }
+        .admin-mesa-ver { width: 100%; padding: 10px 12px; border-radius: 14px; font-size: 12px; }
+        .admin-mesa-ver:disabled { opacity: 0.42; cursor: not-allowed; }
+        .admin-mesa-total { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px dashed #fed7aa; padding-top: 7px; }
+        .admin-mesa-total span { color: #78716c; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+        .admin-mesa-total strong { color: #16a34a; font-size: 14px; }
+        .admin-mesa-modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(28,25,23,0.58); display: flex; align-items: center; justify-content: center; padding: 14px; }
+        .admin-mesa-modal { width: min(860px, 100%); max-height: 92vh; overflow: hidden; border-radius: 24px; background: #fff7ed; border: 1px solid #fed7aa; box-shadow: 0 24px 70px rgba(0,0,0,0.28); display: flex; flex-direction: column; }
+        .admin-mesa-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; background: linear-gradient(135deg, #fff, #fffbeb); border-bottom: 1px solid #fed7aa; }
+        .admin-mesa-modal-head span { color: #ea580c; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+        .admin-mesa-modal-head h3 { margin: 1px 0; color: #7c2d12; font-size: 26px; font-family: 'Fraunces', serif; }
+        .admin-mesa-modal-head p { margin: 0; color: #78716c; font-weight: 800; font-size: 13px; }
+        .admin-mesa-modal-body { padding: 14px; overflow-y: auto; }
+        @media (max-width: 900px) { .admin-mesas-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 620px) { .admin-mesas-hoy-card { padding: 10px; border-radius: 20px; } .admin-mesas-grid { grid-template-columns: 1fr; } .admin-mesa-card { min-height: auto; } .admin-mesa-modal-backdrop { align-items: stretch; padding: 8px; } .admin-mesa-modal { max-height: 96vh; border-radius: 20px; } .admin-mesa-modal-head { align-items: flex-start; flex-direction: column; } .admin-mesa-modal-head .button { width: 100%; } }
+
+
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-sin-revisar { border: 3px solid #f79e1c; box-shadow: 0 12px 34px rgba(247,158,28,0.22); }
         .pedido-finalizado { opacity: 0.7; }
