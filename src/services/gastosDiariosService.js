@@ -1,0 +1,93 @@
+import { supabase } from "../supabaseClient";
+
+const SELECT_GASTOS = "id, numero_factura, fecha, proveedor, articulos, valor, categoria, metodo_pago, observacion, creado_en, actualizado_en";
+
+function hoyISOColombia() {
+  const fecha = new Date();
+  const offsetMs = -5 * 60 * 60 * 1000;
+  return new Date(fecha.getTime() + offsetMs).toISOString().slice(0, 10);
+}
+
+export const CATEGORIAS_GASTOS = ["mercado", "carnes", "verduras", "aseo", "servicios", "domicilios", "otro"];
+export const METODOS_PAGO_GASTOS = ["efectivo", "transferencia", "tarjeta", "otro"];
+
+export function normalizarGastoDiario(gasto) {
+  if (!gasto) return null;
+  return {
+    id: gasto.id,
+    numeroFactura: gasto.numero_factura || "",
+    fecha: gasto.fecha || hoyISOColombia(),
+    proveedor: gasto.proveedor || "",
+    articulos: gasto.articulos || "",
+    valor: Number(gasto.valor || 0),
+    categoria: gasto.categoria || "otro",
+    metodoPago: gasto.metodo_pago || "efectivo",
+    observacion: gasto.observacion || "",
+    creadoEn: gasto.creado_en || "",
+    actualizadoEn: gasto.actualizado_en || ""
+  };
+}
+
+function prepararPayloadGasto(gasto) {
+  return {
+    numero_factura: String(gasto.numeroFactura || "").trim() || null,
+    fecha: gasto.fecha || hoyISOColombia(),
+    proveedor: String(gasto.proveedor || "").trim(),
+    articulos: String(gasto.articulos || "").trim() || null,
+    valor: Number(gasto.valor || 0),
+    categoria: String(gasto.categoria || "otro").trim() || "otro",
+    metodo_pago: String(gasto.metodoPago || "efectivo").trim() || "efectivo",
+    observacion: String(gasto.observacion || "").trim() || null,
+    actualizado_en: new Date().toISOString()
+  };
+}
+
+export async function cargarGastosDiarios(fecha = hoyISOColombia()) {
+  const { data, error } = await supabase
+    .from("gastos_diarios")
+    .select(SELECT_GASTOS)
+    .eq("fecha", fecha)
+    .order("creado_en", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(normalizarGastoDiario).filter(Boolean);
+}
+
+export async function crearGastoDiario(gasto) {
+  const payload = prepararPayloadGasto(gasto);
+  if (!payload.proveedor) throw new Error("El proveedor es obligatorio.");
+  if (!Number.isFinite(payload.valor) || payload.valor <= 0) throw new Error("El valor debe ser mayor a cero.");
+
+  const { error } = await supabase
+    .from("gastos_diarios")
+    .insert(payload);
+
+  if (error) throw error;
+  return normalizarGastoDiario({ ...payload, id: `local-${Date.now()}` });
+}
+
+export async function actualizarGastoDiario(id, gasto) {
+  const payload = prepararPayloadGasto(gasto);
+  if (!payload.proveedor) throw new Error("El proveedor es obligatorio.");
+  if (!Number.isFinite(payload.valor) || payload.valor <= 0) throw new Error("El valor debe ser mayor a cero.");
+
+  const { data, error } = await supabase
+    .from("gastos_diarios")
+    .update(payload)
+    .eq("id", id)
+    .select(SELECT_GASTOS)
+    .single();
+
+  if (error) throw error;
+  return normalizarGastoDiario(data);
+}
+
+export async function eliminarGastoDiario(id) {
+  const { error } = await supabase.from("gastos_diarios").delete().eq("id", id);
+  if (error) throw error;
+  return true;
+}
+
+export function obtenerFechaGastoHoy() {
+  return hoyISOColombia();
+}

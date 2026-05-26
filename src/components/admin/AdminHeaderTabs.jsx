@@ -10,6 +10,7 @@ export default function AdminHeaderTabs({
   puedeVerGenerador,
   puedeVerRafa,
   puedeVerCatalogo,
+  puedeVerGastos,
   cerrarPanelAdmin,
   navegar,
 }) {
@@ -76,6 +77,15 @@ export default function AdminHeaderTabs({
             className={adminTab === "catalogo" ? "active" : ""}
           >
             Catálogo
+          </button>
+        )}
+        {puedeVerGastos && (
+          <button
+            type="button"
+            onClick={() => setAdminTab("gastos")}
+            className={adminTab === "gastos" ? "active" : ""}
+          >
+            Gastos Diarios
           </button>
         )}
 

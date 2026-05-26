@@ -51,11 +51,12 @@ const GeneradorMenu = lazy(() => import("./components/GeneradorMenu"));
 const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
 const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
 const CatalogoRafa = lazy(() => import("./components/CatalogoRafa"));
+const GastosDiarios = lazy(() => import("./components/admin/GastosDiarios"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
-const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "rafa"]);
+const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "gastos", "rafa"]);
 
 function leerAdminTabGuardada() {
   try {
@@ -175,6 +176,8 @@ export default function App() {
   const puedeVerGenerador = usuarioPuede(adminRol, "generador");
   const puedeVerRafa = usuarioPuede(adminRol, "rafa");
   const puedeVerCatalogo = usuarioPuede(adminRol, "catalogo");
+  const puedeVerGastos = usuarioPuede(adminRol, "gastos");
+  const puedeVerInformeGastos = usuarioPuede(adminRol, "gastos_informe");
   const puedeEliminarPedido = usuarioPuede(adminRol, "eliminar_pedido");
   const puedeCambiarEstado = usuarioPuede(adminRol, "cambiar_estado");
   const puedeFinalizarPendientes = usuarioPuede(adminRol, "finalizar_pendientes");
@@ -1474,6 +1477,7 @@ export default function App() {
                 puedeVerGenerador={puedeVerGenerador}
                 puedeVerRafa={puedeVerRafa}
                 puedeVerCatalogo={puedeVerCatalogo}
+                puedeVerGastos={puedeVerGastos}
                 cerrarPanelAdmin={cerrarPanelAdmin}
                 navegar={navegar}
               />
@@ -1549,6 +1553,11 @@ export default function App() {
               {adminTab === "catalogo" && puedeVerCatalogo && (
                 <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
                   <CatalogoRafa />
+                </Suspense>
+              )}
+              {adminTab === "gastos" && puedeVerGastos && (
+                <Suspense fallback={<CargandoModulo texto="Cargando gastos diarios..." />}>
+                  <GastosDiarios esAdministrador={puedeVerInformeGastos} />
                 </Suspense>
               )}
 
