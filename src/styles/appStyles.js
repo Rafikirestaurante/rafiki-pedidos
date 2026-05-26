@@ -244,7 +244,7 @@ export const appStyles = `
         .pedidos-tabla-compacta td { vertical-align: top; padding: 8px; border-bottom: 1px solid #f5f5f4; color: #44403c; line-height: 1.25; }
         .pedidos-tabla-compacta tr:last-child td { border-bottom: 0; }
         .pedidos-tabla-compacta tr.fila-nueva { background: #fff7ed; box-shadow: inset 4px 0 0 #f79e1c; }
-        .pedidos-tabla-compacta tr.fila-finalizada { background: #f0fdf4; opacity: 0.82; }
+        .pedidos-tabla-compacta tr.fila-finalizada { background: #f0fdf4; opacity: 1; }
         .pedidos-tabla-compacta tr.fila-borrada { background: #fef2f2; opacity: 0.78; }
         .mini-estado-borrado { display: inline-flex; align-items: center; justify-content: center; width: 100%; border-radius: 999px; background: #fee2e2; color: #991b1b; font-size: 11px; font-weight: 900; padding: 8px 10px; margin-bottom: 6px; }
         .td-codigo strong { display: block; color: #c2410c; font-size: 13px; }
@@ -321,7 +321,7 @@ export const appStyles = `
 
         .pedido-cocina { border: 1px solid #fed7aa; background: #fff; border-radius: 26px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); overflow: hidden; animation: fadeInUp 0.25s ease; }
         .pedido-sin-revisar { border: 3px solid #f79e1c; box-shadow: 0 12px 34px rgba(247,158,28,0.22); }
-        .pedido-finalizado { opacity: 0.7; }
+        .pedido-finalizado { opacity: 1; }
         .pedido-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
         .pedido-header-pending { background: linear-gradient(135deg, #f97316, #fb923c); }
         .pedido-header-finalizado { background: linear-gradient(135deg, #16a34a, #22c55e); }

@@ -32,7 +32,7 @@ export default function ConfirmacionPedidoCliente({
                     </div>
                     <div className="confirmacion-info-item">
                       <span>Ubicación</span>
-                      <strong>{pedidoFinalizado.ubicacion || "Sin ubicación"}</strong>
+                      <strong>{pedidoFinalizado.ubicacion || ""}</strong>
                     </div>
                   </div>
 

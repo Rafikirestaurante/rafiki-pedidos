@@ -72,7 +72,7 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
             <div className="pedido-meta">
               <span>🧾 Pedido N° {obtenerCodigoPedido(pedido)}</span>
               <span>🕒 {formatearFechaHora(pedido.created_at)}</span>
-              <span>📍 {pedido.ubicacion || "Sin ubicación"}</span>
+              {pedido.ubicacion ? <span>📍 {pedido.ubicacion}</span> : null}
               <span>📞 {pedido.telefono || "Sin teléfono"}</span>
               <span>💳 {pedido.tipo_pago || "Pago no especificado"}</span>
             </div>
@@ -285,17 +285,28 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
   const inicioVisible = pedidos.length === 0 ? 0 : (paginaActual - 1) * pedidosPorPagina + 1;
   const finVisible = Math.min(paginaActual * pedidosPorPagina, pedidos.length);
 
+  const cambiarPaginaSinScroll = useCallback((calcularPagina) => {
+    const posicionActual = typeof window !== "undefined" ? window.scrollY : 0;
+    setPaginaActual((pagina) => {
+      const siguientePagina = typeof calcularPagina === "function" ? calcularPagina(pagina) : calcularPagina;
+      return Math.min(totalPaginas, Math.max(1, siguientePagina));
+    });
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => window.scrollTo({ top: posicionActual, behavior: "auto" }));
+    }
+  }, [totalPaginas]);
+
   const irPaginaAnterior = useCallback(() => {
-    setPaginaActual((pagina) => Math.max(1, pagina - 1));
-  }, []);
+    cambiarPaginaSinScroll((pagina) => pagina - 1);
+  }, [cambiarPaginaSinScroll]);
 
   const irPaginaSiguiente = useCallback(() => {
-    setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1));
-  }, [totalPaginas]);
+    cambiarPaginaSinScroll((pagina) => pagina + 1);
+  }, [cambiarPaginaSinScroll]);
 
   const irPaginaFinal = useCallback(() => {
-    setPaginaActual(totalPaginas);
-  }, [totalPaginas]);
+    cambiarPaginaSinScroll(totalPaginas);
+  }, [cambiarPaginaSinScroll, totalPaginas]);
 
   return (
     <>
@@ -330,7 +341,7 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                 <td>
                   <strong>{obtenerCliente(pedido)}</strong>
                   <small>{pedido.telefono || "Sin teléfono"}</small>
-                  <small>{pedido.ubicacion || "Sin ubicación"}</small>
+                  {pedido.ubicacion ? <small>{pedido.ubicacion}</small> : null}
                 </td>
                 <td className="td-pedido">{resumirItemsPedidoCompacto(pedido)}</td>
                 <td className="td-obs">{pedido.observaciones || "—"}</td>

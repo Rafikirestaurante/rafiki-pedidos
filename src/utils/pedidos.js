@@ -607,7 +607,7 @@ export function crearMensajeWhatsAppPedido(pedido) {
     `Pedido N°: ${obtenerCodigoPedido(pedido)}`,
     `Cliente: ${pedido.cliente || pedido.cliente_nombre || "Cliente"}`,
     `Teléfono: ${pedido.telefono || "Sin teléfono"}`,
-    `Ubicación: ${pedido.ubicacion || "Sin ubicación"}`,
+    `Ubicación: ${pedido.ubicacion || ""}`,
     `Tipo de pago: ${pedido.tipo_pago || "No especificado"}`,
     "",
     "Pedido:",

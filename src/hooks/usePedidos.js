@@ -137,7 +137,7 @@ export function usePedidos({
       cliente: clienteNombre,
       cliente_nombre: clienteNombre,
       telefono: telefonoLimpio,
-      ubicacion: ubicacionLimpia || "Ubicación pendiente",
+      ubicacion: ubicacionLimpia,
       tipo_pago: tipoPago,
       observaciones: observacionesLimpias,
       items: itemsValidos,
@@ -246,7 +246,7 @@ export function usePedidos({
     const clienteMesaOpcional = limpiarTexto(cliente, 120);
     const clienteLimpio = clienteMesaOpcional || (esLlevar ? "Cliente" : mesaLimpia);
     const telefonoLimpio = esLlevar ? limpiarTelefono(telefono) : "";
-    const ubicacionLimpia = esLlevar ? (limpiarTexto(ubicacion, 200) || "Ubicación pendiente") : mesaLimpia;
+    const ubicacionLimpia = esLlevar ? limpiarTexto(ubicacion, 200) : mesaLimpia;
     const meseroLimpio = limpiarTexto(mesero, 80) || "Mesero";
     const tipoPagoLimpio = limpiarTexto(tipoPago, 80) || "Efectivo";
     const observacionesLimpias = limpiarTexto(obsMesa, 500);
@@ -511,7 +511,7 @@ export function usePedidos({
         cliente: clienteLimpio,
         cliente_nombre: clienteLimpio,
         telefono: telefonoLimpio,
-        ubicacion: ubicacionLimpia || mesaLimpia || "Ubicación pendiente",
+        ubicacion: ubicacionLimpia || mesaLimpia || "",
         mesa: mesaLimpia,
         mesero: meseroLimpio,
         tipo_pago: tipoPagoLimpio || "Efectivo",
