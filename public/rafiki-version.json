@@ -1,6 +1,6 @@
 {
-  "version": "22P1-MESAS-RESUMEN-COMPACTO-2026-05-26",
-  "phase": "Fase 22P1 - Mesas resumen compacto",
+  "version": "22P2-ADMIN-EDITAR-PEDIDOS-2026-05-26",
+  "phase": "Fase 22P2 - Admin editar pedidos",
   "date": "2026-05-26",
-  "notes": "Nueva pestaña Admin Gastos Diarios e Informe de gastos restringido al rol administrador."
+  "notes": "Quita total por mesa y habilita edición de pedidos solo para rol administrador."
 }

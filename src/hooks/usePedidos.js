@@ -31,6 +31,7 @@ export function usePedidos({
   adminActor,
   puedeCambiarEstado,
   puedeEliminarPedido,
+  puedeEditarPedido,
   puedeFinalizarPendientes,
   confirmarRafiki,
   mostrarMensaje,
@@ -44,6 +45,7 @@ export function usePedidos({
   const [guardandoPedido, setGuardandoPedido] = useState(false);
   const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
   const [eliminandoPedidoId, setEliminandoPedidoId] = useState(null);
+  const [editandoPedidoId, setEditandoPedidoId] = useState(null);
   const [finalizandoPendientes, setFinalizandoPendientes] = useState(false);
 
   const agregarPedidoAlListadoSiAplica = useCallback((pedido) => {
@@ -461,15 +463,112 @@ export function usePedidos({
     }
   }, [confirmarRafiki, eliminandoPedidoId, mostrarMensaje, pedidos, puedeEliminarPedido, registrarAuditoria, setPedidos]);
 
+
+  const editarPedidoAdministrador = useCallback(async (id, cambios = {}) => {
+    if (editandoPedidoId) return false;
+
+    if (!puedeEditarPedido) {
+      mostrarMensaje("Tu rol no tiene permiso para editar pedidos.", "error");
+      return false;
+    }
+
+    const pedidoActual = pedidos.find((pedido) => pedido.id === id);
+    const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
+
+    const clienteLimpio = limpiarTexto(cambios.cliente || cambios.cliente_nombre || "", 120);
+    const telefonoLimpio = limpiarTelefono(cambios.telefono || "");
+    const ubicacionLimpia = limpiarTexto(cambios.ubicacion || "", 200);
+    const mesaLimpia = limpiarTexto(cambios.mesa || "", 40);
+    const meseroLimpio = limpiarTexto(cambios.mesero || "", 80);
+    const tipoPagoLimpio = limpiarTexto(cambios.tipo_pago || "", 80);
+    const observacionesLimpias = limpiarTexto(cambios.observaciones || "", 500);
+    const pedidoTextoLimpio = limpiarTexto(cambios.pedido_texto || "", 3000);
+    const totalNuevo = Number(cambios.total);
+
+    if (!clienteLimpio) {
+      mostrarMensaje("El pedido debe tener cliente o nombre de mesa.", "warning");
+      return false;
+    }
+
+    if (!Number.isFinite(totalNuevo) || totalNuevo < 0) {
+      mostrarMensaje("El total del pedido no es válido.", "warning");
+      return false;
+    }
+
+    const confirmar = await confirmarRafiki({
+      tipo: "confirmar",
+      titulo: `Editar pedido #${codigoPedido}`,
+      mensaje: "Se actualizarán los datos generales del pedido. Esta acción quedará registrada en auditoría.",
+      textoConfirmar: "Guardar cambios",
+    });
+
+    if (!confirmar) return false;
+
+    setEditandoPedidoId(id);
+
+    try {
+      const payload = {
+        cliente: clienteLimpio,
+        cliente_nombre: clienteLimpio,
+        telefono: telefonoLimpio,
+        ubicacion: ubicacionLimpia || mesaLimpia || "Ubicación pendiente",
+        mesa: mesaLimpia,
+        mesero: meseroLimpio,
+        tipo_pago: tipoPagoLimpio || "Efectivo",
+        observaciones: observacionesLimpias,
+        pedido_texto: pedidoTextoLimpio,
+        total: totalNuevo,
+      };
+
+      const { data, error } = await supabase
+        .from("pedidos")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        mostrarMensaje(`Error editando pedido: ${error.message}`, "error");
+        return false;
+      }
+
+      setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      registrarAuditoria({
+        accion: "pedido_editado",
+        pedido: data,
+        detalle: {
+          antes: {
+            cliente: pedidoActual?.cliente || pedidoActual?.cliente_nombre || "",
+            ubicacion: pedidoActual?.ubicacion || "",
+            mesa: pedidoActual?.mesa || "",
+            total: pedidoActual?.total || 0,
+          },
+          despues: {
+            cliente: data?.cliente || data?.cliente_nombre || "",
+            ubicacion: data?.ubicacion || "",
+            mesa: data?.mesa || "",
+            total: data?.total || 0,
+          },
+        },
+      });
+      mostrarMensaje(`Pedido #${codigoPedido} actualizado correctamente.`, "success");
+      return true;
+    } finally {
+      setEditandoPedidoId(null);
+    }
+  }, [confirmarRafiki, editandoPedidoId, mostrarMensaje, pedidos, puedeEditarPedido, registrarAuditoria, setPedidos]);
+
   return {
     guardandoPedido,
     guardandoEstadoPedidoId,
     eliminandoPedidoId,
+    editandoPedidoId,
     finalizandoPendientes,
     registrarPedido,
     registrarPedidoMesa,
     cambiarEstadoPedido,
     finalizarTodosPendientes,
     eliminarPedidoAdministrador,
+    editarPedidoAdministrador,
   };
 }

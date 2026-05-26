@@ -17,7 +17,7 @@ function compararFechaPedidoDesc(a, b) {
   return new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime();
 }
 
-function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId }) {
+function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
   const [mesaSeleccionada, setMesaSeleccionada] = useState(null);
   const [mostrarTresPedidos, setMostrarTresPedidos] = useState(false);
 
@@ -63,8 +63,6 @@ function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEs
         {MESAS_DISPONIBLES.map((mesa) => {
           const pedidosMesa = pedidosPorMesa.get(mesa) || [];
           const ultimosPedidos = pedidosMesa.slice(0, mostrarTresPedidos ? 3 : 1);
-          const totalMesa = pedidosMesa.reduce((total, pedido) => total + Number(pedido?.total || 0), 0);
-
           return (
             <article key={mesa} className={`admin-mesa-card ${mesa === "5B" ? "mesa-sola" : ""} ${pedidosMesa.length > 0 ? "con-pedidos" : "sin-pedidos"}`}>
               <div className="admin-mesa-card-head">
@@ -98,12 +96,6 @@ function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEs
                 Ver pedido completo
               </button>
 
-              {pedidosMesa.length > 0 && (
-                <div className="admin-mesa-total">
-                  <span>Total mesa</span>
-                  <strong>{dinero(totalMesa)}</strong>
-                </div>
-              )}
             </article>
           );
         })}
@@ -130,12 +122,108 @@ function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEs
                   pedido={pedido}
                   onCambiarEstado={cambiarEstadoPedido}
                   guardandoEstado={guardandoEstadoPedidoId === pedido.id}
+                  puedeEditarPedido={puedeEditarPedido}
+                  onEditarPedido={onEditarPedido}
+                  editandoPedido={editandoPedidoId === pedido.id}
                 />
               ))}
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
+  const [form, setForm] = useState(() => ({
+    cliente: pedido?.cliente || pedido?.cliente_nombre || "",
+    telefono: pedido?.telefono || "",
+    ubicacion: pedido?.ubicacion || "",
+    mesa: pedido?.mesa || "",
+    mesero: pedido?.mesero || "",
+    tipo_pago: pedido?.tipo_pago || "Efectivo",
+    observaciones: pedido?.observaciones || "",
+    pedido_texto: pedido?.pedido_texto || "",
+    total: Number(pedido?.total || 0),
+  }));
+
+  const cambiarCampo = (campo) => (event) => {
+    const valor = campo === "total" ? event.target.value : event.target.value;
+    setForm((actual) => ({ ...actual, [campo]: valor }));
+  };
+
+  const guardar = async (event) => {
+    event.preventDefault();
+    const ok = await onGuardar?.(pedido.id, { ...form, total: Number(form.total || 0) });
+    if (ok) onCerrar?.();
+  };
+
+  return (
+    <div className="admin-mesa-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Editar pedido ${obtenerCodigoPedido(pedido)}`}>
+      <form className="admin-mesa-modal editar-pedido-modal" onSubmit={guardar}>
+        <div className="admin-mesa-modal-head">
+          <div>
+            <span>Editar pedido</span>
+            <h3>#{obtenerCodigoPedido(pedido)}</h3>
+            <p>Solo rol administrador. Los cambios quedan en auditoría.</p>
+          </div>
+          <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cerrar</button>
+        </div>
+
+        <div className="admin-mesa-modal-body editar-pedido-form">
+          <label>
+            Cliente / mesa
+            <input value={form.cliente} onChange={cambiarCampo("cliente")} required />
+          </label>
+          <label>
+            Teléfono
+            <input value={form.telefono} onChange={cambiarCampo("telefono")} />
+          </label>
+          <label>
+            Ubicación
+            <input value={form.ubicacion} onChange={cambiarCampo("ubicacion")} />
+          </label>
+          <label>
+            Mesa
+            <select value={form.mesa} onChange={cambiarCampo("mesa")}>
+              <option value="">Sin mesa</option>
+              {MESAS_DISPONIBLES.map((mesa) => <option key={mesa} value={mesa}>{mesa}</option>)}
+              <option value="Llevar">Llevar</option>
+            </select>
+          </label>
+          <label>
+            Mesero
+            <input value={form.mesero} onChange={cambiarCampo("mesero")} />
+          </label>
+          <label>
+            Método de pago
+            <select value={form.tipo_pago} onChange={cambiarCampo("tipo_pago")}>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Tarjeta">Tarjeta</option>
+              <option value="Pendiente">Pendiente</option>
+            </select>
+          </label>
+          <label>
+            Total
+            <input type="number" min="0" step="100" value={form.total} onChange={cambiarCampo("total")} required />
+          </label>
+          <label className="editar-pedido-form-full">
+            Observaciones
+            <textarea rows="3" value={form.observaciones} onChange={cambiarCampo("observaciones")} />
+          </label>
+          <label className="editar-pedido-form-full">
+            Detalle manual del pedido
+            <textarea rows="5" value={form.pedido_texto} onChange={cambiarCampo("pedido_texto")} placeholder="Opcional. Útil para correcciones rápidas cuando el pedido no tiene items estructurados." />
+          </label>
+        </div>
+
+        <div className="editar-pedido-actions">
+          <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cancelar</button>
+          <button type="submit" className="button green" disabled={guardando}>{guardando ? "Guardando..." : "Guardar cambios"}</button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -169,10 +257,15 @@ function AdminPedidosSectionBase({
   puedeEliminarPedido,
   eliminarPedidoAdministrador,
   eliminandoPedidoId,
+  puedeEditarPedido = false,
+  editarPedidoAdministrador,
+  editandoPedidoId,
   pedidosFinalizados,
   consolidado,
   pedidosActivos,
 }) {
+  const [pedidoEditando, setPedidoEditando] = useState(null);
+
   const refrescarPedidos = useCallback(() => {
     setRecargaPedidos((actual) => actual + 1);
   }, [setRecargaPedidos]);
@@ -254,6 +347,9 @@ function AdminPedidosSectionBase({
         pedidosActivos={pedidosActivos}
         cambiarEstadoPedido={cambiarEstadoPedido}
         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+        puedeEditarPedido={puedeEditarPedido}
+        onEditarPedido={setPedidoEditando}
+        editandoPedidoId={editandoPedidoId}
       />
 
       <AdminPedidoGrupo
@@ -270,6 +366,9 @@ function AdminPedidosSectionBase({
         puedeEliminarPedido={puedeEliminarPedido}
         eliminarPedidoAdministrador={eliminarPedidoAdministrador}
         eliminandoPedidoId={eliminandoPedidoId}
+        puedeEditarPedido={puedeEditarPedido}
+        onEditarPedido={setPedidoEditando}
+        editandoPedidoId={editandoPedidoId}
       />
 
       <AdminPedidoGrupo
@@ -282,6 +381,9 @@ function AdminPedidosSectionBase({
         puedeEliminarPedido={puedeEliminarPedido}
         eliminarPedidoAdministrador={eliminarPedidoAdministrador}
         eliminandoPedidoId={eliminandoPedidoId}
+        puedeEditarPedido={puedeEditarPedido}
+        onEditarPedido={setPedidoEditando}
+        editandoPedidoId={editandoPedidoId}
       />
 
       <AdminPedidoGrupo
@@ -293,7 +395,19 @@ function AdminPedidosSectionBase({
         cambiarEstadoPedido={cambiarEstadoPedido}
         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
         eliminandoPedidoId={eliminandoPedidoId}
+        puedeEditarPedido={puedeEditarPedido}
+        onEditarPedido={setPedidoEditando}
+        editandoPedidoId={editandoPedidoId}
       />
+
+      {pedidoEditando && (
+        <EditarPedidoModal
+          pedido={pedidoEditando}
+          onCerrar={() => setPedidoEditando(null)}
+          onGuardar={editarPedidoAdministrador}
+          guardando={editandoPedidoId === pedidoEditando.id}
+        />
+      )}
 
       <AdminConsolidadoResumen
         consolidado={consolidado}

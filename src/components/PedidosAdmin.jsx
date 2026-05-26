@@ -47,7 +47,7 @@ function renderDetalleCafeteria(item) {
   return filas;
 }
 
-function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado }) {
+function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado, puedeEditarPedido = false, onEditarPedido, editandoPedido = false }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
@@ -179,6 +179,17 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
       )}
 
       <div className="pedido-actions">
+        {puedeEditarPedido && (
+          <button
+            type="button"
+            className="button light"
+            onClick={() => onEditarPedido?.(pedido)}
+            disabled={editandoPedido}
+          >
+            {editandoPedido ? "Editando..." : "Editar"}
+          </button>
+        )}
+
         {estadoNormalizado !== "Finalizado" ? (
           <button
             type="button"
@@ -251,7 +262,7 @@ export function resumirItemsPedidoCompacto(pedido) {
   }).join(" + ");
 }
 
-function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, pedidosPorPagina = 15 }) {
+function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, pedidosPorPagina = 15 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const tablaRef = useRef(null);
   const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
@@ -339,6 +350,16 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                     </button>
                   ) : (
                     <span className="mini-estado-finalizado">Entregado</span>
+                  )}
+                  {onEditarPedido && estadoNormalizado !== "Borrado" && (
+                    <button
+                      type="button"
+                      className="mini-btn"
+                      onClick={() => onEditarPedido?.(pedido)}
+                      disabled={editandoPedidoId === pedido.id}
+                    >
+                      {editandoPedidoId === pedido.id ? "Editando..." : "Editar"}
+                    </button>
                   )}
                   <button type="button" className="mini-btn print" onClick={() => imprimirTicketPedido(pedido)}>
                     Imprimir

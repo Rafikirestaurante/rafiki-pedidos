@@ -16,8 +16,12 @@ function AdminPedidoGrupoBase({
   puedeEliminarPedido = false,
   eliminarPedidoAdministrador,
   eliminandoPedidoId,
+  puedeEditarPedido = false,
+  onEditarPedido: abrirEditorPedido,
+  editandoPedidoId,
 }) {
   const onEliminarPedido = puedeEliminarPedido ? eliminarPedidoAdministrador : undefined;
+  const onEditarPedido = puedeEditarPedido ? abrirEditorPedido : undefined;
 
   return (
     <div className="pedido-seccion">
@@ -47,6 +51,8 @@ function AdminPedidoGrupoBase({
           guardandoEstadoPedidoId={guardandoEstadoPedidoId}
           onEliminarPedido={onEliminarPedido}
           eliminandoPedidoId={eliminandoPedidoId}
+          onEditarPedido={onEditarPedido}
+          editandoPedidoId={editandoPedidoId}
         />
       )}
     </div>

@@ -302,6 +302,19 @@ export const appStyles = `
         .admin-mesa-modal-head h3 { margin: 1px 0; color: #7c2d12; font-size: 26px; font-family: 'Fraunces', serif; }
         .admin-mesa-modal-head p { margin: 0; color: #78716c; font-weight: 800; font-size: 13px; }
         .admin-mesa-modal-body { padding: 14px; overflow-y: auto; }
+
+        .editar-pedido-modal { width: min(760px, 100%); }
+        .editar-pedido-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .editar-pedido-form label { display: grid; gap: 6px; color: #7c2d12; font-size: 12px; font-weight: 900; }
+        .editar-pedido-form input,
+        .editar-pedido-form select,
+        .editar-pedido-form textarea { width: 100%; border: 1.5px solid #fed7aa; border-radius: 14px; padding: 11px 12px; background: #fff; color: #1c1917; font-size: 14px; font-weight: 800; outline: none; }
+        .editar-pedido-form input:focus,
+        .editar-pedido-form select:focus,
+        .editar-pedido-form textarea:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.14); }
+        .editar-pedido-form-full { grid-column: 1 / -1; }
+        .editar-pedido-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid #fed7aa; background: #fff7ed; }
+        @media (max-width: 620px) { .editar-pedido-form { grid-template-columns: 1fr; } .editar-pedido-actions { flex-direction: column; } .editar-pedido-actions .button { width: 100%; } }
         @media (max-width: 620px) { .admin-mesas-hoy-card { padding: 10px; border-radius: 20px; } .admin-mesas-hoy-title { align-items: flex-start; } .admin-mesas-toggle { padding: 7px 8px; font-size: 10px; } .admin-mesas-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .admin-mesa-card { min-height: auto; padding: 9px; border-radius: 16px; } .admin-mesa-card-head strong { width: 38px; height: 38px; border-radius: 13px; font-size: 16px; } .admin-mesa-card-head span { padding: 5px 7px; font-size: 10px; } .admin-mesa-pedido-mini { padding: 7px; } .admin-mesa-ver { padding: 8px 9px; font-size: 11px; } .admin-mesa-total { flex-direction: column; align-items: flex-start; gap: 2px; } .admin-mesa-card.mesa-sola { max-width: none; } .admin-mesa-modal-backdrop { align-items: stretch; padding: 8px; } .admin-mesa-modal { max-height: 96vh; border-radius: 20px; } .admin-mesa-modal-head { align-items: flex-start; flex-direction: column; } .admin-mesa-modal-head .button { width: 100%; } }
         @media (max-width: 390px) { .admin-mesas-grid { grid-template-columns: 1fr; } .admin-mesa-card.mesa-sola { grid-column: auto; } }
 
@@ -329,7 +342,7 @@ export const appStyles = `
         .item-detalle h4 { margin-bottom: 8px; font-size: 18px; color: #c2410c; }
         .item-detalle p { margin-bottom: 5px; font-size: 14px; }
         .nota-cocina { margin-top: 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 16px; padding: 12px; }
-        .pedido-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+        .pedido-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 14px; }
         .pedido-actions select { border: 1.5px solid #e7e5e4; border-radius: 16px; padding: 13px 14px; background: #fafaf9; font-weight: 800; outline: none; }
         .pedido-text { white-space: pre-line; background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; font-weight: 700; margin-top: 12px; }
         .badge { border: 1px solid transparent; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 900; }

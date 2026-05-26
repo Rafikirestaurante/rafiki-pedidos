@@ -179,6 +179,7 @@ export default function App() {
   const puedeVerGastos = usuarioPuede(adminRol, "gastos");
   const puedeVerInformeGastos = usuarioPuede(adminRol, "gastos_informe");
   const puedeEliminarPedido = usuarioPuede(adminRol, "eliminar_pedido");
+  const puedeEditarPedido = usuarioPuede(adminRol, "editar_pedido");
   const puedeCambiarEstado = usuarioPuede(adminRol, "cambiar_estado");
   const puedeFinalizarPendientes = usuarioPuede(adminRol, "finalizar_pendientes");
 
@@ -1272,6 +1273,8 @@ export default function App() {
     cambiarEstadoPedido,
     finalizarTodosPendientes,
     eliminarPedidoAdministrador,
+    editarPedidoAdministrador,
+    editandoPedidoId,
   } = usePedidos({
     itemsPedido,
     cliente,
@@ -1286,6 +1289,7 @@ export default function App() {
     adminActor,
     puedeCambiarEstado,
     puedeEliminarPedido,
+    puedeEditarPedido,
     puedeFinalizarPendientes,
     confirmarRafiki,
     mostrarMensaje,
@@ -1531,6 +1535,9 @@ export default function App() {
                   puedeEliminarPedido={puedeEliminarPedido}
                   eliminarPedidoAdministrador={eliminarPedidoAdministrador}
                   eliminandoPedidoId={eliminandoPedidoId}
+                  puedeEditarPedido={puedeEditarPedido}
+                  editarPedidoAdministrador={editarPedidoAdministrador}
+                  editandoPedidoId={editandoPedidoId}
                   pedidosFinalizados={pedidosFinalizados}
                   consolidado={consolidado}
                   pedidosActivos={pedidosActivos}

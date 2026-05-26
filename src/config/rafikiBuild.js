@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '22P1-MESAS-RESUMEN-COMPACTO-2026-05-26',
-  phase: 'Fase 22P1 - Mesas resumen compacto',
+  version: '22P2-ADMIN-EDITAR-PEDIDOS-2026-05-26',
+  phase: 'Fase 22P2 - Admin editar pedidos',
   date: '2026-05-26',
-  fase: '22P1',
-  notes: 'Agrega pestaña Admin Gastos Diarios con registro de facturas, categorías, método de pago e Informe de gastos visible solo para rol administrador.'
+  fase: '22P2',
+  notes: 'Quita total por mesa y permite al rol administrador editar datos generales de pedidos desde Admin.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
