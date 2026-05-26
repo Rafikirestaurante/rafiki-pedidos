@@ -1,6 +1,6 @@
 {
-  "version": "22P-GASTOS-DIARIOS-2026-05-26",
-  "phase": "Fase 22P - Gastos Diarios",
+  "version": "22P1-MESAS-RESUMEN-COMPACTO-2026-05-26",
+  "phase": "Fase 22P1 - Mesas resumen compacto",
   "date": "2026-05-26",
   "notes": "Nueva pestaña Admin Gastos Diarios e Informe de gastos restringido al rol administrador."
 }

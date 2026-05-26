@@ -19,6 +19,7 @@ function compararFechaPedidoDesc(a, b) {
 
 function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId }) {
   const [mesaSeleccionada, setMesaSeleccionada] = useState(null);
+  const [mostrarTresPedidos, setMostrarTresPedidos] = useState(false);
 
   const pedidosPorMesa = useMemo(() => {
     const mapa = new Map(MESAS_DISPONIBLES.map((mesa) => [mesa, []]));
@@ -49,16 +50,23 @@ function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEs
           <h4>Mesas y últimos pedidos</h4>
           <p className="muted small">Vista rápida por mesa, similar al paso de datos de entrega.</p>
         </div>
+        <button
+          type="button"
+          className="button light admin-mesas-toggle"
+          onClick={() => setMostrarTresPedidos((actual) => !actual)}
+        >
+          {mostrarTresPedidos ? "Ver solo último" : "Mostrar últimos 3"}
+        </button>
       </div>
 
       <div className="admin-mesas-grid" aria-label="Resumen de mesas del día">
         {MESAS_DISPONIBLES.map((mesa) => {
           const pedidosMesa = pedidosPorMesa.get(mesa) || [];
-          const ultimosPedidos = pedidosMesa.slice(0, 2);
+          const ultimosPedidos = pedidosMesa.slice(0, mostrarTresPedidos ? 3 : 1);
           const totalMesa = pedidosMesa.reduce((total, pedido) => total + Number(pedido?.total || 0), 0);
 
           return (
-            <article key={mesa} className={`admin-mesa-card ${pedidosMesa.length > 0 ? "con-pedidos" : "sin-pedidos"}`}>
+            <article key={mesa} className={`admin-mesa-card ${mesa === "5B" ? "mesa-sola" : ""} ${pedidosMesa.length > 0 ? "con-pedidos" : "sin-pedidos"}`}>
               <div className="admin-mesa-card-head">
                 <strong>{mesa}</strong>
                 <span>{pedidosMesa.length} pedido{pedidosMesa.length === 1 ? "" : "s"}</span>
