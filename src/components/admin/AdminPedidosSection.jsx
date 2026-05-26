@@ -5,7 +5,7 @@ import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
 import AdminConsolidadoResumen from "./AdminConsolidadoResumen";
 import { MESAS_DISPONIBLES } from "../../utils/mesas";
-import { PedidoCocina, resumirItemsPedidoCompacto } from "../PedidosAdmin";
+import { PedidoCocina, TablaPedidosCompacta, resumirItemsPedidoCompacto } from "../PedidosAdmin";
 
 
 function normalizarMesaPedido(pedido) {
@@ -265,6 +265,16 @@ function AdminPedidosSectionBase({
   pedidosActivos,
 }) {
   const [pedidoEditando, setPedidoEditando] = useState(null);
+  const [ordenPedidosHoy, setOrdenPedidosHoy] = useState("ultimos");
+
+  const pedidosUnificados = useMemo(() => {
+    const lista = Array.isArray(pedidosActivos) ? pedidosActivos.slice() : [];
+    return lista.sort((a, b) => {
+      const fechaA = new Date(a?.created_at || 0).getTime();
+      const fechaB = new Date(b?.created_at || 0).getTime();
+      return ordenPedidosHoy === "primeros" ? fechaA - fechaB : fechaB - fechaA;
+    });
+  }, [pedidosActivos, ordenPedidosHoy]);
 
   const refrescarPedidos = useCallback(() => {
     setRecargaPedidos((actual) => actual + 1);
@@ -352,39 +362,54 @@ function AdminPedidosSectionBase({
         editandoPedidoId={editandoPedidoId}
       />
 
-      <AdminPedidoGrupo
-        icono="🟡"
-        titulo="Pedidos pendientes"
-        pedidos={pedidosPendientes}
-        mensajeVacio="No hay pedidos pendientes."
-        mostrarFinalizarTodos
-        puedeFinalizarPendientes={puedeFinalizarPendientes}
-        finalizarTodosPendientes={finalizarTodosPendientes}
-        finalizandoPendientes={finalizandoPendientes}
-        cambiarEstadoPedido={cambiarEstadoPedido}
-        guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-        puedeEliminarPedido={puedeEliminarPedido}
-        eliminarPedidoAdministrador={eliminarPedidoAdministrador}
-        eliminandoPedidoId={eliminandoPedidoId}
-        puedeEditarPedido={puedeEditarPedido}
-        onEditarPedido={setPedidoEditando}
-        editandoPedidoId={editandoPedidoId}
-      />
+      <div className="pedido-seccion">
+        <div className="section-heading section-heading-pedidos-unificados">
+          <h3>📋 Pedidos</h3>
+          <div className="section-heading-actions pedidos-orden-actions">
+            {pedidosPendientes.length > 0 && puedeFinalizarPendientes && (
+              <button
+                type="button"
+                className="mini-btn green"
+                onClick={finalizarTodosPendientes}
+                disabled={finalizandoPendientes}
+              >
+                {finalizandoPendientes ? "Finalizando..." : "Finalizar todos"}
+              </button>
+            )}
+            <button
+              type="button"
+              className={ordenPedidosHoy === "ultimos" ? "mini-btn active" : "mini-btn"}
+              onClick={() => setOrdenPedidosHoy("ultimos")}
+              title="Mostrar primero los últimos pedidos"
+            >
+              Últimos
+            </button>
+            <button
+              type="button"
+              className={ordenPedidosHoy === "primeros" ? "mini-btn active" : "mini-btn"}
+              onClick={() => setOrdenPedidosHoy("primeros")}
+              title="Mostrar desde el primer pedido del día"
+            >
+              Primeros
+            </button>
+            <span>{pedidosUnificados.length}</span>
+          </div>
+        </div>
 
-      <AdminPedidoGrupo
-        icono="✅"
-        titulo="Finalizados"
-        pedidos={pedidosFinalizados}
-        mensajeVacio="Todavía no hay pedidos finalizados."
-        cambiarEstadoPedido={cambiarEstadoPedido}
-        guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-        puedeEliminarPedido={puedeEliminarPedido}
-        eliminarPedidoAdministrador={eliminarPedidoAdministrador}
-        eliminandoPedidoId={eliminandoPedidoId}
-        puedeEditarPedido={puedeEditarPedido}
-        onEditarPedido={setPedidoEditando}
-        editandoPedidoId={editandoPedidoId}
-      />
+        {pedidosUnificados.length === 0 ? (
+          <div className="box soft">No hay pedidos registrados para esta vista.</div>
+        ) : (
+          <TablaPedidosCompacta
+            pedidos={pedidosUnificados}
+            onCambiarEstado={cambiarEstadoPedido}
+            guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+            onEliminarPedido={puedeEliminarPedido ? eliminarPedidoAdministrador : undefined}
+            eliminandoPedidoId={eliminandoPedidoId}
+            onEditarPedido={puedeEditarPedido ? setPedidoEditando : undefined}
+            editandoPedidoId={editandoPedidoId}
+          />
+        )}
+      </div>
 
       <AdminPedidoGrupo
         icono="🗑️"

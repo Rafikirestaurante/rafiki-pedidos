@@ -206,6 +206,8 @@ export const appStyles = `
         .section-heading span { background: linear-gradient(135deg, #f97316, #f59e0b); color: #fff; min-width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
         .section-heading-actions { display: inline-flex; align-items: center; gap: 8px; }
         .section-heading-actions .mini-btn { width: auto; margin-bottom: 0; white-space: nowrap; padding: 8px 10px; }
+        .section-heading-actions .mini-btn.active { background: #fed7aa; border-color: #fdba74; color: #7c2d12; box-shadow: inset 0 0 0 1px rgba(124,45,18,0.08); }
+        .pedidos-orden-actions { flex-wrap: wrap; justify-content: flex-end; }
         .section-heading-danger { background: #fef2f2; border-color: #fecaca; }
         .section-heading-danger h3 { color: #991b1b; }
         .section-heading-danger span { background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 4px 10px rgba(220,38,38,0.22); }
@@ -267,6 +269,7 @@ export const appStyles = `
         .paginacion-botones .mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .paginacion-botones strong { color: #9a3412; white-space: nowrap; }
         @media (max-width: 720px) { .paginacion-pedidos { align-items: stretch; flex-direction: column; } .paginacion-botones { justify-content: space-between; } }
+        @media (max-width: 720px) { .section-heading-pedidos-unificados { align-items: flex-start; flex-direction: column; gap: 10px; } .section-heading-pedidos-unificados .section-heading-actions { width: 100%; justify-content: flex-start; } .section-heading-pedidos-unificados .mini-btn { flex: 0 0 auto; } }
 
 
         .admin-mesas-hoy-card { margin: 14px 0 18px; border: 1px solid #fed7aa; background: linear-gradient(135deg, #fff7ed, #fffbeb); border-radius: 24px; padding: 14px; box-shadow: 0 8px 22px rgba(124,45,18,0.06); }
