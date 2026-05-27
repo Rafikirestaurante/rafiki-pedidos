@@ -39,7 +39,7 @@ function resumirPorCampo(gastos, campo) {
   }, {});
 }
 
-export default function GastosDiarios({ esAdministrador = false }) {
+export default function GastosDiarios({ esAdministrador = false, modoRapido = false, mostrarInforme = true }) {
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL);
   const [fechaInforme, setFechaInforme] = useState(obtenerFechaGastoHoy());
   const [gastos, setGastos] = useState([]);
@@ -138,7 +138,7 @@ export default function GastosDiarios({ esAdministrador = false }) {
   }
 
   return (
-    <section className="card card-pad gastos-diarios-panel">
+    <section className={modoRapido ? "card card-pad gastos-diarios-panel gastos-rapidos-panel" : "card card-pad gastos-diarios-panel"}>
       <style>{`
         .gastos-diarios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
         .gastos-diarios-panel input, .gastos-diarios-panel textarea, .gastos-diarios-panel select { width: 100%; }
@@ -151,22 +151,28 @@ export default function GastosDiarios({ esAdministrador = false }) {
         .gastos-tabla th { background: #fff7ed; color: #111827; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
         .gastos-informe-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
         .gastos-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+        .gastos-rapidos-panel { max-width: 720px; margin: 0 auto; }
+        .gastos-rapidos-panel .gastos-formulario-box { padding: 16px; }
+        .gastos-rapidos-panel .gastos-boton-guardar { min-height: 52px; font-size: 1.02rem; }
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
           .gastos-informe-header { align-items: stretch; }
           .gastos-informe-header label { width: 100%; }
           .gastos-tabla { min-width: 680px; }
+          .gastos-rapidos-panel { border-radius: 18px; padding: 14px; }
         }
       `}</style>
 
-      <h2>💸 Gastos Diarios</h2>
-      <p className="muted">Registra facturas, compras y salidas de dinero del día. El informe inferior solo lo ve el rol administrador.</p>
+      <div className="gastos-rapidos-header">
+        <h2>{modoRapido ? "💸 Registrar gasto rápido" : "💸 Gastos Diarios"}</h2>
+        <p className="muted">{modoRapido ? "Formulario liviano para guardar gastos desde el celular." : "Registra facturas, compras y salidas de dinero del día. El informe inferior solo lo ve el rol administrador."}</p>
+      </div>
 
       {!supabaseConfigOk && <div className="alert alert-warning">{supabaseConfigMensaje}</div>}
       {mensaje && <div className="alert alert-success">{mensaje}</div>}
       {error && <div className="alert alert-error">{error}</div>}
 
-      <form onSubmit={guardarGasto} className="box soft" style={{ marginTop: 12 }}>
+      <form onSubmit={guardarGasto} className="box soft gastos-formulario-box" style={{ marginTop: 12 }}>
         <h3>{editandoId ? "Editar gasto" : "Registrar gasto"}</h3>
         <div className="gastos-diarios-grid">
           <label className="field-label">No. factura
@@ -202,11 +208,12 @@ export default function GastosDiarios({ esAdministrador = false }) {
         </label>
 
         <div className="admin-actions-stack horizontal" style={{ marginTop: 12 }}>
-          <button type="submit" className="button" disabled={guardando || !supabaseConfigOk}>{guardando ? "Guardando..." : editandoId ? "Actualizar gasto" : "Guardar gasto"}</button>
+          <button type="submit" className="button gastos-boton-guardar" disabled={guardando || !supabaseConfigOk}>{guardando ? "Guardando..." : editandoId ? "Actualizar gasto" : "Guardar gasto"}</button>
           <button type="button" className="button light" onClick={limpiarFormulario}>Limpiar</button>
         </div>
       </form>
 
+      {mostrarInforme && (
       <section className="box" style={{ marginTop: 16 }}>
         <div className="gastos-informe-header">
           <div>
@@ -270,6 +277,7 @@ export default function GastosDiarios({ esAdministrador = false }) {
           </>
         )}
       </section>
+      )}
     </section>
   );
 }

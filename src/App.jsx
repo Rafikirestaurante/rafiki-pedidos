@@ -1367,8 +1367,8 @@ export default function App() {
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
-                <h1>{vista === "mesas" ? "Panel de mesas" : "Menú diario y pedidos por WhatsApp"}</h1>
-                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : "App real conectada a Supabase."}</p>
+                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : "Menú diario y pedidos por WhatsApp"}</h1>
+                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : "App real conectada a Supabase."}</p>
               </div>
 
               {(vista === "cliente" || vista === "confirmacion") && (
@@ -1391,7 +1391,30 @@ export default function App() {
                   >
                     Panel admin
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => navegar("/gastos", "gastos")}
+                  >
+                    Gastos
+                  </button>
 
+                </div>
+              )}
+
+              {vista === "gastos" && (
+                <div className="nav nav-wrap">
+                  <button
+                    type="button"
+                    onClick={() => navegar("/mesas", "mesas")}
+                  >
+                    Panel mesas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
+                  >
+                    Panel admin
+                  </button>
                 </div>
               )}
             </header>
@@ -1401,6 +1424,12 @@ export default function App() {
           {cargando && <div className="card card-pad">Verificando sesión administrativa...</div>}
 
           {!cargando && vista === "inicio" && <InicioRafiki navegar={navegar} />}
+
+          {!cargando && vista === "gastos" && (
+            <Suspense fallback={<CargandoModulo texto="Cargando gastos rápidos..." />}>
+              <GastosDiarios modoRapido mostrarInforme={false} />
+            </Suspense>
+          )}
 
           {!cargando && vista === "adminLogin" && (
             <AdminLogin

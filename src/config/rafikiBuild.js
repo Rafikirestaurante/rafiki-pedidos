@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '22P4-ADMIN-PEDIDOS-UNIFICADOS-2026-05-26',
-  phase: 'Fase 22P4 - Admin Pedidos hoy unificado',
-  date: '2026-05-26',
-  fase: '22P4',
-  notes: 'Unifica pendientes y finalizados en una sola tabla Pedidos con orden Últimos/Primeros y conserva cancelados aparte.'
+  version: '22Q-GASTOS-RAPIDOS-RUTA-2026-05-27',
+  phase: 'Fase 22Q - Ruta gastos rápidos',
+  date: '2026-05-27',
+  fase: '22Q',
+  notes: 'Agrega ruta /gastos como acceso liviano para registrar gastos desde celular y accesos rápidos desde Admin y Panel Mesas.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

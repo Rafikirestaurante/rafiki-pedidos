@@ -16,6 +16,10 @@ export function obtenerVistaInicial() {
     return "mesas";
   }
 
+  if (ruta === "/gastos") {
+    return "gastos";
+  }
+
   return "inicio";
 }
 

@@ -28,6 +28,11 @@ export default function AdminHeaderTabs({
           <button type="button" onClick={() => navegar("/mesas", "mesas")}>
             Panel mesas
           </button>
+          {puedeVerGastos && (
+            <button type="button" onClick={() => navegar("/gastos", "gastos")}>
+              Gastos
+            </button>
+          )}
         </div>
       </header>
 
