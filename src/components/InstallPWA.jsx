@@ -56,7 +56,7 @@ export default function InstallPWA() {
     }
   };
 
-  // La instalación se ofrece solo en rutas internas: /mesas, /admin y /rafa.
+  // La instalación se ofrece solo en rutas internas: /mesas, /admin, /rafa y /gastos.
   // /cliente sigue funcionando como web pública, sin promoción de instalación.
   if (!isInstallablePage || isStandalone) return null;
   if (!installPrompt && !esIOS() && !esAndroid()) return null;

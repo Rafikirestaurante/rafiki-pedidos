@@ -1,7 +1,26 @@
 import { obtenerSesionActiva } from "./pedidos";
 
+function estaEnModoPWAInstalada() {
+  return Boolean(
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.matchMedia?.('(display-mode: fullscreen)').matches ||
+      window.navigator.standalone
+  );
+}
+
+function rutaSeguraPWA(ruta) {
+  if (!estaEnModoPWAInstalada()) return ruta;
+  if (ruta === "/cliente" || ruta === "/pedido" || ruta === "/") return "/mesas";
+  return ruta;
+}
+
 export function obtenerVistaInicial() {
-  const ruta = window.location.pathname.replace(/\/$/, "") || "/";
+  let ruta = window.location.pathname.replace(/\/$/, "") || "/";
+  const rutaOriginal = ruta;
+  ruta = rutaSeguraPWA(ruta);
+  if (ruta !== rutaOriginal) {
+    window.history.replaceState({}, "", ruta);
+  }
   const adminActivo = obtenerSesionActiva("rafikiAdminActivo");
 
   if (ruta === "/admin") {
@@ -24,7 +43,8 @@ export function obtenerVistaInicial() {
 }
 
 export function actualizarRuta(ruta) {
-  if (window.location.pathname !== ruta) {
-    window.history.pushState({}, "", ruta);
+  const rutaFinal = rutaSeguraPWA(ruta);
+  if (window.location.pathname !== rutaFinal) {
+    window.history.pushState({}, "", rutaFinal);
   }
 }
