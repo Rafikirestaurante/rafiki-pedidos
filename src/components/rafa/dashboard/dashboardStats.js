@@ -55,24 +55,24 @@ function crearResumenMesasVsLlevar(pedidos) {
     const grupo = obtenerMesaValidaRafaPedido(pedido) ? "mesas" : "llevar";
     const grupoNombre = grupo === "mesas" ? "Pedidos en mesa" : "Pedidos para llevar";
     const items = obtenerItemsPedido(pedido);
+    const totalesPorLinea = { restaurante: 0, cafeteria: 0 };
 
     if (!items.length) {
-      const totalPedido = Number(pedido.total) || 0;
-      resumen[grupo].restaurante.total += totalPedido;
-      resumen[grupo].restaurante.cantidad += 1;
-      sumarEnMapa(resumen.lista, `${grupoNombre} · Restaurante`, 1, totalPedido);
-      return;
+      totalesPorLinea.restaurante = Number(pedido.total) || 0;
+    } else {
+      items.forEach((item) => {
+        const totalItem = calcularTotalItem(item);
+        const linea = obtenerLineaItemRafa(item) === "Cafetería" ? "cafeteria" : "restaurante";
+        totalesPorLinea[linea] += totalItem;
+      });
     }
 
-    items.forEach((item) => {
-      const cantidad = Number(item.cantidad) || 1;
-      const totalItem = calcularTotalItem(item);
-      const linea = obtenerLineaItemRafa(item);
-      const claveLinea = linea === "Cafetería" ? "cafeteria" : "restaurante";
-
-      resumen[grupo][claveLinea].total += totalItem;
-      resumen[grupo][claveLinea].cantidad += cantidad;
-      sumarEnMapa(resumen.lista, `${grupoNombre} · ${linea}`, cantidad, totalItem);
+    Object.entries(totalesPorLinea).forEach(([claveLinea, totalLinea]) => {
+      if (totalLinea <= 0) return;
+      const lineaNombre = claveLinea === "cafeteria" ? "Cafetería" : "Restaurante";
+      resumen[grupo][claveLinea].total += totalLinea;
+      resumen[grupo][claveLinea].cantidad += 1;
+      sumarEnMapa(resumen.lista, `${grupoNombre} · ${lineaNombre}`, 1, totalLinea);
     });
   });
 
@@ -274,6 +274,12 @@ function obtenerEtiquetaPagoPedido(pedido) {
   return pago || "No especificado";
 }
 
+
+function obtenerEtiquetaMeseroPedido(pedido) {
+  const mesero = String(pedido.mesero || pedido.nombre_mesero || pedido.atendido_por || "Sin mesero").trim();
+  return mesero || "Sin mesero";
+}
+
 function obtenerHoraColombia(fecha) {
   if (!fecha) return null;
   try {
@@ -311,6 +317,7 @@ export function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resu
   const porEstado = new Map();
   const porProducto = new Map();
   const porMesa = new Map();
+  const porMesero = new Map();
   const resumenMesasVsLlevar = crearResumenMesasVsLlevar(pedidos);
 
   pedidos.forEach((pedido) => {
@@ -322,6 +329,7 @@ export function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resu
     sumarEnMapa(porPago, obtenerEtiquetaPagoPedido(pedido), 1, totalPedido);
     sumarEnMapa(porOrigen, obtenerEtiquetaOrigenPedido(pedido), 1, totalPedido);
     sumarEnMapa(porEstado, obtenerEstadoPedido(pedido), 1, totalPedido);
+    sumarEnMapa(porMesero, obtenerEtiquetaMeseroPedido(pedido), 1, totalPedido);
     const mesa = obtenerMesaPedido(pedido);
     if (mesa) sumarEnMapa(porMesa, mesa, 1, totalPedido);
   });
@@ -334,6 +342,7 @@ export function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resu
   const ventasPorPago = ordenarResumen(porPago);
   const ventasPorOrigen = ordenarResumen(porOrigen);
   const ventasPorEstado = ordenarResumen(porEstado);
+  const ventasPorMesero = ordenarResumen(porMesero);
   const productosTop = ordenarResumen(porProducto).slice(0, 10);
   const mesasTop = ordenarResumen(porMesa).slice(0, 10);
   const mejorHora = ordenarResumen(porHora)[0] || null;
@@ -349,6 +358,7 @@ export function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resu
     ventasPorPago,
     ventasPorOrigen,
     ventasPorEstado,
+    ventasPorMesero,
     productosTop,
     mesasTop,
     mejorHora,
@@ -537,17 +547,34 @@ export function crearDetalleDashboardSeleccionado(tipo, contexto) {
     };
   }
 
-  if (tipo === "estados") {
+  if (tipo === "origen-linea") {
     return {
-      titulo: "Detalle profundo · Estados",
-      descripcion: "Pedidos reales separados por estado para revisar pendientes, finalizados o inconsistencias.",
+      titulo: "Detalle profundo · Pedidos por línea y origen",
+      descripcion: "Cuenta pedidos de restaurante y cafetería separados entre mesa y para llevar.",
       resumen: [
-        { label: "Finalizados", valor: finalizados },
-        { label: "Pendientes", valor: pendientes },
-        { label: "Pedidos", valor: totalPedidos }
+        { label: "Restaurante en mesa", valor: `${dashboardRafa.resumenMesasVsLlevar.mesas.restaurante.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.mesas.restaurante.total)}` },
+        { label: "Restaurante para llevar", valor: `${dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.total)}` },
+        { label: "Cafetería en mesa", valor: `${dashboardRafa.resumenMesasVsLlevar.mesas.cafeteria.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.mesas.cafeteria.total)}` },
+        { label: "Cafetería para llevar", valor: `${dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.cantidad} · ${dinero(dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.total)}` }
       ],
-      columnas: columnasPedidos,
-      filas: crearFilasPedidosProfundas(pedidosValidos)
+      columnas: columnasItems,
+      filas: crearFilasItemsProfundas(pedidosValidos)
+    };
+  }
+
+  if (tipo === "meseros") {
+    return {
+      titulo: "Detalle profundo · Ventas por mesero",
+      descripcion: "Pedidos agrupados por mesero, con valor vendido y número de pedidos.",
+      resumen: [
+        { label: "Meseros detectados", valor: dashboardRafa.ventasPorMesero.length },
+        { label: "Total vendido", valor: dinero(totalVentas) }
+      ],
+      columnas: ["Mesero", ...columnasPedidos],
+      filas: pedidosValidos
+        .slice()
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+        .map((pedido) => [obtenerEtiquetaMeseroPedido(pedido), ...crearFilaPedidoProfunda(pedido)])
     };
   }
 

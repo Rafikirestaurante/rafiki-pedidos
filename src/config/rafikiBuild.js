@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '22Q2-BLOQUEO-CLIENTE-PWA-2026-05-27',
-  phase: 'Fase 22Q2 - Bloqueo de cliente en PWA instalada',
+  version: '22R1-DASHBOARD-MESEROS-COMPLETO-2026-05-27',
+  phase: 'Fase 22R1 - Dashboard meseros completo',
   date: '2026-05-27',
-  fase: '22Q2',
-  notes: 'Evita que la PWA instalada caiga en /cliente después de actualizar; protege rutas internas y agrega /gastos como ruta interna instalable.'
+  fase: '22R',
+  notes: 'Ajuste Dashboard Rafa: ventas por mesero con valor y número de pedidos visibles, más sumatorio del bloque.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
