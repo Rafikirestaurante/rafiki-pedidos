@@ -16,8 +16,8 @@ const FORMULARIO_INICIAL = {
   proveedor: "",
   articulos: "",
   valor: "",
-  categoria: "mercado",
-  metodoPago: "efectivo",
+  categoria: "",
+  metodoPago: "",
   observacion: ""
 };
 
@@ -33,7 +33,7 @@ function capitalizar(texto) {
 
 function resumirPorCampo(gastos, campo) {
   return gastos.reduce((acc, gasto) => {
-    const clave = gasto[campo] || "otro";
+    const clave = gasto[campo] || "Sin definir";
     acc[clave] = (acc[clave] || 0) + Number(gasto.valor || 0);
     return acc;
   }, {});
@@ -116,8 +116,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       proveedor: gasto.proveedor || "",
       articulos: gasto.articulos || "",
       valor: gasto.valor || "",
-      categoria: gasto.categoria || "otro",
-      metodoPago: gasto.metodoPago || "efectivo",
+      categoria: gasto.categoria || "",
+      metodoPago: gasto.metodoPago || "",
       observacion: gasto.observacion || ""
     });
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -189,12 +189,14 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
           </label>
           <label className="field-label">Categoría
             <select value={formulario.categoria} onChange={(e) => cambiarCampo("categoria", e.target.value)}>
-              {CATEGORIAS_GASTOS.map((categoria) => <option key={categoria} value={categoria}>{capitalizar(categoria)}</option>)}
+              <option value="">Seleccionar categoría</option>
+              {CATEGORIAS_GASTOS.map((categoria) => <option key={categoria} value={categoria}>{categoria}</option>)}
             </select>
           </label>
           <label className="field-label">Método de pago
             <select value={formulario.metodoPago} onChange={(e) => cambiarCampo("metodoPago", e.target.value)}>
-              {METODOS_PAGO_GASTOS.map((metodo) => <option key={metodo} value={metodo}>{capitalizar(metodo)}</option>)}
+              <option value="">Seleccionar método</option>
+              {METODOS_PAGO_GASTOS.map((metodo) => <option key={metodo} value={metodo}>{metodo}</option>)}
             </select>
           </label>
         </div>

@@ -8,8 +8,8 @@ function hoyISOColombia() {
   return new Date(fecha.getTime() + offsetMs).toISOString().slice(0, 10);
 }
 
-export const CATEGORIAS_GASTOS = ["mercado", "carnes", "verduras", "aseo", "servicios", "domicilios", "otro"];
-export const METODOS_PAGO_GASTOS = ["efectivo", "transferencia", "tarjeta", "otro"];
+export const CATEGORIAS_GASTOS = ["Carnes", "Verduras", "Trabajadores", "Aseo y Desechables", "Mercado", "Otros"];
+export const METODOS_PAGO_GASTOS = ["Efectivo", "Transferencia", "Tarjeta", "Nequi", "Daviplata", "Otro"];
 
 export function normalizarGastoDiario(gasto) {
   if (!gasto) return null;
@@ -20,8 +20,8 @@ export function normalizarGastoDiario(gasto) {
     proveedor: gasto.proveedor || "",
     articulos: gasto.articulos || "",
     valor: Number(gasto.valor || 0),
-    categoria: gasto.categoria || "otro",
-    metodoPago: gasto.metodo_pago || "efectivo",
+    categoria: gasto.categoria || "",
+    metodoPago: gasto.metodo_pago || "",
     observacion: gasto.observacion || "",
     creadoEn: gasto.creado_en || "",
     actualizadoEn: gasto.actualizado_en || ""
@@ -35,8 +35,8 @@ function prepararPayloadGasto(gasto) {
     proveedor: String(gasto.proveedor || "").trim(),
     articulos: String(gasto.articulos || "").trim() || null,
     valor: Number(gasto.valor || 0),
-    categoria: String(gasto.categoria || "otro").trim() || "otro",
-    metodo_pago: String(gasto.metodoPago || "efectivo").trim() || "efectivo",
+    categoria: String(gasto.categoria || "").trim(),
+    metodo_pago: String(gasto.metodoPago || "").trim(),
     observacion: String(gasto.observacion || "").trim() || null,
     actualizado_en: new Date().toISOString()
   };
