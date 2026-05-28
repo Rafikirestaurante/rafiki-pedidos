@@ -1,5 +1,5 @@
 export function esRutaInternaPWA(pathname = window.location.pathname) {
-  return pathname.startsWith('/mesas') || pathname.startsWith('/admin') || pathname.startsWith('/rafa') || pathname.startsWith('/gastos');
+  return pathname.startsWith('/mesas') || pathname.startsWith('/admin') || pathname.startsWith('/pedidos') || pathname.startsWith('/rafa') || pathname.startsWith('/gastos');
 }
 
 export function estaEnModoInstalado() {

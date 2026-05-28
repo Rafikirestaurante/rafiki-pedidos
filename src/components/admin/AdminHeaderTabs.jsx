@@ -28,6 +28,9 @@ export default function AdminHeaderTabs({
           <button type="button" onClick={() => navegar("/mesas", "mesas")}>
             Panel mesas
           </button>
+          <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
+            Pedidos hoy
+          </button>
           {puedeVerGastos && (
             <button type="button" onClick={() => navegar("/gastos", "gastos")}>
               Gastos
@@ -42,7 +45,7 @@ export default function AdminHeaderTabs({
           onClick={() => setAdminTab("pedidos")}
           className={adminTab === "pedidos" ? "active" : ""}
         >
-          Pedidos de hoy
+          Pedidos hoy
         </button>
 
         {puedeVerMenu && (

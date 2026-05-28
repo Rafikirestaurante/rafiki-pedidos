@@ -256,7 +256,7 @@ export default function App() {
 
   useEffect(() => {
     let activo = true;
-    const rutaAdmin = vista === "admin" || vista === "adminLogin";
+    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos";
     const haySesionTemporalAdmin = obtenerSesionActiva("rafikiAdminActivo");
 
     const enviarALoginAdmin = () => {
@@ -422,7 +422,7 @@ export default function App() {
     alertaPedidoTimer.current = setTimeout(() => setAlertaPedidoNuevo(null), 12000);
   }, []);
 
-  const realtimePuedeActualizarPedidos = realtimeAdminActivo && vista === "admin" && adminAutenticado && adminTab === "pedidos";
+  const realtimePuedeActualizarPedidos = realtimeAdminActivo && adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
 
   const cambiarEstadoRealtimeAdmin = useCallback(() => {
     setRealtimeAdminActivo((activoActual) => {
@@ -554,7 +554,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin";
+  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
@@ -727,7 +727,7 @@ export default function App() {
 
   useEffect(() => {
     let cancelado = false;
-    const debeCargarPedidos = vista === "admin" && adminAutenticado && adminTab === "pedidos";
+    const debeCargarPedidos = adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
 
     if (!debeCargarPedidos) {
       setCargandoPedidos(false);
@@ -797,7 +797,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [vista, adminAutenticado, adminTab, filtroPedidos, fechaSeleccionada, recargaPedidos]);
+  }, [vista, adminAutenticado, adminTab, filtroPedidos, fechaSeleccionada, recargaPedidos, mostrarMensaje]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -1335,10 +1335,16 @@ export default function App() {
     activarSesionAdmin(usuarioAutenticado, rol);
     setAdminPassword("");
     setErrorClaveAdmin("");
-    navegar("/admin", "admin");
+    const rutaActual = window.location.pathname.replace(/\/$/, "") || "/";
+    if (rutaActual === "/pedidos") {
+      navegar("/pedidos", "pedidos");
+    } else {
+      navegar("/admin", "admin");
+    }
   }
 
   async function cerrarPanelAdmin() {
+    const rutaActual = window.location.pathname.replace(/\/$/, "") || "/";
     localStorage.removeItem("rafikiAdminActivo");
     await supabase.auth.signOut();
     setAdminAutenticado(false);
@@ -1347,7 +1353,7 @@ export default function App() {
     setAdminEmail("");
     setAdminPassword("");
     setErrorClaveAdmin("");
-    navegar("/admin", "adminLogin");
+    navegar(rutaActual === "/pedidos" ? "/pedidos" : "/admin", "adminLogin");
   }
 
   function nuevoPedidoCliente() {
@@ -1367,8 +1373,8 @@ export default function App() {
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
-                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : "Menú diario y pedidos por WhatsApp"}</h1>
-                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : "App real conectada a Supabase."}</p>
+                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : vista === "pedidos" ? "Pedidos hoy" : "Menú diario y pedidos por WhatsApp"}</h1>
+                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : vista === "pedidos" ? "Control liviano de pedidos del día." : "App real conectada a Supabase."}</p>
               </div>
 
               {(vista === "cliente" || vista === "confirmacion") && (
@@ -1393,6 +1399,12 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
+                  >
+                    Pedidos hoy
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => navegar("/gastos", "gastos")}
                   >
                     Gastos
@@ -1411,9 +1423,38 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
+                  >
+                    Pedidos hoy
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
                   >
                     Panel admin
+                  </button>
+                </div>
+              )}
+
+              {vista === "pedidos" && (
+                <div className="nav nav-wrap">
+                  <button
+                    type="button"
+                    onClick={() => navegar("/mesas", "mesas")}
+                  >
+                    Panel mesas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
+                  >
+                    Panel admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navegar("/gastos", "gastos")}
+                  >
+                    Gastos
                   </button>
                 </div>
               )}
@@ -1429,6 +1470,47 @@ export default function App() {
             <Suspense fallback={<CargandoModulo texto="Cargando gastos rápidos..." />}>
               <GastosDiarios modoRapido mostrarInforme={false} />
             </Suspense>
+          )}
+
+          {!cargando && vista === "pedidos" && adminAutenticado && (
+            <main className="admin-layout admin-layout-liviano">
+              <AdminPedidosSection
+                tituloPedidos={tituloPedidos}
+                setRecargaPedidos={setRecargaPedidos}
+                alertaPedidoNuevo={alertaPedidoNuevo}
+                setAlertaPedidoNuevo={setAlertaPedidoNuevo}
+                estadoRealtimePedidos={estadoRealtimePedidos}
+                realtimeAdminActivo={realtimeAdminActivo}
+                cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
+                filtroPedidos={filtroPedidos}
+                setFiltroPedidos={setFiltroPedidos}
+                fechaSeleccionada={fechaSeleccionada}
+                setFechaSeleccionada={setFechaSeleccionada}
+                hayBusquedaPedidos={hayBusquedaPedidos}
+                setBusqueda={setBusqueda}
+                busqueda={busqueda}
+                cargandoPedidos={cargandoPedidos}
+                errorCargaPedidos={errorCargaPedidos}
+                pedidosFiltrados={pedidosFiltrados}
+                pedidos={pedidos}
+                pedidosBorrados={pedidosBorrados}
+                pedidosPendientes={pedidosPendientes}
+                puedeFinalizarPendientes={puedeFinalizarPendientes}
+                finalizarTodosPendientes={finalizarTodosPendientes}
+                finalizandoPendientes={finalizandoPendientes}
+                cambiarEstadoPedido={cambiarEstadoPedido}
+                guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                puedeEliminarPedido={puedeEliminarPedido}
+                eliminarPedidoAdministrador={eliminarPedidoAdministrador}
+                eliminandoPedidoId={eliminandoPedidoId}
+                puedeEditarPedido={puedeEditarPedido}
+                editarPedidoAdministrador={editarPedidoAdministrador}
+                editandoPedidoId={editandoPedidoId}
+                pedidosFinalizados={pedidosFinalizados}
+                consolidado={consolidado}
+                pedidosActivos={pedidosActivos}
+              />
+            </main>
           )}
 
           {!cargando && vista === "adminLogin" && (
@@ -1525,7 +1607,7 @@ export default function App() {
                   </div>
                   <div className="admin-actions-stack horizontal">
                     <button type="button" className="button" onClick={irAPedidosYActualizar}>
-                      Ir a Pedidos de hoy
+                      Ir a Pedidos hoy
                     </button>
                     <button type="button" className="button light" onClick={descartarAvisoCambiosPedidos}>
                       Seguir aquí

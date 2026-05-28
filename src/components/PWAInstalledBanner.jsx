@@ -43,7 +43,7 @@ export default function PWAInstalledBanner() {
         <div style={{ fontSize: 22 }}>✅</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 900 }}>Estás usando Rafiki como app instalada</div>
-          <div style={{ fontSize: 13, opacity: 0.9 }}>Modo interno activo para mesas, administración y gastos.</div>
+          <div style={{ fontSize: 13, opacity: 0.9 }}>Modo interno activo para mesas, pedidos, administración y gastos.</div>
         </div>
         <button
           type="button"
