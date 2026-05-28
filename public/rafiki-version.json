@@ -1,6 +1,6 @@
 {
-  "version": "23A2-PAGOS-RAPIDOS-TRABAJADORES-2026-05-28",
-  "phase": "Fase 23A2 - Pagos rápidos a trabajadores",
+  "version": "23A2B-PAGOS-TRABAJADORES-VALOR-MANUAL-2026-05-28",
+  "phase": "Fase 23A2B - Pagos rápidos con valor manual",
   "date": "2026-05-28",
-  "notes": "Agrega pagos rápidos para Alexa, Jesús, Kathe y Paola en Gastos, con carga automática individual y registro masivo con confirmación."
+  "notes": "Ajusta pagos rápidos de trabajadores para no cargar valores fijos. El administrador escribe manualmente el valor antes de guardar."
 }

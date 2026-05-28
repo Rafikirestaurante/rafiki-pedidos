@@ -85,7 +85,6 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
 
   function aplicarPagoTrabajador(trabajador) {
     const fecha = formulario.fecha || obtenerFechaGastoHoy();
-    const valor = trabajador.valor || "";
     setEditandoId(null);
     setFormulario((prev) => ({
       ...prev,
@@ -93,46 +92,13 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       fecha,
       proveedor: trabajador.nombre,
       articulos: `Pago día ${trabajador.nombre}`,
-      valor: String(valor),
+      valor: "",
       categoria: "Trabajadores",
       metodoPago: prev.metodoPago || "Efectivo",
       observacion: "Pago rápido trabajador"
     }));
-    setMensaje(`Pago de ${trabajador.nombre} cargado. Revisa y presiona Guardar gasto.`);
+    setMensaje(`Pago de ${trabajador.nombre} cargado sin valor. Escribe el valor y presiona Guardar gasto.`);
     setError("");
-  }
-
-  async function registrarTodosTrabajadores() {
-    const fecha = formulario.fecha || obtenerFechaGastoHoy();
-    const total = TRABAJADORES_GASTOS_RAPIDOS.reduce((suma, trabajador) => suma + Number(trabajador.valor || 0), 0);
-    const confirmar = window.confirm(`¿Registrar pagos de Alexa, Jesús, Kathe y Paola para ${fecha} por un total de $${dinero(total)}?`);
-    if (!confirmar) return;
-
-    setGuardando(true);
-    setError("");
-    setMensaje("");
-    try {
-      await Promise.all(TRABAJADORES_GASTOS_RAPIDOS.map((trabajador) => crearGastoDiario({
-        numeroFactura: "",
-        fecha,
-        proveedor: trabajador.nombre,
-        articulos: `Pago día ${trabajador.nombre}`,
-        valor: trabajador.valor,
-        categoria: "Trabajadores",
-        metodoPago: formulario.metodoPago || "Efectivo",
-        observacion: "Pago rápido trabajador"
-      })));
-      setMensaje(`Pagos rápidos de trabajadores registrados correctamente por $${dinero(total)}.`);
-      limpiarFormulario();
-      if (esAdministrador) {
-        setFechaInforme(fecha);
-        await cargar(fecha);
-      }
-    } catch (err) {
-      setError(err?.message || "No se pudieron registrar los pagos rápidos de trabajadores.");
-    } finally {
-      setGuardando(false);
-    }
   }
 
   async function guardarGasto(event) {
@@ -238,15 +204,14 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
           <div className="gastos-trabajadores-header">
             <div>
               <strong>👥 Pagos rápidos a trabajadores</strong>
-              <p className="muted small" style={{ margin: "4px 0 0" }}>Carga la categoría Trabajadores, la fecha de hoy y el valor diario. Puedes revisar antes de guardar.</p>
+              <p className="muted small" style={{ margin: "4px 0 0" }}>Carga la categoría Trabajadores y la fecha de hoy. El valor queda vacío para escribirlo antes de guardar.</p>
             </div>
-            <button type="button" className="button button-small" onClick={registrarTodosTrabajadores} disabled={guardando || !supabaseConfigOk}>Registrar todos</button>
           </div>
           <div className="gastos-trabajadores-botones">
             {TRABAJADORES_GASTOS_RAPIDOS.map((trabajador) => (
               <button key={trabajador.nombre} type="button" className="gastos-trabajador-btn" onClick={() => aplicarPagoTrabajador(trabajador)} disabled={guardando || !supabaseConfigOk}>
                 {trabajador.nombre}
-                <span>${dinero(trabajador.valor)}</span>
+                <span>Valor manual</span>
               </button>
             ))}
           </div>

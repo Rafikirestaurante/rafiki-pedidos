@@ -12,10 +12,10 @@ export const CATEGORIAS_GASTOS = ["Carnes", "Verduras", "Trabajadores", "Batidos
 export const METODOS_PAGO_GASTOS = ["Efectivo", "Transferencia", "Tarjeta", "Nequi", "Daviplata", "Otro"];
 
 export const TRABAJADORES_GASTOS_RAPIDOS = [
-  { nombre: "Alexa", valor: 63000 },
-  { nombre: "Jesús", valor: 66000 },
-  { nombre: "Kathe", valor: 56000 },
-  { nombre: "Paola", valor: 56000 }
+  { nombre: "Alexa" },
+  { nombre: "Jesús" },
+  { nombre: "Kathe" },
+  { nombre: "Paola" }
 ];
 
 export function normalizarGastoDiario(gasto) {
