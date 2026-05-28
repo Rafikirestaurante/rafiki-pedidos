@@ -179,6 +179,9 @@ export default function DashboardRafa({
   totalBaseHoras,
   totalBaseProductos,
   totalBaseMesas,
+  totalGastos = 0,
+  utilidadAproximada = 0,
+  gastosPorCategoria = {},
   detalleDashboard,
   detalleDashboardRef,
   seleccionarDetalleDashboard,
@@ -199,6 +202,29 @@ export default function DashboardRafa({
         <div style={{ textAlign: "right" }}>
           <span className="badge badge-finalizado">Solo lectura</span>
           <p className="muted" style={{ marginTop: 6 }}>Pedidos borrados excluidos</p>
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ marginTop: 18 }}>
+        <div className="soft-box" style={{ borderColor: "#bbf7d0", background: "#f0fdf4" }}>
+          <h3>🧮 Control financiero 23A</h3>
+          <div className="admin-stats" style={{ marginTop: 12 }}>
+            <div className="stat-card"><span>Ventas</span><strong>{dinero(totalVentas)}</strong></div>
+            <div className="stat-card"><span>Gastos</span><strong>{dinero(totalGastos)}</strong></div>
+            <div className="stat-card"><span>Utilidad aprox.</span><strong>{dinero(utilidadAproximada)}</strong></div>
+          </div>
+          <p className="muted small" style={{ marginTop: 10 }}>Utilidad aproximada = ventas del periodo - gastos registrados. No incluye inventario ni receta todavía.</p>
+        </div>
+
+        <div className="soft-box" style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}>
+          <h3>💸 Gastos por categoría</h3>
+          {Object.keys(gastosPorCategoria || {}).length ? (
+            <div style={{ marginTop: 8 }}>
+              {Object.entries(gastosPorCategoria).slice(0, 6).map(([categoria, total]) => (
+                <MiniBarra key={categoria} label={categoria} valor={total} total={totalGastos} detalle={dinero(total)} />
+              ))}
+            </div>
+          ) : <p className="muted">Sin gastos registrados en este periodo.</p>}
         </div>
       </div>
 

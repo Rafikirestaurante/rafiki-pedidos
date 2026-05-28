@@ -8,8 +8,15 @@ function hoyISOColombia() {
   return new Date(fecha.getTime() + offsetMs).toISOString().slice(0, 10);
 }
 
-export const CATEGORIAS_GASTOS = ["Carnes", "Verduras", "Trabajadores", "Aseo y Desechables", "Mercado", "Otros"];
+export const CATEGORIAS_GASTOS = ["Carnes", "Verduras", "Trabajadores", "Batidos", "Aseo y Desechables", "Mercado", "Servicios", "Otros"];
 export const METODOS_PAGO_GASTOS = ["Efectivo", "Transferencia", "Tarjeta", "Nequi", "Daviplata", "Otro"];
+
+export const TRABAJADORES_GASTOS_RAPIDOS = [
+  { nombre: "Alexa", valor: 63000 },
+  { nombre: "Jesús", valor: 66000 },
+  { nombre: "Kathe", valor: 56000 },
+  { nombre: "Paola", valor: 56000 }
+];
 
 export function normalizarGastoDiario(gasto) {
   if (!gasto) return null;
@@ -47,6 +54,22 @@ export async function cargarGastosDiarios(fecha = hoyISOColombia()) {
     .from("gastos_diarios")
     .select(SELECT_GASTOS)
     .eq("fecha", fecha)
+    .order("creado_en", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(normalizarGastoDiario).filter(Boolean);
+}
+
+export async function cargarGastosDiariosRango(fechaInicio = hoyISOColombia(), fechaFin = fechaInicio) {
+  const inicio = fechaInicio || hoyISOColombia();
+  const fin = fechaFin || inicio;
+
+  const { data, error } = await supabase
+    .from("gastos_diarios")
+    .select(SELECT_GASTOS)
+    .gte("fecha", inicio)
+    .lte("fecha", fin)
+    .order("fecha", { ascending: true })
     .order("creado_en", { ascending: false });
 
   if (error) throw error;

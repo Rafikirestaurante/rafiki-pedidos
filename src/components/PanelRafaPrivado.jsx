@@ -9,6 +9,8 @@ import {
   filtrarFilasClientes
 } from "./rafa/dashboard/dashboardStats";
 import { supabase } from "../supabaseClient";
+import { cargarGastosDiariosRango } from "../services/gastosDiariosService";
+import { guardarCierreDiario } from "../services/cierresDiariosService";
 import {
   dinero,
   fechaISOColombia,
@@ -38,8 +40,12 @@ export default function PanelRafaPrivado() {
   const [fechaInicioRafa, setFechaInicioRafa] = useState(hoy);
   const [fechaFinRafa, setFechaFinRafa] = useState(hoy);
   const [pedidosRafa, setPedidosRafa] = useState([]);
+  const [gastosRafa, setGastosRafa] = useState([]);
   const [cargandoRafa, setCargandoRafa] = useState(false);
   const [errorRafa, setErrorRafa] = useState("");
+  const [mensajeCierre, setMensajeCierre] = useState("");
+  const [guardandoCierre, setGuardandoCierre] = useState(false);
+  const [observacionesCierre, setObservacionesCierre] = useState("");
   const [busquedaCliente, setBusquedaCliente] = useState("");
   const [pestanaRafa, setPestanaRafa] = useState("informe");
   const [detalleDashboard, setDetalleDashboard] = useState("");
@@ -106,6 +112,28 @@ export default function PanelRafaPrivado() {
     };
   }, [rangoRafa]);
 
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarGastosRafa() {
+      try {
+        const data = await cargarGastosDiariosRango(rangoRafa.inicioTexto, rangoRafa.finTexto);
+        if (!cancelado) setGastosRafa(data);
+      } catch (error) {
+        if (!cancelado) {
+          setGastosRafa([]);
+          setErrorRafa((prev) => prev || `No se pudieron cargar los gastos del periodo. ${error.message || ""}`.trim());
+        }
+      }
+    }
+
+    cargarGastosRafa();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [rangoRafa]);
+
   const pedidosValidos = pedidosRafa.filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado");
   const resumenVentas = crearResumenVentas(pedidosValidos);
   const totalVentas = resumenVentas.restaurante.total + resumenVentas.cafeteria.total;
@@ -128,6 +156,29 @@ export default function PanelRafaPrivado() {
   const totalBaseHoras = Math.max(...dashboardRafa.horas.map((item) => item.total), 0);
   const totalBaseProductos = Math.max(...dashboardRafa.productosTop.map((item) => item.cantidad), 0);
   const totalBaseMesas = Math.max(...dashboardRafa.mesasTop.map((item) => item.total), 0);
+  const gastosPorCategoria = gastosRafa.reduce((acc, gasto) => {
+    const clave = gasto.categoria || "Sin definir";
+    acc[clave] = (acc[clave] || 0) + Number(gasto.valor || 0);
+    return acc;
+  }, {});
+  const totalGastos = gastosRafa.reduce((suma, gasto) => suma + Number(gasto.valor || 0), 0);
+  const utilidadAproximada = totalVentas - totalGastos;
+  const resumenCierreDiario = {
+    fecha: rangoRafa.inicioTexto,
+    ventasTotal: totalVentas,
+    gastosTotal: totalGastos,
+    utilidadAproximada,
+    pedidosTotal: totalPedidos,
+    pedidosFinalizados: finalizados,
+    pedidosPendientes: pendientes,
+    pedidosCancelados: dashboardRafa.ventasPorEstado.find((item) => item.nombre === "Cancelado")?.cantidad || 0,
+    ventasRestaurante: resumenVentas.restaurante.total,
+    ventasCafeteria: resumenVentas.cafeteria.total,
+    gastosPorCategoria,
+    pagosPorMetodo: Object.fromEntries((dashboardRafa.ventasPorPago || []).map((item) => [item.nombre, item.total])),
+    observaciones: observacionesCierre
+  };
+  const cierreEsUnSoloDia = rangoRafa.inicioTexto === rangoRafa.finTexto;
 
   function obtenerFechaAyer() {
     const ayer = new Date(`${hoy}T00:00:00-05:00`);
@@ -191,6 +242,26 @@ export default function PanelRafaPrivado() {
     `).join("");
   }
 
+  async function guardarCierreDiaSeleccionado() {
+    if (!cierreEsUnSoloDia) {
+      setErrorRafa("El cierre diario solo se puede guardar cuando seleccionas un solo día.");
+      return;
+    }
+
+    setGuardandoCierre(true);
+    setErrorRafa("");
+    setMensajeCierre("");
+
+    try {
+      await guardarCierreDiario(resumenCierreDiario);
+      setMensajeCierre("Cierre diario guardado correctamente.");
+    } catch (error) {
+      setErrorRafa(error?.message || "No se pudo guardar el cierre diario. Verifica que hayas ejecutado el SQL de Fase 23A.");
+    } finally {
+      setGuardandoCierre(false);
+    }
+  }
+
 
   function generarTextoWhatsappInformeRafa() {
     const lineas = [
@@ -198,6 +269,8 @@ export default function PanelRafaPrivado() {
       `Periodo: ${tituloPeriodo}`,
       ``,
       `💰 *Total vendido:* ${dinero(totalVentas)}`,
+      `💸 *Gastos:* ${dinero(totalGastos)}`,
+      `📈 *Utilidad aprox.:* ${dinero(utilidadAproximada)}`,
       `🍽️ Restaurante: ${resumenVentas.restaurante.cantidad} · ${dinero(resumenVentas.restaurante.total)}`,
       `☕ Cafetería: ${resumenVentas.cafeteria.cantidad} · ${dinero(resumenVentas.cafeteria.total)}`,
       `🧾 Pedidos válidos: ${totalPedidos}`,
@@ -420,6 +493,7 @@ export default function PanelRafaPrivado() {
       </div>
 
       {errorRafa && <div className="alert alert-error">{errorRafa}</div>}
+      {mensajeCierre && <div className="alert alert-success">{mensajeCierre}</div>}
       {cargandoRafa && <div className="alert alert-info">Cargando informe...</div>}
 
       {pestanaRafa === "dashboard" && (
@@ -431,6 +505,9 @@ export default function PanelRafaPrivado() {
           totalBaseHoras={totalBaseHoras}
           totalBaseProductos={totalBaseProductos}
           totalBaseMesas={totalBaseMesas}
+          totalGastos={totalGastos}
+          utilidadAproximada={utilidadAproximada}
+          gastosPorCategoria={gastosPorCategoria}
           mostrarTablasDashboard={mostrarTablasDashboard}
           detalleDashboard={detalleDashboard}
           detalleDashboardRef={detalleDashboardRef}
@@ -454,11 +531,30 @@ export default function PanelRafaPrivado() {
       <>
       <div className="admin-stats">
         <div className="stat-card"><span>Total vendido</span><strong>{dinero(totalVentas)}</strong></div>
+        <div className="stat-card"><span>Gastos</span><strong>{dinero(totalGastos)}</strong></div>
+        <div className="stat-card"><span>Utilidad aprox.</span><strong>{dinero(utilidadAproximada)}</strong></div>
         <div className="stat-card"><span>Restaurante</span><strong>{dinero(resumenVentas.restaurante.total)}</strong></div>
         <div className="stat-card"><span>Cafetería</span><strong>{dinero(resumenVentas.cafeteria.total)}</strong></div>
         <div className="stat-card"><span>Pedidos</span><strong>{totalPedidos}</strong></div>
         <div className="stat-card"><span>Promedio</span><strong>{dinero(promedioPedido)}</strong></div>
         <div className="stat-card"><span>Finalizados</span><strong>{finalizados}</strong></div>
+      </div>
+
+      <div className="soft-box" style={{ marginTop: 16, borderColor: "#bbf7d0", background: "#f0fdf4" }}>
+        <div className="admin-top-row">
+          <div>
+            <h3>🧮 Cierre diario inteligente</h3>
+            <p className="muted">Ventas menos gastos registrados. Es una utilidad aproximada, todavía sin inventario ni costo por receta.</p>
+          </div>
+          <button type="button" className="button" disabled={!cierreEsUnSoloDia || guardandoCierre} onClick={guardarCierreDiaSeleccionado}>
+            {guardandoCierre ? "Guardando..." : "Guardar cierre del día"}
+          </button>
+        </div>
+        {!cierreEsUnSoloDia && <div className="alert alert-info">Para guardar cierre selecciona un solo día, no un rango.</div>}
+        <label className="field" style={{ marginTop: 10 }}>
+          <span>Observaciones del cierre</span>
+          <textarea rows="2" value={observacionesCierre} onChange={(e) => setObservacionesCierre(e.target.value)} placeholder="Ej: día lluvioso, faltó personal, compra alta, evento, etc." />
+        </label>
       </div>
 
       <div className="grid-2">

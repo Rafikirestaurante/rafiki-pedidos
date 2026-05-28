@@ -3,6 +3,7 @@ import { supabaseConfigMensaje, supabaseConfigOk } from "../../supabaseClient";
 import {
   CATEGORIAS_GASTOS,
   METODOS_PAGO_GASTOS,
+  TRABAJADORES_GASTOS_RAPIDOS,
   actualizarGastoDiario,
   cargarGastosDiarios,
   crearGastoDiario,
@@ -81,6 +82,59 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     setEditandoId(null);
   }
 
+
+  function aplicarPagoTrabajador(trabajador) {
+    const fecha = formulario.fecha || obtenerFechaGastoHoy();
+    const valor = trabajador.valor || "";
+    setEditandoId(null);
+    setFormulario((prev) => ({
+      ...prev,
+      numeroFactura: "",
+      fecha,
+      proveedor: trabajador.nombre,
+      articulos: `Pago día ${trabajador.nombre}`,
+      valor: String(valor),
+      categoria: "Trabajadores",
+      metodoPago: prev.metodoPago || "Efectivo",
+      observacion: "Pago rápido trabajador"
+    }));
+    setMensaje(`Pago de ${trabajador.nombre} cargado. Revisa y presiona Guardar gasto.`);
+    setError("");
+  }
+
+  async function registrarTodosTrabajadores() {
+    const fecha = formulario.fecha || obtenerFechaGastoHoy();
+    const total = TRABAJADORES_GASTOS_RAPIDOS.reduce((suma, trabajador) => suma + Number(trabajador.valor || 0), 0);
+    const confirmar = window.confirm(`¿Registrar pagos de Alexa, Jesús, Kathe y Paola para ${fecha} por un total de $${dinero(total)}?`);
+    if (!confirmar) return;
+
+    setGuardando(true);
+    setError("");
+    setMensaje("");
+    try {
+      await Promise.all(TRABAJADORES_GASTOS_RAPIDOS.map((trabajador) => crearGastoDiario({
+        numeroFactura: "",
+        fecha,
+        proveedor: trabajador.nombre,
+        articulos: `Pago día ${trabajador.nombre}`,
+        valor: trabajador.valor,
+        categoria: "Trabajadores",
+        metodoPago: formulario.metodoPago || "Efectivo",
+        observacion: "Pago rápido trabajador"
+      })));
+      setMensaje(`Pagos rápidos de trabajadores registrados correctamente por $${dinero(total)}.`);
+      limpiarFormulario();
+      if (esAdministrador) {
+        setFechaInforme(fecha);
+        await cargar(fecha);
+      }
+    } catch (err) {
+      setError(err?.message || "No se pudieron registrar los pagos rápidos de trabajadores.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   async function guardarGasto(event) {
     event.preventDefault();
     setGuardando(true);
@@ -154,6 +208,12 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         .gastos-rapidos-panel { max-width: 720px; margin: 0 auto; }
         .gastos-rapidos-panel .gastos-formulario-box { padding: 16px; }
         .gastos-rapidos-panel .gastos-boton-guardar { min-height: 52px; font-size: 1.02rem; }
+        .gastos-trabajadores-rapidos { margin-top: 12px; border: 1px solid rgba(180, 83, 9, 0.18); border-radius: 16px; padding: 12px; background: #fffbeb; }
+        .gastos-trabajadores-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        .gastos-trabajadores-botones { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; }
+        .gastos-trabajador-btn { border: 1px solid rgba(146, 64, 14, 0.22); background: #fff7ed; color: #7c2d12; border-radius: 12px; padding: 10px 12px; cursor: pointer; text-align: left; font-weight: 800; }
+        .gastos-trabajador-btn span { display: block; color: #92400e; font-size: 0.82rem; font-weight: 700; margin-top: 2px; }
+
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
           .gastos-informe-header { align-items: stretch; }
@@ -174,6 +234,24 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
 
       <form onSubmit={guardarGasto} className="box soft gastos-formulario-box" style={{ marginTop: 12 }}>
         <h3>{editandoId ? "Editar gasto" : "Registrar gasto"}</h3>
+        <div className="gastos-trabajadores-rapidos">
+          <div className="gastos-trabajadores-header">
+            <div>
+              <strong>👥 Pagos rápidos a trabajadores</strong>
+              <p className="muted small" style={{ margin: "4px 0 0" }}>Carga la categoría Trabajadores, la fecha de hoy y el valor diario. Puedes revisar antes de guardar.</p>
+            </div>
+            <button type="button" className="button button-small" onClick={registrarTodosTrabajadores} disabled={guardando || !supabaseConfigOk}>Registrar todos</button>
+          </div>
+          <div className="gastos-trabajadores-botones">
+            {TRABAJADORES_GASTOS_RAPIDOS.map((trabajador) => (
+              <button key={trabajador.nombre} type="button" className="gastos-trabajador-btn" onClick={() => aplicarPagoTrabajador(trabajador)} disabled={guardando || !supabaseConfigOk}>
+                {trabajador.nombre}
+                <span>${dinero(trabajador.valor)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="gastos-diarios-grid">
           <label className="field-label">No. factura
             <input value={formulario.numeroFactura} onChange={(e) => cambiarCampo("numeroFactura", e.target.value)} placeholder="Ej: FV-123" />
