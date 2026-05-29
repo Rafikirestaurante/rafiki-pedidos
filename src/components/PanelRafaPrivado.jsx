@@ -18,15 +18,27 @@ import {
   obtenerEstadoPedido
 } from "../utils/pedidos";
 
-function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTotal = true }) {
+function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTotal = true, mostrarDetalles = false }) {
   if (!items.length) return <p className="muted">{vacio}</p>;
 
   return (
     <ul className="simple-list">
       {items.map((item) => (
-        <li key={item.nombre}>
-          <span>{item.nombre}</span>
-          <strong>{item.cantidad} {mostrarTotal ? `· ${dinero(item.total)}` : ""}</strong>
+        <li key={item.nombre} style={{ display: "block" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <span>{item.nombre}</span>
+            <strong>{item.cantidad} {mostrarTotal ? `· ${dinero(item.total)}` : ""}</strong>
+          </div>
+          {mostrarDetalles && item.detalles?.length > 0 && (
+            <div style={{ marginTop: 6, paddingLeft: 12 }}>
+              {item.detalles.map((detalle) => (
+                <div key={`${item.nombre}-${detalle.nombre}`} className="muted" style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12 }}>
+                  <span>↳ {detalle.nombre}</span>
+                  <span>{detalle.cantidad} {mostrarTotal ? `· ${dinero(detalle.total)}` : ""}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </li>
       ))}
     </ul>
@@ -280,9 +292,12 @@ export default function PanelRafaPrivado() {
     ];
 
     if (resumenVentas.proteinas.length) {
-      lineas.push(``, `🥇 *Proteínas más vendidas:*`);
-      resumenVentas.proteinas.slice(0, 6).forEach((item) => {
+      lineas.push(``, `🥇 *Proteínas vendidas:*`);
+      resumenVentas.proteinas.forEach((item) => {
         lineas.push(`• ${item.nombre}: ${item.cantidad} · ${dinero(item.total)}`);
+        (item.detalles || []).forEach((detalle) => {
+          lineas.push(`   - ${detalle.nombre}: ${detalle.cantidad} · ${dinero(detalle.total)}`);
+        });
       });
     }
 
@@ -293,9 +308,9 @@ export default function PanelRafaPrivado() {
       });
     }
 
-    if (resumenVentas.subcategoriasCafeteria.length) {
-      lineas.push(``, `☕ *Cafetería por subcategoría:*`);
-      resumenVentas.subcategoriasCafeteria.slice(0, 6).forEach((item) => {
+    if (resumenVentas.productosCafeteria?.length) {
+      lineas.push(``, `☕ *Productos de cafetería:*`);
+      resumenVentas.productosCafeteria.forEach((item) => {
         lineas.push(`• ${item.nombre}: ${item.cantidad} · ${dinero(item.total)}`);
       });
     }
@@ -379,16 +394,16 @@ export default function PanelRafaPrivado() {
             </tbody>
           </table>
 
-          <h2>Resumen Cafetería</h2>
-          <table>
-            <thead><tr><th>Subcategoría</th><th>Cantidad</th><th>Total</th></tr></thead>
-            <tbody>${filasResumenPdf(resumenVentas.subcategoriasCafeteria)}</tbody>
-          </table>
-
-          <h2>Proteínas más vendidas</h2>
+          <h2>Productos de Cafetería</h2>
           <table>
             <thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead>
-            <tbody>${filasResumenPdf(resumenVentas.proteinas.slice(0, 20))}</tbody>
+            <tbody>${filasResumenPdf(resumenVentas.productosCafeteria || [])}</tbody>
+          </table>
+
+          <h2>Proteínas vendidas</h2>
+          <table>
+            <thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead>
+            <tbody>${filasProteinasPdf(resumenVentas.proteinas)}</tbody>
           </table>
 
           <h2>Acompañantes más usados</h2>
@@ -569,14 +584,14 @@ export default function PanelRafaPrivado() {
           <h3>☕ Cafetería</h3>
           <p><strong>Total vendido:</strong> {dinero(resumenVentas.cafeteria.total)}</p>
           <p><strong>Productos vendidos:</strong> {resumenVentas.cafeteria.cantidad}</p>
-          <ListaResumen items={resumenVentas.subcategoriasCafeteria} />
+          <ListaResumen items={resumenVentas.productosCafeteria || []} />
         </div>
       </div>
 
       <div className="grid-2" style={{ marginTop: 22 }}>
         <div className="soft-box">
-          <h3>Proteínas más vendidas</h3>
-          <ListaResumen items={resumenVentas.proteinas.slice(0, 12)} />
+          <h3>Proteínas vendidas</h3>
+          <ListaResumen items={resumenVentas.proteinas} mostrarDetalles />
         </div>
 
         <div className="soft-box">

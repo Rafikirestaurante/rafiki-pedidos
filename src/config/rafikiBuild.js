@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23A3B-9944-IMPRESION-CATALOGO-SIN-PRECIOS-2026-05-29',
-  phase: 'Fase 23A3B 99.4.4 - Impresión catálogo completo sin precios',
+  version: '23A3B-9945-INFORME-PROTEINAS-CAFETERIA-2026-05-29',
+  phase: 'Fase 23A3B 99.4.5 - Informe proteínas y cafetería completo',
   date: '2026-05-29',
-  fase: '23A3B-99.4.4',
-  notes: 'Ajusta la impresión del generador para imprimir todo el catálogo de platos y acompañantes guardado en base de datos, separado por grupos y sin precios.'
+  fase: '23A3B-99.4.5',
+  notes: 'Admin Rafa Informe agrupa pechugas y cerdos por familia con subdetalle de presentación, muestra cantidades y valor total, y lista todos los productos de cafetería de mayor a menor.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

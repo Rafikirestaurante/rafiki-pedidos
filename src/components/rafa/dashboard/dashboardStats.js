@@ -100,6 +100,7 @@ export function crearResumenVentas(pedidos) {
     restaurante: { total: 0, cantidad: 0 },
     cafeteria: { total: 0, cantidad: 0 },
     subcategoriasCafeteria: new Map(),
+    productosCafeteria: new Map(),
     proteinas: new Map(),
     acompanantes: new Map(),
     tabla: new Map()
@@ -125,15 +126,19 @@ export function crearResumenVentas(pedidos) {
         const tipo = item.tipo || "Cafetería";
         resumen.cafeteria.total += totalItem;
         resumen.cafeteria.cantidad += cantidad;
+        const productoCafeteria = obtenerNombreProductoCafeteriaRafa(item);
         sumarEnMapa(resumen.subcategoriasCafeteria, tipo, cantidad, totalItem);
+        sumarEnMapa(resumen.productosCafeteria, productoCafeteria, cantidad, totalItem);
         sumarEnMapa(resumen.tabla, `Cafetería · ${tipo}`, cantidad, totalItem);
         return;
       }
 
       const proteina = item.plato || item.proteina || item.producto || "Almuerzo";
+      const familiaProteina = obtenerFamiliaProteinaRafa(proteina);
+      const presentacionProteina = obtenerPresentacionProteinaRafa(proteina, familiaProteina);
       resumen.restaurante.total += totalItem;
       resumen.restaurante.cantidad += cantidad;
-      sumarEnMapa(resumen.proteinas, proteina, cantidad, totalItem);
+      sumarDetalleEnMapa(resumen.proteinas, familiaProteina, presentacionProteina, cantidad, totalItem);
       sumarEnMapa(resumen.tabla, "Restaurante · Almuerzos", cantidad, totalItem);
 
       if (Array.isArray(item.acompanantes)) {
@@ -150,10 +155,77 @@ export function crearResumenVentas(pedidos) {
     restaurante: resumen.restaurante,
     cafeteria: resumen.cafeteria,
     subcategoriasCafeteria: ordenarResumen(resumen.subcategoriasCafeteria),
-    proteinas: ordenarResumen(resumen.proteinas),
+    productosCafeteria: ordenarResumen(resumen.productosCafeteria).sort((a, b) => b.cantidad - a.cantidad || b.total - a.total || a.nombre.localeCompare(b.nombre)),
+    proteinas: ordenarResumenConDetalles(resumen.proteinas),
     acompanantes: ordenarResumen(resumen.acompanantes).sort((a, b) => b.cantidad - a.cantidad),
     tabla: ordenarResumen(resumen.tabla)
   };
+}
+
+function obtenerFamiliaProteinaRafa(nombreProducto) {
+  const limpio = String(nombreProducto || "").replace(/\s+/g, " " ).trim();
+  const texto = normalizarTexto(limpio);
+
+  if (texto.includes("pechuga")) return "Pechugas";
+  if (texto.includes("cerdo")) return "Cerdos";
+
+  return limpio || "Almuerzo";
+}
+
+function obtenerPresentacionProteinaRafa(nombreProducto, familia) {
+  const original = String(nombreProducto || "").replace(/\s+/g, " " ).trim();
+  if (!original) return "Sin detalle";
+
+  let detalle = original
+    .replace(/pechuga\s+o\s+cerdo/ig, "")
+    .replace(/pechuga/ig, "")
+    .replace(/cerdo/ig, "")
+    .replace(/^\s*[-–:|]+\s*/, "")
+    .replace(/\s+/g, " " )
+    .trim();
+
+  if (!detalle) {
+    if (familia === "Pechugas") return "Pechuga";
+    if (familia === "Cerdos") return "Cerdo";
+    return original;
+  }
+
+  return detalle.charAt(0).toUpperCase() + detalle.slice(1);
+}
+
+function sumarDetalleEnMapa(mapa, clavePrincipal, claveDetalle, cantidad, total) {
+  const nombre = clavePrincipal || "Sin clasificar";
+  const detalleNombre = claveDetalle || "Sin detalle";
+  const actual = mapa.get(nombre) || { nombre, cantidad: 0, total: 0, detallesMap: new Map() };
+  actual.cantidad += Number(cantidad) || 0;
+  actual.total += Number(total) || 0;
+
+  const detalle = actual.detallesMap.get(detalleNombre) || { nombre: detalleNombre, cantidad: 0, total: 0 };
+  detalle.cantidad += Number(cantidad) || 0;
+  detalle.total += Number(total) || 0;
+  actual.detallesMap.set(detalleNombre, detalle);
+
+  mapa.set(nombre, actual);
+}
+
+function ordenarResumenConDetalles(mapa) {
+  return Array.from(mapa.values())
+    .map((item) => ({
+      nombre: item.nombre,
+      cantidad: item.cantidad,
+      total: item.total,
+      detalles: Array.from((item.detallesMap || new Map()).values())
+        .sort((a, b) => b.cantidad - a.cantidad || b.total - a.total || a.nombre.localeCompare(b.nombre))
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad || b.total - a.total || a.nombre.localeCompare(b.nombre));
+}
+
+function obtenerNombreProductoCafeteriaRafa(item) {
+  const base = item.producto || item.nombre || item.plato || item.proteina || item.tipo || "Producto cafetería";
+  const detalles = [];
+  if (item.tamano) detalles.push(item.tamano);
+  if (item.base) detalles.push(`Base ${item.base}`);
+  return detalles.length ? `${base} · ${detalles.join(" · ")}` : base;
 }
 
 
