@@ -477,44 +477,38 @@ export default function GeneradorMenu() {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
 
-    const precio = (valor) => {
-      const limpio = String(valor || "").trim();
-      if (!limpio) return "";
-      const numero = Number(limpio.replace(/[^0-9]/g, ""));
-      return numero ? `$${numero.toLocaleString("es-CO")}` : limpio;
-    };
+    const ordenarPorCatalogo = (items = []) => [...items]
+      .filter((item) => item?.nombre)
+      .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre), "es", { sensitivity: "base" }));
 
     const gruposPlatos = [
-      { titulo: "Pechuga y cerdo", items: platosLimpios.filter((plato) => {
+      { titulo: "Pechuga y cerdo", items: ordenarPorCatalogo(catalogoPlatos.filter((plato) => {
         const n = normalizarTextoCatalogo(plato.nombre);
-        return n.startsWith("pechuga") || n.startsWith("cerdo");
-      }) },
-      { titulo: "Pastas", items: platosLimpios.filter((plato) => normalizarTextoCatalogo(plato.nombre).startsWith("pastas")) },
-      { titulo: "Guisos y demás", items: platosLimpios.filter((plato) => {
+        return n.startsWith("pechuga") || n.startsWith("cerdo") || n.startsWith("pechuga o cerdo");
+      })) },
+      { titulo: "Pastas", items: ordenarPorCatalogo(catalogoPlatos.filter((plato) => normalizarTextoCatalogo(plato.nombre).startsWith("pastas"))) },
+      { titulo: "Guisos y demás", items: ordenarPorCatalogo(catalogoPlatos.filter((plato) => {
         const n = normalizarTextoCatalogo(plato.nombre);
-        return !esSopaResumen(plato.nombre) && !n.startsWith("pechuga") && !n.startsWith("cerdo") && !n.startsWith("pastas");
-      }) },
-      { titulo: "Sopas", items: platosLimpios.filter((plato) => esSopaResumen(plato.nombre)) }
+        return !n.startsWith("pechuga") && !n.startsWith("cerdo") && !n.startsWith("pechuga o cerdo") && !n.startsWith("pastas");
+      })) },
+      { titulo: "Sopas", items: ordenarPorCatalogo(catalogoSopas) }
     ].filter((grupo) => grupo.items.length > 0);
 
     const htmlPlatos = gruposPlatos.map((grupo) => `
       <section class="grupo">
         <h2>${esc(grupo.titulo)}</h2>
-        ${grupo.items.map((plato) => `
-          <div class="fila">
-            <span>${esc(plato.nombre)}</span>
-            <strong>${esc(precio(plato.precio))}</strong>
-          </div>
-        `).join("")}
+        ${grupo.items.map((plato) => `<div class="fila">${esc(plato.nombre)}</div>`).join("")}
       </section>
     `).join("");
 
-    const htmlAcompanantes = listaAcompanantes.map((item) => `<div class="acompanante">${esc(item)}</div>`).join("");
+    const htmlAcompanantes = ordenarPorCatalogo(catalogoAcompanantes)
+      .map((item) => `<div class="acompanante">${esc(item.nombre)}</div>`)
+      .join("");
     const contenido = tipo === "acompanantes" ? htmlAcompanantes : htmlPlatos;
     const titulo = tipo === "acompanantes" ? "Acompañantes" : "Platos";
 
     if (!contenido) {
-      setMensaje(tipo === "acompanantes" ? "No hay acompañantes para imprimir." : "No hay platos para imprimir.");
+      setMensaje(tipo === "acompanantes" ? "No hay acompañantes en el catálogo." : "No hay platos en el catálogo.");
       return;
     }
 
@@ -528,21 +522,19 @@ export default function GeneradorMenu() {
       <html><head><meta charset="utf-8" /><title>${esc(titulo)} Rafiki</title>
       <style>
         * { box-sizing: border-box; }
-        body { margin: 0; padding: 18px; font-family: Arial, sans-serif; color: #111827; background: #fff; }
-        h1 { margin: 0 0 14px; text-align: center; font-size: 22px; text-transform: uppercase; }
-        h2 { margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #111827; font-size: 16px; text-transform: uppercase; }
-        .fila { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed #d1d5db; font-size: 15px; }
-        .fila span { font-weight: 700; }
-        .fila strong { white-space: nowrap; }
-        .acompanante { padding: 8px 0; border-bottom: 1px dashed #d1d5db; font-size: 18px; font-weight: 800; text-align: center; }
+        body { margin: 0; padding: 16px; font-family: Arial, sans-serif; color: #111827; background: #fff; }
+        h1 { margin: 0 0 12px; text-align: center; font-size: 21px; text-transform: uppercase; }
+        h2 { margin: 14px 0 6px; padding: 6px 8px; border: 2px solid #111827; font-size: 15px; text-align: center; text-transform: uppercase; }
+        .fila { padding: 6px 0; border-bottom: 1px dashed #d1d5db; font-size: 15px; font-weight: 800; text-align: center; }
+        .acompanante { padding: 7px 0; border-bottom: 1px dashed #d1d5db; font-size: 17px; font-weight: 800; text-align: center; }
         @media print { body { padding: 8px; } }
       </style></head><body>
         <h1>${esc(titulo)}</h1>
         ${contenido}
-        <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 400); };</script>
+        <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 400); };<\/script>
       </body></html>`);
     ventana.document.close();
-    setMensaje(`${titulo} enviados a impresión.`);
+    setMensaje(`${titulo} del catálogo enviados a impresión.`);
   }
 
   async function cargarHistorialGenerador(opciones = {}) {
@@ -887,11 +879,11 @@ export default function GeneradorMenu() {
               {guardandoHistorial ? "Guardando..." : "Guardar y descargar"}
             </button>
             <div className="acciones-impresion-menu">
-              <button type="button" className="button light" onClick={() => imprimirMenuSimple("platos")} disabled={!platosLimpios.length}>
-                Imprimir platos
+              <button type="button" className="button light" onClick={() => imprimirMenuSimple("platos")} disabled={!catalogoPlatos.length && !catalogoSopas.length}>
+                Imprimir catálogo platos
               </button>
-              <button type="button" className="button light" onClick={() => imprimirMenuSimple("acompanantes")} disabled={!listaAcompanantes.length}>
-                Imprimir acompañantes
+              <button type="button" className="button light" onClick={() => imprimirMenuSimple("acompanantes")} disabled={!catalogoAcompanantes.length}>
+                Imprimir catálogo acompañantes
               </button>
             </div>
           </div>

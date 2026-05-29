@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23A3B-9943-LIMPIAR-CACHE-MANUAL-2026-05-29',
-  phase: 'Fase 23A3B 99.4.3 - Botón manual para limpiar caché',
+  version: '23A3B-9944-IMPRESION-CATALOGO-SIN-PRECIOS-2026-05-29',
+  phase: 'Fase 23A3B 99.4.4 - Impresión catálogo completo sin precios',
   date: '2026-05-29',
-  fase: '23A3B-99.4.3',
-  notes: 'Agrega botón manual Limpiar caché en el panel administrativo para forzar actualización de la PWA cuando los cambios no cargan a tiempo.'
+  fase: '23A3B-99.4.4',
+  notes: 'Ajusta la impresión del generador para imprimir todo el catálogo de platos y acompañantes guardado en base de datos, separado por grupos y sin precios.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
