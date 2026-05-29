@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../data/catalogoProductosData";
 import { categoriasSolicitudProductos, productosRestauranteBase } from "../data/solicitudProductosData";
 import { supabaseConfigOk, supabaseConfigMensaje } from "../supabaseClient";
+import CatalogoGastos from "./admin/CatalogoGastos";
 import {
   actualizarInsumoCatalogoAdmin,
   cargarCatalogoInsumosAdmin,
@@ -614,10 +615,12 @@ export default function CatalogoRafa() {
       <div className="admin-top-row">
         <div>
           <h3>🧾 Catálogo Rafa</h3>
-          <p className="muted">Listado editable de productos restaurante, productos cafetería e insumos. Conectado a Supabase con respaldo local seguro.</p>
+          <p className="muted">Listado editable de productos restaurante, productos cafetería, insumos y gastos. Conectado a Supabase con respaldo local seguro.</p>
         </div>
         <button type="button" className="button button-secondary" onClick={restaurarBase}>Restaurar base</button>
       </div>
+
+      <CatalogoGastos />
 
       <div className="catalogo-selector-tarjetas" style={{ marginTop: 14 }}>
         <button

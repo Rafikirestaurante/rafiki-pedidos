@@ -1,4 +1,5 @@
 import { supabase } from "../supabaseClient";
+import { CATEGORIAS_GASTOS_FALLBACK, PROVEEDORES_GASTOS_FALLBACK } from "./catalogoGastosService";
 
 const SELECT_GASTOS = "id, numero_factura, fecha, proveedor, articulos, valor, categoria, metodo_pago, observacion, creado_en, actualizado_en";
 
@@ -8,15 +9,10 @@ function hoyISOColombia() {
   return new Date(fecha.getTime() + offsetMs).toISOString().slice(0, 10);
 }
 
-export const CATEGORIAS_GASTOS = ["Carnes", "Verduras", "Trabajadores", "Batidos", "Aseo y Desechables", "Mercado", "Servicios", "Otros"];
+export const CATEGORIAS_GASTOS = CATEGORIAS_GASTOS_FALLBACK;
 export const METODOS_PAGO_GASTOS = ["Efectivo", "Transferencia", "Tarjeta", "Nequi", "Daviplata", "Otro"];
 
-export const TRABAJADORES_GASTOS_RAPIDOS = [
-  { nombre: "Alexa" },
-  { nombre: "Jesús" },
-  { nombre: "Kathe" },
-  { nombre: "Paola" }
-];
+export const TRABAJADORES_GASTOS_RAPIDOS = PROVEEDORES_GASTOS_FALLBACK.map((item) => ({ nombre: item.nombre, categoria: item.categoria, descripcionSugerida: item.descripcion }));
 
 export function normalizarGastoDiario(gasto) {
   if (!gasto) return null;
