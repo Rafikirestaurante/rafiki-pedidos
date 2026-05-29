@@ -202,7 +202,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     [itemsMesa]
   );
   const hayProductoSeleccionadoMesa = itemsConProducto.length > 0;
-  const total = useMemo(() => calcularTotalItems(itemsConProducto), [itemsConProducto]);
+  const itemsConModoLlevar = useMemo(
+    () => itemsConProducto.map((item) => ({ ...item, paraLlevar: Boolean(modoLlevar) })),
+    [itemsConProducto, modoLlevar]
+  );
+  const total = useMemo(() => calcularTotalItems(itemsConModoLlevar), [itemsConModoLlevar]);
   const itemAlmuerzoActivo = itemsAlmuerzoMesa[itemsAlmuerzoMesa.length - 1];
 
   function actualizarItemMesa(id, cambios) {
@@ -577,7 +581,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     }
 
     const pedidoGuardado = await onEnviar({
-      items: itemsConProducto,
+      items: itemsConModoLlevar,
       modoLlevar,
       mesa: modoLlevar ? "Llevar" : mesaLocal,
       cliente: clientePedido,
@@ -1108,7 +1112,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
             <div className="box soft" style={{ marginBottom: 12 }}>
               <h3>Resumen del pedido</h3>
 
-              {itemsConProducto.map((item) => {
+              {itemsConModoLlevar.map((item) => {
                 const itemEsCafeteria = item.categoria === "cafeteria";
                 const itemEsSopa = esCategoriaSopa(item.categoria);
                 const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
@@ -1187,7 +1191,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               total={total}
               errorMesa={errorMesa}
               guardandoPedido={guardandoPedido}
-              itemsConProducto={itemsConProducto}
+              itemsConProducto={itemsConModoLlevar}
               onSeleccionarMesa={seleccionarMesaLocal}
               onAlternarModoLlevar={alternarModoLlevar}
               onClienteChange={(valor) => { setClientePedido(valor); setErrorMesa(""); }}

@@ -11,18 +11,18 @@
     "pwa:check": "node scripts/validate-pwa.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.4",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@supabase/supabase-js": "^2.106.2",
+    "@vitejs/plugin-react": "^4.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "vite": "^5.4.8"
+    "vite": "^5.4.21"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
     "eslint": "^9.16.0",
     "globals": "^15.13.0",
     "prettier": "^3.4.2",
-    "vite-plugin-pwa": "^0.21.1",
+    "vite-plugin-pwa": "^0.21.2",
     "vitest": "^2.1.8"
   },
   "type": "module"

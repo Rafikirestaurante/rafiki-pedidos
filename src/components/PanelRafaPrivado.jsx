@@ -148,7 +148,10 @@ export default function PanelRafaPrivado() {
 
   const pedidosValidos = pedidosRafa.filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado");
   const resumenVentas = crearResumenVentas(pedidosValidos);
-  const totalVentas = resumenVentas.restaurante.total + resumenVentas.cafeteria.total;
+  const totalAdicionalesParaLlevar = (resumenVentas.adicionalesParaLlevar || []).reduce((suma, item) => suma + (Number(item.total) || 0), 0);
+  const cantidadAdicionalesParaLlevar = (resumenVentas.adicionalesParaLlevar || []).reduce((suma, item) => suma + (Number(item.cantidad) || 0), 0);
+  const totalVentasBrutas = resumenVentas.restaurante.total + resumenVentas.cafeteria.total;
+  const totalVentas = Math.max(totalVentasBrutas - totalAdicionalesParaLlevar, 0);
   const totalPedidos = pedidosValidos.length;
   const pendientes = pedidosValidos.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente").length;
   const finalizados = pedidosValidos.filter((pedido) => obtenerEstadoPedido(pedido) === "Finalizado").length;
@@ -178,6 +181,8 @@ export default function PanelRafaPrivado() {
   const resumenCierreDiario = {
     fecha: rangoRafa.inicioTexto,
     ventasTotal: totalVentas,
+    ventasBrutas: totalVentasBrutas,
+    adicionalesParaLlevar: totalAdicionalesParaLlevar,
     gastosTotal: totalGastos,
     utilidadAproximada,
     pedidosTotal: totalPedidos,
@@ -562,7 +567,9 @@ export default function PanelRafaPrivado() {
       {pestanaRafa === "informe" && (
       <>
       <div className="admin-stats">
-        <div className="stat-card"><span>Total vendido</span><strong>{dinero(totalVentas)}</strong></div>
+        <div className="stat-card"><span>Venta neta</span><strong>{dinero(totalVentas)}</strong></div>
+        <div className="stat-card"><span>Venta bruta</span><strong>{dinero(totalVentasBrutas)}</strong></div>
+        <div className="stat-card"><span>Adic. llevar</span><strong>{dinero(totalAdicionalesParaLlevar)}</strong></div>
         <div className="stat-card"><span>Gastos</span><strong>{dinero(totalGastos)}</strong></div>
         <div className="stat-card"><span>Utilidad aprox.</span><strong>{dinero(utilidadAproximada)}</strong></div>
         <div className="stat-card"><span>Restaurante</span><strong>{dinero(resumenVentas.restaurante.total)}</strong></div>
@@ -587,6 +594,23 @@ export default function PanelRafaPrivado() {
           <span>Observaciones del cierre</span>
           <textarea rows="2" value={observacionesCierre} onChange={(e) => setObservacionesCierre(e.target.value)} placeholder="Ej: día lluvioso, faltó personal, compra alta, evento, etc." />
         </label>
+      </div>
+
+      <div className="soft-box" style={{ marginTop: 16, borderColor: "#fde68a", background: "#fffbeb" }}>
+        <h3>Adicionales para llevar</h3>
+        <p><strong>Cantidad total:</strong> {cantidadAdicionalesParaLlevar}</p>
+        {(resumenVentas.adicionalesParaLlevar || []).length > 0 ? (
+          <div style={{ marginTop: 8 }}>
+            {(resumenVentas.adicionalesParaLlevar || []).map((item) => (
+              <p key={item.nombre} style={{ margin: "4px 0" }}>
+                <strong>{item.nombre}:</strong> {item.cantidad} · {dinero(item.total)}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">Sin adicionales para llevar.</p>
+        )}
+        <p style={{ marginTop: 8 }}><strong>Valor cobrado:</strong> {dinero(totalAdicionalesParaLlevar)}</p>
       </div>
 
       <div className="grid-2">

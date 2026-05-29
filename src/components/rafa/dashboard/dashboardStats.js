@@ -6,7 +6,8 @@ import {
   obtenerCliente,
   obtenerCodigoPedido,
   obtenerEstadoPedido,
-  obtenerItemsPedido
+  obtenerItemsPedido,
+  valorParaLlevarItem
 } from "../../../utils/pedidos";
 
 const MESAS_VALIDAS_RAFA = ["1a", "1b", "2a", "2b", "3a", "3b", "4a", "4b", "5b"];
@@ -95,6 +96,24 @@ function ordenarResumen(mapa) {
   return Array.from(mapa.values()).sort((a, b) => b.total - a.total || b.cantidad - a.cantidad);
 }
 
+function obtenerGrupoAdicionalParaLlevar(item) {
+  if (!item?.paraLlevar) return "";
+
+  const tipo = normalizarTexto(item?.tipo);
+  const categoria = normalizarTexto(item?.categoria);
+  const nombre = normalizarTexto(item?.producto || item?.plato || item?.proteina || item?.nombre);
+
+  if (categoria === "cafeteria" || tipo.includes("desayuno") || nombre.includes("desayuno")) {
+    return valorParaLlevarItem(item) > 0 ? "Desayunos" : "";
+  }
+
+  if (categoria.includes("sopa") || ["sopa", "sancocho", "ajiaco", "mote", "mondongo"].some((palabra) => nombre.includes(palabra))) {
+    return valorParaLlevarItem(item) > 0 ? "Sopas" : "";
+  }
+
+  return valorParaLlevarItem(item) > 0 ? "Almuerzos" : "";
+}
+
 export function crearResumenVentas(pedidos) {
   const resumen = {
     restaurante: { total: 0, cantidad: 0 },
@@ -103,6 +122,7 @@ export function crearResumenVentas(pedidos) {
     productosCafeteria: new Map(),
     proteinas: new Map(),
     acompanantes: new Map(),
+    adicionalesParaLlevar: new Map(),
     tabla: new Map()
   };
 
@@ -120,6 +140,11 @@ export function crearResumenVentas(pedidos) {
     items.forEach((item) => {
       const cantidad = Number(item.cantidad) || 1;
       const totalItem = calcularTotalItem(item);
+      const valorAdicionalParaLlevar = valorParaLlevarItem(item) * cantidad;
+      const grupoAdicionalParaLlevar = obtenerGrupoAdicionalParaLlevar(item);
+      if (grupoAdicionalParaLlevar && valorAdicionalParaLlevar > 0) {
+        sumarEnMapa(resumen.adicionalesParaLlevar, grupoAdicionalParaLlevar, cantidad, valorAdicionalParaLlevar);
+      }
       const esCafeteria = item.categoria === "cafeteria";
 
       if (esCafeteria) {
@@ -159,6 +184,7 @@ export function crearResumenVentas(pedidos) {
     productosCafeteria: ordenarResumenConDetalles(resumen.productosCafeteria),
     proteinas: ordenarResumenConDetalles(resumen.proteinas),
     acompanantes: ordenarResumen(resumen.acompanantes).sort((a, b) => b.cantidad - a.cantidad),
+    adicionalesParaLlevar: ordenarResumen(resumen.adicionalesParaLlevar),
     tabla: ordenarResumen(resumen.tabla)
   };
 }

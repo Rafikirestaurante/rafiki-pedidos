@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23A3B-9945-INFORME-PROTEINAS-CAFETERIA-2026-05-29',
-  phase: 'Fase 23A3B 99.4.5 - Informe proteínas y cafetería completo',
+  version: '23A3B-9947-ADICIONALES-NETOS-DESAYUNOS-2026-05-29',
+  phase: 'Fase 23A3B 99.4.7 - Adicionales netos y desayunos para llevar',
   date: '2026-05-29',
-  fase: '23A3B-99.4.5',
-  notes: 'Admin Rafa Informe agrupa pechugas y cerdos por familia con subdetalle de presentación, muestra cantidades y valor total, y lista todos los productos de cafetería de mayor a menor.'
+  fase: '23A3B-99.4.7',
+  notes: 'Admin Rafa Informe separa adicionales para llevar por almuerzos, sopas y desayunos; calcula venta bruta, adicionales y venta neta. Panel Mesas aplica desayuno para llevar con adicional de 1000.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
