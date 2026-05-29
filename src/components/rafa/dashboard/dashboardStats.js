@@ -126,9 +126,10 @@ export function crearResumenVentas(pedidos) {
         const tipo = item.tipo || "Cafetería";
         resumen.cafeteria.total += totalItem;
         resumen.cafeteria.cantidad += cantidad;
-        const productoCafeteria = obtenerNombreProductoCafeteriaRafa(item);
+        const productoCafeteria = obtenerFamiliaProductoCafeteriaRafa(item);
+        const detalleProductoCafeteria = obtenerDetalleProductoCafeteriaRafa(item, productoCafeteria);
         sumarEnMapa(resumen.subcategoriasCafeteria, tipo, cantidad, totalItem);
-        sumarEnMapa(resumen.productosCafeteria, productoCafeteria, cantidad, totalItem);
+        sumarDetalleEnMapa(resumen.productosCafeteria, productoCafeteria, detalleProductoCafeteria, cantidad, totalItem);
         sumarEnMapa(resumen.tabla, `Cafetería · ${tipo}`, cantidad, totalItem);
         return;
       }
@@ -155,7 +156,7 @@ export function crearResumenVentas(pedidos) {
     restaurante: resumen.restaurante,
     cafeteria: resumen.cafeteria,
     subcategoriasCafeteria: ordenarResumen(resumen.subcategoriasCafeteria),
-    productosCafeteria: ordenarResumen(resumen.productosCafeteria).sort((a, b) => b.cantidad - a.cantidad || b.total - a.total || a.nombre.localeCompare(b.nombre)),
+    productosCafeteria: ordenarResumenConDetalles(resumen.productosCafeteria),
     proteinas: ordenarResumenConDetalles(resumen.proteinas),
     acompanantes: ordenarResumen(resumen.acompanantes).sort((a, b) => b.cantidad - a.cantidad),
     tabla: ordenarResumen(resumen.tabla)
@@ -168,42 +169,55 @@ function obtenerFamiliaProteinaRafa(nombreProducto) {
 
   if (texto.includes("pechuga")) return "Pechugas";
   if (texto.includes("cerdo")) return "Cerdos";
+  if (["sopa", "sopas", "sancocho", "ajiaco", "mote", "mondongo"].some((palabra) => texto.includes(palabra))) return "Sopas";
 
   return limpio || "Almuerzo";
 }
 
+function limpiarDetalleTexto(valor) {
+  const limpio = String(valor || "").replace(/\s+/g, " " ).trim();
+  if (!limpio) return "";
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+}
+
 function obtenerPresentacionProteinaRafa(nombreProducto, familia) {
   const original = String(nombreProducto || "").replace(/\s+/g, " " ).trim();
-  if (!original) return "Sin detalle";
+  if (!original) return "";
 
-  let detalle = original
+  if (familia === "Sopas") {
+    const detalleSopa = original
+      .replace(/^sopas?\s*[|:-]?\s*/ig, "")
+      .replace(/\s+/g, " " )
+      .trim();
+    return limpiarDetalleTexto(detalleSopa || original);
+  }
+
+  if (familia !== "Pechugas" && familia !== "Cerdos") return "";
+
+  const detalle = original
     .replace(/pechuga\s+o\s+cerdo/ig, "")
-    .replace(/pechuga/ig, "")
-    .replace(/cerdo/ig, "")
+    .replace(/pechugas?/ig, "")
+    .replace(/cerdos?/ig, "")
     .replace(/^\s*[-–:|]+\s*/, "")
     .replace(/\s+/g, " " )
     .trim();
 
-  if (!detalle) {
-    if (familia === "Pechugas") return "Pechuga";
-    if (familia === "Cerdos") return "Cerdo";
-    return original;
-  }
-
-  return detalle.charAt(0).toUpperCase() + detalle.slice(1);
+  return limpiarDetalleTexto(detalle);
 }
 
 function sumarDetalleEnMapa(mapa, clavePrincipal, claveDetalle, cantidad, total) {
   const nombre = clavePrincipal || "Sin clasificar";
-  const detalleNombre = claveDetalle || "Sin detalle";
+  const detalleNombre = claveDetalle || "";
   const actual = mapa.get(nombre) || { nombre, cantidad: 0, total: 0, detallesMap: new Map() };
   actual.cantidad += Number(cantidad) || 0;
   actual.total += Number(total) || 0;
 
-  const detalle = actual.detallesMap.get(detalleNombre) || { nombre: detalleNombre, cantidad: 0, total: 0 };
-  detalle.cantidad += Number(cantidad) || 0;
-  detalle.total += Number(total) || 0;
-  actual.detallesMap.set(detalleNombre, detalle);
+  if (detalleNombre && normalizarTexto(detalleNombre) !== normalizarTexto(nombre)) {
+    const detalle = actual.detallesMap.get(detalleNombre) || { nombre: detalleNombre, cantidad: 0, total: 0 };
+    detalle.cantidad += Number(cantidad) || 0;
+    detalle.total += Number(total) || 0;
+    actual.detallesMap.set(detalleNombre, detalle);
+  }
 
   mapa.set(nombre, actual);
 }
@@ -220,12 +234,36 @@ function ordenarResumenConDetalles(mapa) {
     .sort((a, b) => b.cantidad - a.cantidad || b.total - a.total || a.nombre.localeCompare(b.nombre));
 }
 
-function obtenerNombreProductoCafeteriaRafa(item) {
+function obtenerFamiliaProductoCafeteriaRafa(item) {
   const base = item.producto || item.nombre || item.plato || item.proteina || item.tipo || "Producto cafetería";
+  const texto = normalizarTexto(base);
+  const tipo = normalizarTexto(item.tipo);
+
+  if (texto.includes("batido") || tipo.includes("batido")) return "Batidos";
+  if (texto.includes("parfait") || tipo.includes("parfait")) return "Parfaits";
+
+  return String(base || "Producto cafetería").replace(/\s+/g, " " ).trim();
+}
+
+function obtenerDetalleProductoCafeteriaRafa(item, familia) {
+  if (familia !== "Batidos" && familia !== "Parfaits") return "";
+
+  const base = String(item.producto || item.nombre || item.plato || item.proteina || item.tipo || familia).replace(/\s+/g, " " ).trim();
   const detalles = [];
+  const baseSinFamilia = base
+    .replace(/batidos?/ig, "")
+    .replace(/parfaits?/ig, "")
+    .replace(/^\s*[-–:|]+\s*/, "")
+    .replace(/\s+/g, " " )
+    .trim();
+
+  if (baseSinFamilia) detalles.push(baseSinFamilia);
   if (item.tamano) detalles.push(item.tamano);
   if (item.base) detalles.push(`Base ${item.base}`);
-  return detalles.length ? `${base} · ${detalles.join(" · ")}` : base;
+  if (item.sabor) detalles.push(item.sabor);
+  if (item.fruta) detalles.push(item.fruta);
+
+  return limpiarDetalleTexto(detalles.join(" · "));
 }
 
 

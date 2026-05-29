@@ -245,13 +245,27 @@ export default function PanelRafaPrivado() {
       return `<tr><td colspan="${mostrarTotal ? 3 : 2}">Sin datos en este periodo.</td></tr>`;
     }
 
-    return items.map((item) => `
-      <tr>
-        <td>${escaparHtml(item.nombre)}</td>
-        <td>${Number(item.cantidad) || 0}</td>
-        ${mostrarTotal ? `<td>${dinero(item.total)}</td>` : ""}
-      </tr>
-    `).join("");
+    return items.map((item) => {
+      const filaPrincipal = `
+        <tr>
+          <td>${escaparHtml(item.nombre)}</td>
+          <td>${Number(item.cantidad) || 0}</td>
+          ${mostrarTotal ? `<td>${dinero(item.total)}</td>` : ""}
+        </tr>
+      `;
+      const filasDetalle = (item.detalles || []).map((detalle) => `
+        <tr>
+          <td style="padding-left:18px; color:#555;">↳ ${escaparHtml(detalle.nombre)}</td>
+          <td>${Number(detalle.cantidad) || 0}</td>
+          ${mostrarTotal ? `<td>${dinero(detalle.total)}</td>` : ""}
+        </tr>
+      `).join("");
+      return filaPrincipal + filasDetalle;
+    }).join("");
+  }
+
+  function filasProteinasPdf(items) {
+    return filasResumenPdf(items, true);
   }
 
   async function guardarCierreDiaSeleccionado() {
@@ -312,6 +326,9 @@ export default function PanelRafaPrivado() {
       lineas.push(``, `☕ *Productos de cafetería:*`);
       resumenVentas.productosCafeteria.forEach((item) => {
         lineas.push(`• ${item.nombre}: ${item.cantidad} · ${dinero(item.total)}`);
+        (item.detalles || []).forEach((detalle) => {
+          lineas.push(`   - ${detalle.nombre}: ${detalle.cantidad} · ${dinero(detalle.total)}`);
+        });
       });
     }
 
@@ -584,7 +601,7 @@ export default function PanelRafaPrivado() {
           <h3>☕ Cafetería</h3>
           <p><strong>Total vendido:</strong> {dinero(resumenVentas.cafeteria.total)}</p>
           <p><strong>Productos vendidos:</strong> {resumenVentas.cafeteria.cantidad}</p>
-          <ListaResumen items={resumenVentas.productosCafeteria || []} />
+          <ListaResumen items={resumenVentas.productosCafeteria || []} mostrarDetalles />
         </div>
       </div>
 
