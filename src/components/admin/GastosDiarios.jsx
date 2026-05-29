@@ -192,16 +192,18 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         .gastos-rapidos-panel { max-width: 720px; margin: 0 auto; }
         .gastos-rapidos-panel .gastos-formulario-box { padding: 16px; }
         .gastos-rapidos-panel .gastos-boton-guardar { min-height: 52px; font-size: 1.02rem; }
-        .gastos-recurrentes-rapidos { margin-top: 10px; border: 1px solid rgba(180, 83, 9, 0.14); border-radius: 14px; padding: 10px; background: #fffaf0; }
+        .gastos-recurrentes-rapidos { margin-top: 10px; border: 1px solid rgba(180, 83, 9, 0.14); border-radius: 14px; padding: 8px; background: #fffaf0; }
         .gastos-recurrentes-botones { display: flex; gap: 6px; flex-wrap: wrap; }
-        .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.20); background: #fff7ed; color: #111827; border-radius: 999px; padding: 7px 10px; cursor: pointer; text-align: center; font-size: 0.84rem; font-weight: 800; line-height: 1; }
+        .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.20); background: #fff7ed; color: #111827; border-radius: 999px; padding: 7px 11px; cursor: pointer; text-align: center; font-size: 0.84rem; font-weight: 900; line-height: 1; min-height: 30px; }
 
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
           .gastos-informe-header { align-items: stretch; }
           .gastos-informe-header label { width: 100%; }
-          .gastos-tabla { min-width: 680px; }
-          .gastos-rapidos-panel { border-radius: 18px; padding: 14px; }
+          .gastos-tabla { min-width: 620px; }
+          .gastos-rapidos-panel { border-radius: 18px; padding: 12px; }
+          .gastos-recurrentes-botones { gap: 5px; }
+          .gastos-recurrente-btn { flex: 0 1 auto; padding: 8px 10px; font-size: 0.82rem; }
         }
       `}</style>
 
@@ -223,9 +225,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
               { nombre: "Kathe", categoria: "Trabajadores", descripcionSugerida: "Pago día Kathe" },
               { nombre: "Paola", categoria: "Trabajadores", descripcionSugerida: "Pago día Paola" }
             ]).map((proveedor) => (
-              <button key={`${proveedor.nombre}-${proveedor.categoria}`} type="button" className="gastos-recurrente-btn" onClick={() => aplicarGastoRecurrente(proveedor)} disabled={guardando || !supabaseConfigOk}>
+              <button key={`${proveedor.nombre}-${proveedor.categoria || "sin-categoria"}`} type="button" className="gastos-recurrente-btn" onClick={() => aplicarGastoRecurrente(proveedor)} disabled={guardando || !supabaseConfigOk}>
                 {proveedor.nombre}
-                <span>{proveedor.categoria || "Valor manual"}</span>
               </button>
             ))}
           </div>

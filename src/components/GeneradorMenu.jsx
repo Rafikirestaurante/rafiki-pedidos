@@ -470,6 +470,81 @@ export default function GeneradorMenu() {
     );
   }
 
+  function imprimirMenuSimple(tipo) {
+    const esc = (valor) => String(valor || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+    const precio = (valor) => {
+      const limpio = String(valor || "").trim();
+      if (!limpio) return "";
+      const numero = Number(limpio.replace(/[^0-9]/g, ""));
+      return numero ? `$${numero.toLocaleString("es-CO")}` : limpio;
+    };
+
+    const gruposPlatos = [
+      { titulo: "Pechuga y cerdo", items: platosLimpios.filter((plato) => {
+        const n = normalizarTextoCatalogo(plato.nombre);
+        return n.startsWith("pechuga") || n.startsWith("cerdo");
+      }) },
+      { titulo: "Pastas", items: platosLimpios.filter((plato) => normalizarTextoCatalogo(plato.nombre).startsWith("pastas")) },
+      { titulo: "Guisos y demás", items: platosLimpios.filter((plato) => {
+        const n = normalizarTextoCatalogo(plato.nombre);
+        return !esSopaResumen(plato.nombre) && !n.startsWith("pechuga") && !n.startsWith("cerdo") && !n.startsWith("pastas");
+      }) },
+      { titulo: "Sopas", items: platosLimpios.filter((plato) => esSopaResumen(plato.nombre)) }
+    ].filter((grupo) => grupo.items.length > 0);
+
+    const htmlPlatos = gruposPlatos.map((grupo) => `
+      <section class="grupo">
+        <h2>${esc(grupo.titulo)}</h2>
+        ${grupo.items.map((plato) => `
+          <div class="fila">
+            <span>${esc(plato.nombre)}</span>
+            <strong>${esc(precio(plato.precio))}</strong>
+          </div>
+        `).join("")}
+      </section>
+    `).join("");
+
+    const htmlAcompanantes = listaAcompanantes.map((item) => `<div class="acompanante">${esc(item)}</div>`).join("");
+    const contenido = tipo === "acompanantes" ? htmlAcompanantes : htmlPlatos;
+    const titulo = tipo === "acompanantes" ? "Acompañantes" : "Platos";
+
+    if (!contenido) {
+      setMensaje(tipo === "acompanantes" ? "No hay acompañantes para imprimir." : "No hay platos para imprimir.");
+      return;
+    }
+
+    const ventana = window.open("", "_blank", "width=420,height=720");
+    if (!ventana) {
+      setMensaje("El navegador bloqueó la ventana de impresión.");
+      return;
+    }
+
+    ventana.document.write(`<!doctype html>
+      <html><head><meta charset="utf-8" /><title>${esc(titulo)} Rafiki</title>
+      <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 18px; font-family: Arial, sans-serif; color: #111827; background: #fff; }
+        h1 { margin: 0 0 14px; text-align: center; font-size: 22px; text-transform: uppercase; }
+        h2 { margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #111827; font-size: 16px; text-transform: uppercase; }
+        .fila { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed #d1d5db; font-size: 15px; }
+        .fila span { font-weight: 700; }
+        .fila strong { white-space: nowrap; }
+        .acompanante { padding: 8px 0; border-bottom: 1px dashed #d1d5db; font-size: 18px; font-weight: 800; text-align: center; }
+        @media print { body { padding: 8px; } }
+      </style></head><body>
+        <h1>${esc(titulo)}</h1>
+        ${contenido}
+        <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 400); };</script>
+      </body></html>`);
+    ventana.document.close();
+    setMensaje(`${titulo} enviados a impresión.`);
+  }
+
   async function cargarHistorialGenerador(opciones = {}) {
     setCargandoHistorial(true);
     const { data, error } = await supabase
@@ -811,6 +886,14 @@ export default function GeneradorMenu() {
             <button type="button" className="button download-text-button" onClick={descargarSoloTexto} disabled={guardandoHistorial}>
               {guardandoHistorial ? "Guardando..." : "Guardar y descargar"}
             </button>
+            <div className="acciones-impresion-menu">
+              <button type="button" className="button light" onClick={() => imprimirMenuSimple("platos")} disabled={!platosLimpios.length}>
+                Imprimir platos
+              </button>
+              <button type="button" className="button light" onClick={() => imprimirMenuSimple("acompanantes")} disabled={!listaAcompanantes.length}>
+                Imprimir acompañantes
+              </button>
+            </div>
           </div>
 
           <div className="box soft texto-editor-menu-box" style={{ marginTop: 14 }}>
@@ -957,6 +1040,7 @@ export default function GeneradorMenu() {
         .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.3; overflow-wrap: normal; word-break: normal; hyphens: none; white-space: normal; }
         .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
         .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
+        .acciones-impresion-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
         .selector-catalogo-menu { border-color: #fed7aa; background: linear-gradient(135deg, #fff7ed, #ffffff); }
         .selector-catalogo-lista-limpia { display: flex; flex-direction: column; gap: 18px; margin-top: 14px; }
@@ -991,6 +1075,7 @@ export default function GeneradorMenu() {
           .plato-menu-row { grid-template-columns: minmax(0, 1fr) 92px 34px; gap: 6px; }
           .box.soft input, .field input, .field textarea { padding: 10px 8px; font-size: 14px; }
           .acciones-generador .button, .generador-menu .button { width: 100%; justify-content: center; }
+          .acciones-impresion-menu { grid-template-columns: 1fr; }
           .generador-menu .resumen-clear-button, .generador-menu .resumen-delete-button { width: auto !important; }
           .history-menu-item { align-items: flex-start; flex-direction: column; }
           .preview-menu-frame { border-radius: 18px; }

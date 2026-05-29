@@ -33,7 +33,7 @@ export default function CatalogoGastos() {
     const resultado = await cargarCatalogoGastos();
     setCategorias(resultado.categorias);
     setProveedores(resultado.proveedores);
-    setMensaje(resultado.ok ? "Catálogo de gastos conectado a Supabase." : `Usando respaldo local. Ejecuta el SQL de Fase 23A3. Detalle: ${resultado.mensaje}`);
+    setMensaje(resultado.ok ? "" : `Usando respaldo local. Ejecuta el SQL de Fase 23A3. Detalle: ${resultado.mensaje}`);
     setCargando(false);
   }
 
@@ -75,7 +75,7 @@ export default function CatalogoGastos() {
   async function guardarProveedor(event) {
     event.preventDefault();
     const nombre = formProveedor.nombre.trim();
-    if (!nombre) return setMensaje("Escribe el nombre del proveedor o recurrente.");
+    if (!nombre) return setMensaje("Escribe el nombre del proveedor.");
     setGuardando(true);
     try {
       if (!supabaseConfigOk) throw new Error(supabaseConfigMensaje);
@@ -129,19 +129,36 @@ export default function CatalogoGastos() {
   }
 
   return (
-    <section className="soft-box" style={{ marginTop: 14, borderColor: "#fed7aa", background: "linear-gradient(135deg, #fff7ed, #ffffff)" }}>
+    <section className="soft-box catalogo-gastos-panel" style={{ marginTop: 14, borderColor: "#fed7aa", background: "linear-gradient(135deg, #fff7ed, #ffffff)" }}>
       <div className="admin-top-row">
         <h3>💸 Catálogo de gastos</h3>
         <button type="button" className="button button-secondary" onClick={cargar} disabled={cargando}>{cargando ? "Cargando..." : "Recargar"}</button>
       </div>
 
-      <style>{`.badge-estado-negro { color: #111827 !important; }`}</style>
+      <style>{`
+        .badge-estado-negro { color: #111827 !important; }
+        .catalogo-gastos-panel .pedidos-tabla-compacta { min-width: 620px; }
+        .catalogo-gastos-panel .catalogo-selector-card small { display: none; }
+        @media (max-width: 720px) {
+          .catalogo-gastos-panel { padding: 10px !important; }
+          .catalogo-gastos-panel .catalogo-selector-tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+          .catalogo-gastos-panel .catalogo-selector-card { padding: 9px 10px; border-radius: 14px; gap: 8px; }
+          .catalogo-gastos-panel .catalogo-selector-icono { width: 32px; height: 32px; border-radius: 11px; font-size: 17px; }
+          .catalogo-gastos-panel .catalogo-selector-card strong { font-size: 12px; line-height: 1.1; }
+          .catalogo-gastos-panel .grid-2 { grid-template-columns: 1fr !important; }
+          .catalogo-gastos-panel .pedidos-tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .catalogo-gastos-panel .pedidos-tabla-compacta { min-width: 520px; font-size: 11px; }
+          .catalogo-gastos-panel .pedidos-tabla-compacta th,
+          .catalogo-gastos-panel .pedidos-tabla-compacta td { padding: 7px 6px; }
+          .catalogo-gastos-panel .button-small { padding: 6px 8px; font-size: 11px; }
+        }
+      `}</style>
       <div className="catalogo-selector-tarjetas" style={{ marginTop: 12 }}>
         <button type="button" onClick={() => setTipo("proveedores")} className={`catalogo-selector-card ${tipo === "proveedores" ? "active" : ""}`}>
-          <span className="catalogo-selector-icono">🏪</span><span><strong>Proveedores / recurrentes</strong><small>{proveedores.length} registros</small></span>
+          <span className="catalogo-selector-icono">🏪</span><span><strong>Proveedores</strong><small>{proveedores.length} registros</small></span>
         </button>
         <button type="button" onClick={() => setTipo("categorias")} className={`catalogo-selector-card ${tipo === "categorias" ? "active" : ""}`}>
-          <span className="catalogo-selector-icono">🏷️</span><span><strong>Categorías de gasto</strong><small>{categorias.length} registros</small></span>
+          <span className="catalogo-selector-icono">🏷️</span><span><strong>Categorías</strong><small>{categorias.length} registros</small></span>
         </button>
       </div>
 
@@ -165,7 +182,7 @@ export default function CatalogoGastos() {
         </form>
       ) : (
         <form onSubmit={guardarProveedor} className="soft-box" style={{ marginTop: 12, background: "#fff" }}>
-          <h4>{editandoProveedorId ? "Editar proveedor/recurrente" : "Agregar proveedor/recurrente"}</h4>
+          <h4>{editandoProveedorId ? "Editar proveedor" : "Agregar proveedor"}</h4>
           <div className="grid-2" style={{ marginTop: 10 }}>
             <label className="field-label">Nombre
               <input value={formProveedor.nombre} onChange={(e) => setFormProveedor((prev) => ({ ...prev, nombre: e.target.value }))} placeholder="Ej: Alexa, Tienda de verduras, Gas" />

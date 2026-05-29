@@ -18,6 +18,8 @@ export const appStyles = `
         .nav-wrap { flex-wrap: wrap; justify-content: flex-end; }
         .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; white-space: nowrap; }
         .nav button.active { background: #f97316; color: #fff; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
+        .nav .rafiki-clear-cache-button, .rafiki-clear-cache-button { border: 1px solid #fdba74; background: #fff7ed; color: #9a3412; font-weight: 900; border-radius: 14px; white-space: nowrap; box-shadow: none; }
+        .nav .rafiki-clear-cache-button:hover, .rafiki-clear-cache-button:hover { background: #ffedd5; }
         .alert { white-space: pre-line; padding: 14px 18px; border-radius: 18px; margin-bottom: 18px; font-weight: 700; border: 1px solid transparent; animation: fadeInUp 0.3s ease; }
         .alert-info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .alert-success { background: #ecfdf5; color: #166534; border-color: #bbf7d0; }

@@ -1,6 +1,6 @@
 {
-  "version": "23A3B-CATALOGO-LIMPIO-2026-05-29",
-  "phase": "Fase 23A3B - Catálogo limpio por pestañas",
+  "version": "23A3B-9943-LIMPIAR-CACHE-MANUAL-2026-05-29",
+  "phase": "Fase 23A3B 99.4.3 - Botón manual para limpiar caché",
   "date": "2026-05-29",
-  "notes": "Limpia textos en Gastos, compacta gastos recurrentes rápidos, organiza Catálogo por pestañas y fuerza Estado con letra negra."
+  "notes": "Agrega botón manual Limpiar caché en el panel administrativo para forzar actualización de la PWA cuando los cambios no cargan a tiempo."
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import PWAClearCacheButton from "../PWAClearCacheButton.jsx";
 
 export default function AdminHeaderTabs({
   adminUsuario,
@@ -36,6 +37,7 @@ export default function AdminHeaderTabs({
               Gastos
             </button>
           )}
+          <PWAClearCacheButton compact />
         </div>
       </header>
 

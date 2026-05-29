@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23A3B-CATALOGO-LIMPIO-2026-05-29',
-  phase: 'Fase 23A3B - Catálogo limpio por pestañas',
+  version: '23A3B-9943-LIMPIAR-CACHE-MANUAL-2026-05-29',
+  phase: 'Fase 23A3B 99.4.3 - Botón manual para limpiar caché',
   date: '2026-05-29',
-  fase: '23A3B',
-  notes: 'Limpia textos en Gastos, compacta gastos recurrentes rápidos, organiza Catálogo por pestañas y fuerza Estado con letra negra.'
+  fase: '23A3B-99.4.3',
+  notes: 'Agrega botón manual Limpiar caché en el panel administrativo para forzar actualización de la PWA cuando los cambios no cargan a tiempo.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
