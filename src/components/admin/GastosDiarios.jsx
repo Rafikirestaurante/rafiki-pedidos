@@ -192,11 +192,9 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         .gastos-rapidos-panel { max-width: 720px; margin: 0 auto; }
         .gastos-rapidos-panel .gastos-formulario-box { padding: 16px; }
         .gastos-rapidos-panel .gastos-boton-guardar { min-height: 52px; font-size: 1.02rem; }
-        .gastos-recurrentes-rapidos { margin-top: 12px; border: 1px solid rgba(180, 83, 9, 0.18); border-radius: 16px; padding: 12px; background: #fffbeb; }
-        .gastos-recurrentes-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-        .gastos-recurrentes-botones { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; }
-        .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.22); background: #fff7ed; color: #7c2d12; border-radius: 12px; padding: 10px 12px; cursor: pointer; text-align: left; font-weight: 800; }
-        .gastos-recurrente-btn span { display: block; color: #92400e; font-size: 0.82rem; font-weight: 700; margin-top: 2px; }
+        .gastos-recurrentes-rapidos { margin-top: 10px; border: 1px solid rgba(180, 83, 9, 0.14); border-radius: 14px; padding: 10px; background: #fffaf0; }
+        .gastos-recurrentes-botones { display: flex; gap: 6px; flex-wrap: wrap; }
+        .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.20); background: #fff7ed; color: #111827; border-radius: 999px; padding: 7px 10px; cursor: pointer; text-align: center; font-size: 0.84rem; font-weight: 800; line-height: 1; }
 
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
@@ -209,7 +207,6 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
 
       <div className="gastos-rapidos-header">
         <h2>{modoRapido ? "💸 Registrar gasto rápido" : "💸 Gastos Diarios"}</h2>
-        <p className="muted">{modoRapido ? "Formulario liviano para guardar gastos desde el celular." : "Registra facturas, compras y salidas de dinero del día. El informe inferior solo lo ve el rol administrador."}</p>
       </div>
 
       {!supabaseConfigOk && <div className="alert alert-warning">{supabaseConfigMensaje}</div>}
@@ -219,12 +216,6 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       <form onSubmit={guardarGasto} className="box soft gastos-formulario-box" style={{ marginTop: 12 }}>
         <h3>{editandoId ? "Editar gasto" : "Registrar gasto"}</h3>
         <div className="gastos-recurrentes-rapidos">
-          <div className="gastos-recurrentes-header">
-            <div>
-              <strong>⚡ Gastos recurrentes rápidos</strong>
-              <p className="muted small" style={{ margin: "4px 0 0" }}>Se administran en Admin → Catálogo → Catálogo de gastos. El valor queda vacío para escribirlo antes de guardar.</p>
-            </div>
-          </div>
           <div className="gastos-recurrentes-botones">
             {(proveedoresRapidos.length ? proveedoresRapidos : [
               { nombre: "Alexa", categoria: "Trabajadores", descripcionSugerida: "Pago día Alexa" },

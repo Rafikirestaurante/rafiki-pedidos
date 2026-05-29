@@ -90,13 +90,13 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggleActivo, onTo
             {items.map((item) => (
               <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.55 }}>
                 <td>
-                  <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggleActivo(item.id)}>
+                  <button type="button" className={item.activo ? "badge badge-estado-negro" : "badge badge-estado-negro"} onClick={() => onToggleActivo(item.id)}>
                     {item.activo ? "Activo" : "Inactivo"}
                   </button>
                 </td>
                 {tipo === "productos" && (
                   <td>
-                    <button type="button" className={item.agotado ? "badge badge-pendiente" : "badge badge-finalizado"} onClick={() => onToggleAgotado(item.id)}>
+                    <button type="button" className={item.agotado ? "badge badge-estado-negro" : "badge badge-estado-negro"} onClick={() => onToggleAgotado(item.id)}>
                       {item.agotado ? "Agotado" : "Disponible"}
                     </button>
                   </td>
@@ -134,7 +134,7 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggleActivo, onTo
           <article key={item.id} className="catalogo-card" style={{ opacity: item.activo ? 1 : 0.6 }}>
             <div className="catalogo-card-head">
               <strong>{item.nombre}</strong>
-              <button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => onToggleActivo(item.id)}>
+              <button type="button" className={item.activo ? "badge badge-estado-negro" : "badge badge-estado-negro"} onClick={() => onToggleActivo(item.id)}>
                 {item.activo ? "Activo" : "Inactivo"}
               </button>
             </div>
@@ -173,7 +173,7 @@ function CatalogoTabla({ items, tipo, onEditar, onEliminar, onToggleActivo, onTo
 }
 
 export default function CatalogoRafa() {
-  const [tipo, setTipo] = useState("productos_restaurante");
+  const [tipo, setTipo] = useState("gastos");
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
   const [estadoFiltro, setEstadoFiltro] = useState("todos");
@@ -189,6 +189,7 @@ export default function CatalogoRafa() {
   const [fuenteProductos, setFuenteProductos] = useState("local");
   const [guardando, setGuardando] = useState(false);
 
+  const esGastos = tipo === "gastos";
   const esProductosRestaurante = tipo === "productos_restaurante";
   const esProductosCafeteria = tipo === "productos_cafeteria";
   const esProductos = esProductosRestaurante || esProductosCafeteria;
@@ -196,7 +197,7 @@ export default function CatalogoRafa() {
 
   const productosRestaurante = useMemo(() => productos.filter((item) => item.linea === "Restaurante"), [productos]);
   const productosCafeteria = useMemo(() => productos.filter((item) => item.linea === "Cafetería"), [productos]);
-  const listaActual = esProductosRestaurante ? productosRestaurante : esProductosCafeteria ? productosCafeteria : insumos;
+  const listaActual = esGastos ? [] : esProductosRestaurante ? productosRestaurante : esProductosCafeteria ? productosCafeteria : insumos;
   const categoriasProducto = useMemo(() => [...new Set(listaActual.map((item) => item.categoria).filter(Boolean))].sort(), [listaActual]);
   const categoriasInsumo = useMemo(() => [...new Set([...categoriasSolicitudProductos, ...insumos.map((item) => item.categoria).filter(Boolean)])].sort(), [insumos]);
   const categoriasActuales = esProductos ? categoriasProducto : categoriasInsumo;
@@ -612,17 +613,24 @@ export default function CatalogoRafa() {
 
   return (
     <div className="soft-box catalogo-rafa" style={{ borderColor: "#bbf7d0", background: "linear-gradient(135deg, #f0fdf4, #ffffff)" }}>
+      <style>{`.catalogo-rafa .badge-estado-negro { color: #111827 !important; }`}</style>
       <div className="admin-top-row">
-        <div>
-          <h3>🧾 Catálogo Rafa</h3>
-          <p className="muted">Listado editable de productos restaurante, productos cafetería, insumos y gastos. Conectado a Supabase con respaldo local seguro.</p>
-        </div>
+        <h3>🧾 Catálogo Rafa</h3>
         <button type="button" className="button button-secondary" onClick={restaurarBase}>Restaurar base</button>
       </div>
 
-      <CatalogoGastos />
-
       <div className="catalogo-selector-tarjetas" style={{ marginTop: 14 }}>
+        <button
+          type="button"
+          onClick={() => cambiarTipo("gastos")}
+          className={`catalogo-selector-card ${tipo === "gastos" ? "active" : ""}`}
+          aria-pressed={tipo === "gastos"}
+        >
+          <span className="catalogo-selector-icono">💸</span>
+          <span>
+            <strong>Gastos</strong>
+          </span>
+        </button>
         <button
           type="button"
           onClick={() => cambiarTipo("productos_restaurante")}
@@ -630,10 +638,7 @@ export default function CatalogoRafa() {
           aria-pressed={tipo === "productos_restaurante"}
         >
           <span className="catalogo-selector-icono">🍽️</span>
-          <span>
-            <strong>Productos Restaurante</strong>
-            <small>{productosRestaurante.length} registros</small>
-          </span>
+          <span><strong>Productos Restaurante</strong></span>
         </button>
         <button
           type="button"
@@ -642,25 +647,14 @@ export default function CatalogoRafa() {
           aria-pressed={tipo === "productos_cafeteria"}
         >
           <span className="catalogo-selector-icono">☕</span>
-          <span>
-            <strong>Productos Cafetería</strong>
-            <small>{productosCafeteria.length} registros</small>
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => cambiarTipo("insumos")}
-          className={`catalogo-selector-card ${tipo === "insumos" ? "active" : ""}`}
-          aria-pressed={tipo === "insumos"}
-        >
-          <span className="catalogo-selector-icono">🧺</span>
-          <span>
-            <strong>Insumos</strong>
-            <small>{insumos.length} registros</small>
-          </span>
+          <span><strong>Productos Cafetería</strong></span>
         </button>
       </div>
 
+      {tipo === "gastos" ? (
+        <CatalogoGastos />
+      ) : (
+        <>
       <div className="catalogo-resumen-mini" style={{ marginTop: 12 }}>
         <span><strong>{resumenCatalogo.total}</strong> registros</span>
         <span><strong>{resumenCatalogo.activos}</strong> activos</span>
@@ -703,17 +697,6 @@ export default function CatalogoRafa() {
         </button>
       </div>
 
-      {esProductos && (
-        <div className="alert alert-info" style={{ marginTop: 12 }}>
-          {cargandoProductos ? "Cargando productos desde Supabase..." : fuenteProductos === "bd" ? "Productos conectados a Supabase." : "Productos usando respaldo local."}
-        </div>
-      )}
-
-      {!esProductos && (
-        <div className="alert alert-info" style={{ marginTop: 12 }}>
-          {cargandoInsumos ? "Cargando insumos desde Supabase..." : fuenteInsumos === "bd" ? "Insumos conectados a Supabase." : "Insumos usando respaldo local."}
-        </div>
-      )}
 
       <form onSubmit={guardar} className="soft-box" style={{ marginTop: 14, background: "#fff" }}>
         <h4>{editandoId ? "Editar registro" : `Agregar ${esProductos ? "producto" : "insumo"}`}</h4>
@@ -761,7 +744,6 @@ export default function CatalogoRafa() {
       </form>
 
       {mensaje && <div className="alert alert-info" style={{ marginTop: 12 }}>{mensaje}</div>}
-      <p className="muted" style={{ marginTop: 12 }}>{listaFiltrada.length} de {listaActual.length} registros visibles.</p>
       <CatalogoTabla
         items={listaFiltrada}
         tipo={esProductos ? "productos" : "insumos"}
@@ -771,6 +753,8 @@ export default function CatalogoRafa() {
         onToggleAgotado={toggleAgotado}
         onPrecioRapido={precioRapido}
       />
+        </>
+      )}
     </div>
   );
 }

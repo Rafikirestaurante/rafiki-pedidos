@@ -131,13 +131,11 @@ export default function CatalogoGastos() {
   return (
     <section className="soft-box" style={{ marginTop: 14, borderColor: "#fed7aa", background: "linear-gradient(135deg, #fff7ed, #ffffff)" }}>
       <div className="admin-top-row">
-        <div>
-          <h3>💸 Catálogo de gastos</h3>
-          <p className="muted">Administra categorías y proveedores/recurrentes que se usan en Gastos y en la ruta rápida /gastos.</p>
-        </div>
+        <h3>💸 Catálogo de gastos</h3>
         <button type="button" className="button button-secondary" onClick={cargar} disabled={cargando}>{cargando ? "Cargando..." : "Recargar"}</button>
       </div>
 
+      <style>{`.badge-estado-negro { color: #111827 !important; }`}</style>
       <div className="catalogo-selector-tarjetas" style={{ marginTop: 12 }}>
         <button type="button" onClick={() => setTipo("proveedores")} className={`catalogo-selector-card ${tipo === "proveedores" ? "active" : ""}`}>
           <span className="catalogo-selector-icono">🏪</span><span><strong>Proveedores / recurrentes</strong><small>{proveedores.length} registros</small></span>
@@ -177,9 +175,6 @@ export default function CatalogoGastos() {
                 {categoriasActivas.map((cat) => <option key={cat.nombre} value={cat.nombre}>{cat.nombre}</option>)}
               </select>
             </label>
-            <label className="field-label">Descripción sugerida
-              <input value={formProveedor.descripcionSugerida} onChange={(e) => setFormProveedor((prev) => ({ ...prev, descripcionSugerida: e.target.value }))} placeholder="Ej: Pago día Alexa" />
-            </label>
             <label className="field-label">Orden
               <input type="number" value={formProveedor.orden} onChange={(e) => setFormProveedor((prev) => ({ ...prev, orden: e.target.value }))} placeholder="Opcional" />
             </label>
@@ -195,16 +190,15 @@ export default function CatalogoGastos() {
         <table className="pedidos-tabla-compacta">
           <thead>
             <tr>
-              <th>Estado</th><th>Nombre</th>{tipo === "proveedores" && <th>Categoría</th>}{tipo === "proveedores" && <th>Descripción</th>}<th>Orden</th><th>Acciones</th>
+              <th>Estado</th><th>Nombre</th>{tipo === "proveedores" && <th>Categoría</th>}<th>Orden</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {listaActual.map((item) => (
               <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.58 }}>
-                <td><button type="button" className={item.activo ? "badge badge-finalizado" : "badge"} onClick={() => tipo === "categorias" ? toggleCategoria(item) : toggleProveedor(item)}>{item.activo ? "Activo" : "Inactivo"}</button></td>
+                <td><button type="button" className={item.activo ? "badge badge-estado-negro" : "badge badge-estado-negro"} onClick={() => tipo === "categorias" ? toggleCategoria(item) : toggleProveedor(item)}>{item.activo ? "Activo" : "Inactivo"}</button></td>
                 <td><strong>{item.nombre}</strong></td>
                 {tipo === "proveedores" && <td>{item.categoria}</td>}
-                {tipo === "proveedores" && <td>{item.descripcionSugerida || "—"}</td>}
                 <td>{item.orden || "—"}</td>
                 <td><button type="button" className="button button-small" onClick={() => tipo === "categorias" ? editarCategoria(item) : editarProveedor(item)}>Editar</button></td>
               </tr>
