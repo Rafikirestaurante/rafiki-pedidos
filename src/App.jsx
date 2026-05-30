@@ -52,11 +52,12 @@ const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
 const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
 const CatalogoRafa = lazy(() => import("./components/CatalogoRafa"));
 const GastosDiarios = lazy(() => import("./components/admin/GastosDiarios"));
+const InventarioAdmin = lazy(() => import("./components/admin/InventarioAdmin"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
-const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "gastos", "rafa"]);
+const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "gastos", "inventario", "rafa"]);
 
 function leerAdminTabGuardada() {
   try {
@@ -177,6 +178,7 @@ export default function App() {
   const puedeVerRafa = usuarioPuede(adminRol, "rafa");
   const puedeVerCatalogo = usuarioPuede(adminRol, "catalogo");
   const puedeVerGastos = usuarioPuede(adminRol, "gastos");
+  const puedeVerInventario = usuarioPuede(adminRol, "inventario");
   const puedeVerInformeGastos = usuarioPuede(adminRol, "gastos_informe");
   const puedeEliminarPedido = usuarioPuede(adminRol, "eliminar_pedido");
   const puedeEditarPedido = usuarioPuede(adminRol, "editar_pedido");
@@ -256,7 +258,7 @@ export default function App() {
 
   useEffect(() => {
     let activo = true;
-    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos";
+    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario";
     const haySesionTemporalAdmin = obtenerSesionActiva("rafikiAdminActivo");
 
     const enviarALoginAdmin = () => {
@@ -1339,6 +1341,8 @@ export default function App() {
     const rutaActual = window.location.pathname.replace(/\/$/, "") || "/";
     if (rutaActual === "/pedidos") {
       navegar("/pedidos", "pedidos");
+    } else if (rutaActual === "/inventario") {
+      navegar("/inventario", "inventario");
     } else {
       navegar("/admin", "admin");
     }
@@ -1354,7 +1358,7 @@ export default function App() {
     setAdminEmail("");
     setAdminPassword("");
     setErrorClaveAdmin("");
-    navegar(rutaActual === "/pedidos" ? "/pedidos" : "/admin", "adminLogin");
+    navegar(rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : "/admin", "adminLogin");
   }
 
   function nuevoPedidoCliente() {
@@ -1374,8 +1378,8 @@ export default function App() {
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
-                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : vista === "pedidos" ? "Pedidos hoy" : "Menú diario y pedidos por WhatsApp"}</h1>
-                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : vista === "pedidos" ? "Control liviano de pedidos del día." : "App real conectada a Supabase."}</p>
+                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : vista === "inventario" ? "Inventario" : vista === "pedidos" ? "Pedidos hoy" : "Menú diario y pedidos por WhatsApp"}</h1>
+                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : vista === "inventario" ? "Control de insumos, stock mínimo y alertas." : vista === "pedidos" ? "Control liviano de pedidos del día." : "App real conectada a Supabase."}</p>
               </div>
 
               {(vista === "cliente" || vista === "confirmacion") && (
@@ -1410,11 +1414,17 @@ export default function App() {
                   >
                     Gastos
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => navegar("/inventario", adminAutenticado ? "inventario" : "adminLogin")}
+                  >
+                    Inventario
+                  </button>
 
                 </div>
               )}
 
-              {vista === "gastos" && (
+              {(vista === "gastos" || vista === "inventario") && (
                 <div className="nav nav-wrap">
                   <button
                     type="button"
@@ -1434,6 +1444,12 @@ export default function App() {
                   >
                     Panel admin
                   </button>
+                  {vista === "gastos" && (
+                    <button type="button" onClick={() => navegar("/inventario", adminAutenticado ? "inventario" : "adminLogin")}>Inventario</button>
+                  )}
+                  {vista === "inventario" && (
+                    <button type="button" onClick={() => navegar("/gastos", "gastos")}>Gastos</button>
+                  )}
                 </div>
               )}
 
@@ -1470,6 +1486,12 @@ export default function App() {
           {!cargando && vista === "gastos" && (
             <Suspense fallback={<CargandoModulo texto="Cargando gastos rápidos..." />}>
               <GastosDiarios modoRapido mostrarInforme={false} />
+            </Suspense>
+          )}
+
+          {!cargando && vista === "inventario" && adminAutenticado && (
+            <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
+              <InventarioAdmin />
             </Suspense>
           )}
 
@@ -1596,6 +1618,7 @@ export default function App() {
                 puedeVerRafa={puedeVerRafa}
                 puedeVerCatalogo={puedeVerCatalogo}
                 puedeVerGastos={puedeVerGastos}
+                puedeVerInventario={puedeVerInventario}
                 cerrarPanelAdmin={cerrarPanelAdmin}
                 navegar={navegar}
               />
@@ -1679,6 +1702,12 @@ export default function App() {
               {adminTab === "gastos" && puedeVerGastos && (
                 <Suspense fallback={<CargandoModulo texto="Cargando gastos diarios..." />}>
                   <GastosDiarios esAdministrador={puedeVerInformeGastos} />
+                </Suspense>
+              )}
+
+              {adminTab === "inventario" && puedeVerInventario && (
+                <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
+                  <InventarioAdmin />
                 </Suspense>
               )}
 

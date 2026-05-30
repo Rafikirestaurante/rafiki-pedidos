@@ -12,6 +12,7 @@ export default function AdminHeaderTabs({
   puedeVerRafa,
   puedeVerCatalogo,
   puedeVerGastos,
+  puedeVerInventario,
   cerrarPanelAdmin,
   navegar,
 }) {
@@ -35,6 +36,11 @@ export default function AdminHeaderTabs({
           {puedeVerGastos && (
             <button type="button" onClick={() => navegar("/gastos", "gastos")}>
               Gastos
+            </button>
+          )}
+          {puedeVerInventario && (
+            <button type="button" onClick={() => navegar("/inventario", "inventario")}>
+              Inventario
             </button>
           )}
           <PWAClearCacheButton compact />
@@ -96,6 +102,16 @@ export default function AdminHeaderTabs({
             className={adminTab === "gastos" ? "active" : ""}
           >
             Gastos Diarios
+          </button>
+        )}
+
+        {puedeVerInventario && (
+          <button
+            type="button"
+            onClick={() => setAdminTab("inventario")}
+            className={adminTab === "inventario" ? "active" : ""}
+          >
+            Inventario
           </button>
         )}
 

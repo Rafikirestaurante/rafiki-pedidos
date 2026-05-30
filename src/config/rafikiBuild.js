@@ -1,8 +1,8 @@
 export const RAFIKI_BUILD = {
   version: '23B-1003-FIX-EDITOR-MENU-SUPABASE-2026-05-30',
-  phase: 'Fase 23B 100.3 - Fix editor menú diario Supabase',
+  phase: 'Fase 23B 24A - Fix editor menú diario Supabase',
   date: '2026-05-30',
-  fase: '23B-100.3',
+  fase: '23B-24A',
   notes: 'Editor de menú diario prioriza Supabase y fecha actual; se limpia borrador local viejo para evitar menús antiguos en computador.'
 };
 
