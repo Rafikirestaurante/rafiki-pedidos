@@ -115,7 +115,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       metodoPago: prev.metodoPago || "Efectivo",
       observacion: "Gasto recurrente rápido"
     }));
-    setMensaje(`${trabajador.nombre} cargado sin valor. Escribe el valor y presiona Guardar gasto.`);
+    setMensaje(`${trabajador.nombre} cargado.`);
     setError("");
   }
 
@@ -178,14 +178,19 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   return (
     <section className={modoRapido ? "card card-pad gastos-diarios-panel gastos-rapidos-panel" : "card card-pad gastos-diarios-panel"}>
       <style>{`
-        .gastos-diarios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
-        .gastos-diarios-panel input, .gastos-diarios-panel textarea, .gastos-diarios-panel select { width: 100%; }
+        .gastos-diarios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 13px; }
+        .gastos-diarios-panel { font-size: 1rem; }
+        .gastos-diarios-panel h2 { font-size: clamp(1.35rem, 4vw, 1.75rem); margin-bottom: 4px; }
+        .gastos-diarios-panel h3 { font-size: 1.12rem; }
+        .gastos-diarios-panel .field-label { font-size: 0.98rem; font-weight: 800; color: #111827; }
+        .gastos-diarios-panel input, .gastos-diarios-panel textarea, .gastos-diarios-panel select { width: 100%; min-height: 46px; font-size: 1rem; border-radius: 14px; }
+        .gastos-diarios-panel textarea { line-height: 1.35; }
         .gastos-resumen-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
-        .gastos-resumen-card { border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 14px; padding: 10px 12px; background: #fffaf0; }
+        .gastos-resumen-card { border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 16px; padding: 12px 14px; background: #fffaf0; font-size: 0.98rem; }
         .gastos-resumen-card strong { display: block; color: #111827; }
         .gastos-tabla-wrap { overflow-x: auto; margin-top: 12px; }
         .gastos-tabla { width: 100%; border-collapse: collapse; min-width: 760px; }
-        .gastos-tabla th, .gastos-tabla td { padding: 9px 10px; border-bottom: 1px solid rgba(15, 23, 42, 0.1); text-align: left; vertical-align: top; }
+        .gastos-tabla th, .gastos-tabla td { padding: 10px 11px; border-bottom: 1px solid rgba(15, 23, 42, 0.1); text-align: left; vertical-align: top; font-size: 0.95rem; }
         .gastos-tabla th { background: #fff7ed; color: #111827; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
         .gastos-informe-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
         .gastos-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -194,7 +199,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         .gastos-rapidos-panel .gastos-boton-guardar { min-height: 52px; font-size: 1.02rem; }
         .gastos-recurrentes-rapidos { margin-top: 10px; border: 1px solid rgba(180, 83, 9, 0.14); border-radius: 14px; padding: 8px; background: #fffaf0; }
         .gastos-recurrentes-botones { display: flex; gap: 6px; flex-wrap: wrap; }
-        .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.20); background: #fff7ed; color: #111827; border-radius: 999px; padding: 7px 11px; cursor: pointer; text-align: center; font-size: 0.84rem; font-weight: 900; line-height: 1; min-height: 30px; }
+        .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.20); background: #fff7ed; color: #111827; border-radius: 999px; padding: 8px 12px; cursor: pointer; text-align: center; font-size: 0.92rem; font-weight: 900; line-height: 1; min-height: 34px; }
 
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
@@ -203,7 +208,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
           .gastos-tabla { min-width: 620px; }
           .gastos-rapidos-panel { border-radius: 18px; padding: 12px; }
           .gastos-recurrentes-botones { gap: 5px; }
-          .gastos-recurrente-btn { flex: 0 1 auto; padding: 8px 10px; font-size: 0.82rem; }
+          .gastos-recurrente-btn { flex: 0 1 auto; padding: 9px 11px; font-size: 0.92rem; }
         }
       `}</style>
 
@@ -240,7 +245,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
             <input type="date" value={formulario.fecha} onChange={(e) => cambiarCampo("fecha", e.target.value)} />
           </label>
           <label className="field-label">Proveedor *
-            <input value={formulario.proveedor} onChange={(e) => cambiarCampo("proveedor", e.target.value)} placeholder="Ej: Olímpica, carnicería, proveedor" required />
+            <input value={formulario.proveedor} onChange={(e) => cambiarCampo("proveedor", e.target.value)} placeholder="Proveedor" required />
           </label>
           <label className="field-label">Valor *
             <input type="number" min="0" step="100" value={formulario.valor} onChange={(e) => cambiarCampo("valor", e.target.value)} placeholder="0" required />
@@ -260,11 +265,11 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         </div>
 
         <label className="field-label" style={{ marginTop: 12 }}>Artículos
-          <textarea rows="3" value={formulario.articulos} onChange={(e) => cambiarCampo("articulos", e.target.value)} placeholder="Opcional. Puedes escribir solo los artículos principales." />
+          <textarea rows="3" value={formulario.articulos} onChange={(e) => cambiarCampo("articulos", e.target.value)} placeholder="Artículos" />
         </label>
 
         <label className="field-label" style={{ marginTop: 12 }}>Observación
-          <textarea rows="2" value={formulario.observacion} onChange={(e) => cambiarCampo("observacion", e.target.value)} placeholder="Opcional. Ej: compra urgente, factura pendiente, etc." />
+          <textarea rows="2" value={formulario.observacion} onChange={(e) => cambiarCampo("observacion", e.target.value)} placeholder="Observación" />
         </label>
 
         <div className="admin-actions-stack horizontal" style={{ marginTop: 12 }}>
@@ -278,7 +283,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         <div className="gastos-informe-header">
           <div>
             <h3>📊 Informe de gastos</h3>
-            <p className="muted small">Solo visible para rol administrador.</p>
+            
           </div>
           {esAdministrador && (
             <label className="field-label" style={{ minWidth: 190 }}>Fecha del informe

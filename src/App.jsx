@@ -1569,15 +1569,57 @@ export default function App() {
           )}
 
           {!cargando && vista === "mesas" && (
-            <Suspense fallback={<CargandoModulo texto="Cargando panel mesas..." />}>
-              <PanelMesasPOS
-                menu={menu}
-                platosAgrupados={platosAgrupados}
-                cargandoMenu={cargandoMenu}
-                guardandoPedido={guardandoPedido}
-                onEnviar={registrarPedidoMesa}
-              />
-            </Suspense>
+            <>
+              <Suspense fallback={<CargandoModulo texto="Cargando panel mesas..." />}>
+                <PanelMesasPOS
+                  menu={menu}
+                  platosAgrupados={platosAgrupados}
+                  cargandoMenu={cargandoMenu}
+                  guardandoPedido={guardandoPedido}
+                  onEnviar={registrarPedidoMesa}
+                />
+              </Suspense>
+
+              {adminAutenticado && (
+                <main className="admin-layout admin-layout-liviano mesas-pedidos-liviano">
+                  <AdminPedidosSection
+                    tituloPedidos="Pedidos hoy"
+                    setRecargaPedidos={setRecargaPedidos}
+                    alertaPedidoNuevo={alertaPedidoNuevo}
+                    setAlertaPedidoNuevo={setAlertaPedidoNuevo}
+                    estadoRealtimePedidos={estadoRealtimePedidos}
+                    realtimeAdminActivo={realtimeAdminActivo}
+                    cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
+                    filtroPedidos={filtroPedidos}
+                    setFiltroPedidos={setFiltroPedidos}
+                    fechaSeleccionada={fechaSeleccionada}
+                    setFechaSeleccionada={setFechaSeleccionada}
+                    hayBusquedaPedidos={hayBusquedaPedidos}
+                    setBusqueda={setBusqueda}
+                    busqueda={busqueda}
+                    cargandoPedidos={cargandoPedidos}
+                    errorCargaPedidos={errorCargaPedidos}
+                    pedidosFiltrados={pedidosFiltrados}
+                    pedidos={pedidos}
+                    pedidosBorrados={pedidosBorrados}
+                    pedidosPendientes={pedidosPendientes}
+                    puedeFinalizarPendientes={puedeFinalizarPendientes}
+                    finalizarTodosPendientes={finalizarTodosPendientes}
+                    finalizandoPendientes={finalizandoPendientes}
+                    cambiarEstadoPedido={cambiarEstadoPedido}
+                    guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                    puedeEliminarPedido={puedeEliminarPedido}
+                    eliminarPedidoAdministrador={eliminarPedidoAdministrador}
+                    eliminandoPedidoId={eliminandoPedidoId}
+                    puedeEditarPedido={puedeEditarPedido}
+                    editarPedidoAdministrador={editarPedidoAdministrador}
+                    editandoPedidoId={editandoPedidoId}
+                    pedidosFinalizados={pedidosFinalizados}
+                    pedidosActivos={pedidosActivos}
+                  />
+                </main>
+              )}
+            </>
           )}
 
           {!cargando && vista === "admin" && adminAutenticado && (

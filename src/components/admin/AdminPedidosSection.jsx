@@ -3,7 +3,6 @@ import { dinero, formatearFechaHora, obtenerCliente, obtenerCodigoPedido, obtene
 import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
-import AdminConsolidadoResumen from "./AdminConsolidadoResumen";
 import { MESAS_DISPONIBLES } from "../../utils/mesas";
 import { PedidoCocina, TablaPedidosCompacta, resumirItemsPedidoCompacto } from "../PedidosAdmin";
 
@@ -434,11 +433,6 @@ function AdminPedidosSectionBase({
         />
       )}
 
-      <AdminConsolidadoResumen
-        consolidado={consolidado}
-        pedidosActivos={pedidosActivos}
-        pedidosFinalizados={pedidosFinalizados}
-      />
     </section>
   );
 }

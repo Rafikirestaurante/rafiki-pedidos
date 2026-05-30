@@ -29,9 +29,9 @@ export default function PWAClearCacheButton({ className = '', compact = false })
       disabled={limpiando}
       className={`rafiki-clear-cache-button ${className}`.trim()}
       title="Limpiar caché y cargar la última versión"
-      style={compact ? { padding: '8px 10px', fontSize: 12 } : undefined}
+      style={compact ? { width: 38, height: 38, padding: 0, fontSize: 17, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}
     >
-      {limpiando ? 'Actualizando...' : 'Limpiar caché'}
+      {compact ? (limpiando ? '⏳' : '🔄') : (limpiando ? 'Actualizando...' : 'Limpiar caché')}
     </button>
   );
 }

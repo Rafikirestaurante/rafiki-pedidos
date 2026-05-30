@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23B-1000-DASHBOARD-FINANCIERO-2026-05-30',
-  phase: 'Fase 23B 100.0 - Dashboard financiero avanzado',
+  version: '23B-1001-LIMPIEZA-PANELES-GASTOS-2026-05-30',
+  phase: 'Fase 23B 100.1 - Limpieza paneles y gastos',
   date: '2026-05-30',
-  fase: '23B-100.0',
-  notes: 'Dashboard Rafa incorpora venta bruta, adicionales para llevar, venta neta, gastos, utilidad aproximada, ticket promedio, promedios por mesa/pedido, gasto sobre ventas e indicadores rápidos de mesa, mesero y hora líder.'
+  fase: '23B-100.1',
+  notes: 'Pedidos hoy queda más liviano sin consolidado cocina, el panel mesas incluye vista rápida de pedidos, limpiar caché pasa a icono compacto y Gastos mejora legibilidad móvil sin cargar la interfaz.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
