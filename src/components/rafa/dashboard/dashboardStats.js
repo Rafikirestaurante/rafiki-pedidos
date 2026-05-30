@@ -272,24 +272,9 @@ function obtenerFamiliaProductoCafeteriaRafa(item) {
 }
 
 function obtenerDetalleProductoCafeteriaRafa(item, familia) {
-  if (familia !== "Batidos" && familia !== "Parfaits") return "";
-
-  const base = String(item.producto || item.nombre || item.plato || item.proteina || item.tipo || familia).replace(/\s+/g, " " ).trim();
-  const detalles = [];
-  const baseSinFamilia = base
-    .replace(/batidos?/ig, "")
-    .replace(/parfaits?/ig, "")
-    .replace(/^\s*[-–:|]+\s*/, "")
-    .replace(/\s+/g, " " )
-    .trim();
-
-  if (baseSinFamilia) detalles.push(baseSinFamilia);
-  if (item.tamano) detalles.push(item.tamano);
-  if (item.base) detalles.push(`Base ${item.base}`);
-  if (item.sabor) detalles.push(item.sabor);
-  if (item.fruta) detalles.push(item.fruta);
-
-  return limpiarDetalleTexto(detalles.join(" · "));
+  // En el informe gerencial, batidos y parfaits deben mostrarse limpios:
+  // solo el producto principal, sin subdetalles de tamaño, base o frutas.
+  return "";
 }
 
 

@@ -294,12 +294,28 @@ export default function PanelRafaPrivado() {
   }
 
 
+  function obtenerLineasAdicionalesParaInforme() {
+    const lineas = [
+      `🚚 *Adicionales para llevar*`,
+      `Cantidad total: ${cantidadAdicionalesParaLlevar}`
+    ];
+
+    (resumenVentas.adicionalesParaLlevar || []).forEach((item) => {
+      lineas.push(`${item.nombre}: ${item.cantidad} · ${dinero(item.total)}`);
+    });
+
+    lineas.push(`Valor cobrado: ${dinero(totalAdicionalesParaLlevar)}`);
+    return lineas;
+  }
+
   function generarTextoWhatsappInformeRafa() {
     const lineas = [
       `📋 *Informe Rafa*`,
       `Periodo: ${tituloPeriodo}`,
       ``,
-      `💰 *Total vendido:* ${dinero(totalVentas)}`,
+      `💰 *Venta bruta:* ${dinero(totalVentasBrutas)}`,
+      `➖ *Adicionales para llevar:* ${dinero(totalAdicionalesParaLlevar)}`,
+      `✅ *Venta neta:* ${dinero(totalVentas)}`,
       `💸 *Gastos:* ${dinero(totalGastos)}`,
       `📈 *Utilidad aprox.:* ${dinero(utilidadAproximada)}`,
       `🍽️ Restaurante: ${resumenVentas.restaurante.cantidad} · ${dinero(resumenVentas.restaurante.total)}`,
@@ -309,6 +325,8 @@ export default function PanelRafaPrivado() {
       `⏳ Pendientes: ${pendientes}`,
       `📊 Promedio por pedido: ${dinero(promedioPedido)}`
     ];
+
+    lineas.push(``, ...obtenerLineasAdicionalesParaInforme());
 
     if (resumenVentas.proteinas.length) {
       lineas.push(``, `🥇 *Proteínas vendidas:*`);
@@ -341,7 +359,7 @@ export default function PanelRafaPrivado() {
     return lineas.join("\n");
   }
 
-  async function compartirInformeWhatsappRafa() {
+  async function generarYCompartirInformeWhatsappRafa() {
     if (!pedidosValidos.length) {
       setErrorRafa("No hay pedidos válidos para compartir en este periodo.");
       return;
@@ -398,13 +416,22 @@ export default function PanelRafaPrivado() {
           </div>
 
           <div class="stats">
-            <div class="stat"><span>Total vendido</span><strong>${dinero(totalVentas)}</strong></div>
-            <div class="stat"><span>Restaurante</span><strong>${dinero(resumenVentas.restaurante.total)}</strong></div>
-            <div class="stat"><span>Cafetería</span><strong>${dinero(resumenVentas.cafeteria.total)}</strong></div>
+            <div class="stat"><span>Venta bruta</span><strong>${dinero(totalVentasBrutas)}</strong></div>
+            <div class="stat"><span>Adicionales para llevar</span><strong>${dinero(totalAdicionalesParaLlevar)}</strong></div>
+            <div class="stat"><span>Venta neta</span><strong>${dinero(totalVentas)}</strong></div>
+            <div class="stat"><span>Gastos</span><strong>${dinero(totalGastos)}</strong></div>
+            <div class="stat"><span>Utilidad aprox.</span><strong>${dinero(utilidadAproximada)}</strong></div>
             <div class="stat"><span>Pedidos válidos</span><strong>${totalPedidos}</strong></div>
-            <div class="stat"><span>Promedio por pedido</span><strong>${dinero(promedioPedido)}</strong></div>
-            <div class="stat"><span>Finalizados</span><strong>${finalizados}</strong></div>
           </div>
+
+          <h2>Adicionales para llevar</h2>
+          <table>
+            <tbody>
+              <tr><td><strong>Cantidad total</strong></td><td>${cantidadAdicionalesParaLlevar}</td></tr>
+              ${(resumenVentas.adicionalesParaLlevar || []).map((item) => `<tr><td><strong>${escaparHtml(item.nombre)}</strong></td><td>${Number(item.cantidad) || 0} · ${dinero(item.total)}</td></tr>`).join("")}
+              <tr><td><strong>Valor cobrado</strong></td><td>${dinero(totalAdicionalesParaLlevar)}</td></tr>
+            </tbody>
+          </table>
 
           <h2>Resumen Restaurante</h2>
           <table>
@@ -465,8 +492,8 @@ export default function PanelRafaPrivado() {
           <p className="muted">Resumen gerencial de ventas por restaurante, cafetería y subcategorías.</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <button type="button" className="button-secondary" onClick={compartirInformeWhatsappRafa} disabled={cargandoRafa || pedidosValidos.length === 0}>
-            📲 Compartir WhatsApp
+          <button type="button" className="button-secondary" onClick={generarYCompartirInformeWhatsappRafa} disabled={cargandoRafa || pedidosValidos.length === 0}>
+            📲 Generar informe y compartir
           </button>
           <button type="button" className="button" onClick={generarInformePdfRafa} disabled={cargandoRafa || pedidosValidos.length === 0}>
             📄 Generar PDF

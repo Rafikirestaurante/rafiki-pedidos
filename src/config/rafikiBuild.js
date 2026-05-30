@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23A3B-9947-ADICIONALES-NETOS-DESAYUNOS-2026-05-29',
-  phase: 'Fase 23A3B 99.4.7 - Adicionales netos y desayunos para llevar',
+  version: '23A3B-9948-INFORME-WHATSAPP-PDF-NETOS-2026-05-29',
+  phase: 'Fase 23A3B 99.4.8 - Informe WhatsApp PDF netos',
   date: '2026-05-29',
-  fase: '23A3B-99.4.7',
-  notes: 'Admin Rafa Informe separa adicionales para llevar por almuerzos, sopas y desayunos; calcula venta bruta, adicionales y venta neta. Panel Mesas aplica desayuno para llevar con adicional de 1000.'
+  fase: '23A3B-99.4.8',
+  notes: 'Admin Rafa Informe elimina subdetalles en parfaits y batidos; actualiza WhatsApp y PDF con venta bruta, adicionales para llevar, venta neta y botón generar informe y compartir.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
