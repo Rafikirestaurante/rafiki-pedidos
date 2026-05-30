@@ -5,6 +5,27 @@ function porcentaje(valor, total) {
   return total > 0 ? Math.round(((Number(valor) || 0) * 100) / total) : 0;
 }
 
+function estadoDiaOperativo(utilidadAproximada, totalVentas, porcentajeGastos) {
+  if (totalVentas <= 0) return { texto: "Sin ventas", detalle: "Sin movimiento", emoji: "⚪" };
+  if (utilidadAproximada <= 0 || porcentajeGastos >= 70) return { texto: "Día flojo", detalle: "Revisar gastos", emoji: "🔴" };
+  if (porcentajeGastos >= 45) return { texto: "Día regular", detalle: "Margen ajustado", emoji: "🟡" };
+  return { texto: "Día bueno", detalle: "Margen sano", emoji: "🟢" };
+}
+
+function divisionSegura(valor, divisor) {
+  return divisor > 0 ? (Number(valor) || 0) / divisor : 0;
+}
+
+function TarjetaMetrica({ titulo, valor, detalle }) {
+  return (
+    <div className="stat-card" style={{ minHeight: 76 }}>
+      <span>{titulo}</span>
+      <strong>{valor}</strong>
+      {detalle && <small className="muted" style={{ display: "block", marginTop: 4 }}>{detalle}</small>}
+    </div>
+  );
+}
+
 function MiniBarra({ label, valor, total, detalle }) {
   const pct = porcentaje(valor, total);
   const ancho = total > 0 ? Math.max(4, pct) : 0;
@@ -175,6 +196,9 @@ export default function DashboardRafa({
   dashboardRafa,
   resumenVentas,
   totalVentas,
+  totalVentasBrutas = 0,
+  totalAdicionalesParaLlevar = 0,
+  totalPedidos = 0,
   totalItemsVendidos,
   totalBaseHoras,
   totalBaseProductos,
@@ -192,6 +216,18 @@ export default function DashboardRafa({
   const totalVentaMesa = dashboardRafa.resumenMesasVsLlevar.mesas.restaurante.total + dashboardRafa.resumenMesasVsLlevar.mesas.cafeteria.total;
   const totalPedidosLlevar = dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.cantidad + dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.cantidad;
   const totalVentaLlevar = dashboardRafa.resumenMesasVsLlevar.llevar.restaurante.total + dashboardRafa.resumenMesasVsLlevar.llevar.cafeteria.total;
+  const totalMesasConVenta = (dashboardRafa.mesasTop || []).length;
+  const porcentajeGastos = porcentaje(totalGastos, totalVentas);
+  const porcentajeUtilidad = porcentaje(utilidadAproximada, totalVentas);
+  const ticketPromedio = divisionSegura(totalVentas, totalPedidos);
+  const ventaPromedioMesa = divisionSegura(totalVentaMesa, totalPedidosMesa);
+  const ventaPromedioPedido = divisionSegura(totalVentas, totalPedidos);
+  const ventaPromedioMesaFisica = divisionSegura(totalVentaMesa, totalMesasConVenta);
+  const estadoDia = estadoDiaOperativo(utilidadAproximada, totalVentas, porcentajeGastos);
+  const meseroTop = (dashboardRafa.ventasPorMesero || [])[0];
+  const mesaTop = dashboardRafa.mesaTop;
+  const mejorHora = dashboardRafa.mejorHora;
+  const ventaBrutaMostrar = totalVentasBrutas || totalVentas;
   return (
     <div className="soft-box" style={{ marginBottom: 22, borderColor: "#fed7aa", background: "linear-gradient(135deg, #fff7ed, #ffffff)" }}>
       <div className="admin-top-row">
@@ -205,23 +241,39 @@ export default function DashboardRafa({
         </div>
       </div>
 
+      <div className="soft-box" style={{ marginTop: 18, borderColor: "#bbf7d0", background: "#f0fdf4" }}>
+        <h3>🧮 Dashboard financiero 23B</h3>
+        <div className="admin-stats" style={{ marginTop: 12 }}>
+          <TarjetaMetrica titulo="Venta bruta" valor={dinero(ventaBrutaMostrar)} detalle="Total cobrado" />
+          <TarjetaMetrica titulo="Adic. llevar" valor={dinero(totalAdicionalesParaLlevar)} detalle="No suma a venta neta" />
+          <TarjetaMetrica titulo="Venta neta" valor={dinero(totalVentas)} detalle="Base operativa" />
+          <TarjetaMetrica titulo="Gastos" valor={dinero(totalGastos)} detalle={`${porcentajeGastos}% de venta neta`} />
+          <TarjetaMetrica titulo="Utilidad aprox." valor={dinero(utilidadAproximada)} detalle={`${porcentajeUtilidad}% margen aprox.`} />
+          <TarjetaMetrica titulo="Ticket promedio" valor={dinero(ticketPromedio)} detalle={`${Number(totalPedidos) || 0} pedidos`} />
+          <TarjetaMetrica titulo="Prom. mesa" valor={dinero(ventaPromedioMesa)} detalle={`${totalPedidosMesa} pedidos en mesa`} />
+          <TarjetaMetrica titulo="Prom. pedido" valor={dinero(ventaPromedioPedido)} detalle="Venta neta / pedidos" />
+          <TarjetaMetrica titulo="Prom. mesa física" valor={dinero(ventaPromedioMesaFisica)} detalle={`${totalMesasConVenta} mesas con venta`} />
+          <TarjetaMetrica titulo="Día operativo" valor={`${estadoDia.emoji} ${estadoDia.texto}`} detalle={estadoDia.detalle} />
+        </div>
+      </div>
+
       <div className="grid-2" style={{ marginTop: 18 }}>
-        <div className="soft-box" style={{ borderColor: "#bbf7d0", background: "#f0fdf4" }}>
-          <h3>🧮 Control financiero 23A</h3>
-          <div className="admin-stats" style={{ marginTop: 12 }}>
-            <div className="stat-card"><span>Ventas</span><strong>{dinero(totalVentas)}</strong></div>
-            <div className="stat-card"><span>Gastos</span><strong>{dinero(totalGastos)}</strong></div>
-            <div className="stat-card"><span>Utilidad aprox.</span><strong>{dinero(utilidadAproximada)}</strong></div>
-          </div>
-          <p className="muted small" style={{ marginTop: 10 }}>Utilidad aproximada = ventas del periodo - gastos registrados. No incluye inventario ni receta todavía.</p>
+        <div className="soft-box" style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}>
+          <h3>⚡ Indicadores rápidos</h3>
+          <MiniBarra label="Restaurante" valor={resumenVentas.restaurante.total} total={totalVentas} detalle={`${dashboardRafa.participacionRestaurante || 0}% · ${dinero(resumenVentas.restaurante.total)}`} />
+          <MiniBarra label="Cafetería" valor={resumenVentas.cafeteria.total} total={totalVentas} detalle={`${dashboardRafa.participacionCafeteria || 0}% · ${dinero(resumenVentas.cafeteria.total)}`} />
+          <MiniBarra label="Gastos / venta neta" valor={totalGastos} total={totalVentas} detalle={`${porcentajeGastos}% · ${dinero(totalGastos)}`} />
+          {mejorHora && <MiniBarra label={`Hora fuerte: ${mejorHora.nombre}`} valor={mejorHora.total} total={totalVentas} detalle={`${mejorHora.cantidad} pedidos · ${dinero(mejorHora.total)}`} />}
+          {mesaTop && <MiniBarra label={`Mesa líder: ${mesaTop.nombre}`} valor={mesaTop.total} total={totalVentas} detalle={`${mesaTop.cantidad} pedidos · ${dinero(mesaTop.total)}`} />}
+          {meseroTop && <MiniBarra label={`Mesero líder: ${meseroTop.nombre}`} valor={meseroTop.total} total={totalVentas} detalle={`${meseroTop.cantidad} pedidos · ${dinero(meseroTop.total)}`} />}
         </div>
 
-        <div className="soft-box" style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}>
+        <div className="soft-box" style={{ borderColor: "#fed7aa", background: "#fff7ed" }}>
           <h3>💸 Gastos por categoría</h3>
           {Object.keys(gastosPorCategoria || {}).length ? (
             <div style={{ marginTop: 8 }}>
-              {Object.entries(gastosPorCategoria).slice(0, 6).map(([categoria, total]) => (
-                <MiniBarra key={categoria} label={categoria} valor={total} total={totalGastos} detalle={dinero(total)} />
+              {Object.entries(gastosPorCategoria).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([categoria, total]) => (
+                <MiniBarra key={categoria} label={categoria} valor={total} total={totalGastos} detalle={`${porcentaje(total, totalGastos)}% · ${dinero(total)}`} />
               ))}
             </div>
           ) : <p className="muted">Sin gastos registrados en este periodo.</p>}

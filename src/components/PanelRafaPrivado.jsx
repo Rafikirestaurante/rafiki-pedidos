@@ -565,6 +565,9 @@ export default function PanelRafaPrivado() {
           dashboardRafa={dashboardRafa}
           resumenVentas={resumenVentas}
           totalVentas={totalVentas}
+          totalVentasBrutas={totalVentasBrutas}
+          totalAdicionalesParaLlevar={totalAdicionalesParaLlevar}
+          totalPedidos={totalPedidos}
           totalItemsVendidos={totalItemsVendidos}
           totalBaseHoras={totalBaseHoras}
           totalBaseProductos={totalBaseProductos}
@@ -581,11 +584,13 @@ export default function PanelRafaPrivado() {
             pedidosValidos,
             resumenVentas,
             totalVentas,
+            totalVentasBrutas,
+            totalAdicionalesParaLlevar,
+            totalPedidos,
             totalItemsVendidos,
             dashboardRafa,
             finalizados,
-            pendientes,
-            totalPedidos
+            pendientes
           })}
           onCerrarDetalle={() => setDetalleDashboard("")}
         />

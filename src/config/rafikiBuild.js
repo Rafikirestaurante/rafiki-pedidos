@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23A3B-9948-INFORME-WHATSAPP-PDF-NETOS-2026-05-29',
-  phase: 'Fase 23A3B 99.4.8 - Informe WhatsApp PDF netos',
-  date: '2026-05-29',
-  fase: '23A3B-99.4.8',
-  notes: 'Admin Rafa Informe elimina subdetalles en parfaits y batidos; actualiza WhatsApp y PDF con venta bruta, adicionales para llevar, venta neta y botón generar informe y compartir.'
+  version: '23B-1000-DASHBOARD-FINANCIERO-2026-05-30',
+  phase: 'Fase 23B 100.0 - Dashboard financiero avanzado',
+  date: '2026-05-30',
+  fase: '23B-100.0',
+  notes: 'Dashboard Rafa incorpora venta bruta, adicionales para llevar, venta neta, gastos, utilidad aproximada, ticket promedio, promedios por mesa/pedido, gasto sobre ventas e indicadores rápidos de mesa, mesero y hora líder.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
