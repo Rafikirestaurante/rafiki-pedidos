@@ -84,6 +84,26 @@ export async function registrarMovimientoInventario({ insumoId, tipo, cantidad, 
   return data;
 }
 
+export async function registrarEntradaInventarioDesdeGasto({ gastoId, insumoId, cantidad, motivo, fecha, usuario }) {
+  const payload = {
+    gasto_id: gastoId || null,
+    insumo_id: insumoId,
+    cantidad: Number(cantidad || 0),
+    motivo: String(motivo || "Compra registrada desde Gastos").trim() || "Compra registrada desde Gastos",
+    fecha: fecha || obtenerFechaInventarioHoy(),
+    usuario: String(usuario || "Gastos").trim() || "Gastos"
+  };
+
+  if (!payload.insumo_id) throw new Error("Selecciona un insumo para actualizar inventario.");
+  if (!Number.isFinite(payload.cantidad) || payload.cantidad <= 0) throw new Error("La cantidad de inventario debe ser mayor a cero.");
+
+  const { data, error } = await supabase
+    .rpc("registrar_entrada_inventario_desde_gasto", payload);
+
+  if (error) throw error;
+  return data;
+}
+
 function normalizarUnidadDesdeCatalogo(unidadBase) {
   const unidad = String(unidadBase || "unidad").trim().toLowerCase();
   if (["kg", "kilo", "kilos"].includes(unidad)) return "kg";

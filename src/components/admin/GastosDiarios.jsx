@@ -10,6 +10,10 @@ import {
   obtenerFechaGastoHoy
 } from "../../services/gastosDiariosService";
 import { cargarCatalogoGastos } from "../../services/catalogoGastosService";
+import {
+  cargarInventarioInsumos,
+  registrarEntradaInventarioDesdeGasto
+} from "../../services/inventarioService";
 
 const FORMULARIO_INICIAL = {
   numeroFactura: "",
@@ -51,6 +55,9 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   const [editandoId, setEditandoId] = useState(null);
   const [categoriasCatalogo, setCategoriasCatalogo] = useState(CATEGORIAS_GASTOS);
   const [proveedoresRapidos, setProveedoresRapidos] = useState([]);
+  const [insumosInventario, setInsumosInventario] = useState([]);
+  const [actualizarInventario, setActualizarInventario] = useState(false);
+  const [lineasInventario, setLineasInventario] = useState([{ insumoId: "", cantidad: "" }]);
 
   const totalGastos = useMemo(() => gastos.reduce((total, gasto) => total + Number(gasto.valor || 0), 0), [gastos]);
   const resumenCategorias = useMemo(() => resumirPorCampo(gastos, "categoria"), [gastos]);
@@ -69,6 +76,21 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       setProveedoresRapidos((resultado.proveedores || []).filter((item) => item.activo !== false));
     }
     cargarCatalogosGasto();
+    return () => { activo = false; };
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+    async function cargarInventarioBase() {
+      if (!supabaseConfigOk) return;
+      try {
+        const data = await cargarInventarioInsumos();
+        if (activo) setInsumosInventario(data || []);
+      } catch (err) {
+        if (activo) setError(err?.message || "No se pudo cargar el listado de inventario.");
+      }
+    }
+    cargarInventarioBase();
     return () => { activo = false; };
   }, []);
 
@@ -98,6 +120,24 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   function limpiarFormulario() {
     setFormulario({ ...FORMULARIO_INICIAL, fecha: obtenerFechaGastoHoy() });
     setEditandoId(null);
+    setActualizarInventario(false);
+    setLineasInventario([{ insumoId: "", cantidad: "" }]);
+  }
+
+  function cambiarLineaInventario(indice, campo, valor) {
+    setLineasInventario((prev) => prev.map((linea, idx) => idx === indice ? { ...linea, [campo]: valor } : linea));
+  }
+
+  function agregarLineaInventario() {
+    setLineasInventario((prev) => [...prev, { insumoId: "", cantidad: "" }]);
+  }
+
+  function quitarLineaInventario(indice) {
+    setLineasInventario((prev) => prev.length <= 1 ? [{ insumoId: "", cantidad: "" }] : prev.filter((_, idx) => idx !== indice));
+  }
+
+  function obtenerNombreInsumo(insumoId) {
+    return insumosInventario.find((item) => item.id === insumoId)?.nombre || "Insumo";
   }
 
 
@@ -126,12 +166,29 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     setMensaje("");
 
     try {
+      let gastoGuardado = null;
       if (editandoId) {
-        await actualizarGastoDiario(editandoId, formulario);
+        gastoGuardado = await actualizarGastoDiario(editandoId, formulario);
         setMensaje("Gasto actualizado correctamente.");
       } else {
-        await crearGastoDiario(formulario);
-        setMensaje("Gasto guardado correctamente.");
+        gastoGuardado = await crearGastoDiario(formulario);
+        if (actualizarInventario) {
+          const lineasValidas = lineasInventario
+            .map((linea) => ({ ...linea, cantidadNumero: Number(linea.cantidad || 0) }))
+            .filter((linea) => linea.insumoId && Number.isFinite(linea.cantidadNumero) && linea.cantidadNumero > 0);
+
+          if (!lineasValidas.length) throw new Error("Activa inventario solo si seleccionas al menos un insumo y una cantidad mayor a cero.");
+
+          await Promise.all(lineasValidas.map((linea) => registrarEntradaInventarioDesdeGasto({
+            gastoId: gastoGuardado?.id,
+            insumoId: linea.insumoId,
+            cantidad: linea.cantidadNumero,
+            fecha: formulario.fecha || obtenerFechaGastoHoy(),
+            usuario: "Gastos Rafiki",
+            motivo: `Compra ${formulario.proveedor || "proveedor"}${formulario.numeroFactura ? ` · Factura ${formulario.numeroFactura}` : ""} · ${obtenerNombreInsumo(linea.insumoId)}`
+          })));
+        }
+        setMensaje(actualizarInventario ? "Gasto guardado e inventario actualizado." : "Gasto guardado correctamente.");
       }
       const fechaGuardada = formulario.fecha || obtenerFechaGastoHoy();
       limpiarFormulario();
@@ -158,6 +215,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       metodoPago: gasto.metodoPago || "",
       observacion: gasto.observacion || ""
     });
+    setActualizarInventario(false);
+    setLineasInventario([{ insumoId: "", cantidad: "" }]);
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
@@ -200,6 +259,11 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         .gastos-recurrentes-rapidos { margin-top: 10px; border: 1px solid rgba(180, 83, 9, 0.14); border-radius: 14px; padding: 8px; background: #fffaf0; }
         .gastos-recurrentes-botones { display: flex; gap: 6px; flex-wrap: wrap; }
         .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.20); background: #fff7ed; color: #111827; border-radius: 999px; padding: 8px 12px; cursor: pointer; text-align: center; font-size: 0.92rem; font-weight: 900; line-height: 1; min-height: 34px; }
+        .gastos-inventario-box { margin-top: 12px; border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 16px; padding: 12px; background: #f8fafc; }
+        .gastos-inventario-toggle { display: flex; align-items: flex-start; gap: 10px; font-weight: 900; color: #111827; }
+        .gastos-inventario-toggle input { width: 20px !important; min-height: 20px !important; margin-top: 2px; }
+        .gastos-inventario-linea { display: grid; grid-template-columns: minmax(180px, 1fr) 130px auto; gap: 8px; align-items: end; margin-top: 8px; }
+        .gastos-inventario-linea button { min-height: 42px; }
 
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
@@ -209,6 +273,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
           .gastos-rapidos-panel { border-radius: 18px; padding: 12px; }
           .gastos-recurrentes-botones { gap: 5px; }
           .gastos-recurrente-btn { flex: 0 1 auto; padding: 9px 11px; font-size: 0.92rem; }
+          .gastos-inventario-linea { grid-template-columns: 1fr; }
         }
       `}</style>
 
@@ -267,6 +332,33 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         <label className="field-label" style={{ marginTop: 12 }}>Artículos
           <textarea rows="3" value={formulario.articulos} onChange={(e) => cambiarCampo("articulos", e.target.value)} placeholder="Artículos" />
         </label>
+
+        <div className="gastos-inventario-box">
+          <label className="gastos-inventario-toggle">
+            <input type="checkbox" checked={actualizarInventario} onChange={(e) => setActualizarInventario(e.target.checked)} disabled={editandoId || !supabaseConfigOk} />
+            <span>Actualizar inventario con este gasto <br /><small className="muted">Opcional. Úsalo cuando el gasto sea compra de insumos: pan, pechuga, carne, desechables, verduras, etc.</small></span>
+          </label>
+          {editandoId ? <div className="alert alert-info" style={{ marginTop: 8 }}>Para evitar duplicar entradas, la actualización de inventario solo se hace al crear un gasto nuevo.</div> : null}
+          {actualizarInventario && !editandoId ? (
+            <div>
+              {lineasInventario.map((linea, indice) => (
+                <div className="gastos-inventario-linea" key={`inventario-gasto-${indice}`}>
+                  <label className="field-label">Insumo
+                    <select value={linea.insumoId} onChange={(e) => cambiarLineaInventario(indice, "insumoId", e.target.value)}>
+                      <option value="">Seleccionar insumo</option>
+                      {insumosInventario.map((insumo) => <option key={insumo.id} value={insumo.id}>{insumo.nombre} · {insumo.unidad}</option>)}
+                    </select>
+                  </label>
+                  <label className="field-label">Cantidad
+                    <input type="number" min="0" step="0.01" value={linea.cantidad} onChange={(e) => cambiarLineaInventario(indice, "cantidad", e.target.value)} placeholder="0" />
+                  </label>
+                  <button type="button" className="button light" onClick={() => quitarLineaInventario(indice)}>Quitar</button>
+                </div>
+              ))}
+              <button type="button" className="button light" style={{ marginTop: 10 }} onClick={agregarLineaInventario}>+ Agregar otro insumo</button>
+            </div>
+          ) : null}
+        </div>
 
         <label className="field-label" style={{ marginTop: 12 }}>Observación
           <textarea rows="2" value={formulario.observacion} onChange={(e) => cambiarCampo("observacion", e.target.value)} placeholder="Observación" />

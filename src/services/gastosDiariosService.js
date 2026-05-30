@@ -77,12 +77,14 @@ export async function crearGastoDiario(gasto) {
   if (!payload.proveedor) throw new Error("El proveedor es obligatorio.");
   if (!Number.isFinite(payload.valor) || payload.valor <= 0) throw new Error("El valor debe ser mayor a cero.");
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("gastos_diarios")
-    .insert(payload);
+    .insert(payload)
+    .select(SELECT_GASTOS)
+    .single();
 
   if (error) throw error;
-  return normalizarGastoDiario({ ...payload, id: `local-${Date.now()}` });
+  return normalizarGastoDiario(data);
 }
 
 export async function actualizarGastoDiario(id, gasto) {

@@ -1,6 +1,6 @@
 {
-  "version": "23B-1003-FIX-EDITOR-MENU-SUPABASE-2026-05-30",
-  "phase": "Fase 23B 24A - Fix editor menú diario Supabase",
+  "version": "24A2-GASTOS-INVENTARIO-OPCIONAL-2026-05-30",
+  "phase": "Fase 24A2 - Gastos enlazado opcionalmente con Inventario",
   "date": "2026-05-30",
-  "notes": "Editor de menú diario prioriza Supabase y fecha actual; se limpia borrador local viejo para evitar menús antiguos en computador."
+  "notes": "Gastos permite actualizar inventario de forma opcional al registrar compras de insumos."
 }
