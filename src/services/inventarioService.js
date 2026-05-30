@@ -84,6 +84,61 @@ export async function registrarMovimientoInventario({ insumoId, tipo, cantidad, 
   return data;
 }
 
+function normalizarUnidadDesdeCatalogo(unidadBase) {
+  const unidad = String(unidadBase || "unidad").trim().toLowerCase();
+  if (["kg", "kilo", "kilos"].includes(unidad)) return "kg";
+  if (["g", "gr", "gramo", "gramos"].includes(unidad)) return "g";
+  if (["lt", "l", "litro", "litros"].includes(unidad)) return "litro";
+  if (["ml", "mililitro", "mililitros"].includes(unidad)) return "ml";
+  if (["und", "unidad", "unidades"].includes(unidad)) return "unidad";
+  if (UNIDADES_INVENTARIO.includes(unidad)) return unidad;
+  return "unidad";
+}
+
+export async function sincronizarInventarioDesdeCatalogoInsumos(insumosInventarioActuales = []) {
+  const existentes = new Set(
+    (insumosInventarioActuales || [])
+      .map((item) => String(item?.nombre || "").trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const { data, error } = await supabase
+    .from("catalogo_insumos")
+    .select("categoria, nombre, unidad_base, activo, orden")
+    .eq("activo", true)
+    .order("categoria", { ascending: true })
+    .order("orden", { ascending: true })
+    .order("nombre", { ascending: true });
+
+  if (error) throw error;
+
+  const nuevos = (data || [])
+    .filter((item) => {
+      const nombre = String(item?.nombre || "").trim();
+      return nombre && !existentes.has(nombre.toLowerCase());
+    })
+    .map((item) => ({
+      nombre: String(item.nombre || "").trim(),
+      categoria: String(item.categoria || "Otros").trim() || "Otros",
+      unidad: normalizarUnidadDesdeCatalogo(item.unidad_base),
+      stock_actual: 0,
+      stock_minimo: 0,
+      costo_promedio: 0,
+      activo: true,
+      actualizado_en: new Date().toISOString()
+    }));
+
+  if (!nuevos.length) return [];
+
+  const { data: insertados, error: insertError } = await supabase
+    .from("inventario_insumos")
+    .insert(nuevos)
+    .select(SELECT_INSUMOS);
+
+  if (insertError) throw insertError;
+  return (insertados || []).map(normalizarInsumoInventario).filter(Boolean);
+}
+
 export function calcularResumenInventario(insumos = []) {
   const activos = insumos.filter((item) => item.activo !== false);
   const stockBajo = activos.filter((item) => item.stockActual <= item.stockMinimo);

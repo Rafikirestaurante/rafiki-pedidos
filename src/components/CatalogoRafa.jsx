@@ -190,6 +190,7 @@ export default function CatalogoRafa() {
   const [guardando, setGuardando] = useState(false);
 
   const esGastos = tipo === "gastos";
+  const esInsumos = tipo === "insumos";
   const esProductosRestaurante = tipo === "productos_restaurante";
   const esProductosCafeteria = tipo === "productos_cafeteria";
   const esProductos = esProductosRestaurante || esProductosCafeteria;
@@ -649,12 +650,27 @@ export default function CatalogoRafa() {
           <span className="catalogo-selector-icono">☕</span>
           <span><strong>Productos Cafetería</strong></span>
         </button>
+        <button
+          type="button"
+          onClick={() => cambiarTipo("insumos")}
+          className={`catalogo-selector-card ${tipo === "insumos" ? "active" : ""}`}
+          aria-pressed={tipo === "insumos"}
+        >
+          <span className="catalogo-selector-icono">📦</span>
+          <span><strong>Insumos</strong><small style={{ display: "block" }}>Base de Solicitud e Inventario</small></span>
+        </button>
       </div>
 
       {tipo === "gastos" ? (
         <CatalogoGastos />
       ) : (
         <>
+      {esInsumos && (
+        <div className="alert alert-info" style={{ marginTop: 12 }}>
+          Este listado es el mismo catálogo base que usa <strong>Solicitud de insumos</strong>. Desde aquí también quedará como base para Inventario en la Fase 24.
+        </div>
+      )}
+
       <div className="catalogo-resumen-mini" style={{ marginTop: 12 }}>
         <span><strong>{resumenCatalogo.total}</strong> registros</span>
         <span><strong>{resumenCatalogo.activos}</strong> activos</span>

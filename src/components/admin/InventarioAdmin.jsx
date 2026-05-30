@@ -5,7 +5,8 @@ import {
   UNIDADES_INVENTARIO,
   calcularResumenInventario,
   cargarInventarioInsumos,
-  guardarInventarioInsumo
+  guardarInventarioInsumo,
+  sincronizarInventarioDesdeCatalogoInsumos
 } from "../../services/inventarioService";
 import { dinero } from "../../utils/pedidos";
 
@@ -59,6 +60,25 @@ export default function InventarioAdmin() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  async function traerBaseCatalogo() {
+    setGuardando(true);
+    setMensaje({ texto: "", tipo: "info" });
+    try {
+      const insertados = await sincronizarInventarioDesdeCatalogoInsumos(insumos);
+      await cargarDatos();
+      setMensaje({
+        texto: insertados.length
+          ? `${insertados.length} insumos fueron traídos desde el catálogo de Solicitud de insumos.`
+          : "El inventario ya está sincronizado con el catálogo de Solicitud de insumos.",
+        tipo: "success"
+      });
+    } catch (error) {
+      setMensaje({ texto: `No se pudo traer la base del catálogo: ${error.message || error}`, tipo: "error" });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   async function guardar(event) {
     event.preventDefault();
     setGuardando(true);
@@ -82,9 +102,12 @@ export default function InventarioAdmin() {
         <div className="section-title-row">
           <div>
             <h2>📦 Inventario inteligente</h2>
-            <p className="muted">Fase 24A: base de insumos, stock mínimo y valor estimado. El descuento automático por recetas vendrá en la siguiente etapa.</p>
+            <p className="muted">Fase 24A: inventario conectado a la base de insumos usada en Solicitud de insumos. Primero trae esa base y luego ajusta stock, mínimos y costos.</p>
           </div>
-          <Boton variante="light" onClick={cargarDatos}>Actualizar</Boton>
+          <div className="admin-actions-stack horizontal">
+            <Boton variante="light" onClick={traerBaseCatalogo} disabled={guardando}>Traer insumos del catálogo</Boton>
+            <Boton variante="light" onClick={cargarDatos}>Actualizar</Boton>
+          </div>
         </div>
         <Aviso mensaje={mensaje.texto} tipo={mensaje.tipo} />
         <div className="stats-grid" style={{ marginTop: 12 }}>
