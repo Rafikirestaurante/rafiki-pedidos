@@ -471,20 +471,12 @@ export default function App() {
   useEffect(() => {
     if (adminTab !== "menu" || borradorEditorMenuRestauradoRef.current) return;
 
-    const borrador = leerBorradorEditorMenuDiario();
-    if (borrador) {
-      if (borrador.menu && typeof borrador.menu === "object") {
-        setMenu((actual) => ({
-          ...actual,
-          ...borrador.menu,
-          fecha: fechaISOColombia()
-        }));
-      }
-      if (typeof borrador.platosTexto === "string") setPlatosTexto(borrador.platosTexto);
-      if (typeof borrador.acompanantesTexto === "string") setAcompanantesTexto(borrador.acompanantesTexto);
-    }
-
+    // El Editor de menú diario debe usar Supabase como fuente principal.
+    // Evitamos restaurar borradores viejos del navegador porque en computadores
+    // compartidos pueden mostrar menús antiguos mientras el celular ya ve el menú actual.
+    borrarBorradorEditorMenuDiario();
     borradorEditorMenuRestauradoRef.current = true;
+    setRecargaMenu((actual) => actual + 1);
   }, [adminTab]);
 
   useEffect(() => {
@@ -499,19 +491,10 @@ export default function App() {
   useEffect(() => {
     if (adminTab !== "menu") return undefined;
 
-    const guardarBorradorTimer = window.setTimeout(() => {
-      guardarBorradorEditorMenuDiario({
-        menu: {
-          fecha: fechaISOColombia(),
-          titulo: menu.titulo || "",
-          descripcion: menu.descripcion || ""
-        },
-        platosTexto,
-        acompanantesTexto
-      });
-    }, 500);
-
-    return () => window.clearTimeout(guardarBorradorTimer);
+    // No persistimos borrador local del editor para evitar que otro navegador
+    // muestre menús viejos. Lo guardado en Supabase siempre manda.
+    borrarBorradorEditorMenuDiario();
+    return undefined;
   }, [adminTab, menu.fecha, menu.titulo, menu.descripcion, platosTexto, acompanantesTexto]);
 
   const descartarAvisoCambiosPedidos = useCallback(() => {
@@ -614,17 +597,35 @@ export default function App() {
       }
 
       try {
-        const { data: menuData, error: menuError } = await conTiempoMaximo(
+        const fechaActualMenu = fechaISOColombia();
+        let { data: menuData, error: menuError } = await conTiempoMaximo(
           supabase
             .from("menu_diario")
             .select("*")
             .eq("activo", true)
+            .eq("fecha", fechaActualMenu)
             .order("id", { ascending: false })
             .limit(1)
             .maybeSingle(),
           7000,
-          "La carga del menú"
+          "La carga del menú actual"
         );
+
+        if (!menuData && !menuError) {
+          const respuestaMenuActivo = await conTiempoMaximo(
+            supabase
+              .from("menu_diario")
+              .select("*")
+              .eq("activo", true)
+              .order("id", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+            7000,
+            "La carga del menú activo"
+          );
+          menuData = respuestaMenuActivo.data;
+          menuError = respuestaMenuActivo.error;
+        }
 
         if (cancelado) return;
 
