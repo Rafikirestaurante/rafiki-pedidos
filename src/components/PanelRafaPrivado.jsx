@@ -611,22 +611,6 @@ export default function PanelRafaPrivado() {
         <div className="stat-card"><span>Finalizados</span><strong>{finalizados}</strong></div>
       </div>
 
-      <div className="soft-box" style={{ marginTop: 16, borderColor: "#bbf7d0", background: "#f0fdf4" }}>
-        <div className="admin-top-row">
-          <div>
-            <h3>🧮 Cierre diario inteligente</h3>
-            <p className="muted">Ventas menos gastos registrados. Es una utilidad aproximada, todavía sin inventario ni costo por receta.</p>
-          </div>
-          <button type="button" className="button" disabled={!cierreEsUnSoloDia || guardandoCierre} onClick={guardarCierreDiaSeleccionado}>
-            {guardandoCierre ? "Guardando..." : "Guardar cierre del día"}
-          </button>
-        </div>
-        {!cierreEsUnSoloDia && <div className="alert alert-info">Para guardar cierre selecciona un solo día, no un rango.</div>}
-        <label className="field" style={{ marginTop: 10 }}>
-          <span>Observaciones del cierre</span>
-          <textarea rows="2" value={observacionesCierre} onChange={(e) => setObservacionesCierre(e.target.value)} placeholder="Ej: día lluvioso, faltó personal, compra alta, evento, etc." />
-        </label>
-      </div>
 
       <div className="soft-box" style={{ marginTop: 16, borderColor: "#fde68a", background: "#fffbeb" }}>
         <h3>Adicionales para llevar</h3>
@@ -699,6 +683,23 @@ export default function PanelRafaPrivado() {
             </table>
           </div>
         )}
+      </div>
+
+      <div className="soft-box" style={{ marginTop: 16, borderColor: "#bbf7d0", background: "#f0fdf4" }}>
+        <div className="admin-top-row">
+          <div>
+            <h3>🧮 Cierre diario inteligente</h3>
+            <p className="muted">Ventas menos gastos registrados. Es una utilidad aproximada, todavía sin inventario ni costo por receta.</p>
+          </div>
+          <button type="button" className="button" disabled={!cierreEsUnSoloDia || guardandoCierre} onClick={guardarCierreDiaSeleccionado}>
+            {guardandoCierre ? "Guardando..." : "Guardar cierre del día"}
+          </button>
+        </div>
+        {!cierreEsUnSoloDia && <div className="alert alert-info">Para guardar cierre selecciona un solo día, no un rango.</div>}
+        <label className="field" style={{ marginTop: 10 }}>
+          <span>Observaciones del cierre</span>
+          <textarea rows="2" value={observacionesCierre} onChange={(e) => setObservacionesCierre(e.target.value)} placeholder="Ej: día lluvioso, faltó personal, compra alta, evento, etc." />
+        </label>
       </div>
 
       </>

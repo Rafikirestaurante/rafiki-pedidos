@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import {
   consolidarPedidos,
   obtenerCliente,
+  obtenerCodigoPedido,
   obtenerEstadoPedido,
 } from "../utils/pedidos";
 
@@ -20,11 +21,25 @@ export function useAdminPedidos({
 
     if (!q) return pedidosOrdenados;
 
-    return pedidosOrdenados.filter((pedido) =>
-      `${obtenerCliente(pedido)} ${pedido.telefono} ${pedido.ubicacion} ${pedido.tipo_pago} ${pedido.pedido_texto} ${obtenerEstadoPedido(pedido)}`
-        .toLowerCase()
-        .includes(q)
-    );
+    return pedidosOrdenados.filter((pedido) => {
+      const codigo = String(obtenerCodigoPedido(pedido) || "");
+      const id = String(pedido?.id || "");
+      const textoBusqueda = [
+        codigo,
+        id,
+        `#${codigo}`,
+        obtenerCliente(pedido),
+        pedido?.telefono,
+        pedido?.ubicacion,
+        pedido?.mesa,
+        pedido?.mesero,
+        pedido?.tipo_pago,
+        pedido?.pedido_texto,
+        obtenerEstadoPedido(pedido),
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      return textoBusqueda.includes(q);
+    });
   }, [pedidosOrdenados, busquedaDebounced]);
 
   const pedidosPendientes = useMemo(() => {

@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '23B-1001-LIMPIEZA-PANELES-GASTOS-2026-05-30',
-  phase: 'Fase 23B 100.1 - Limpieza paneles y gastos',
+  version: '23B-1002-AJUSTES-MESAS-INFORME-BUSCADOR-2026-05-30',
+  phase: 'Fase 23B 100.2 - Ajustes mesas, informe y buscador',
   date: '2026-05-30',
-  fase: '23B-100.1',
-  notes: 'Pedidos hoy queda más liviano sin consolidado cocina, el panel mesas incluye vista rápida de pedidos, limpiar caché pasa a icono compacto y Gastos mejora legibilidad móvil sin cargar la interfaz.'
+  fase: '23B-100.2',
+  notes: 'Panel mesas queda desconectado de Pedidos hoy, Cierre diario inteligente pasa al final del informe y el buscador de Pedidos hoy encuentra por número, activos y finalizados.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
