@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '24A2-GASTOS-INVENTARIO-OPCIONAL-2026-05-30',
-  phase: 'Fase 24A2 - Gastos enlazado opcionalmente con Inventario',
-  date: '2026-05-30',
-  fase: '24A2',
-  notes: 'Gastos permite actualizar inventario de forma opcional al registrar compras de insumos, sin afectar gastos normales.'
+  version: '24B-RECETAS-DESECHABLES-SANDWICH-2026-05-31',
+  phase: 'Fase 24B - Recetas iniciales de inventario',
+  date: '2026-05-31',
+  fase: '24B',
+  notes: 'Descuento automático inicial de inventario al finalizar pedidos: sándwich y desechables por tipo de empaque.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

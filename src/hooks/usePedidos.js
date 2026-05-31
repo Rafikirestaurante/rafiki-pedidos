@@ -16,6 +16,7 @@ import {
   esErrorDeConexion,
   guardarPedidoPendienteOffline,
 } from "../utils/offlinePedidos";
+import { registrarDescuentoInventarioPedido } from "../services/inventarioService";
 
 export function usePedidos({
   itemsPedido,
@@ -356,11 +357,26 @@ export function usePedidos({
         pedido: data,
         detalle: { estadoAnterior: estadoActual, estadoNuevo },
       });
-      mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como ${estadoNuevo === "Finalizado" ? "Entregado" : estadoNuevo}.`, "success");
+
+      if (estadoNuevo === "Finalizado") {
+        try {
+          const resultadoInventario = await registrarDescuentoInventarioPedido(data, { usuario: adminActor || adminUsuario?.email || "Admin Rafiki" });
+          const omitidas = resultadoInventario.omitidas?.length || 0;
+          const mensajeInventario = resultadoInventario.total
+            ? ` Inventario actualizado (${resultadoInventario.total} movimientos${omitidas ? `, ${omitidas} omitidos` : ""}).`
+            : " Sin recetas de inventario para descontar.";
+          mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como Entregado.${mensajeInventario}`, "success");
+        } catch (errorInventario) {
+          console.warn("Inventario no actualizado:", errorInventario?.message || errorInventario);
+          mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como Entregado, pero el inventario no se pudo actualizar: ${errorInventario?.message || errorInventario}`, "warning");
+        }
+      } else {
+        mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como ${estadoNuevo}.`, "success");
+      }
     } finally {
       setGuardandoEstadoPedidoId(null);
     }
-  }, [confirmarRafiki, guardandoEstadoPedidoId, mostrarMensaje, pedidos, puedeCambiarEstado, registrarAuditoria, setPedidos]);
+  }, [adminActor, adminUsuario, confirmarRafiki, guardandoEstadoPedidoId, mostrarMensaje, pedidos, puedeCambiarEstado, registrarAuditoria, setPedidos]);
 
   const finalizarTodosPendientes = useCallback(async () => {
     if (finalizandoPendientes || guardandoEstadoPedidoId) return;
@@ -410,11 +426,30 @@ export function usePedidos({
         pedido,
         detalle: { totalSeleccionados: ids.length },
       })));
-      mostrarMensaje(`${actualizados.length || ids.length} pedidos pendientes marcados como entregados.`, "success");
+
+      let movimientosInventario = 0;
+      let erroresInventario = 0;
+      for (const pedido of (actualizados.length ? actualizados : pendientesParaFinalizar)) {
+        try {
+          const resultadoInventario = await registrarDescuentoInventarioPedido(pedido, { usuario: adminActor || adminUsuario?.email || "Admin Rafiki" });
+          movimientosInventario += resultadoInventario.total || 0;
+        } catch (errorInventario) {
+          erroresInventario += 1;
+          console.warn("Inventario no actualizado en finalización masiva:", errorInventario?.message || errorInventario);
+        }
+      }
+
+      const mensajeInventario = movimientosInventario
+        ? ` Inventario actualizado (${movimientosInventario} movimientos).`
+        : "";
+      const mensajeErroresInventario = erroresInventario
+        ? ` ${erroresInventario} pedidos no pudieron actualizar inventario.`
+        : "";
+      mostrarMensaje(`${actualizados.length || ids.length} pedidos pendientes marcados como entregados.${mensajeInventario}${mensajeErroresInventario}`, erroresInventario ? "warning" : "success");
     } finally {
       setFinalizandoPendientes(false);
     }
-  }, [confirmarRafiki, finalizandoPendientes, guardandoEstadoPedidoId, mostrarMensaje, pedidosPendientes, puedeFinalizarPendientes, registrarAuditoria, setPedidos]);
+  }, [adminActor, adminUsuario, confirmarRafiki, finalizandoPendientes, guardandoEstadoPedidoId, mostrarMensaje, pedidosPendientes, puedeFinalizarPendientes, registrarAuditoria, setPedidos]);
 
   const eliminarPedidoAdministrador = useCallback(async (id) => {
     if (eliminandoPedidoId) return;

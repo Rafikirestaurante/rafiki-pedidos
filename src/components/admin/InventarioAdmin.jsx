@@ -119,6 +119,25 @@ export default function InventarioAdmin() {
       </Tarjeta>
 
       <Tarjeta>
+        <h3>🧾 Recetas iniciales activas</h3>
+        <p className="muted">Fase 24B descuenta solo reglas simples: sándwich y desechables para llevar. Pastas y arroces usan empaque distinto; sancochos y sopas también usan soperos distintos.</p>
+        <div className="table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>Grupo</th><th>Descuenta</th><th>Cuándo aplica</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Sándwich</strong></td><td>Pan, jamón, queso, mantequilla y servilletas</td><td>Al finalizar un pedido con sándwich</td></tr>
+              <tr><td><strong>Sándwich para llevar</strong></td><td>Papel para sándwich + bolsa</td><td>Solo si el pedido es para llevar</td></tr>
+              <tr><td><strong>Proteínas para llevar</strong></td><td>Contenedor 3 divisiones negro + bolsa 2K</td><td>Pechuga, cerdo, carne, pollo guisado y platos corrientes</td></tr>
+              <tr><td><strong>Pastas</strong></td><td>Contenedor C1 + bolsa 2K</td><td>Productos cuyo nombre/categoría incluya pasta</td></tr>
+              <tr><td><strong>Arroces</strong></td><td>Contenedor J1 dorado + bolsa 2K</td><td>Productos cuyo nombre/categoría incluya arroz</td></tr>
+              <tr><td><strong>Sancocho</strong></td><td>Sopero 32 oz + bolsa 10K</td><td>Sancocho para llevar</td></tr>
+              <tr><td><strong>Sopas</strong></td><td>Sopero 24 oz + bolsa 2K</td><td>Sopas, mondongo o ajiaco para llevar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </Tarjeta>
+
+      <Tarjeta>
         <h3>{editandoId ? "Editar insumo" : "Crear insumo"}</h3>
         <form onSubmit={guardar} className="grid-form">
           <CampoTexto etiqueta="Nombre" value={form.nombre} onChange={(v) => actualizarCampo("nombre", v)} placeholder="Ej: Pechuga, arroz, tomate" />
