@@ -6,11 +6,16 @@ import {
   calcularResumenInventario,
   cargarInventarioInsumos,
   guardarInventarioInsumo,
+  cargarRecetasInventario,
+  guardarRecetaInventario,
   sincronizarInventarioDesdeCatalogoInsumos
 } from "../../services/inventarioService";
 import { dinero } from "../../utils/pedidos";
 
 const FORM_INICIAL = { nombre: "", categoria: "Carnes", unidad: "kg", stockActual: "", stockMinimo: "", costoPromedio: "", activo: true };
+const RECETA_INICIAL = { grupoProducto: "almuerzo_estandar", condicion: "para_llevar", insumoNombre: "", cantidad: "1", reglaCodigo: "", activo: true, notas: "" };
+const GRUPOS_RECETA = ["almuerzo_estandar", "pasta", "arroz", "sancocho", "sopa", "sandwich", "bebida_12", "bebida_16", "bebida_22", "bebida", "parfait_12", "parfait_16", "parfait_22"];
+const CONDICIONES_RECETA = ["para_llevar", "produccion"];
 
 export default function InventarioAdmin() {
   const [insumos, setInsumos] = useState([]);
@@ -20,6 +25,9 @@ export default function InventarioAdmin() {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [busqueda, setBusqueda] = useState("");
+  const [recetas, setRecetas] = useState([]);
+  const [formReceta, setFormReceta] = useState(RECETA_INICIAL);
+  const [editandoRecetaId, setEditandoRecetaId] = useState("");
 
   const resumen = useMemo(() => calcularResumenInventario(insumos), [insumos]);
   const insumosFiltrados = useMemo(() => {
@@ -32,7 +40,9 @@ export default function InventarioAdmin() {
     setCargando(true);
     setMensaje({ texto: "", tipo: "info" });
     try {
-      setInsumos(await cargarInventarioInsumos());
+      const [listaInsumos, listaRecetas] = await Promise.all([cargarInventarioInsumos(), cargarRecetasInventario()]);
+      setInsumos(listaInsumos);
+      setRecetas(listaRecetas);
     } catch (error) {
       setMensaje({ texto: `No se pudo cargar inventario: ${error.message || error}`, tipo: "error" });
     } finally {
@@ -96,6 +106,53 @@ export default function InventarioAdmin() {
     }
   }
 
+  function actualizarCampoReceta(campo, valor) {
+    setFormReceta((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function editarReceta(receta) {
+    setEditandoRecetaId(receta.id);
+    setFormReceta({
+      grupoProducto: receta.grupoProducto,
+      condicion: receta.condicion,
+      insumoNombre: receta.insumoNombre,
+      cantidad: String(receta.cantidad || 1),
+      reglaCodigo: receta.reglaCodigo,
+      activo: receta.activo !== false,
+      notas: receta.notas || ""
+    });
+  }
+
+  async function guardarReceta(event) {
+    event.preventDefault();
+    setGuardando(true);
+    setMensaje({ texto: "", tipo: "info" });
+    try {
+      await guardarRecetaInventario({ ...formReceta, id: editandoRecetaId || undefined });
+      setFormReceta(RECETA_INICIAL);
+      setEditandoRecetaId("");
+      await cargarDatos();
+      setMensaje({ texto: editandoRecetaId ? "Receta actualizada." : "Receta creada.", tipo: "success" });
+    } catch (error) {
+      setMensaje({ texto: error.message || "No se pudo guardar la receta.", tipo: "error" });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function cambiarEstadoReceta(receta) {
+    setGuardando(true);
+    try {
+      await guardarRecetaInventario({ ...receta, activo: receta.activo === false });
+      await cargarDatos();
+      setMensaje({ texto: receta.activo === false ? "Receta activada." : "Receta desactivada.", tipo: "success" });
+    } catch (error) {
+      setMensaje({ texto: error.message || "No se pudo cambiar el estado de la receta.", tipo: "error" });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="admin-stack">
       <Tarjeta>
@@ -119,19 +176,48 @@ export default function InventarioAdmin() {
       </Tarjeta>
 
       <Tarjeta>
-        <h3>🧾 Recetas iniciales activas</h3>
-        <p className="muted">Fase 24B descuenta solo reglas simples: sándwich y desechables para llevar. Pastas y arroces usan empaque distinto; sancochos y sopas también usan soperos distintos.</p>
+        <div className="section-title-row">
+          <div>
+            <h3>🧾 Recetas iniciales activas</h3>
+            <p className="muted">Estas reglas sí se pueden editar: cambia el empaque, la cantidad o desactiva una receta sin tocar código ni SQL. El descuento automático usa únicamente las recetas activas.</p>
+          </div>
+        </div>
+
+        <form onSubmit={guardarReceta} className="grid-form" style={{ marginBottom: 14 }}>
+          <label className="field"><span>Grupo</span><select value={formReceta.grupoProducto} onChange={(e) => actualizarCampoReceta("grupoProducto", e.target.value)}>{GRUPOS_RECETA.map((g) => <option key={g}>{g}</option>)}</select></label>
+          <label className="field"><span>Condición</span><select value={formReceta.condicion} onChange={(e) => actualizarCampoReceta("condicion", e.target.value)}>{CONDICIONES_RECETA.map((c) => <option key={c}>{c}</option>)}</select></label>
+          <label className="field"><span>Insumo a descontar</span><select value={formReceta.insumoNombre} onChange={(e) => actualizarCampoReceta("insumoNombre", e.target.value)}><option value="">Seleccionar...</option>{insumos.map((item) => <option key={item.id} value={item.nombre}>{item.nombre}</option>)}</select></label>
+          <CampoTexto etiqueta="Cantidad" type="number" value={formReceta.cantidad} onChange={(v) => actualizarCampoReceta("cantidad", v)} placeholder="1" />
+          <CampoTexto etiqueta="Código regla" value={formReceta.reglaCodigo} onChange={(v) => actualizarCampoReceta("reglaCodigo", v)} placeholder="Ej: empaque_sopa" />
+          <CampoTexto etiqueta="Notas" value={formReceta.notas} onChange={(v) => actualizarCampoReceta("notas", v)} placeholder="Ej: Sopas medianas para llevar" />
+          <label className="field inline-check"><input type="checkbox" checked={formReceta.activo !== false} onChange={(e) => actualizarCampoReceta("activo", e.target.checked)} /> Activa</label>
+          <div className="admin-actions-stack horizontal">
+            <Boton tipo="submit" disabled={guardando}>{editandoRecetaId ? "Guardar receta" : "Crear receta"}</Boton>
+            {editandoRecetaId && <Boton variante="light" onClick={() => { setEditandoRecetaId(""); setFormReceta(RECETA_INICIAL); }}>Cancelar</Boton>}
+          </div>
+        </form>
+
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Grupo</th><th>Descuenta</th><th>Cuándo aplica</th></tr></thead>
+            <thead><tr><th>Grupo</th><th>Condición</th><th>Descuenta</th><th>Cantidad</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
             <tbody>
-              <tr><td><strong>Sándwich</strong></td><td>Pan, jamón, queso, mantequilla y servilletas</td><td>Al finalizar un pedido con sándwich</td></tr>
-              <tr><td><strong>Sándwich para llevar</strong></td><td>Papel para sándwich + bolsa</td><td>Solo si el pedido es para llevar</td></tr>
-              <tr><td><strong>Proteínas para llevar</strong></td><td>Contenedor 3 divisiones negro + bolsa 2K</td><td>Pechuga, cerdo, carne, pollo guisado y platos corrientes</td></tr>
-              <tr><td><strong>Pastas</strong></td><td>Contenedor C1 + bolsa 2K</td><td>Productos cuyo nombre/categoría incluya pasta</td></tr>
-              <tr><td><strong>Arroces</strong></td><td>Contenedor J1 dorado + bolsa 2K</td><td>Productos cuyo nombre/categoría incluya arroz</td></tr>
-              <tr><td><strong>Sancocho</strong></td><td>Sopero 32 oz + bolsa 10K</td><td>Sancocho para llevar</td></tr>
-              <tr><td><strong>Sopas</strong></td><td>Sopero 24 oz + bolsa 2K</td><td>Sopas, mondongo o ajiaco para llevar</td></tr>
+              {recetas.map((receta) => (
+                <tr key={receta.id}>
+                  <td><strong>{receta.grupoProducto}</strong></td>
+                  <td>{receta.condicion}</td>
+                  <td>{receta.insumoNombre}</td>
+                  <td>{receta.cantidad}</td>
+                  <td>{receta.activo ? "✅ Activa" : "⏸️ Inactiva"}</td>
+                  <td>{receta.notas}</td>
+                  <td>
+                    <div className="admin-actions-stack horizontal">
+                      <button type="button" className="button light" onClick={() => editarReceta(receta)}>Editar</button>
+                      <button type="button" className="button light" onClick={() => cambiarEstadoReceta(receta)}>{receta.activo ? "Desactivar" : "Activar"}</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!recetas.length && <tr><td colSpan="7" className="muted">Sin recetas registradas. Ejecuta el SQL de la Fase 24B.</td></tr>}
             </tbody>
           </table>
         </div>

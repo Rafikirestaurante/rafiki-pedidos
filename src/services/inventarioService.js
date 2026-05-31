@@ -2,6 +2,7 @@ import { supabase } from "../supabaseClient";
 
 const SELECT_INSUMOS = "id, nombre, categoria, unidad, stock_actual, stock_minimo, costo_promedio, activo, creado_en, actualizado_en";
 const SELECT_MOVIMIENTOS = "id, insumo_id, tipo, cantidad, motivo, fecha, usuario, creado_en";
+const SELECT_RECETAS = "id, grupo_producto, condicion, insumo_nombre, cantidad, regla_codigo, activo, notas, creado_en, actualizado_en";
 
 export const CATEGORIAS_INVENTARIO = ["Carnes", "Verduras", "Granos", "Lácteos", "Frutas", "Bebidas", "Desechables", "Aseo", "Otros"];
 export const UNIDADES_INVENTARIO = ["kg", "g", "lb", "unidad", "paquete", "litro", "ml", "bolsa", "caja"];
@@ -27,6 +28,89 @@ export function normalizarInsumoInventario(item) {
     creadoEn: item.creado_en || "",
     actualizadoEn: item.actualizado_en || ""
   };
+}
+
+export function normalizarRecetaInventario(item) {
+  if (!item) return null;
+  return {
+    id: item.id,
+    grupoProducto: item.grupo_producto || "",
+    condicion: item.condicion || "para_llevar",
+    insumoNombre: item.insumo_nombre || "",
+    cantidad: Number(item.cantidad || 0),
+    reglaCodigo: item.regla_codigo || "",
+    activo: item.activo !== false,
+    notas: item.notas || "",
+    creadoEn: item.creado_en || "",
+    actualizadoEn: item.actualizado_en || ""
+  };
+}
+
+function prepararPayloadReceta(receta) {
+  const grupoProducto = String(receta.grupoProducto || receta.grupo_producto || "").trim().toLowerCase();
+  const condicion = String(receta.condicion || "para_llevar").trim().toLowerCase();
+  const insumoNombre = String(receta.insumoNombre || receta.insumo_nombre || "").trim();
+  const cantidad = Number(receta.cantidad || 0);
+  const reglaCodigo = String(receta.reglaCodigo || receta.regla_codigo || `${grupoProducto}_${insumoNombre}`)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  if (!grupoProducto) throw new Error("El grupo de la receta es obligatorio.");
+  if (!insumoNombre) throw new Error("Selecciona el insumo que se va a descontar.");
+  if (!Number.isFinite(cantidad) || cantidad <= 0) throw new Error("La cantidad de la receta debe ser mayor a cero.");
+  if (!reglaCodigo) throw new Error("El código de regla no es válido.");
+
+  return {
+    grupo_producto: grupoProducto,
+    condicion,
+    insumo_nombre: insumoNombre,
+    cantidad,
+    regla_codigo: reglaCodigo,
+    activo: receta.activo !== false,
+    notas: String(receta.notas || "").trim() || null,
+    actualizado_en: new Date().toISOString()
+  };
+}
+
+export async function cargarRecetasInventario({ incluirInactivas = true } = {}) {
+  let consulta = supabase
+    .from("recetas_desechables")
+    .select(SELECT_RECETAS)
+    .order("grupo_producto", { ascending: true })
+    .order("condicion", { ascending: true })
+    .order("insumo_nombre", { ascending: true });
+
+  if (!incluirInactivas) consulta = consulta.eq("activo", true);
+  const { data, error } = await consulta;
+  if (error) throw error;
+  return (data || []).map(normalizarRecetaInventario).filter(Boolean);
+}
+
+export async function guardarRecetaInventario(receta) {
+  const payload = prepararPayloadReceta(receta);
+
+  if (receta.id) {
+    const { data, error } = await supabase
+      .from("recetas_desechables")
+      .update(payload)
+      .eq("id", receta.id)
+      .select(SELECT_RECETAS)
+      .single();
+    if (error) throw error;
+    return normalizarRecetaInventario(data);
+  }
+
+  const { data, error } = await supabase
+    .from("recetas_desechables")
+    .insert(payload)
+    .select(SELECT_RECETAS)
+    .single();
+  if (error) throw error;
+  return normalizarRecetaInventario(data);
 }
 
 function prepararPayloadInsumo(insumo) {
@@ -217,90 +301,51 @@ function clasificarEmpaqueParaLlevar(item) {
   return "almuerzo_estandar";
 }
 
-export function calcularSalidasInventarioPedido(pedido) {
+export function calcularSalidasInventarioPedido(pedido, recetasActivas = []) {
   const mapa = new Map();
   const items = Array.isArray(pedido?.items) ? pedido.items : [];
+  const recetas = (recetasActivas || []).filter((receta) => receta?.activo !== false);
+
+  function aplicarRecetas(grupos, condicion, item, cantidad) {
+    const gruposSet = new Set((Array.isArray(grupos) ? grupos : [grupos]).map((g) => textoNormalizadoInventario(g)).filter(Boolean));
+    recetas
+      .filter((receta) => gruposSet.has(textoNormalizadoInventario(receta.grupoProducto || receta.grupo_producto)))
+      .filter((receta) => textoNormalizadoInventario(receta.condicion) === textoNormalizadoInventario(condicion))
+      .forEach((receta) => {
+        agregarSalida(
+          mapa,
+          receta.insumoNombre || receta.insumo_nombre,
+          Number(receta.cantidad || 0) * cantidad,
+          receta.reglaCodigo || receta.regla_codigo,
+          receta.notas || `${condicion}: ${nombreItemPedido(item)}`
+        );
+      });
+  }
 
   items.forEach((item) => {
     const cantidad = cantidadItemPedido(item);
     const nombreNormalizado = textoNormalizadoInventario(nombreItemPedido(item));
     const tipoNormalizado = textoNormalizadoInventario(item?.tipo);
+    const esSandwich = nombreNormalizado.includes("sandwich") || nombreNormalizado.includes("sanduche") || tipoNormalizado.includes("sandwich") || tipoNormalizado.includes("sanduche");
 
-    // Receta sencilla inicial: Sándwich jamón y queso.
-    // Se maneja en unidades para evitar entrar todavía a gramos o costos complejos.
-    if (nombreNormalizado.includes("sandwich") || nombreNormalizado.includes("sanduche") || tipoNormalizado.includes("sandwich") || tipoNormalizado.includes("sanduche")) {
-      agregarSalida(mapa, "Pan", cantidad, "sandwich_pan", "Sándwich: pan");
-      agregarSalida(mapa, "Jamón", cantidad, "sandwich_jamon", "Sándwich: jamón");
-      agregarSalida(mapa, "Queso mozzarella", cantidad, "sandwich_queso", "Sándwich: queso");
-      agregarSalida(mapa, "Mantequilla", cantidad, "sandwich_mantequilla", "Sándwich: mantequilla");
-      agregarSalida(mapa, "Servilletas", cantidad, "sandwich_servilletas", "Sándwich: servilletas");
+    if (esSandwich) {
+      aplicarRecetas("sandwich", "produccion", item, cantidad);
     }
 
     if (!pedidoOItemParaLlevar(pedido, item)) return;
 
     const grupoEmpaque = clasificarEmpaqueParaLlevar(item);
-
-    if (grupoEmpaque === "sandwich") {
-      agregarSalida(mapa, "Papel para sándwich", cantidad, "empaque_sandwich_papel", "Para llevar sándwich: papel");
-      agregarSalida(mapa, "Bolsas plásticas 2K", cantidad, "empaque_sandwich_bolsa", "Para llevar sándwich: bolsa");
-      return;
-    }
-
-    if (grupoEmpaque === "pasta") {
-      agregarSalida(mapa, "Contenedor C1", cantidad, "empaque_pasta", "Para llevar pasta: contenedor");
-      agregarSalida(mapa, "Bolsas plásticas 2K", cantidad, "empaque_pasta_bolsa", "Para llevar pasta: bolsa");
-      return;
-    }
-
-    if (grupoEmpaque === "arroz") {
-      agregarSalida(mapa, "Contenedor J1 dorado", cantidad, "empaque_arroz", "Para llevar arroz: contenedor");
-      agregarSalida(mapa, "Bolsas plásticas 2K", cantidad, "empaque_arroz_bolsa", "Para llevar arroz: bolsa");
-      return;
-    }
-
-    if (grupoEmpaque === "sancocho") {
-      agregarSalida(mapa, "Sopero 32 oz", cantidad, "empaque_sancocho", "Para llevar sancocho: sopero");
-      agregarSalida(mapa, "Bolsas plásticas 10K", cantidad, "empaque_sancocho_bolsa", "Para llevar sancocho: bolsa");
-      return;
-    }
-
-    if (grupoEmpaque === "sopa") {
-      agregarSalida(mapa, "Sopero 24 oz", cantidad, "empaque_sopa", "Para llevar sopa: sopero");
-      agregarSalida(mapa, "Bolsas plásticas 2K", cantidad, "empaque_sopa_bolsa", "Para llevar sopa: bolsa");
-      return;
-    }
-
-    if (grupoEmpaque === "bebida_22") {
-      agregarSalida(mapa, "Vasos Gold Carvajal 22 oz", cantidad, "empaque_bebida_22_vaso", "Para llevar bebida 22 oz: vaso");
-      agregarSalida(mapa, "Tapas Darnel domo", cantidad, "empaque_bebida_22_tapa", "Para llevar bebida 22 oz: tapa");
-      agregarSalida(mapa, "Pitillos batido 7 mm", cantidad, "empaque_bebida_pitillo", "Para llevar bebida: pitillo");
-      return;
-    }
-
-    if (grupoEmpaque === "bebida_16") {
-      agregarSalida(mapa, "Vasos Darnel 16 oz", cantidad, "empaque_bebida_16_vaso", "Para llevar bebida 16 oz: vaso");
-      agregarSalida(mapa, "Tapa Darnel plana", cantidad, "empaque_bebida_16_tapa", "Para llevar bebida 16 oz: tapa");
-      agregarSalida(mapa, "Pitillos batido 7 mm", cantidad, "empaque_bebida_pitillo", "Para llevar bebida: pitillo");
-      return;
-    }
-
-    if (grupoEmpaque === "bebida_12") {
-      agregarSalida(mapa, "Vasos Darnel 12 oz", cantidad, "empaque_bebida_12_vaso", "Para llevar bebida 12 oz: vaso");
-      agregarSalida(mapa, "Tapa Darnel plana", cantidad, "empaque_bebida_12_tapa", "Para llevar bebida 12 oz: tapa");
-      agregarSalida(mapa, "Pitillos batido 7 mm", cantidad, "empaque_bebida_pitillo", "Para llevar bebida: pitillo");
-      return;
-    }
-
-    // Proteínas y platos corrientes para llevar: empaque estándar.
-    agregarSalida(mapa, "Contenedor 3 divisiones negro", cantidad, "empaque_almuerzo_estandar", "Para llevar almuerzo estándar");
-    agregarSalida(mapa, "Bolsas plásticas 2K", cantidad, "empaque_almuerzo_bolsa", "Para llevar almuerzo: bolsa");
+    const gruposParaLlevar = [grupoEmpaque];
+    if (["bebida_12", "bebida_16", "bebida_22"].includes(grupoEmpaque)) gruposParaLlevar.push("bebida");
+    aplicarRecetas(gruposParaLlevar, "para_llevar", item, cantidad);
   });
 
   return Array.from(mapa.values()).filter((item) => item.cantidad > 0);
 }
 
 export async function registrarDescuentoInventarioPedido(pedido, { usuario = "Pedidos Rafiki" } = {}) {
-  const salidas = calcularSalidasInventarioPedido(pedido);
+  const recetasActivas = await cargarRecetasInventario({ incluirInactivas: false });
+  const salidas = calcularSalidasInventarioPedido(pedido, recetasActivas);
   if (!pedido?.id || salidas.length === 0) {
     return { total: 0, aplicadas: [], omitidas: [], salidas };
   }
