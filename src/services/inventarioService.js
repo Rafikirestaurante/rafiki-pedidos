@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 const SELECT_INSUMOS = "id, nombre, categoria, unidad, stock_actual, stock_minimo, costo_promedio, activo, creado_en, actualizado_en";
 const SELECT_MOVIMIENTOS = "id, insumo_id, tipo, cantidad, motivo, fecha, usuario, creado_en";
 const SELECT_RECETAS = "id, grupo_producto, condicion, insumo_nombre, cantidad, regla_codigo, activo, notas, creado_en, actualizado_en";
+const SELECT_RELACIONES_PRODUCTOS = "id, insumo_id, insumo_nombre, producto_codigo, producto_nombre, linea, categoria, cantidad, condicion, activo, creado_en, actualizado_en";
 
 export const CATEGORIAS_INVENTARIO = ["Carnes", "Verduras", "Granos", "Lácteos", "Frutas", "Bebidas", "Desechables", "Aseo", "Otros"];
 export const UNIDADES_INVENTARIO = ["kg", "g", "lb", "unidad", "paquete", "litro", "ml", "bolsa", "caja"];
@@ -41,6 +42,25 @@ export function normalizarRecetaInventario(item) {
     reglaCodigo: item.regla_codigo || "",
     activo: item.activo !== false,
     notas: item.notas || "",
+    creadoEn: item.creado_en || "",
+    actualizadoEn: item.actualizado_en || ""
+  };
+}
+
+
+export function normalizarRelacionInventarioProducto(item) {
+  if (!item) return null;
+  return {
+    id: item.id,
+    insumoId: item.insumo_id || "",
+    insumoNombre: item.insumo_nombre || "",
+    productoCodigo: item.producto_codigo || "",
+    productoNombre: item.producto_nombre || "",
+    linea: item.linea || "",
+    categoria: item.categoria || "",
+    cantidad: Number(item.cantidad || 0),
+    condicion: item.condicion || "venta",
+    activo: item.activo !== false,
     creadoEn: item.creado_en || "",
     actualizadoEn: item.actualizado_en || ""
   };
@@ -207,6 +227,58 @@ export async function guardarInventarioInsumo(insumo) {
   return normalizarInsumoInventario(data);
 }
 
+
+export async function cargarRelacionesInventarioProductos({ incluirInactivas = false } = {}) {
+  let consulta = supabase
+    .from("inventario_producto_insumos")
+    .select(SELECT_RELACIONES_PRODUCTOS)
+    .order("linea", { ascending: true })
+    .order("categoria", { ascending: true })
+    .order("producto_nombre", { ascending: true });
+
+  if (!incluirInactivas) consulta = consulta.eq("activo", true);
+  const { data, error } = await consulta;
+  if (error) throw error;
+  return (data || []).map(normalizarRelacionInventarioProducto).filter(Boolean);
+}
+
+export async function guardarRelacionesInsumoProducto(insumo, productosSeleccionados = []) {
+  if (!insumo?.id) throw new Error("Selecciona un insumo válido.");
+
+  const { error: deleteError } = await supabase
+    .from("inventario_producto_insumos")
+    .delete()
+    .eq("insumo_id", insumo.id);
+  if (deleteError) throw deleteError;
+
+  const payloads = (productosSeleccionados || [])
+    .map((producto) => ({
+      insumo_id: insumo.id,
+      insumo_nombre: String(insumo.nombre || "").trim(),
+      producto_codigo: String(producto.productoCodigo || producto.producto_codigo || "").trim(),
+      producto_nombre: String(producto.productoNombre || producto.producto_nombre || "").trim(),
+      linea: String(producto.linea || "").trim() || null,
+      categoria: String(producto.categoria || "").trim() || null,
+      cantidad: Number(producto.cantidad || 0),
+      condicion: String(producto.condicion || "venta").trim() || "venta",
+      activo: true,
+      actualizado_en: new Date().toISOString()
+    }))
+    .filter((item) => item.producto_codigo && item.producto_nombre && Number.isFinite(item.cantidad) && item.cantidad > 0);
+
+  if (!payloads.length) return [];
+
+  const codigos = new Set(payloads.map((item) => item.producto_codigo));
+  if (codigos.size !== payloads.length) throw new Error("Hay productos repetidos en la configuración del insumo.");
+
+  const { data, error } = await supabase
+    .from("inventario_producto_insumos")
+    .insert(payloads)
+    .select(SELECT_RELACIONES_PRODUCTOS);
+  if (error) throw error;
+  return (data || []).map(normalizarRelacionInventarioProducto).filter(Boolean);
+}
+
 export async function registrarMovimientoInventario({ insumoId, tipo, cantidad, motivo, usuario }) {
   const payload = {
     insumo_id: insumoId,
@@ -359,6 +431,49 @@ function clasificarEmpaqueParaLlevar(item) {
   return "almuerzo_estandar";
 }
 
+
+function crearCodigoProductoInventario({ linea, categoria, nombre }) {
+  return `${textoNormalizadoInventario(linea)}_${textoNormalizadoInventario(categoria)}_${textoNormalizadoInventario(nombre)}`
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function clavesProductoPedido(item) {
+  const nombre = nombreItemPedido(item);
+  const linea = item?.linea || item?.seccion || "";
+  const categoria = item?.categoria || item?.tipo || "";
+  return new Set([
+    textoNormalizadoInventario(nombre),
+    crearCodigoProductoInventario({ linea, categoria, nombre }),
+    crearCodigoProductoInventario({ linea: item?.linea, categoria: item?.categoria, nombre }),
+    crearCodigoProductoInventario({ linea: item?.seccion, categoria: item?.tipo, nombre })
+  ].filter(Boolean));
+}
+
+export function calcularSalidasInventarioPorProductos(pedido, relacionesActivas = []) {
+  const mapa = new Map();
+  const items = Array.isArray(pedido?.items) ? pedido.items : [];
+  const relaciones = (relacionesActivas || []).filter((relacion) => relacion?.activo !== false);
+
+  items.forEach((item) => {
+    const cantidadItem = cantidadItemPedido(item);
+    const claves = clavesProductoPedido(item);
+    relaciones
+      .filter((relacion) => claves.has(textoNormalizadoInventario(relacion.productoCodigo)) || claves.has(textoNormalizadoInventario(relacion.productoNombre)))
+      .forEach((relacion) => {
+        agregarSalida(
+          mapa,
+          relacion.insumoNombre,
+          Number(relacion.cantidad || 0) * cantidadItem,
+          `producto_${textoNormalizadoInventario(relacion.insumoNombre)}_${textoNormalizadoInventario(relacion.productoCodigo || relacion.productoNombre)}`,
+          `Producto: ${nombreItemPedido(item)}`
+        );
+      });
+  });
+
+  return Array.from(mapa.values()).filter((item) => item.cantidad > 0);
+}
+
 export function calcularSalidasInventarioPedido(pedido, recetasActivas = []) {
   const mapa = new Map();
   const items = Array.isArray(pedido?.items) ? pedido.items : [];
@@ -402,8 +517,16 @@ export function calcularSalidasInventarioPedido(pedido, recetasActivas = []) {
 }
 
 export async function registrarDescuentoInventarioPedido(pedido, { usuario = "Pedidos Rafiki" } = {}) {
-  const recetasActivas = await cargarRecetasInventario({ incluirInactivas: false });
-  const salidas = calcularSalidasInventarioPedido(pedido, recetasActivas);
+  const relacionesActivas = await cargarRelacionesInventarioProductos({ incluirInactivas: false }).catch(() => []);
+  let salidas = calcularSalidasInventarioPorProductos(pedido, relacionesActivas);
+
+  // Respaldo temporal: si todavía no hay relaciones insumo -> producto configuradas,
+  // mantiene funcionando las reglas antiguas de desechables para no frenar la operación.
+  if (!salidas.length) {
+    const recetasActivas = await cargarRecetasInventario({ incluirInactivas: false }).catch(() => []);
+    salidas = calcularSalidasInventarioPedido(pedido, recetasActivas);
+  }
+
   if (!pedido?.id || salidas.length === 0) {
     return { total: 0, aplicadas: [], omitidas: [], salidas };
   }

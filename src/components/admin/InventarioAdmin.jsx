@@ -1,68 +1,103 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Aviso, Boton, CampoTexto, Tarjeta } from "../common";
 import {
-  CATEGORIAS_INVENTARIO,
-  UNIDADES_INVENTARIO,
   calcularResumenInventario,
   cargarInventarioInsumos,
   guardarInventarioInsumo,
-  cargarRecetasInventario,
-  guardarReglaInventario,
-  cambiarEstadoReglaInventario,
+  cargarRelacionesInventarioProductos,
+  guardarRelacionesInsumoProducto,
   sincronizarInventarioDesdeCatalogoInsumos
 } from "../../services/inventarioService";
+import { cargarCatalogoProductosAdmin } from "../../services/catalogoProductosService";
+import { PRODUCTOS_CATALOGO_FALLBACK } from "../../data/catalogoProductosData";
 import { dinero } from "../../utils/pedidos";
 
-const FORM_INICIAL = { nombre: "", categoria: "Carnes", unidad: "kg", stockActual: "", stockMinimo: "", costoPromedio: "", activo: true };
-const RECETA_INICIAL = { grupoProducto: "almuerzo_estandar", condicion: "para_llevar", reglaCodigo: "", activo: true, notas: "", insumos: [{ insumoNombre: "", cantidad: "1" }] };
-const GRUPOS_RECETA = ["almuerzo_estandar", "pasta", "arroz", "sancocho", "sopa", "sandwich", "bebida_12", "bebida_16", "bebida_22", "bebida", "parfait_12", "parfait_16", "parfait_22"];
-const CONDICIONES_RECETA = ["para_llevar", "produccion"];
+const FORM_STOCK_INICIAL = { stockActual: "", stockMinimo: "", costoPromedio: "", activo: true };
+
+function normalizarTextoInventario(valor) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function productoCodigo(producto) {
+  return String(producto?.catalogoId || producto?.id || `${producto?.linea}-${producto?.categoria}-${producto?.nombre}` || "") || normalizarTextoInventario(producto?.nombre);
+}
+
+function agruparProductos(productos = []) {
+  const mapa = new Map();
+  productos
+    .filter((producto) => producto?.activo !== false)
+    .forEach((producto) => {
+      const linea = producto.linea || "Otros";
+      const categoria = producto.categoria || "Productos";
+      if (!mapa.has(linea)) mapa.set(linea, new Map());
+      const categorias = mapa.get(linea);
+      if (!categorias.has(categoria)) categorias.set(categoria, []);
+      categorias.get(categoria).push(producto);
+    });
+  return Array.from(mapa.entries()).map(([linea, categorias]) => ({
+    linea,
+    categorias: Array.from(categorias.entries()).map(([categoria, items]) => ({ categoria, items }))
+  }));
+}
 
 export default function InventarioAdmin() {
   const [insumos, setInsumos] = useState([]);
-  const [form, setForm] = useState(FORM_INICIAL);
-  const [editandoId, setEditandoId] = useState("");
+  const [productos, setProductos] = useState(PRODUCTOS_CATALOGO_FALLBACK);
+  const [relaciones, setRelaciones] = useState([]);
+  const [insumoEditando, setInsumoEditando] = useState(null);
+  const [formStock, setFormStock] = useState(FORM_STOCK_INICIAL);
+  const [seleccionProductos, setSeleccionProductos] = useState({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [busqueda, setBusqueda] = useState("");
-  const [recetas, setRecetas] = useState([]);
-  const [formReceta, setFormReceta] = useState(RECETA_INICIAL);
-  const [editandoReglaCodigo, setEditandoReglaCodigo] = useState("");
+  const [busquedaProducto, setBusquedaProducto] = useState("");
 
   const resumen = useMemo(() => calcularResumenInventario(insumos), [insumos]);
+  const relacionesPorInsumo = useMemo(() => {
+    const mapa = new Map();
+    relaciones.forEach((relacion) => {
+      const clave = relacion.insumoId || relacion.insumo_id;
+      if (!clave) return;
+      const actual = mapa.get(clave) || [];
+      actual.push(relacion);
+      mapa.set(clave, actual);
+    });
+    return mapa;
+  }, [relaciones]);
+
   const insumosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     if (!q) return insumos;
     return insumos.filter((item) => `${item.nombre} ${item.categoria}`.toLowerCase().includes(q));
   }, [insumos, busqueda]);
 
-  const reglasAgrupadas = useMemo(() => {
-    const mapa = new Map();
-    recetas.forEach((receta) => {
-      const codigo = receta.reglaCodigo || `regla_${receta.id}`;
-      const actual = mapa.get(codigo) || {
-        reglaCodigo: codigo,
-        grupoProducto: receta.grupoProducto,
-        condicion: receta.condicion,
-        activo: receta.activo !== false,
-        notas: receta.notas || "",
-        insumos: []
-      };
-      actual.activo = actual.activo && receta.activo !== false;
-      actual.insumos.push({ id: receta.id, insumoNombre: receta.insumoNombre, cantidad: receta.cantidad });
-      mapa.set(codigo, actual);
-    });
-    return Array.from(mapa.values());
-  }, [recetas]);
+  const productosVisibles = useMemo(() => {
+    const q = busquedaProducto.trim().toLowerCase();
+    if (!q) return productos;
+    return productos.filter((producto) => `${producto.linea} ${producto.categoria} ${producto.nombre}`.toLowerCase().includes(q));
+  }, [productos, busquedaProducto]);
+
+  const productosAgrupados = useMemo(() => agruparProductos(productosVisibles), [productosVisibles]);
 
   async function cargarDatos() {
     setCargando(true);
     setMensaje({ texto: "", tipo: "info" });
     try {
-      const [listaInsumos, listaRecetas] = await Promise.all([cargarInventarioInsumos(), cargarRecetasInventario()]);
+      const [listaInsumos, listaRelaciones, resultadoCatalogo] = await Promise.all([
+        cargarInventarioInsumos(),
+        cargarRelacionesInventarioProductos(),
+        cargarCatalogoProductosAdmin().catch((error) => ({ ok: false, productos: [], mensaje: error?.message }))
+      ]);
       setInsumos(listaInsumos);
-      setRecetas(listaRecetas);
+      setRelaciones(listaRelaciones);
+      setProductos(resultadoCatalogo?.ok && resultadoCatalogo.productos?.length ? resultadoCatalogo.productos : PRODUCTOS_CATALOGO_FALLBACK);
     } catch (error) {
       setMensaje({ texto: `No se pudo cargar inventario: ${error.message || error}`, tipo: "error" });
     } finally {
@@ -72,24 +107,6 @@ export default function InventarioAdmin() {
 
   useEffect(() => { cargarDatos(); }, []);
 
-  function actualizarCampo(campo, valor) {
-    setForm((actual) => ({ ...actual, [campo]: valor }));
-  }
-
-  function editarInsumo(item) {
-    setEditandoId(item.id);
-    setForm({
-      nombre: item.nombre,
-      categoria: item.categoria,
-      unidad: item.unidad,
-      stockActual: String(item.stockActual),
-      stockMinimo: String(item.stockMinimo),
-      costoPromedio: String(item.costoPromedio),
-      activo: item.activo
-    });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   async function traerBaseCatalogo() {
     setGuardando(true);
     setMensaje({ texto: "", tipo: "info" });
@@ -98,8 +115,8 @@ export default function InventarioAdmin() {
       await cargarDatos();
       setMensaje({
         texto: insertados.length
-          ? `${insertados.length} insumos fueron traídos desde el catálogo de Solicitud de insumos.`
-          : "El inventario ya está sincronizado con el catálogo de Solicitud de insumos.",
+          ? `${insertados.length} insumos fueron traídos desde el Catálogo → Insumos.`
+          : "El inventario ya está sincronizado con Catálogo → Insumos.",
         tipo: "success"
       });
     } catch (error) {
@@ -109,87 +126,97 @@ export default function InventarioAdmin() {
     }
   }
 
-  async function guardar(event) {
-    event.preventDefault();
-    setGuardando(true);
-    setMensaje({ texto: "", tipo: "info" });
-    try {
-      await guardarInventarioInsumo({ ...form, id: editandoId || undefined });
-      setForm(FORM_INICIAL);
-      setEditandoId("");
-      await cargarDatos();
-      setMensaje({ texto: editandoId ? "Insumo actualizado." : "Insumo creado en inventario.", tipo: "success" });
-    } catch (error) {
-      setMensaje({ texto: error.message || "No se pudo guardar el insumo.", tipo: "error" });
-    } finally {
-      setGuardando(false);
-    }
+  function abrirEditorInsumo(item) {
+    const relacionesActuales = relacionesPorInsumo.get(item.id) || [];
+    const seleccionInicial = {};
+    relacionesActuales.forEach((relacion) => {
+      seleccionInicial[relacion.productoCodigo] = {
+        seleccionado: true,
+        cantidad: String(relacion.cantidad || 1),
+        condicion: relacion.condicion || "venta"
+      };
+    });
+    setInsumoEditando(item);
+    setFormStock({
+      stockActual: String(item.stockActual),
+      stockMinimo: String(item.stockMinimo),
+      costoPromedio: String(item.costoPromedio),
+      activo: item.activo !== false
+    });
+    setSeleccionProductos(seleccionInicial);
+    setBusquedaProducto("");
   }
 
-  function actualizarCampoReceta(campo, valor) {
-    setFormReceta((actual) => ({ ...actual, [campo]: valor }));
+  function cerrarEditorInsumo() {
+    setInsumoEditando(null);
+    setFormStock(FORM_STOCK_INICIAL);
+    setSeleccionProductos({});
+    setBusquedaProducto("");
   }
 
-  function actualizarInsumoRegla(indice, campo, valor) {
-    setFormReceta((actual) => ({
-      ...actual,
-      insumos: actual.insumos.map((item, i) => i === indice ? { ...item, [campo]: valor } : item)
-    }));
+  function actualizarStock(campo, valor) {
+    setFormStock((actual) => ({ ...actual, [campo]: valor }));
   }
 
-  function agregarInsumoRegla() {
-    setFormReceta((actual) => ({ ...actual, insumos: [...actual.insumos, { insumoNombre: "", cantidad: "1" }] }));
-  }
-
-  function quitarInsumoRegla(indice) {
-    setFormReceta((actual) => ({
-      ...actual,
-      insumos: actual.insumos.length <= 1 ? actual.insumos : actual.insumos.filter((_, i) => i !== indice)
-    }));
-  }
-
-  function editarRegla(regla) {
-    setEditandoReglaCodigo(regla.reglaCodigo);
-    setFormReceta({
-      grupoProducto: regla.grupoProducto,
-      condicion: regla.condicion,
-      reglaCodigo: regla.reglaCodigo,
-      activo: regla.activo !== false,
-      notas: regla.notas || "",
-      insumos: regla.insumos.map((item) => ({ insumoNombre: item.insumoNombre, cantidad: String(item.cantidad || 1) }))
+  function alternarProducto(producto, marcado) {
+    const codigo = productoCodigo(producto);
+    setSeleccionProductos((actual) => {
+      const copia = { ...actual };
+      if (!marcado) {
+        delete copia[codigo];
+        return copia;
+      }
+      copia[codigo] = copia[codigo] || { seleccionado: true, cantidad: "1", condicion: "venta" };
+      copia[codigo] = { ...copia[codigo], seleccionado: true };
+      return copia;
     });
   }
 
-  async function guardarReceta(event) {
-    event.preventDefault();
+  function cambiarCantidadProducto(producto, cantidad) {
+    const codigo = productoCodigo(producto);
+    setSeleccionProductos((actual) => ({
+      ...actual,
+      [codigo]: { ...(actual[codigo] || { seleccionado: true, condicion: "venta" }), seleccionado: true, cantidad }
+    }));
+  }
+
+  async function guardarEditorInsumo() {
+    if (!insumoEditando) return;
     setGuardando(true);
     setMensaje({ texto: "", tipo: "info" });
     try {
-      await guardarReglaInventario(formReceta, { reglaCodigoAnterior: editandoReglaCodigo });
-      setFormReceta(RECETA_INICIAL);
-      setEditandoReglaCodigo("");
+      await guardarInventarioInsumo({
+        ...insumoEditando,
+        stockActual: formStock.stockActual,
+        stockMinimo: formStock.stockMinimo,
+        costoPromedio: formStock.costoPromedio,
+        activo: formStock.activo !== false
+      });
+
+      const productosSeleccionados = productos
+        .filter((producto) => seleccionProductos[productoCodigo(producto)]?.seleccionado)
+        .map((producto) => {
+          const codigo = productoCodigo(producto);
+          return {
+            productoCodigo: codigo,
+            productoNombre: producto.nombre,
+            linea: producto.linea,
+            categoria: producto.categoria,
+            cantidad: seleccionProductos[codigo]?.cantidad || 1,
+            condicion: seleccionProductos[codigo]?.condicion || "venta"
+          };
+        });
+
+      await guardarRelacionesInsumoProducto(insumoEditando, productosSeleccionados);
       await cargarDatos();
-      setMensaje({ texto: editandoReglaCodigo ? "Regla actualizada." : "Regla creada.", tipo: "success" });
+      cerrarEditorInsumo();
+      setMensaje({ texto: "Insumo actualizado y productos asociados guardados.", tipo: "success" });
     } catch (error) {
-      setMensaje({ texto: error.message || "No se pudo guardar la regla.", tipo: "error" });
+      setMensaje({ texto: error.message || "No se pudo guardar la configuración del insumo.", tipo: "error" });
     } finally {
       setGuardando(false);
     }
   }
-
-  async function cambiarEstadoRegla(regla) {
-    setGuardando(true);
-    try {
-      await cambiarEstadoReglaInventario(regla.reglaCodigo, regla.activo === false);
-      await cargarDatos();
-      setMensaje({ texto: regla.activo === false ? "Regla activada." : "Regla desactivada.", tipo: "success" });
-    } catch (error) {
-      setMensaje({ texto: error.message || "No se pudo cambiar el estado de la regla.", tipo: "error" });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
 
   return (
     <div className="admin-stack">
@@ -197,7 +224,7 @@ export default function InventarioAdmin() {
         <div className="section-title-row">
           <div>
             <h2>📦 Inventario inteligente</h2>
-            <p className="muted">Fase 24A: inventario conectado a la base de insumos usada en Solicitud de insumos. Primero trae esa base y luego ajusta stock, mínimos y costos.</p>
+            <p className="muted">El inventario se alimenta únicamente desde Catálogo → Insumos. Desde aquí se ajusta stock y se define qué productos consumen cada insumo.</p>
           </div>
           <div className="admin-actions-stack horizontal">
             <Boton variante="light" onClick={traerBaseCatalogo} disabled={guardando}>Traer insumos del catálogo</Boton>
@@ -213,95 +240,87 @@ export default function InventarioAdmin() {
         </div>
       </Tarjeta>
 
+      {insumoEditando && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", zIndex: 2000, padding: 12, overflow: "auto" }}>
+          <div className="card" style={{ maxWidth: 980, margin: "18px auto", padding: 16 }}>
+            <div className="section-title-row" style={{ gap: 10 }}>
+              <div>
+                <h3>Editar insumo: {insumoEditando.nombre}</h3>
+                <p className="muted">Selecciona todos los productos que usan este insumo. Cuando se venda un producto seleccionado, este insumo se descontará según la cantidad indicada.</p>
+              </div>
+              <button type="button" className="button light" onClick={cerrarEditorInsumo}>Cerrar</button>
+            </div>
+
+            <div className="grid-form" style={{ margin: "12px 0" }}>
+              <CampoTexto etiqueta={`Stock actual (${insumoEditando.unidad})`} type="number" value={formStock.stockActual} onChange={(v) => actualizarStock("stockActual", v)} />
+              <CampoTexto etiqueta={`Stock mínimo (${insumoEditando.unidad})`} type="number" value={formStock.stockMinimo} onChange={(v) => actualizarStock("stockMinimo", v)} />
+              <CampoTexto etiqueta="Costo promedio" type="number" value={formStock.costoPromedio} onChange={(v) => actualizarStock("costoPromedio", v)} />
+              <label className="field inline-check"><input type="checkbox" checked={formStock.activo !== false} onChange={(e) => actualizarStock("activo", e.target.checked)} /> Insumo activo</label>
+            </div>
+
+            <div className="section-title-row" style={{ marginBottom: 8 }}>
+              <h4>Productos que consumen este insumo</h4>
+              <input value={busquedaProducto} onChange={(e) => setBusquedaProducto(e.target.value)} placeholder="Buscar producto..." />
+            </div>
+
+            <div className="admin-stack" style={{ maxHeight: "58vh", overflow: "auto", paddingRight: 4 }}>
+              {productosAgrupados.map((grupo) => (
+                <div key={grupo.linea} className="card-soft" style={{ padding: 10 }}>
+                  <h4 style={{ margin: "0 0 8px" }}>{grupo.linea}</h4>
+                  {grupo.categorias.map((categoria) => (
+                    <div key={`${grupo.linea}-${categoria.categoria}`} style={{ marginBottom: 10 }}>
+                      <strong>{categoria.categoria}</strong>
+                      <div className="grid-form" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginTop: 6 }}>
+                        {categoria.items.map((producto) => {
+                          const codigo = productoCodigo(producto);
+                          const seleccionado = Boolean(seleccionProductos[codigo]?.seleccionado);
+                          return (
+                            <div key={codigo} className="card-mini" style={{ padding: 8 }}>
+                              <label className="inline-check" style={{ alignItems: "flex-start" }}>
+                                <input type="checkbox" checked={seleccionado} onChange={(e) => alternarProducto(producto, e.target.checked)} />
+                                <span><strong>{producto.nombre}</strong>{producto.precio !== "" && producto.precio != null ? <small className="muted"> · {dinero(producto.precio)}</small> : null}</span>
+                              </label>
+                              {seleccionado && (
+                                <CampoTexto etiqueta="Cantidad a descontar" type="number" value={seleccionProductos[codigo]?.cantidad || "1"} onChange={(v) => cambiarCantidadProducto(producto, v)} placeholder="1" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              {!productosAgrupados.length && <p className="muted">No hay productos para mostrar.</p>}
+            </div>
+
+            <div className="admin-actions-stack horizontal" style={{ marginTop: 12 }}>
+              <Boton onClick={guardarEditorInsumo} disabled={guardando}>{guardando ? "Guardando..." : "Guardar configuración"}</Boton>
+              <Boton variante="light" onClick={cerrarEditorInsumo}>Cancelar</Boton>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Tarjeta>
         <div className="section-title-row">
           <div>
-            <h3>🧾 Reglas iniciales activas</h3>
-            <p className="muted">Una regla puede descontar varios insumos. Ejemplo: almuerzo para llevar puede descontar caja, bolsa, cubiertos y servilletas al mismo tiempo.</p>
+            <h3>Listado de inventario</h3>
+            <p className="muted">Los insumos no se crean aquí. Deben existir primero en Catálogo → Insumos y luego sincronizarse.</p>
           </div>
+          <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar insumo..." />
         </div>
-
-        <form onSubmit={guardarReceta} className="grid-form" style={{ marginBottom: 14 }}>
-          <label className="field"><span>Grupo / tipo de producto</span><select value={formReceta.grupoProducto} onChange={(e) => actualizarCampoReceta("grupoProducto", e.target.value)}>{GRUPOS_RECETA.map((g) => <option key={g}>{g}</option>)}</select></label>
-          <label className="field"><span>Condición</span><select value={formReceta.condicion} onChange={(e) => actualizarCampoReceta("condicion", e.target.value)}>{CONDICIONES_RECETA.map((c) => <option key={c}>{c}</option>)}</select></label>
-          <CampoTexto etiqueta="Código de la regla" value={formReceta.reglaCodigo} onChange={(v) => actualizarCampoReceta("reglaCodigo", v)} placeholder="Ej: empaque_almuerzo_estandar" />
-          <CampoTexto etiqueta="Notas" value={formReceta.notas} onChange={(v) => actualizarCampoReceta("notas", v)} placeholder="Ej: Pechuga, cerdo y proteínas normales para llevar" />
-          <label className="field inline-check"><input type="checkbox" checked={formReceta.activo !== false} onChange={(e) => actualizarCampoReceta("activo", e.target.checked)} /> Regla activa</label>
-
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <span>Insumos a descontar</span>
-            <div className="admin-stack" style={{ gap: 8 }}>
-              {formReceta.insumos.map((item, indice) => (
-                <div key={`${indice}-${item.insumoNombre}`} className="grid-form" style={{ gridTemplateColumns: "minmax(180px, 1fr) 120px auto", alignItems: "end", gap: 8 }}>
-                  <label className="field"><span>Insumo</span><select value={item.insumoNombre} onChange={(e) => actualizarInsumoRegla(indice, "insumoNombre", e.target.value)}><option value="">Seleccionar...</option>{insumos.map((insumo) => <option key={insumo.id} value={insumo.nombre}>{insumo.nombre}</option>)}</select></label>
-                  <CampoTexto etiqueta="Cantidad" type="number" value={item.cantidad} onChange={(v) => actualizarInsumoRegla(indice, "cantidad", v)} placeholder="1" />
-                  <button type="button" className="button light" onClick={() => quitarInsumoRegla(indice)} disabled={formReceta.insumos.length <= 1}>Quitar</button>
-                </div>
-              ))}
-              <div><button type="button" className="button light" onClick={agregarInsumoRegla}>+ Agregar otro insumo</button></div>
-            </div>
-          </div>
-
-          <div className="admin-actions-stack horizontal">
-            <Boton tipo="submit" disabled={guardando}>{editandoReglaCodigo ? "Guardar regla" : "Crear regla"}</Boton>
-            {editandoReglaCodigo && <Boton variante="light" onClick={() => { setEditandoReglaCodigo(""); setFormReceta(RECETA_INICIAL); }}>Cancelar</Boton>}
-          </div>
-        </form>
-
-        <div className="table-wrap">
-          <table className="admin-table">
-            <thead><tr><th>Regla</th><th>Grupo</th><th>Condición</th><th>Insumos que descuenta</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
-            <tbody>
-              {reglasAgrupadas.map((regla) => (
-                <tr key={regla.reglaCodigo}>
-                  <td><strong>{regla.reglaCodigo}</strong></td>
-                  <td>{regla.grupoProducto}</td>
-                  <td>{regla.condicion}</td>
-                  <td>{regla.insumos.map((item) => `${item.insumoNombre} x ${item.cantidad}`).join(" · ")}</td>
-                  <td>{regla.activo ? "✅ Activa" : "⏸️ Inactiva"}</td>
-                  <td>{regla.notas}</td>
-                  <td>
-                    <div className="admin-actions-stack horizontal">
-                      <button type="button" className="button light" onClick={() => editarRegla(regla)}>Editar</button>
-                      <button type="button" className="button light" onClick={() => cambiarEstadoRegla(regla)}>{regla.activo ? "Desactivar" : "Activar"}</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!reglasAgrupadas.length && <tr><td colSpan="7" className="muted">Sin reglas registradas. Ejecuta el SQL de la Fase 24B.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </Tarjeta>
-
-      <Tarjeta>
-        <h3>{editandoId ? "Editar insumo" : "Crear insumo"}</h3>
-        <form onSubmit={guardar} className="grid-form">
-          <CampoTexto etiqueta="Nombre" value={form.nombre} onChange={(v) => actualizarCampo("nombre", v)} placeholder="Ej: Pechuga, arroz, tomate" />
-          <label className="field"><span>Categoría</span><select value={form.categoria} onChange={(e) => actualizarCampo("categoria", e.target.value)}>{CATEGORIAS_INVENTARIO.map((c) => <option key={c}>{c}</option>)}</select></label>
-          <label className="field"><span>Unidad</span><select value={form.unidad} onChange={(e) => actualizarCampo("unidad", e.target.value)}>{UNIDADES_INVENTARIO.map((u) => <option key={u}>{u}</option>)}</select></label>
-          <CampoTexto etiqueta="Stock actual" type="number" value={form.stockActual} onChange={(v) => actualizarCampo("stockActual", v)} placeholder="0" />
-          <CampoTexto etiqueta="Stock mínimo" type="number" value={form.stockMinimo} onChange={(v) => actualizarCampo("stockMinimo", v)} placeholder="0" />
-          <CampoTexto etiqueta="Costo promedio" type="number" value={form.costoPromedio} onChange={(v) => actualizarCampo("costoPromedio", v)} placeholder="0" />
-          <div className="admin-actions-stack horizontal">
-            <Boton tipo="submit" disabled={guardando}>{guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Crear insumo"}</Boton>
-            {editandoId && <Boton variante="light" onClick={() => { setEditandoId(""); setForm(FORM_INICIAL); }}>Cancelar</Boton>}
-          </div>
-        </form>
-      </Tarjeta>
-
-      <Tarjeta>
-        <div className="section-title-row"><h3>Listado de inventario</h3><input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar insumo..." /></div>
         {cargando ? <p className="muted">Cargando inventario...</p> : (
           <div className="table-wrap">
             <table className="admin-table">
-              <thead><tr><th>Insumo</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Costo</th><th>Estado</th><th></th></tr></thead>
+              <thead><tr><th>Insumo</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Costo</th><th>Productos asociados</th><th>Estado</th><th></th></tr></thead>
               <tbody>
                 {insumosFiltrados.map((item) => {
                   const bajo = item.stockActual <= item.stockMinimo;
-                  return <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.categoria}</td><td>{item.stockActual} {item.unidad}</td><td>{item.stockMinimo} {item.unidad}</td><td>{dinero(item.costoPromedio)}</td><td>{bajo ? "⚠️ Bajo" : "✅ OK"}</td><td><button type="button" className="button light" onClick={() => editarInsumo(item)}>Editar</button></td></tr>;
+                  const totalRelaciones = relacionesPorInsumo.get(item.id)?.length || 0;
+                  return <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.categoria}</td><td>{item.stockActual} {item.unidad}</td><td>{item.stockMinimo} {item.unidad}</td><td>{dinero(item.costoPromedio)}</td><td>{totalRelaciones}</td><td>{bajo ? "⚠️ Bajo" : "✅ OK"}</td><td><button type="button" className="button light" onClick={() => abrirEditorInsumo(item)}>Editar</button></td></tr>;
                 })}
-                {!insumosFiltrados.length && <tr><td colSpan="7" className="muted">Sin insumos registrados todavía.</td></tr>}
+                {!insumosFiltrados.length && <tr><td colSpan="8" className="muted">Sin insumos registrados todavía. Primero crea/activa insumos en Catálogo → Insumos y luego usa “Traer insumos del catálogo”.</td></tr>}
               </tbody>
             </table>
           </div>
