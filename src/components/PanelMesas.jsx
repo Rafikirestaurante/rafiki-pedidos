@@ -215,24 +215,24 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
     if (paso === "proteina") {
       setCategoriaActivaMesa("almuerzos");
-      irAElementoMesas("mesa-categorias-top", 90, "start");
+      irAElementoMesas("mesa-categorias-top", 72, "start");
       return;
     }
 
     if (paso === "acompanantes") {
       setCategoriaActivaMesa("almuerzos");
       const destino = itemNavMesa?.id ? `mesa-paso-acompanantes-${itemNavMesa.id}` : "mesa-categorias-top";
-      irAElementoMesas(destino, 90, "center");
+      irAElementoMesas(destino, 72, "center");
       return;
     }
 
     if (paso === "resumen") {
-      irAElementoMesas("mesa-confirmacion-final", 90, "start");
+      irAElementoMesas("mesa-confirmacion-final", 72, "start");
       return;
     }
 
     if (paso === "datos") {
-      irAElementoMesas("mesa-datos-final", 90, "start");
+      irAElementoMesas("mesa-datos-final", 72, "start");
     }
   }
 
@@ -637,7 +637,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   return (
-    <main className="order-layout mesas-cliente-layout">
+    <main className="order-layout mesas-cliente-layout mesas-panel-layout">
       <section className="card card-pad" id="mesa-categorias-top">
         <div className="mesa-panel-title">
           <h2>🍽️ Panel Mesas</h2>
