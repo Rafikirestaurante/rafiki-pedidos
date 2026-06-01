@@ -46,22 +46,26 @@ export function normalizarRecetaInventario(item) {
   };
 }
 
+function crearCodigoRegla(valor) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 function prepararPayloadReceta(receta) {
   const grupoProducto = String(receta.grupoProducto || receta.grupo_producto || "").trim().toLowerCase();
   const condicion = String(receta.condicion || "para_llevar").trim().toLowerCase();
   const insumoNombre = String(receta.insumoNombre || receta.insumo_nombre || "").trim();
   const cantidad = Number(receta.cantidad || 0);
-  const reglaCodigo = String(receta.reglaCodigo || receta.regla_codigo || `${grupoProducto}_${insumoNombre}`)
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+  const reglaCodigo = crearCodigoRegla(receta.reglaCodigo || receta.regla_codigo || `${grupoProducto}_${insumoNombre}`);
 
-  if (!grupoProducto) throw new Error("El grupo de la receta es obligatorio.");
+  if (!grupoProducto) throw new Error("El grupo de la regla es obligatorio.");
   if (!insumoNombre) throw new Error("Selecciona el insumo que se va a descontar.");
-  if (!Number.isFinite(cantidad) || cantidad <= 0) throw new Error("La cantidad de la receta debe ser mayor a cero.");
+  if (!Number.isFinite(cantidad) || cantidad <= 0) throw new Error("La cantidad debe ser mayor a cero.");
   if (!reglaCodigo) throw new Error("El código de regla no es válido.");
 
   return {
@@ -82,6 +86,7 @@ export async function cargarRecetasInventario({ incluirInactivas = true } = {}) 
     .select(SELECT_RECETAS)
     .order("grupo_producto", { ascending: true })
     .order("condicion", { ascending: true })
+    .order("regla_codigo", { ascending: true })
     .order("insumo_nombre", { ascending: true });
 
   if (!incluirInactivas) consulta = consulta.eq("activo", true);
@@ -111,6 +116,58 @@ export async function guardarRecetaInventario(receta) {
     .single();
   if (error) throw error;
   return normalizarRecetaInventario(data);
+}
+
+export async function guardarReglaInventario(regla, { reglaCodigoAnterior = "" } = {}) {
+  const insumos = Array.isArray(regla.insumos) ? regla.insumos : [];
+  if (!insumos.length) throw new Error("Agrega por lo menos un insumo a la regla.");
+
+  const baseCodigo = regla.reglaCodigo || reglaCodigoAnterior || `${regla.grupoProducto}_${regla.condicion}`;
+  const reglaCodigo = crearCodigoRegla(baseCodigo);
+  if (!reglaCodigo) throw new Error("El código de regla no es válido.");
+
+  const payloads = insumos
+    .map((item) => prepararPayloadReceta({
+      grupoProducto: regla.grupoProducto,
+      condicion: regla.condicion,
+      reglaCodigo,
+      activo: regla.activo !== false,
+      notas: regla.notas,
+      insumoNombre: item.insumoNombre,
+      cantidad: item.cantidad
+    }))
+    .filter((item) => item.insumo_nombre);
+
+  const insumosUnicos = new Set(payloads.map((item) => item.insumo_nombre.trim().toLowerCase()));
+  if (insumosUnicos.size !== payloads.length) throw new Error("La regla tiene insumos repetidos. Deja cada insumo una sola vez.");
+
+  const codigoAEliminar = crearCodigoRegla(reglaCodigoAnterior || reglaCodigo);
+  if (codigoAEliminar) {
+    const { error: deleteError } = await supabase
+      .from("recetas_desechables")
+      .delete()
+      .eq("regla_codigo", codigoAEliminar);
+    if (deleteError) throw deleteError;
+  }
+
+  const { data, error } = await supabase
+    .from("recetas_desechables")
+    .insert(payloads)
+    .select(SELECT_RECETAS);
+  if (error) throw error;
+  return (data || []).map(normalizarRecetaInventario).filter(Boolean);
+}
+
+export async function cambiarEstadoReglaInventario(reglaCodigo, activo) {
+  const codigo = crearCodigoRegla(reglaCodigo);
+  if (!codigo) throw new Error("La regla no tiene código válido.");
+  const { data, error } = await supabase
+    .from("recetas_desechables")
+    .update({ activo: activo !== false, actualizado_en: new Date().toISOString() })
+    .eq("regla_codigo", codigo)
+    .select(SELECT_RECETAS);
+  if (error) throw error;
+  return (data || []).map(normalizarRecetaInventario).filter(Boolean);
 }
 
 function prepararPayloadInsumo(insumo) {
@@ -270,9 +327,10 @@ function agregarSalida(mapa, insumoNombre, cantidad, reglaCodigo, descripcion) {
   const clave = String(insumoNombre || "").trim();
   if (!clave || !Number.isFinite(Number(cantidad)) || Number(cantidad) <= 0) return;
   const codigo = String(reglaCodigo || clave).trim();
-  const actual = mapa.get(codigo) || { insumoNombre: clave, cantidad: 0, reglaCodigo: codigo, descripcion: descripcion || clave };
+  const claveMapa = `${codigo}::${clave.toLowerCase()}`;
+  const actual = mapa.get(claveMapa) || { insumoNombre: clave, cantidad: 0, reglaCodigo: codigo, descripcion: descripcion || clave };
   actual.cantidad += Number(cantidad);
-  mapa.set(codigo, actual);
+  mapa.set(claveMapa, actual);
 }
 
 function clasificarEmpaqueParaLlevar(item) {

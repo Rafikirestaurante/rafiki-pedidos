@@ -7,13 +7,14 @@ import {
   cargarInventarioInsumos,
   guardarInventarioInsumo,
   cargarRecetasInventario,
-  guardarRecetaInventario,
+  guardarReglaInventario,
+  cambiarEstadoReglaInventario,
   sincronizarInventarioDesdeCatalogoInsumos
 } from "../../services/inventarioService";
 import { dinero } from "../../utils/pedidos";
 
 const FORM_INICIAL = { nombre: "", categoria: "Carnes", unidad: "kg", stockActual: "", stockMinimo: "", costoPromedio: "", activo: true };
-const RECETA_INICIAL = { grupoProducto: "almuerzo_estandar", condicion: "para_llevar", insumoNombre: "", cantidad: "1", reglaCodigo: "", activo: true, notas: "" };
+const RECETA_INICIAL = { grupoProducto: "almuerzo_estandar", condicion: "para_llevar", reglaCodigo: "", activo: true, notas: "", insumos: [{ insumoNombre: "", cantidad: "1" }] };
 const GRUPOS_RECETA = ["almuerzo_estandar", "pasta", "arroz", "sancocho", "sopa", "sandwich", "bebida_12", "bebida_16", "bebida_22", "bebida", "parfait_12", "parfait_16", "parfait_22"];
 const CONDICIONES_RECETA = ["para_llevar", "produccion"];
 
@@ -27,7 +28,7 @@ export default function InventarioAdmin() {
   const [busqueda, setBusqueda] = useState("");
   const [recetas, setRecetas] = useState([]);
   const [formReceta, setFormReceta] = useState(RECETA_INICIAL);
-  const [editandoRecetaId, setEditandoRecetaId] = useState("");
+  const [editandoReglaCodigo, setEditandoReglaCodigo] = useState("");
 
   const resumen = useMemo(() => calcularResumenInventario(insumos), [insumos]);
   const insumosFiltrados = useMemo(() => {
@@ -35,6 +36,25 @@ export default function InventarioAdmin() {
     if (!q) return insumos;
     return insumos.filter((item) => `${item.nombre} ${item.categoria}`.toLowerCase().includes(q));
   }, [insumos, busqueda]);
+
+  const reglasAgrupadas = useMemo(() => {
+    const mapa = new Map();
+    recetas.forEach((receta) => {
+      const codigo = receta.reglaCodigo || `regla_${receta.id}`;
+      const actual = mapa.get(codigo) || {
+        reglaCodigo: codigo,
+        grupoProducto: receta.grupoProducto,
+        condicion: receta.condicion,
+        activo: receta.activo !== false,
+        notas: receta.notas || "",
+        insumos: []
+      };
+      actual.activo = actual.activo && receta.activo !== false;
+      actual.insumos.push({ id: receta.id, insumoNombre: receta.insumoNombre, cantidad: receta.cantidad });
+      mapa.set(codigo, actual);
+    });
+    return Array.from(mapa.values());
+  }, [recetas]);
 
   async function cargarDatos() {
     setCargando(true);
@@ -110,16 +130,33 @@ export default function InventarioAdmin() {
     setFormReceta((actual) => ({ ...actual, [campo]: valor }));
   }
 
-  function editarReceta(receta) {
-    setEditandoRecetaId(receta.id);
+  function actualizarInsumoRegla(indice, campo, valor) {
+    setFormReceta((actual) => ({
+      ...actual,
+      insumos: actual.insumos.map((item, i) => i === indice ? { ...item, [campo]: valor } : item)
+    }));
+  }
+
+  function agregarInsumoRegla() {
+    setFormReceta((actual) => ({ ...actual, insumos: [...actual.insumos, { insumoNombre: "", cantidad: "1" }] }));
+  }
+
+  function quitarInsumoRegla(indice) {
+    setFormReceta((actual) => ({
+      ...actual,
+      insumos: actual.insumos.length <= 1 ? actual.insumos : actual.insumos.filter((_, i) => i !== indice)
+    }));
+  }
+
+  function editarRegla(regla) {
+    setEditandoReglaCodigo(regla.reglaCodigo);
     setFormReceta({
-      grupoProducto: receta.grupoProducto,
-      condicion: receta.condicion,
-      insumoNombre: receta.insumoNombre,
-      cantidad: String(receta.cantidad || 1),
-      reglaCodigo: receta.reglaCodigo,
-      activo: receta.activo !== false,
-      notas: receta.notas || ""
+      grupoProducto: regla.grupoProducto,
+      condicion: regla.condicion,
+      reglaCodigo: regla.reglaCodigo,
+      activo: regla.activo !== false,
+      notas: regla.notas || "",
+      insumos: regla.insumos.map((item) => ({ insumoNombre: item.insumoNombre, cantidad: String(item.cantidad || 1) }))
     });
   }
 
@@ -128,30 +165,31 @@ export default function InventarioAdmin() {
     setGuardando(true);
     setMensaje({ texto: "", tipo: "info" });
     try {
-      await guardarRecetaInventario({ ...formReceta, id: editandoRecetaId || undefined });
+      await guardarReglaInventario(formReceta, { reglaCodigoAnterior: editandoReglaCodigo });
       setFormReceta(RECETA_INICIAL);
-      setEditandoRecetaId("");
+      setEditandoReglaCodigo("");
       await cargarDatos();
-      setMensaje({ texto: editandoRecetaId ? "Receta actualizada." : "Receta creada.", tipo: "success" });
+      setMensaje({ texto: editandoReglaCodigo ? "Regla actualizada." : "Regla creada.", tipo: "success" });
     } catch (error) {
-      setMensaje({ texto: error.message || "No se pudo guardar la receta.", tipo: "error" });
+      setMensaje({ texto: error.message || "No se pudo guardar la regla.", tipo: "error" });
     } finally {
       setGuardando(false);
     }
   }
 
-  async function cambiarEstadoReceta(receta) {
+  async function cambiarEstadoRegla(regla) {
     setGuardando(true);
     try {
-      await guardarRecetaInventario({ ...receta, activo: receta.activo === false });
+      await cambiarEstadoReglaInventario(regla.reglaCodigo, regla.activo === false);
       await cargarDatos();
-      setMensaje({ texto: receta.activo === false ? "Receta activada." : "Receta desactivada.", tipo: "success" });
+      setMensaje({ texto: regla.activo === false ? "Regla activada." : "Regla desactivada.", tipo: "success" });
     } catch (error) {
-      setMensaje({ texto: error.message || "No se pudo cambiar el estado de la receta.", tipo: "error" });
+      setMensaje({ texto: error.message || "No se pudo cambiar el estado de la regla.", tipo: "error" });
     } finally {
       setGuardando(false);
     }
   }
+
 
   return (
     <div className="admin-stack">
@@ -178,46 +216,59 @@ export default function InventarioAdmin() {
       <Tarjeta>
         <div className="section-title-row">
           <div>
-            <h3>🧾 Recetas iniciales activas</h3>
-            <p className="muted">Estas reglas sí se pueden editar: cambia el empaque, la cantidad o desactiva una receta sin tocar código ni SQL. El descuento automático usa únicamente las recetas activas.</p>
+            <h3>🧾 Reglas iniciales activas</h3>
+            <p className="muted">Una regla puede descontar varios insumos. Ejemplo: almuerzo para llevar puede descontar caja, bolsa, cubiertos y servilletas al mismo tiempo.</p>
           </div>
         </div>
 
         <form onSubmit={guardarReceta} className="grid-form" style={{ marginBottom: 14 }}>
-          <label className="field"><span>Grupo</span><select value={formReceta.grupoProducto} onChange={(e) => actualizarCampoReceta("grupoProducto", e.target.value)}>{GRUPOS_RECETA.map((g) => <option key={g}>{g}</option>)}</select></label>
+          <label className="field"><span>Grupo / tipo de producto</span><select value={formReceta.grupoProducto} onChange={(e) => actualizarCampoReceta("grupoProducto", e.target.value)}>{GRUPOS_RECETA.map((g) => <option key={g}>{g}</option>)}</select></label>
           <label className="field"><span>Condición</span><select value={formReceta.condicion} onChange={(e) => actualizarCampoReceta("condicion", e.target.value)}>{CONDICIONES_RECETA.map((c) => <option key={c}>{c}</option>)}</select></label>
-          <label className="field"><span>Insumo a descontar</span><select value={formReceta.insumoNombre} onChange={(e) => actualizarCampoReceta("insumoNombre", e.target.value)}><option value="">Seleccionar...</option>{insumos.map((item) => <option key={item.id} value={item.nombre}>{item.nombre}</option>)}</select></label>
-          <CampoTexto etiqueta="Cantidad" type="number" value={formReceta.cantidad} onChange={(v) => actualizarCampoReceta("cantidad", v)} placeholder="1" />
-          <CampoTexto etiqueta="Código regla" value={formReceta.reglaCodigo} onChange={(v) => actualizarCampoReceta("reglaCodigo", v)} placeholder="Ej: empaque_sopa" />
-          <CampoTexto etiqueta="Notas" value={formReceta.notas} onChange={(v) => actualizarCampoReceta("notas", v)} placeholder="Ej: Sopas medianas para llevar" />
-          <label className="field inline-check"><input type="checkbox" checked={formReceta.activo !== false} onChange={(e) => actualizarCampoReceta("activo", e.target.checked)} /> Activa</label>
+          <CampoTexto etiqueta="Código de la regla" value={formReceta.reglaCodigo} onChange={(v) => actualizarCampoReceta("reglaCodigo", v)} placeholder="Ej: empaque_almuerzo_estandar" />
+          <CampoTexto etiqueta="Notas" value={formReceta.notas} onChange={(v) => actualizarCampoReceta("notas", v)} placeholder="Ej: Pechuga, cerdo y proteínas normales para llevar" />
+          <label className="field inline-check"><input type="checkbox" checked={formReceta.activo !== false} onChange={(e) => actualizarCampoReceta("activo", e.target.checked)} /> Regla activa</label>
+
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <span>Insumos a descontar</span>
+            <div className="admin-stack" style={{ gap: 8 }}>
+              {formReceta.insumos.map((item, indice) => (
+                <div key={`${indice}-${item.insumoNombre}`} className="grid-form" style={{ gridTemplateColumns: "minmax(180px, 1fr) 120px auto", alignItems: "end", gap: 8 }}>
+                  <label className="field"><span>Insumo</span><select value={item.insumoNombre} onChange={(e) => actualizarInsumoRegla(indice, "insumoNombre", e.target.value)}><option value="">Seleccionar...</option>{insumos.map((insumo) => <option key={insumo.id} value={insumo.nombre}>{insumo.nombre}</option>)}</select></label>
+                  <CampoTexto etiqueta="Cantidad" type="number" value={item.cantidad} onChange={(v) => actualizarInsumoRegla(indice, "cantidad", v)} placeholder="1" />
+                  <button type="button" className="button light" onClick={() => quitarInsumoRegla(indice)} disabled={formReceta.insumos.length <= 1}>Quitar</button>
+                </div>
+              ))}
+              <div><button type="button" className="button light" onClick={agregarInsumoRegla}>+ Agregar otro insumo</button></div>
+            </div>
+          </div>
+
           <div className="admin-actions-stack horizontal">
-            <Boton tipo="submit" disabled={guardando}>{editandoRecetaId ? "Guardar receta" : "Crear receta"}</Boton>
-            {editandoRecetaId && <Boton variante="light" onClick={() => { setEditandoRecetaId(""); setFormReceta(RECETA_INICIAL); }}>Cancelar</Boton>}
+            <Boton tipo="submit" disabled={guardando}>{editandoReglaCodigo ? "Guardar regla" : "Crear regla"}</Boton>
+            {editandoReglaCodigo && <Boton variante="light" onClick={() => { setEditandoReglaCodigo(""); setFormReceta(RECETA_INICIAL); }}>Cancelar</Boton>}
           </div>
         </form>
 
         <div className="table-wrap">
           <table className="admin-table">
-            <thead><tr><th>Grupo</th><th>Condición</th><th>Descuenta</th><th>Cantidad</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
+            <thead><tr><th>Regla</th><th>Grupo</th><th>Condición</th><th>Insumos que descuenta</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
             <tbody>
-              {recetas.map((receta) => (
-                <tr key={receta.id}>
-                  <td><strong>{receta.grupoProducto}</strong></td>
-                  <td>{receta.condicion}</td>
-                  <td>{receta.insumoNombre}</td>
-                  <td>{receta.cantidad}</td>
-                  <td>{receta.activo ? "✅ Activa" : "⏸️ Inactiva"}</td>
-                  <td>{receta.notas}</td>
+              {reglasAgrupadas.map((regla) => (
+                <tr key={regla.reglaCodigo}>
+                  <td><strong>{regla.reglaCodigo}</strong></td>
+                  <td>{regla.grupoProducto}</td>
+                  <td>{regla.condicion}</td>
+                  <td>{regla.insumos.map((item) => `${item.insumoNombre} x ${item.cantidad}`).join(" · ")}</td>
+                  <td>{regla.activo ? "✅ Activa" : "⏸️ Inactiva"}</td>
+                  <td>{regla.notas}</td>
                   <td>
                     <div className="admin-actions-stack horizontal">
-                      <button type="button" className="button light" onClick={() => editarReceta(receta)}>Editar</button>
-                      <button type="button" className="button light" onClick={() => cambiarEstadoReceta(receta)}>{receta.activo ? "Desactivar" : "Activar"}</button>
+                      <button type="button" className="button light" onClick={() => editarRegla(regla)}>Editar</button>
+                      <button type="button" className="button light" onClick={() => cambiarEstadoRegla(regla)}>{regla.activo ? "Desactivar" : "Activar"}</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {!recetas.length && <tr><td colSpan="7" className="muted">Sin recetas registradas. Ejecuta el SQL de la Fase 24B.</td></tr>}
+              {!reglasAgrupadas.length && <tr><td colSpan="7" className="muted">Sin reglas registradas. Ejecuta el SQL de la Fase 24B.</td></tr>}
             </tbody>
           </table>
         </div>
