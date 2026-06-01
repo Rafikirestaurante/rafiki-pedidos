@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '24B2-RECETAS-EDITABLES-INVENTARIO-2026-05-31',
-  phase: 'Fase 24B2 - Recetas editables de inventario',
-  date: '2026-05-31',
-  fase: '24B2',
-  notes: 'Recetas de desechables y sándwich editables desde Inventario; el descuento automático usa recetas activas de Supabase.'
+  version: '24B3-NAV-MESAS-1-2-R-3-2026-06-01',
+  phase: 'Fase 24B3 - Navegación 1-2-R-3 en Panel Mesas',
+  date: '2026-06-01',
+  fase: '24B3',
+  notes: 'Reglas de inventario con varios insumos; acceso directo superior retirado e Inventario visible solo para rol administrador.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

@@ -38,11 +38,6 @@ export default function AdminHeaderTabs({
               Gastos
             </button>
           )}
-          {puedeVerInventario && (
-            <button type="button" onClick={() => navegar("/inventario", "inventario")}>
-              Inventario
-            </button>
-          )}
           <PWAClearCacheButton compact />
         </div>
       </header>

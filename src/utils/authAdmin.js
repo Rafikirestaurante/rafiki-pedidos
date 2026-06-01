@@ -12,7 +12,7 @@ export const NOMBRES_ROLES = {
 
 const PERMISOS_POR_ROL = {
   admin: ["pedidos", "menu", "productos", "generador", "catalogo", "gastos", "gastos_informe", "inventario", "rafa", "eliminar_pedido", "editar_pedido", "cambiar_estado", "finalizar_pendientes"],
-  usuario: ["pedidos", "menu", "productos", "generador", "gastos", "inventario", "cambiar_estado", "finalizar_pendientes"],
+  usuario: ["pedidos", "menu", "productos", "generador", "gastos", "cambiar_estado", "finalizar_pendientes"],
 };
 
 const STORAGE_ROL_ADMIN = "rafikiAdminRolCache";

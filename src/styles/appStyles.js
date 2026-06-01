@@ -111,6 +111,9 @@ export const appStyles = `
         .mesa-step-strip span, .mesa-step-strip strong { border-radius: 999px; padding: 8px 9px; text-align: center; font-size: 12px; font-weight: 900; background: #f3f4f6; color: #6b7280; }
         .mesa-step-strip span.active { background: #ffedd5; color: #9a3412; }
         .mesa-step-strip strong { grid-column: 1 / -1; background: #16a34a; color: #fff; font-size: 13px; }
+        .mesa-step-nav { position: sticky; top: 6px; z-index: 7; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; padding: 7px; background: rgba(255,255,255,0.96); border: 1px solid #fed7aa; border-radius: 18px; box-shadow: 0 8px 18px rgba(15,23,42,0.07); backdrop-filter: blur(8px); }
+        .mesa-step-nav button { border: 0; min-height: 34px; border-radius: 999px; background: #fff7ed; color: #9a3412; font-size: 13px; font-weight: 900; box-shadow: none; }
+        .mesa-step-nav button:hover { background: #ffedd5; }
         .pos-selected-dish { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .pos-next-hint { margin-top: 10px; padding: 10px 12px; border-radius: 16px; background: #ecfdf5; color: #166534; font-weight: 900; text-align: center; }
         .pos-primary-action { font-size: 17px; padding: 16px 18px; border-radius: 20px; box-shadow: 0 10px 22px rgba(22,163,74,0.22); }
@@ -515,6 +518,7 @@ export const appStyles = `
           .nav button { flex: 0 0 auto; padding: 11px 14px; font-size: 13px; }
           .mesa-pos-header { align-items: flex-start; flex-direction: column; }
           .mesa-step-strip { top: 4px; grid-template-columns: 1fr; }
+          .mesa-step-nav { top: 4px; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px; border-radius: 16px; }
           .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row, .mesas-products-grid, .mesas-final-grid { grid-template-columns: 1fr; }
           .mesa-send-bar { display: grid; grid-template-columns: 1fr; }
           .mesa-send-bar .button { width: 100%; min-width: 0; }

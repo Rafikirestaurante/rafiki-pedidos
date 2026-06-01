@@ -208,6 +208,34 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   );
   const total = useMemo(() => calcularTotalItems(itemsConModoLlevar), [itemsConModoLlevar]);
   const itemAlmuerzoActivo = itemsAlmuerzoMesa[itemsAlmuerzoMesa.length - 1];
+  const itemNavMesa = itemAlmuerzoActivo || itemsAlmuerzoMesa[0] || itemsMesa[0];
+
+  function irPasoMesas(paso) {
+    vibracionCortaMesas();
+
+    if (paso === "proteina") {
+      setCategoriaActivaMesa("almuerzos");
+      irAElementoMesas("mesa-categorias-top", 90, "start");
+      return;
+    }
+
+    if (paso === "acompanantes") {
+      setCategoriaActivaMesa("almuerzos");
+      const destino = itemNavMesa?.id ? `mesa-paso-acompanantes-${itemNavMesa.id}` : "mesa-categorias-top";
+      irAElementoMesas(destino, 90, "center");
+      return;
+    }
+
+    if (paso === "resumen") {
+      irAElementoMesas("mesa-confirmacion-final", 90, "start");
+      return;
+    }
+
+    if (paso === "datos") {
+      irAElementoMesas("mesa-datos-final", 90, "start");
+    }
+  }
+
 
   function actualizarItemMesa(id, cambios) {
     setItemsMesa((actual) =>
@@ -613,6 +641,13 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       <section className="card card-pad" id="mesa-categorias-top">
         <div className="mesa-panel-title">
           <h2>🍽️ Panel Mesas</h2>
+        </div>
+
+        <div className="mesa-step-nav" aria-label="Navegación rápida del pedido">
+          <button type="button" onClick={() => irPasoMesas("proteina")} title="Escoge la proteína">1</button>
+          <button type="button" onClick={() => irPasoMesas("acompanantes")} title="Escoge un acompañante">2</button>
+          <button type="button" onClick={() => irPasoMesas("resumen")} title="Resumen del pedido">R</button>
+          <button type="button" onClick={() => irPasoMesas("datos")} title="Datos de la mesa">3</button>
         </div>
 
         <MesaTabs

@@ -1414,12 +1414,14 @@ export default function App() {
                   >
                     Gastos
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/inventario", adminAutenticado ? "inventario" : "adminLogin")}
-                  >
-                    Inventario
-                  </button>
+                  {puedeVerInventario && (
+                    <button
+                      type="button"
+                      onClick={() => navegar("/inventario", "inventario")}
+                    >
+                      Inventario
+                    </button>
+                  )}
 
                 </div>
               )}
@@ -1444,8 +1446,8 @@ export default function App() {
                   >
                     Panel admin
                   </button>
-                  {vista === "gastos" && (
-                    <button type="button" onClick={() => navegar("/inventario", adminAutenticado ? "inventario" : "adminLogin")}>Inventario</button>
+                  {vista === "gastos" && puedeVerInventario && (
+                    <button type="button" onClick={() => navegar("/inventario", "inventario")}>Inventario</button>
                   )}
                   {vista === "inventario" && (
                     <button type="button" onClick={() => navegar("/gastos", "gastos")}>Gastos</button>
@@ -1489,10 +1491,18 @@ export default function App() {
             </Suspense>
           )}
 
-          {!cargando && vista === "inventario" && adminAutenticado && (
+          {!cargando && vista === "inventario" && adminAutenticado && puedeVerInventario && (
             <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
               <InventarioAdmin />
             </Suspense>
+          )}
+
+          {!cargando && vista === "inventario" && adminAutenticado && !puedeVerInventario && (
+            <section className="card card-pad">
+              <h2>Acceso restringido</h2>
+              <p className="muted">El módulo de inventario solo está disponible para el rol administrador.</p>
+              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>Volver al panel admin</button>
+            </section>
           )}
 
           {!cargando && vista === "pedidos" && adminAutenticado && (
