@@ -1,5 +1,5 @@
 {
-  "version": "24B3-NAV-MESAS-1-2-R-3-2026-06-01",
-  "fase": "24B3",
-  "mensaje": "Barra fija discreta 1-2-R-3 en Panel Mesas para navegar entre proteína, acompañantes, resumen y datos."
+  "version": "24C2-GASTOS-MENU-SYNC-2026-06-02",
+  "fase": "24C2",
+  "mensaje": "Ajustes de permisos para Gastos, retiro de Inventario en Mesas y mejora de sincronización del menú diario hacia Cliente."
 }

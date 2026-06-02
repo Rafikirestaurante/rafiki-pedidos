@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '24B3-NAV-MESAS-1-2-R-3-2026-06-01',
-  phase: 'Fase 24B3 - Navegación 1-2-R-3 en Panel Mesas',
-  date: '2026-06-01',
-  fase: '24B3',
-  notes: 'Reglas de inventario con varios insumos; acceso directo superior retirado e Inventario visible solo para rol administrador.'
+  version: '24C2-GASTOS-MENU-SYNC-2026-06-02',
+  phase: 'Fase 24C2 - Ajustes Gastos, Mesas y Menú Cliente',
+  date: '2026-06-02',
+  fase: '24C2',
+  notes: 'Gastos puede ser guardado por cualquier usuario autenticado; Inventario se quita de accesos de Mesas; menú diario se sincroniza mejor hacia Cliente.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

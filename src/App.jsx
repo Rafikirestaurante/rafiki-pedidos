@@ -686,7 +686,7 @@ export default function App() {
   }, [mostrarMensaje, recargaMenu]);
 
   useEffect(() => {
-    if (!supabaseConfigOk || !realtimeAdminActivo) return undefined;
+    if (!supabaseConfigOk) return undefined;
 
     let ultimaRecargaMenu = 0;
     let recargaMenuPendiente = null;
@@ -726,7 +726,23 @@ export default function App() {
       if (recargaMenuPendiente) window.clearTimeout(recargaMenuPendiente);
       supabase.removeChannel(canalMenu);
     };
-  }, [realtimeAdminActivo]);
+  }, []);
+
+  useEffect(() => {
+    const recargarMenuAlVolver = () => {
+      if (document.visibilityState === "visible") {
+        setRecargaMenu((actual) => actual + 1);
+      }
+    };
+
+    window.addEventListener("focus", recargarMenuAlVolver);
+    document.addEventListener("visibilitychange", recargarMenuAlVolver);
+
+    return () => {
+      window.removeEventListener("focus", recargarMenuAlVolver);
+      document.removeEventListener("visibilitychange", recargarMenuAlVolver);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelado = false;
@@ -1414,15 +1430,6 @@ export default function App() {
                   >
                     Gastos
                   </button>
-                  {puedeVerInventario && (
-                    <button
-                      type="button"
-                      onClick={() => navegar("/inventario", "inventario")}
-                    >
-                      Inventario
-                    </button>
-                  )}
-
                 </div>
               )}
 
