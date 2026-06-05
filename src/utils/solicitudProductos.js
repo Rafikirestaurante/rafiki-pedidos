@@ -171,25 +171,12 @@ export function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBas
   });
 }
 
-export function crearMensajeCompraProveedores(productos, fechaListado = fechaISOColombia()) {
-  const grupos = agruparProductosSolicitud(productos);
-  const lineas = [
-    "Hola, esta es la lista de insumos para cotizar/comprar para Rafiki:",
-    "",
-    `Fecha de solicitud consultada: ${fechaListado}`,
-    "",
-    "Insumos:"
-  ];
-
-  Object.entries(grupos).forEach(([categoria, items]) => {
-    lineas.push("", `*${categoria}*`);
-
-    items.forEach((producto) => {
+export function crearMensajeCompraProveedores(productos) {
+  return productos
+    .map((producto) => {
       const cantidad = String(producto.cantidadComprar || "").trim();
-      lineas.push(`• ${producto.nombre}${cantidad ? ` : ${cantidad}` : ""}`);
-    });
-  });
-
-  return lineas.join("\n");
+      return `• ${producto.nombre}${cantidad ? ` : ${cantidad}` : ""}`;
+    })
+    .join("\n");
 }
 

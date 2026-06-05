@@ -265,15 +265,45 @@ function obtenerFamiliaProductoCafeteriaRafa(item) {
   const texto = normalizarTexto(base);
   const tipo = normalizarTexto(item.tipo);
 
-  if (texto.includes("batido") || tipo.includes("batido")) return "Batidos";
   if (texto.includes("parfait") || tipo.includes("parfait")) return "Parfaits";
+  if (tipo.includes("cremoso") || texto.includes("cremoso")) return "Batidos cremosos";
+  if (tipo.includes("refrescante") || texto.includes("refrescante")) return "Batidos refrescantes";
+  if (tipo.includes("jugo tradicional") || tipo.includes("tradicional") || texto.includes("jugo tradicional") || texto.includes("tradicional")) return "Jugos tradicionales";
+  if (texto.includes("batido") || tipo.includes("batido")) return "Batidos";
 
   return String(base || "Producto cafetería").replace(/\s+/g, " " ).trim();
 }
 
+function limpiarDetalleCafeteriaRafa(valor, familia) {
+  let detalle = String(valor || "").replace(/\s+/g, " " ).trim();
+  if (!detalle) return "";
+
+  detalle = detalle
+    .replace(/^parfaits?\s*/ig, "")
+    .replace(/^batidos?\s+cremosos?\s*/ig, "")
+    .replace(/^batidos?\s+refrescantes?\s*/ig, "")
+    .replace(/^jugos?\s+tradicional(es)?\s*/ig, "")
+    .replace(/^batidos?\s*/ig, "")
+    .replace(/\s+-\s+frutas?:.*$/ig, "")
+    .replace(/\b(12|16|22)\s*oz\b/ig, "")
+    .replace(/\s+/g, " " )
+    .trim();
+
+  if (!detalle || normalizarTexto(detalle) === normalizarTexto(familia)) return "";
+  return limpiarDetalleTexto(detalle);
+}
+
 function obtenerDetalleProductoCafeteriaRafa(item, familia) {
-  // En el informe gerencial, batidos y parfaits deben mostrarse limpios:
-  // solo el producto principal, sin subdetalles de tamaño, base o frutas.
+  if (!["Parfaits", "Batidos cremosos", "Batidos refrescantes", "Jugos tradicionales", "Batidos"].includes(familia)) {
+    return "";
+  }
+
+  const base = item.producto || item.nombre || item.plato || item.proteina || "";
+  const detalle = limpiarDetalleCafeteriaRafa(base, familia);
+
+  if (detalle) return detalle;
+  if (item.tamano && familia === "Parfaits") return limpiarDetalleTexto(item.tamano);
+
   return "";
 }
 

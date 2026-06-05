@@ -5,6 +5,52 @@ function porcentaje(valor, total) {
   return total > 0 ? Math.round(((Number(valor) || 0) * 100) / total) : 0;
 }
 
+function prepararDistribucionPorcentajes(items, total, claveValor = "total") {
+  const lista = (items || []).map((item, index) => {
+    const valor = Number(item?.[claveValor]) || 0;
+    const exacto = total > 0 ? (valor * 100) / total : 0;
+    return {
+      ...item,
+      _dashboardIndex: index,
+      _dashboardValor: valor,
+      _dashboardPctBase: Math.floor(exacto),
+      _dashboardResiduo: exacto - Math.floor(exacto)
+    };
+  });
+
+  if (!lista.length || total <= 0) return lista.map((item) => ({ ...item, porcentaje: 0 }));
+
+  const sumaBase = lista.reduce((suma, item) => suma + item._dashboardPctBase, 0);
+  const objetivo = Math.round(lista.reduce((suma, item) => suma + item._dashboardValor, 0) * 100 / total);
+  const faltante = Math.max(0, objetivo - sumaBase);
+  const indicesConAjuste = new Set(
+    lista
+      .slice()
+      .sort((a, b) => b._dashboardResiduo - a._dashboardResiduo || b._dashboardValor - a._dashboardValor || a._dashboardIndex - b._dashboardIndex)
+      .slice(0, faltante)
+      .map((item) => item._dashboardIndex)
+  );
+
+  return lista.map((item) => ({
+    ...item,
+    porcentaje: item._dashboardPctBase + (indicesConAjuste.has(item._dashboardIndex) ? 1 : 0)
+  }));
+}
+
+function agruparConOtros(items, limite = 8) {
+  const lista = (items || []).filter((item) => (Number(item?.total) || 0) > 0);
+  if (lista.length <= limite) return lista;
+
+  const visibles = lista.slice(0, Math.max(1, limite - 1));
+  const otros = lista.slice(Math.max(1, limite - 1)).reduce((acc, item) => ({
+    nombre: "Otros",
+    cantidad: acc.cantidad + (Number(item.cantidad) || 0),
+    total: acc.total + (Number(item.total) || 0)
+  }), { nombre: "Otros", cantidad: 0, total: 0 });
+
+  return otros.total > 0 ? [...visibles, otros] : visibles;
+}
+
 function estadoDiaOperativo(utilidadAproximada, totalVentas, porcentajeGastos) {
   if (totalVentas <= 0) return { texto: "Sin ventas", detalle: "Sin movimiento", emoji: "⚪" };
   if (utilidadAproximada <= 0 || porcentajeGastos >= 70) return { texto: "Día flojo", detalle: "Revisar gastos", emoji: "🔴" };
@@ -60,15 +106,17 @@ function SumatorioDashboard({ cantidad, total, textoCantidad = "Cantidad" }) {
 }
 
 function ListaDashboard({ items, totalBase, modo = "dinero", limite = 6, textoCantidad = "Cant." }) {
-  const visibles = items.slice(0, limite);
+  const visibles = agruparConOtros(items || [], limite);
   if (!visibles.length) return <p className="muted">Sin datos en este periodo.</p>;
+  const claveValor = modo === "cantidad" ? "cantidad" : "total";
+  const visiblesConPct = prepararDistribucionPorcentajes(visibles, totalBase, claveValor);
   const sumatorio = totalizar(visibles);
 
   return (
     <div>
-      {visibles.map((item) => {
+      {visiblesConPct.map((item) => {
         const valorBarra = modo === "cantidad" ? item.cantidad : item.total;
-        const pct = porcentaje(valorBarra, totalBase);
+        const pct = item.porcentaje;
         return (
           <MiniBarra
             key={item.nombre}
@@ -88,12 +136,13 @@ function ListaDashboard({ items, totalBase, modo = "dinero", limite = 6, textoCa
 function ListaMeserosDashboard({ items, totalBase, limite = 8 }) {
   const visibles = (items || []).slice(0, limite);
   if (!visibles.length) return <p className="muted">Sin datos en este periodo.</p>;
+  const visiblesConPct = prepararDistribucionPorcentajes(visibles, totalBase, "total");
   const sumatorio = totalizar(visibles);
 
   return (
     <div>
-      {visibles.map((item) => {
-        const pct = porcentaje(item.total, totalBase);
+      {visiblesConPct.map((item) => {
+        const pct = item.porcentaje;
         return (
           <MiniBarra
             key={item.nombre}
@@ -272,8 +321,17 @@ export default function DashboardRafa({
           <h3>💸 Gastos por categoría</h3>
           {Object.keys(gastosPorCategoria || {}).length ? (
             <div style={{ marginTop: 8 }}>
-              {Object.entries(gastosPorCategoria).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([categoria, total]) => (
-                <MiniBarra key={categoria} label={categoria} valor={total} total={totalGastos} detalle={`${porcentaje(total, totalGastos)}% · ${dinero(total)}`} />
+              {prepararDistribucionPorcentajes(
+                agruparConOtros(
+                  Object.entries(gastosPorCategoria)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([categoria, total]) => ({ nombre: categoria, total })),
+                  8
+                ),
+                totalGastos,
+                "total"
+              ).map((item) => (
+                <MiniBarra key={item.nombre} label={item.nombre} valor={item.total} total={totalGastos} detalle={`${item.porcentaje}% · ${dinero(item.total)}`} />
               ))}
             </div>
           ) : <p className="muted">Sin gastos registrados en este periodo.</p>}
