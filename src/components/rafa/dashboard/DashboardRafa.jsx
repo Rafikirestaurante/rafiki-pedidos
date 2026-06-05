@@ -96,6 +96,10 @@ function totalizar(items) {
   }), { cantidad: 0, total: 0 });
 }
 
+function totalDistribucion(items, claveValor = "total") {
+  return (items || []).reduce((suma, item) => suma + (Number(item?.[claveValor]) || 0), 0);
+}
+
 function SumatorioDashboard({ cantidad, total, textoCantidad = "Cantidad" }) {
   return (
     <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -109,8 +113,9 @@ function ListaDashboard({ items, totalBase, modo = "dinero", limite = 6, textoCa
   const visibles = agruparConOtros(items || [], limite);
   if (!visibles.length) return <p className="muted">Sin datos en este periodo.</p>;
   const claveValor = modo === "cantidad" ? "cantidad" : "total";
-  const visiblesConPct = prepararDistribucionPorcentajes(visibles, totalBase, claveValor);
   const sumatorio = totalizar(visibles);
+  const basePorcentaje = totalDistribucion(visibles, claveValor) || totalBase || 0;
+  const visiblesConPct = prepararDistribucionPorcentajes(visibles, basePorcentaje, claveValor);
 
   return (
     <div>
@@ -122,7 +127,7 @@ function ListaDashboard({ items, totalBase, modo = "dinero", limite = 6, textoCa
             key={item.nombre}
             label={item.nombre}
             valor={valorBarra}
-            total={totalBase}
+            total={basePorcentaje}
             detalle={`${textoCantidad}: ${Number(item.cantidad) || 0} · ${pct}% · ${dinero(item.total)}`}
           />
         );
@@ -136,8 +141,9 @@ function ListaDashboard({ items, totalBase, modo = "dinero", limite = 6, textoCa
 function ListaMeserosDashboard({ items, totalBase, limite = 8 }) {
   const visibles = (items || []).slice(0, limite);
   if (!visibles.length) return <p className="muted">Sin datos en este periodo.</p>;
-  const visiblesConPct = prepararDistribucionPorcentajes(visibles, totalBase, "total");
   const sumatorio = totalizar(visibles);
+  const basePorcentaje = totalDistribucion(visibles, "total") || totalBase || 0;
+  const visiblesConPct = prepararDistribucionPorcentajes(visibles, basePorcentaje, "total");
 
   return (
     <div>
@@ -148,7 +154,7 @@ function ListaMeserosDashboard({ items, totalBase, limite = 8 }) {
             key={item.nombre}
             label={item.nombre}
             valor={item.total}
-            total={totalBase}
+            total={basePorcentaje}
             detalle={`${Number(item.cantidad) || 0} pedidos · ${pct}% · ${dinero(item.total)}`}
           />
         );
@@ -364,7 +370,7 @@ export default function DashboardRafa({
 
         <CajaDashboard activa={detalleDashboard === "productos"} onClick={() => seleccionarDetalleDashboard("productos")}>
           <h3>🥇 Top productos</h3>
-          <ListaDashboard items={dashboardRafa.productosTop} totalBase={totalBaseProductos || totalItemsVendidos} modo="cantidad" limite={8} textoCantidad="Vendidos" />
+          <ListaDashboard items={dashboardRafa.productosTop} totalBase={totalItemsVendidos} modo="cantidad" limite={8} textoCantidad="Vendidos" />
         </CajaDashboard>
       </div>
 
@@ -376,7 +382,7 @@ export default function DashboardRafa({
 
         <CajaDashboard activa={detalleDashboard === "meseros"} onClick={() => seleccionarDetalleDashboard("meseros")}>
           <h3>🙋 Ventas por mesero</h3>
-          <ListaMeserosDashboard items={dashboardRafa.ventasPorMesero || []} totalBase={Math.max(...(dashboardRafa.ventasPorMesero || []).map((item) => item.total), 0) || totalVentas} limite={8} />
+          <ListaMeserosDashboard items={dashboardRafa.ventasPorMesero || []} totalBase={totalVentas} limite={8} />
         </CajaDashboard>
       </div>
 

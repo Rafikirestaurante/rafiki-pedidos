@@ -412,18 +412,18 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
                 <table className="gastos-tabla">
                   <thead>
                     <tr>
-                      <th>Factura</th><th>Proveedor</th><th>Artículos</th><th>Categoría</th><th>Pago</th><th>Valor</th><th>Acciones</th>
+                      <th>Proveedor</th><th>Valor</th><th>Artículos</th><th>Categoría</th><th>Pago</th><th>Factura</th><th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {gastos.map((gasto) => (
                       <tr key={gasto.id}>
-                        <td>{gasto.numeroFactura || "—"}</td>
                         <td><strong>{gasto.proveedor}</strong>{gasto.observacion ? <><br /><span className="muted small">{gasto.observacion}</span></> : null}</td>
+                        <td><strong>${dinero(gasto.valor)}</strong></td>
                         <td>{gasto.articulos || <span className="muted">Sin detalle</span>}</td>
                         <td>{capitalizar(gasto.categoria)}</td>
                         <td>{capitalizar(gasto.metodoPago)}</td>
-                        <td><strong>${dinero(gasto.valor)}</strong></td>
+                        <td>{gasto.numeroFactura || "—"}</td>
                         <td><div className="gastos-acciones"><button type="button" className="button button-small" onClick={() => editarGasto(gasto)}>Editar</button><button type="button" className="button button-small button-danger" onClick={() => eliminarGasto(gasto)}>Eliminar</button></div></td>
                       </tr>
                     ))}

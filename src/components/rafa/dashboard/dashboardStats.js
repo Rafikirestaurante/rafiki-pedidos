@@ -274,23 +274,29 @@ function obtenerFamiliaProductoCafeteriaRafa(item) {
   return String(base || "Producto cafetería").replace(/\s+/g, " " ).trim();
 }
 
-function limpiarDetalleCafeteriaRafa(valor, familia) {
-  let detalle = String(valor || "").replace(/\s+/g, " " ).trim();
-  if (!detalle) return "";
+function extraerTamanoCafeteriaRafa(item) {
+  const candidatos = [item?.tamano, item?.producto, item?.nombre, item?.detalle_impresion].filter(Boolean);
+  for (const candidato of candidatos) {
+    const texto = String(candidato || "");
+    const match = texto.match(/\b(12|16|22)\s*oz\b/i);
+    if (match) return `${match[1]} oz`;
+  }
+  return "";
+}
 
-  detalle = detalle
-    .replace(/^parfaits?\s*/ig, "")
-    .replace(/^batidos?\s+cremosos?\s*/ig, "")
-    .replace(/^batidos?\s+refrescantes?\s*/ig, "")
-    .replace(/^jugos?\s+tradicional(es)?\s*/ig, "")
-    .replace(/^batidos?\s*/ig, "")
-    .replace(/\s+-\s+frutas?:.*$/ig, "")
-    .replace(/\b(12|16|22)\s*oz\b/ig, "")
-    .replace(/\s+/g, " " )
-    .trim();
-
-  if (!detalle || normalizarTexto(detalle) === normalizarTexto(familia)) return "";
-  return limpiarDetalleTexto(detalle);
+function limpiarSaborCafeteriaRafa(valor) {
+  return limpiarDetalleTexto(
+    String(valor || "")
+      .replace(/^parfaits?\s*/ig, "")
+      .replace(/^batidos?\s+cremosos?\s*/ig, "")
+      .replace(/^batidos?\s+refrescantes?\s*/ig, "")
+      .replace(/^jugos?\s+tradicional(es)?\s*/ig, "")
+      .replace(/^batidos?\s*/ig, "")
+      .replace(/\s+-\s+frutas?:.*$/ig, "")
+      .replace(/\b(12|16|22)\s*oz\b/ig, "")
+      .replace(/\s+/g, " " )
+      .trim()
+  );
 }
 
 function obtenerDetalleProductoCafeteriaRafa(item, familia) {
@@ -298,11 +304,13 @@ function obtenerDetalleProductoCafeteriaRafa(item, familia) {
     return "";
   }
 
+  const tamano = extraerTamanoCafeteriaRafa(item);
   const base = item.producto || item.nombre || item.plato || item.proteina || "";
-  const detalle = limpiarDetalleCafeteriaRafa(base, familia);
+  const sabor = limpiarSaborCafeteriaRafa(base);
 
-  if (detalle) return detalle;
-  if (item.tamano && familia === "Parfaits") return limpiarDetalleTexto(item.tamano);
+  if (tamano && sabor && !["Parfaits"].includes(familia)) return `${tamano} · ${sabor}`;
+  if (tamano) return tamano;
+  if (sabor && normalizarTexto(sabor) !== normalizarTexto(familia)) return sabor;
 
   return "";
 }
@@ -494,8 +502,8 @@ export function crearDashboardRafa(pedidos, filasClientes, resumenClientes, resu
   const ventasPorOrigen = ordenarResumen(porOrigen);
   const ventasPorEstado = ordenarResumen(porEstado);
   const ventasPorMesero = ordenarResumen(porMesero);
-  const productosTop = ordenarResumen(porProducto).slice(0, 10);
-  const mesasTop = ordenarResumen(porMesa).slice(0, 10);
+  const productosTop = ordenarResumen(porProducto);
+  const mesasTop = ordenarResumen(porMesa);
   const mejorHora = ordenarResumen(porHora)[0] || null;
   const productoTop = productosTop[0] || null;
   const clienteTop = resumenClientes[0] || null;
