@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { activarNuevaVersion } from '../registerSW.js';
+import { activarNuevaVersion } from '../../registerSW.js';
 import { esRutaInternaPWA } from '../utils/pwa.js';
 import { limpiarCachesYRecargar } from '../utils/pwaVersion.js';
 

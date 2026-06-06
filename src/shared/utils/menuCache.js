@@ -1,4 +1,4 @@
-import { menuFallback } from "../data/menuAlmuerzos";
+import { menuFallback } from "../../data/menuAlmuerzos";
 import { normalizarMenu } from "./pedidos";
 
 export const MENU_CACHE_KEY = "rafikiMenuDiarioCache";

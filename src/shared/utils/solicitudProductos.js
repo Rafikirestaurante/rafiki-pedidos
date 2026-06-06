@@ -1,5 +1,5 @@
 import { fechaISOColombia, generarId, normalizarTexto } from "./pedidos";
-import { categoriasSolicitudProductos, productosRestauranteBase, STORAGE_INSUMOS_PENDIENTES } from "../data/solicitudProductosData";
+import { categoriasSolicitudProductos, productosRestauranteBase, STORAGE_INSUMOS_PENDIENTES } from "../../data/solicitudProductosData";
 
 export function ordenarProductosPorNombre(productos) {
   return [...(productos || [])].sort((a, b) =>

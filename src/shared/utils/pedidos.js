@@ -1,4 +1,4 @@
-import { VALOR_PARA_LLEVAR, VALOR_PARA_LLEVAR_DESAYUNO, MAX_ACOMPANANTES_CLIENTE, INCLUIDOS_FIJOS, menuFallback } from "../data/menuAlmuerzos";
+import { VALOR_PARA_LLEVAR, VALOR_PARA_LLEVAR_DESAYUNO, MAX_ACOMPANANTES_CLIENTE, INCLUIDOS_FIJOS, menuFallback } from "../../data/menuAlmuerzos";
 import {
   CAFETERIA_PARFAIT_TAMANOS,
   CAFETERIA_BATIDOS_CREMOSOS_TAMANOS,
@@ -8,7 +8,7 @@ import {
   CAFETERIA_SANDWICHES,
   CAFETERIA_BEBIDAS_CALIENTES,
   CAFETERIA_POSTRES
-} from "../data/menuCafeteria";
+} from "../../data/menuCafeteria";
 
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;

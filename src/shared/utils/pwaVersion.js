@@ -1,4 +1,4 @@
-import { RAFIKI_APP_VERSION } from '../config/rafikiBuild.js';
+import { RAFIKI_APP_VERSION } from '../../config/rafikiBuild.js';
 
 export { RAFIKI_APP_VERSION };
 export const RAFIKI_VERSION_URL = '/rafiki-version.json';
