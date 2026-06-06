@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { obtenerEstadoPedido } from "../../utils/pedidos";
+import { obtenerEstadoPedido } from "../utils/pedidos";
 
 export function CampoTexto({
   etiqueta,

@@ -1,5 +1,5 @@
 import { registerSW } from 'virtual:pwa-register';
-import { puedeMostrarAvisoNuevaVersion } from './utils/pwaVersion.js';
+import { puedeMostrarAvisoNuevaVersion } from './shared/utils/pwaVersion.js';
 
 let actualizarPWA = null;
 let ultimaRevisionSW = 0;

@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase, supabaseConfigOk, supabaseConfigMensaje } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
-import { obtenerVistaInicial, actualizarRuta } from "./utils/navigation";
+import { obtenerVistaInicial, actualizarRuta } from "./shared/utils/navigation";
 import { InicioRafiki, AdminLogin } from "./modules/admin/components/auth/InicioAdmin";
 import { useConfirmacion } from "./shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
@@ -26,16 +26,16 @@ import {
   obtenerSesionActiva,
   platosATexto,
   textoAPlatosDetalle,
-} from "./utils/pedidos";
+} from "./shared/utils/pedidos";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
-import { describirActor, nombreRol, obtenerRolUsuarioDesdeTabla, primeraPestanaPermitida, usuarioPuede } from "./utils/authAdmin";
+import { describirActor, nombreRol, obtenerRolUsuarioDesdeTabla, primeraPestanaPermitida, usuarioPuede } from "./shared/utils/authAdmin";
 import CargandoModulo from "./shared/components/CargandoModulo";
-import { conTiempoMaximo } from "./utils/async";
-import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "./utils/menuCache";
+import { conTiempoMaximo } from "./shared/utils/async";
+import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "./shared/utils/menuCache";
 import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
-} from "./utils/offlinePedidos";
+} from "./shared/utils/offlinePedidos";
 import AdminHeaderTabs from "./modules/admin/components/layout/AdminHeaderTabs";
 import AdminPedidosSection from "./modules/admin/components/pedidos/AdminPedidosSection";
 import MenuDiarioTab from "./modules/admin/tabs/MenuDiarioTab";
@@ -44,7 +44,7 @@ import ConfirmacionPedidoCliente from "./modules/cliente/components/Confirmacion
 import { useRealtimePedidos } from "./shared/hooks/useRealtimePedidos";
 import { usePedidos } from "./shared/hooks/usePedidos";
 import { useAdminPedidos } from "./shared/hooks/useAdminPedidos";
-import { leerUltimoTextoEditorGenerador } from "./utils/generadorMenu";
+import { leerUltimoTextoEditorGenerador } from "./shared/utils/generadorMenu";
 import { cargarPedidosRango } from "./services/pedidosService";
 
 

@@ -2,13 +2,13 @@ import React from "react";
 import "./styles/pwaMobile.css";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
-import InstallPWA from "./components/InstallPWA.jsx";
-import PWAUpdatePrompt from "./components/PWAUpdatePrompt.jsx";
-import PWAOfflineNotice from "./components/PWAOfflineNotice.jsx";
-import PWAOldVersionGuard from "./components/PWAOldVersionGuard.jsx";
+import InstallPWA from "./shared/components/InstallPWA.jsx";
+import PWAUpdatePrompt from "./shared/components/PWAUpdatePrompt.jsx";
+import PWAOfflineNotice from "./shared/components/PWAOfflineNotice.jsx";
+import PWAOldVersionGuard from "./shared/components/PWAOldVersionGuard.jsx";
 import PedidosOfflineStatus from "./modules/pedidos/components/PedidosOfflineStatus.jsx";
 import { registerServiceWorker } from "./registerSW.js";
-import { activarRecuperacionPWA, mostrarPantallaRecuperacionPWA } from "./utils/pwaRecovery.js";
+import { activarRecuperacionPWA, mostrarPantallaRecuperacionPWA } from "./shared/utils/pwaRecovery.js";
 
 activarRecuperacionPWA();
 registerServiceWorker();
