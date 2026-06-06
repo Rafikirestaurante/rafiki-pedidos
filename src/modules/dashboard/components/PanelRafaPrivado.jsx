@@ -1,15 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardRafa from "./DashboardRafa";
+import { crearDetalleDashboardSeleccionado } from "../utils/dashboardStats";
 import {
-  crearDashboardRafa,
-  crearDetalleDashboardSeleccionado,
-  crearFilasClientes,
+  cargarGastosDashboardRango,
+  cargarPedidosDashboardRango,
+  crearDatosDashboardRafa,
   crearResumenClientes,
-  crearResumenVentas,
   filtrarFilasClientes
-} from "../utils/dashboardStats";
-import { cargarGastosDiariosRango } from "../../../services/gastosDiariosService";
-import { cargarPedidosRango } from "../../../services/pedidosService";
+} from "../../../services/dashboardService";
 import { guardarCierreDiario } from "../../../services/cierresDiariosService";
 import {
   dinero,
@@ -91,7 +89,7 @@ export default function PanelRafaPrivado() {
       setErrorRafa("");
 
       try {
-        const { data, error } = await cargarPedidosRango(rangoRafa.inicio, rangoRafa.fin, { ascendente: true });
+        const { data, error } = await cargarPedidosDashboardRango(rangoRafa.inicio, rangoRafa.fin);
 
         if (cancelado) return;
 
@@ -124,7 +122,7 @@ export default function PanelRafaPrivado() {
 
     async function cargarGastosRafa() {
       try {
-        const data = await cargarGastosDiariosRango(rangoRafa.inicioTexto, rangoRafa.finTexto);
+        const data = await cargarGastosDashboardRango(rangoRafa.inicioTexto, rangoRafa.finTexto);
         if (!cancelado) setGastosRafa(data);
       } catch (error) {
         if (!cancelado) {
@@ -141,8 +139,7 @@ export default function PanelRafaPrivado() {
     };
   }, [rangoRafa]);
 
-  const pedidosValidos = pedidosRafa.filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado");
-  const resumenVentas = crearResumenVentas(pedidosValidos);
+  const { pedidosValidos, filasClientes, resumenVentas, dashboardRafa } = crearDatosDashboardRafa(pedidosRafa);
   const totalAdicionalesParaLlevar = (resumenVentas.adicionalesParaLlevar || []).reduce((suma, item) => suma + (Number(item.total) || 0), 0);
   const cantidadAdicionalesParaLlevar = (resumenVentas.adicionalesParaLlevar || []).reduce((suma, item) => suma + (Number(item.cantidad) || 0), 0);
   const totalVentasBrutas = resumenVentas.restaurante.total + resumenVentas.cafeteria.total;
@@ -154,14 +151,12 @@ export default function PanelRafaPrivado() {
   const tituloPeriodo = modoFecha === "rango"
     ? `${rangoRafa.inicioTexto} al ${rangoRafa.finTexto}`
     : rangoRafa.inicioTexto;
-  const filasClientes = crearFilasClientes(pedidosValidos);
   const filasClientesFiltradas = filtrarFilasClientes(filasClientes, busquedaCliente);
   const resumenClientes = crearResumenClientes(filasClientesFiltradas);
   const totalClientesFiltrados = resumenClientes.length;
   const totalComprasCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.total) || 0), 0);
   const totalCantidadCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
   const totalPendienteCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (fila.pagoPendiente ? (Number(fila.total) || 0) : 0), 0);
-  const dashboardRafa = crearDashboardRafa(pedidosValidos, filasClientes, crearResumenClientes(filasClientes), resumenVentas);
   const totalItemsVendidos = filasClientes.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
   const totalBaseHoras = Math.max(...dashboardRafa.horas.map((item) => item.total), 0);
   const totalBaseProductos = Math.max(...dashboardRafa.productosTop.map((item) => item.cantidad), 0);

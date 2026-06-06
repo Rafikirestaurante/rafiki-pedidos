@@ -30,7 +30,7 @@ import {
   CAFETERIA_SANDWICHES
 } from "../../../data/menuCafeteria";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
-import { cargarCatalogoProductosAdmin } from "../../../services/catalogoProductosService";
+import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
 import { SelectorCantidad } from "../../../shared/components/common";
 import ConfirmacionPedidoMesa from "./ConfirmacionPedidoMesa";
 import MesaTabs from "./MesaTabs";

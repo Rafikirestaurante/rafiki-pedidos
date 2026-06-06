@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../supabaseClient";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
-import { cargarCatalogoProductosAdmin } from "../../../services/catalogoProductosService";
+import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
 import {
   limpiarLista,
   limpiarPrecio,

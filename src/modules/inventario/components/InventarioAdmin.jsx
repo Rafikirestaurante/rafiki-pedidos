@@ -8,7 +8,7 @@ import {
   guardarRelacionesInsumoProducto,
   sincronizarInventarioDesdeCatalogoInsumos
 } from "../../../services/inventarioService";
-import { cargarCatalogoProductosAdmin } from "../../../services/catalogoProductosService";
+import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
 import { dinero } from "../../../utils/pedidos";
 

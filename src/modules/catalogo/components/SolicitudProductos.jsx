@@ -9,7 +9,7 @@ import {
   cargarCatalogoInsumosSolicitud,
   crearProductosSolicitudFallback,
   reconciliarCatalogoConSolicitudActual
-} from "../../../services/catalogoInsumosService";
+} from "../../../services/catalogoService";
 import {
   agruparProductosSolicitud,
   cargarEstadoPendientesCompra,

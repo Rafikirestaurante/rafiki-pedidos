@@ -7,12 +7,12 @@ import {
   actualizarInsumoCatalogoAdmin,
   cargarCatalogoInsumosAdmin,
   crearInsumoCatalogoAdmin
-} from "../../../services/catalogoInsumosService";
+} from "../../../services/catalogoService";
 import {
   actualizarProductoCatalogoAdmin,
   cargarCatalogoProductosAdmin,
   crearProductoCatalogoAdmin
-} from "../../../services/catalogoProductosService";
+} from "../../../services/catalogoService";
 
 const STORAGE_CATALOGO_INSUMOS = "rafiki_catalogo_insumos_v1";
 const STORAGE_CATALOGO_PRODUCTOS = "rafiki_catalogo_productos_v1";
