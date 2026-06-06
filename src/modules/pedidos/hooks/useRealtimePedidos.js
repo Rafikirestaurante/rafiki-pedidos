@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase, supabaseConfigOk } from "../../../supabaseClient";
+import { supabaseConfigOk } from "../../../supabaseClient";
+import { crearCanalPedidosRealtime, removerCanalSupabase } from "../../../services/pedidosService";
 import { fechaISOColombia, pedidoEsDeHoy } from "../../../utils/pedidos";
 
 const ESTADO_REALTIME_INACTIVO = {
@@ -112,12 +113,9 @@ export function useRealtimePedidos({
       detalle: "Preparando actualización automática de pedidos."
     });
 
-    const canal = supabase
-      .channel(nombreCanal)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pedidos" },
-        (payload) => {
+    const canal = crearCanalPedidosRealtime(
+      nombreCanal,
+      (payload) => {
           if (!canalActivo || !activoRef.current) return;
 
           const tipoEvento = payload.eventType;
@@ -181,9 +179,8 @@ export function useRealtimePedidos({
           if (tipoEvento === "INSERT" && pedidoEsDeHoy(pedidoNuevo)) {
             mostrarAlertaPedidoNuevo(pedidoNuevo);
           }
-        }
-      )
-      .subscribe((estado) => {
+      },
+      (estado) => {
         if (!canalActivo || !activoRef.current) return;
 
         if (estado === "SUBSCRIBED") {
@@ -247,7 +244,7 @@ export function useRealtimePedidos({
       }
       window.removeEventListener("online", recargaAlRecuperarInternet);
       document.removeEventListener("visibilitychange", recargaAlVolver);
-      supabase.removeChannel(canal);
+      removerCanalSupabase(canal);
     };
   }, [activo, mostrarAlertaPedidoNuevo, pollingMs, recargarPedidosConControl, setPedidos]);
 

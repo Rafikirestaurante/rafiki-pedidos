@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { supabase } from "../../../supabaseClient";
 import { CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS } from "../../../config/textos";
 import {
   calcularTotalItems,
@@ -17,6 +16,14 @@ import {
   guardarPedidoPendienteOffline,
 } from "../../../utils/offlinePedidos";
 import { registrarDescuentoInventarioPedido } from "../../../services/inventarioService";
+import {
+  actualizarEstadoPedido,
+  actualizarPedido,
+  crearPedido,
+  finalizarPedidosPorIds,
+  marcarPedidoBorrado,
+  registrarAuditoriaPedido,
+} from "../../../services/pedidosService";
 
 export function usePedidos({
   itemsPedido,
@@ -60,7 +67,7 @@ export function usePedidos({
 
   const registrarAuditoria = useCallback(async ({ accion, pedido, detalle = {} }) => {
     try {
-      const { error } = await supabase.from("auditoria_pedidos").insert({
+      const { error } = await registrarAuditoriaPedido({
         pedido_id: pedido?.id ? String(pedido.id) : null,
         codigo_pedido: pedido ? obtenerCodigoPedido(pedido) : null,
         accion,
@@ -170,7 +177,7 @@ export function usePedidos({
         return;
       }
 
-      const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+      const { data, error } = await crearPedido(nuevoPedido);
 
       if (error) {
         if (esErrorDeConexion(error)) {
@@ -284,7 +291,7 @@ export function usePedidos({
         return guardarOfflineMesa(`Sin internet: el pedido de ${mesaLimpia} quedó guardado pendiente por enviar. Se reenviará cuando vuelva la conexión.`);
       }
 
-      const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+      const { data, error } = await crearPedido(nuevoPedido);
 
       if (error) {
         if (esErrorDeConexion(error)) {
@@ -339,12 +346,7 @@ export function usePedidos({
     setGuardandoEstadoPedidoId(id);
 
     try {
-      const { data, error } = await supabase
-        .from("pedidos")
-        .update({ estado: estadoNuevo })
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await actualizarEstadoPedido(id, estadoNuevo);
 
       if (error) {
         mostrarMensaje(`Error cambiando estado: ${error.message}`, "error");
@@ -406,11 +408,7 @@ export function usePedidos({
 
     try {
       const ids = pendientesParaFinalizar.map((pedido) => pedido.id);
-      const { data, error } = await supabase
-        .from("pedidos")
-        .update({ estado: "Finalizado" })
-        .in("id", ids)
-        .select();
+      const { data, error } = await finalizarPedidosPorIds(ids);
 
       if (error) {
         mostrarMensaje(`Error finalizando pedidos: ${error.message}`, "error");
@@ -474,12 +472,7 @@ export function usePedidos({
     setEliminandoPedidoId(id);
 
     try {
-      const { data, error } = await supabase
-        .from("pedidos")
-        .update({ estado: "Borrado" })
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await marcarPedidoBorrado(id);
 
       if (error) {
         mostrarMensaje(`Error borrando pedido: ${error.message}`, "error");
@@ -555,12 +548,7 @@ export function usePedidos({
         total: totalNuevo,
       };
 
-      const { data, error } = await supabase
-        .from("pedidos")
-        .update(payload)
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await actualizarPedido(id, payload);
 
       if (error) {
         mostrarMensaje(`Error editando pedido: ${error.message}`, "error");

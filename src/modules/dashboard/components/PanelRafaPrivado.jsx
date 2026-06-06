@@ -8,8 +8,8 @@ import {
   crearResumenVentas,
   filtrarFilasClientes
 } from "../utils/dashboardStats";
-import { supabase } from "../../../supabaseClient";
 import { cargarGastosDiariosRango } from "../../../services/gastosDiariosService";
+import { cargarPedidosRango } from "../../../services/pedidosService";
 import { guardarCierreDiario } from "../../../services/cierresDiariosService";
 import {
   dinero,
@@ -91,12 +91,7 @@ export default function PanelRafaPrivado() {
       setErrorRafa("");
 
       try {
-        const { data, error } = await supabase
-          .from("pedidos")
-          .select("*")
-          .gte("created_at", rangoRafa.inicio)
-          .lt("created_at", rangoRafa.fin)
-          .order("created_at", { ascending: true });
+        const { data, error } = await cargarPedidosRango(rangoRafa.inicio, rangoRafa.fin, { ascendente: true });
 
         if (cancelado) return;
 
