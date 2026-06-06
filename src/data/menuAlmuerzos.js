@@ -7,7 +7,7 @@ export const estadosPedido = ["Pendiente", "Finalizado"];
 
 export const menuFallback = {
   id: null,
-  fecha: new Date().toISOString().slice(0, 10),
+  fecha: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date()),
   titulo: "Almuerzo ejecutivo Rafiki",
   descripcion: "Escoge tu plato del día y máximo 3 acompañantes. Incluye sopa y bebida.",
   precio: 0,
