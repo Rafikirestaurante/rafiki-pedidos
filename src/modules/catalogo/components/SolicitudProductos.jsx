@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../supabaseClient";
-import { crearLinkWhatsApp, fechaISOColombia, generarId, normalizarTexto } from "../../../utils/pedidos";
+import { crearLinkWhatsApp, fechaISOColombia, generarId, normalizarTexto } from "../../../shared/utils/pedidos";
 import { BOTONES, CONFIRMACIONES_INSUMOS, MENSAJES_INSUMOS } from "../../../config/textos";
 import CampoTexto from "./CampoTexto";
 import { useAlertaRafiki, useConfirmacion } from "../../../shared/components/common";
@@ -20,7 +20,7 @@ import {
   obtenerProductosPendientesDesdeSolicitudes,
   obtenerProductosSolicitudSeleccionados,
   ordenarProductosPorNombre
-} from "../../../utils/solicitudProductos";
+} from "../../../shared/utils/solicitudProductos";
 
 const WHATSAPP_SOLICITUD_INSUMOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_INSUMOS || "";
 const SOLICITUD_INSUMOS_DRAFT_KEY = "rafikiSolicitudInsumosBorrador";

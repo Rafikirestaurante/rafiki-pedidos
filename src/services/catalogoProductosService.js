@@ -1,5 +1,5 @@
 import { supabase } from "../supabaseClient";
-import { generarId } from "../utils/pedidos";
+import { generarId } from "../shared/utils/pedidos";
 
 export function normalizarProductoAdmin(producto, index = 0) {
   const nombre = String(producto?.nombre || "").trim();

@@ -10,7 +10,7 @@ import {
 } from "../../../services/inventarioService";
 import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
-import { dinero } from "../../../utils/pedidos";
+import { dinero } from "../../../shared/utils/pedidos";
 
 const FORM_STOCK_INICIAL = { stockActual: "", stockMinimo: "", costoPromedio: "", activo: true };
 

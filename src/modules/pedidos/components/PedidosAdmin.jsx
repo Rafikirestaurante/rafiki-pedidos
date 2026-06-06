@@ -14,7 +14,7 @@ import {
   obtenerEstadoPedido,
   obtenerItemsPedido,
   imprimirTicketPedido
-} from "../../../utils/pedidos";
+} from "../../../shared/utils/pedidos";
 
 function esItemCafeteria(item) {
   return item?.categoria === "cafeteria" || item?.area === "cafeteria";

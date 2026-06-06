@@ -1,5 +1,5 @@
 import React from "react";
-import PWAClearCacheButton from "../../../../components/PWAClearCacheButton.jsx";
+import PWAClearCacheButton from "../../../../shared/components/PWAClearCacheButton.jsx";
 
 export default function AdminHeaderTabs({
   adminUsuario,

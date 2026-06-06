@@ -8,7 +8,7 @@ import {
   obtenerEstadoPedido,
   obtenerItemsPedido,
   valorParaLlevarItem
-} from "../../../utils/pedidos";
+} from "../../../shared/utils/pedidos";
 
 const MESAS_VALIDAS_RAFA = ["1a", "1b", "2a", "2b", "3a", "3b", "4a", "4b", "5b"];
 

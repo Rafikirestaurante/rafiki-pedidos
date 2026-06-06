@@ -1,5 +1,5 @@
 import { BOTONES } from "../../../config/textos";
-import { dinero, obtenerCodigoPedido } from "../../../utils/pedidos";
+import { dinero, obtenerCodigoPedido } from "../../../shared/utils/pedidos";
 
 export default function ConfirmacionPedidoCliente({
   pedidoFinalizado,

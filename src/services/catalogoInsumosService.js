@@ -1,6 +1,6 @@
 import { supabase } from "../supabaseClient";
-import { generarId } from "../utils/pedidos";
-import { ordenarProductosPorNombre } from "../utils/solicitudProductos";
+import { generarId } from "../shared/utils/pedidos";
+import { ordenarProductosPorNombre } from "../shared/utils/solicitudProductos";
 import { productosRestauranteBase } from "../data/solicitudProductosData";
 
 const FALLBACK_MOTIVO = "fallback_local";

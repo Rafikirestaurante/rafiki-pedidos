@@ -7,7 +7,7 @@ import {
   crearResumenVentas,
   filtrarFilasClientes
 } from "../modules/dashboard/utils/dashboardStats";
-import { obtenerEstadoPedido } from "../utils/pedidos";
+import { obtenerEstadoPedido } from "../shared/utils/pedidos";
 
 export {
   crearDashboardRafa,

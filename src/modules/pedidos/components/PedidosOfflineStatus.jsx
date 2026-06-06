@@ -5,8 +5,8 @@ import {
   leerPedidosPendientesOffline,
   prepararPedidoPendienteParaReintento,
   suscribirCambiosPedidosOffline
-} from '../../../utils/offlinePedidos.js';
-import { esRutaInternaPWA } from '../../../utils/pwa.js';
+} from '../../../shared/utils/offlinePedidos.js';
+import { esRutaInternaPWA } from '../../../shared/utils/pwa.js';
 import { useConfirmacion } from '../../../shared/components/common.jsx';
 
 function formatearFecha(valor) {

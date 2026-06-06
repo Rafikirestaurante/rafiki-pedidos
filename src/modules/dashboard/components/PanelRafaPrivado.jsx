@@ -14,7 +14,7 @@ import {
   fechaISOColombia,
   formatearFechaHora,
   obtenerEstadoPedido
-} from "../../../utils/pedidos";
+} from "../../../shared/utils/pedidos";
 
 function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTotal = true, mostrarDetalles = false }) {
   if (!items.length) return <p className="muted">{vacio}</p>;

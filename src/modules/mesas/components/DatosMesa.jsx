@@ -1,7 +1,7 @@
 import React from "react";
 import { CampoTexto } from "../../../shared/components/common";
-import { dinero } from "../../../utils/pedidos";
-import { FORMAS_PAGO_MESA, MESAS_DISPONIBLES, MESEROS_DISPONIBLES } from "../../../utils/mesas";
+import { dinero } from "../../../shared/utils/pedidos";
+import { FORMAS_PAGO_MESA, MESAS_DISPONIBLES, MESEROS_DISPONIBLES } from "../../../shared/utils/mesas";
 
 export default function DatosMesa({
   modoLlevar,

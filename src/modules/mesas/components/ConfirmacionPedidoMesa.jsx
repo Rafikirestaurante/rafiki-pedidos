@@ -1,5 +1,5 @@
 import React from "react";
-import { obtenerCodigoPedido } from "../../../utils/pedidos";
+import { obtenerCodigoPedido } from "../../../shared/utils/pedidos";
 
 export default function ConfirmacionPedidoMesa({ pedido, modoLlevar, mesaLocal, onReiniciar }) {
   const pendienteOffline = Boolean(pedido?.pendiente_offline);

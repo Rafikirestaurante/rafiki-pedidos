@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { dinero, formatearFechaHora, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido } from "../../../../utils/pedidos";
+import { dinero, formatearFechaHora, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido } from "../../../../shared/utils/pedidos";
 import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
-import { MESAS_DISPONIBLES } from "../../../../utils/mesas";
+import { MESAS_DISPONIBLES } from "../../../../shared/utils/mesas";
 import { PedidoCocina, TablaPedidosCompacta, resumirItemsPedidoCompacto } from "../../../pedidos/components/PedidosAdmin";
 
 

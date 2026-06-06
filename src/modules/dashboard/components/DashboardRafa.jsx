@@ -1,5 +1,5 @@
 import React from "react";
-import { dinero } from "../../../utils/pedidos";
+import { dinero } from "../../../shared/utils/pedidos";
 
 function porcentaje(valor, total) {
   return total > 0 ? Math.round(((Number(valor) || 0) * 100) / total) : 0;

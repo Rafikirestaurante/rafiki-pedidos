@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { CampoTexto } from "../../../../shared/components/common";
-import { fechaISOColombia } from "../../../../utils/pedidos";
+import { fechaISOColombia } from "../../../../shared/utils/pedidos";
 
 function AdminPedidosFiltrosBase({
   filtroPedidos,

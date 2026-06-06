@@ -6,7 +6,7 @@ import {
   esCategoriaSopa,
   textoParaLlevarItem,
   valorParaLlevarItem,
-} from "../../../utils/pedidos";
+} from "../../../shared/utils/pedidos";
 
 export default function PedidoCliente({
   menu,

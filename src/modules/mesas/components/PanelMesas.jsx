@@ -7,7 +7,7 @@ import {
   dinero,
   esCategoriaSopa,
   precioPorNombre
-} from "../../../utils/pedidos";
+} from "../../../shared/utils/pedidos";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import { CampoTexto } from "../../../shared/components/common";
 import {
@@ -38,7 +38,7 @@ import DatosMesa from "./DatosMesa";
 import {
   irAElementoMesas,
   vibracionCortaMesas
-} from "../../../utils/mesas";
+} from "../../../shared/utils/mesas";
 
 const STORAGE_CATALOGO_PRODUCTOS_MESAS = "rafiki_catalogo_productos_v1";
 

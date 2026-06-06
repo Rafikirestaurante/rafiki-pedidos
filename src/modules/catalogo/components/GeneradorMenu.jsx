@@ -14,7 +14,7 @@ import {
   generarTextoEditorMenu,
   generarTextoAcompanantesEditor,
   guardarUltimoTextoEditorGenerador
-} from "../../../utils/generadorMenu";
+} from "../../../shared/utils/generadorMenu";
 import { useAlertaRafiki } from "../../../shared/components/common";
 
 const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador21J5";
