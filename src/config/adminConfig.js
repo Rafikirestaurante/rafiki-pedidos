@@ -1,1 +1,2 @@
-export const WHATSAPP_RAFIKI = import.meta.env.VITE_WHATSAPP_RAFIKI || "";
+export * from '../shared/constants/adminConfig';
+export { default } from '../shared/constants/adminConfig';
