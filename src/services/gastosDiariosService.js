@@ -3,10 +3,8 @@ import { CATEGORIAS_GASTOS_FALLBACK, PROVEEDORES_GASTOS_FALLBACK } from "./catal
 
 const SELECT_GASTOS = "id, numero_factura, fecha, proveedor, articulos, valor, categoria, metodo_pago, observacion, creado_en, actualizado_en";
 
-function hoyISOColombia() {
-  const fecha = new Date();
-  const offsetMs = -5 * 60 * 60 * 1000;
-  return new Date(fecha.getTime() + offsetMs).toISOString().slice(0, 10);
+function hoyISOColombia(fecha = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(fecha);
 }
 
 export const CATEGORIAS_GASTOS = CATEGORIAS_GASTOS_FALLBACK;
