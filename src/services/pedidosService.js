@@ -4,6 +4,7 @@ export const SELECT_PEDIDOS_ADMIN = [
   "id",
   "created_at",
   "numero_pedido",
+  "ciclo_pedido",
   "estado",
   "cliente",
   "cliente_nombre",

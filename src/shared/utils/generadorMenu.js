@@ -14,11 +14,8 @@ export function precioVisible(valor) {
   if (!limpio) return "";
   return new Intl.NumberFormat("es-CO").format(Number(limpio));
 }
-export function fechaHoyISO() {
-  const hoy = new Date();
-  const offset = hoy.getTimezoneOffset();
-  const local = new Date(hoy.getTime() - offset * 60 * 1000);
-  return local.toISOString().slice(0, 10);
+export function fechaHoyISO(fecha = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(fecha);
 }
 
 
