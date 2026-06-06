@@ -3,7 +3,6 @@ import { supabase } from "../supabaseClient";
 export const SELECT_PEDIDOS_ADMIN = [
   "id",
   "created_at",
-  "updated_at",
   "numero_pedido",
   "estado",
   "cliente",

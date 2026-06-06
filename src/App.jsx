@@ -786,7 +786,7 @@ export default function App() {
 
         const pedidosNuevos = pedidosData || [];
         const nuevoHashPedidos = JSON.stringify(
-          pedidosNuevos.map((pedido) => [pedido.id, pedido.estado, pedido.total, pedido.updated_at || pedido.created_at])
+          pedidosNuevos.map((pedido) => [pedido.id, pedido.estado, pedido.total, pedido.created_at])
         );
 
         setErrorCargaPedidos("");
