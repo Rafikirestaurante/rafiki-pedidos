@@ -6,7 +6,7 @@ import InstallPWA from "./components/InstallPWA.jsx";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt.jsx";
 import PWAOfflineNotice from "./components/PWAOfflineNotice.jsx";
 import PWAOldVersionGuard from "./components/PWAOldVersionGuard.jsx";
-import PedidosOfflineStatus from "./components/PedidosOfflineStatus.jsx";
+import PedidosOfflineStatus from "./modules/pedidos/components/PedidosOfflineStatus.jsx";
 import { registerServiceWorker } from "./registerSW.js";
 import { activarRecuperacionPWA, mostrarPantallaRecuperacionPWA } from "./utils/pwaRecovery.js";
 

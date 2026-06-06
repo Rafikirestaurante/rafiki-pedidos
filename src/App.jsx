@@ -2,8 +2,8 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { supabase, supabaseConfigOk, supabaseConfigMensaje } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./utils/navigation";
-import { InicioRafiki, AdminLogin } from "./components/screens/InicioAdmin";
-import { CampoTexto, useConfirmacion } from "./components/common";
+import { InicioRafiki, AdminLogin } from "./modules/admin/components/InicioAdmin";
+import { CampoTexto, useConfirmacion } from "./shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
   acompanantesATexto,
@@ -29,30 +29,30 @@ import {
 } from "./utils/pedidos";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import { describirActor, nombreRol, obtenerRolUsuarioDesdeTabla, primeraPestanaPermitida, usuarioPuede } from "./utils/authAdmin";
-import CargandoModulo from "./components/layout/CargandoModulo";
+import CargandoModulo from "./shared/components/CargandoModulo";
 import { conTiempoMaximo } from "./utils/async";
 import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "./utils/menuCache";
 import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
 } from "./utils/offlinePedidos";
-import AdminHeaderTabs from "./components/admin/AdminHeaderTabs";
-import AdminPedidosSection from "./components/admin/AdminPedidosSection";
-import PedidoCliente from "./components/cliente/PedidoCliente";
-import ConfirmacionPedidoCliente from "./components/cliente/ConfirmacionPedidoCliente";
-import { useRealtimePedidos } from "./hooks/useRealtimePedidos";
-import { usePedidos } from "./hooks/usePedidos";
-import { useAdminPedidos } from "./hooks/useAdminPedidos";
+import AdminHeaderTabs from "./modules/admin/components/AdminHeaderTabs";
+import AdminPedidosSection from "./modules/admin/components/AdminPedidosSection";
+import PedidoCliente from "./modules/cliente/components/PedidoCliente";
+import ConfirmacionPedidoCliente from "./modules/cliente/components/ConfirmacionPedidoCliente";
+import { useRealtimePedidos } from "./modules/pedidos/hooks/useRealtimePedidos";
+import { usePedidos } from "./modules/pedidos/hooks/usePedidos";
+import { useAdminPedidos } from "./modules/pedidos/hooks/useAdminPedidos";
 import { leerUltimoTextoEditorGenerador } from "./utils/generadorMenu";
 
 
-const SolicitudProductos = lazy(() => import("./components/SolicitudProductos"));
-const GeneradorMenu = lazy(() => import("./components/GeneradorMenu"));
-const PanelMesasPOS = lazy(() => import("./components/PanelMesas"));
-const PanelRafaPrivado = lazy(() => import("./components/PanelRafaPrivado"));
-const CatalogoRafa = lazy(() => import("./components/CatalogoRafa"));
-const GastosDiarios = lazy(() => import("./components/admin/GastosDiarios"));
-const InventarioAdmin = lazy(() => import("./components/admin/InventarioAdmin"));
+const SolicitudProductos = lazy(() => import("./modules/catalogo/components/SolicitudProductos"));
+const GeneradorMenu = lazy(() => import("./modules/catalogo/components/GeneradorMenu"));
+const PanelMesasPOS = lazy(() => import("./modules/mesas/components/PanelMesas"));
+const PanelRafaPrivado = lazy(() => import("./modules/dashboard/components/PanelRafaPrivado"));
+const CatalogoRafa = lazy(() => import("./modules/catalogo/components/CatalogoRafa"));
+const GastosDiarios = lazy(() => import("./modules/gastos/components/GastosDiarios"));
+const InventarioAdmin = lazy(() => import("./modules/inventario/components/InventarioAdmin"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";

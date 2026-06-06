@@ -1,0 +1,609 @@
+import { useCallback, useState } from "react";
+import { supabase } from "../../../supabaseClient";
+import { CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS } from "../../../config/textos";
+import {
+  calcularTotalItems,
+  crearTextoPedido,
+  limpiarAcompanantesCliente,
+  limpiarAcompanantesMenu,
+  limpiarTelefono,
+  limpiarTexto,
+  obtenerCodigoPedido,
+  obtenerEstadoPedido,
+  esCategoriaSopa,
+} from "../../../utils/pedidos";
+import {
+  esErrorDeConexion,
+  guardarPedidoPendienteOffline,
+} from "../../../utils/offlinePedidos";
+import { registrarDescuentoInventarioPedido } from "../../../services/inventarioService";
+
+export function usePedidos({
+  itemsPedido,
+  cliente,
+  telefono,
+  ubicacion,
+  tipoPago,
+  observaciones,
+  pedidos,
+  pedidosPendientes,
+  adminUsuario,
+  adminRol,
+  adminActor,
+  puedeCambiarEstado,
+  puedeEliminarPedido,
+  puedeEditarPedido,
+  puedeFinalizarPendientes,
+  confirmarRafiki,
+  mostrarMensaje,
+  setErrorDatosPedido,
+  setMensaje,
+  setVista,
+  setPedidoFinalizado,
+  setPedidos,
+  pedidoCoincideConFiltroActual,
+}) {
+  const [guardandoPedido, setGuardandoPedido] = useState(false);
+  const [guardandoEstadoPedidoId, setGuardandoEstadoPedidoId] = useState(null);
+  const [eliminandoPedidoId, setEliminandoPedidoId] = useState(null);
+  const [editandoPedidoId, setEditandoPedidoId] = useState(null);
+  const [finalizandoPendientes, setFinalizandoPendientes] = useState(false);
+
+  const agregarPedidoAlListadoSiAplica = useCallback((pedido) => {
+    if (!pedido || !pedidoCoincideConFiltroActual(pedido)) return;
+
+    setPedidos((actual) => {
+      if (actual.some((item) => item.id === pedido.id)) return actual;
+      return [...actual, pedido];
+    });
+  }, [pedidoCoincideConFiltroActual, setPedidos]);
+
+  const registrarAuditoria = useCallback(async ({ accion, pedido, detalle = {} }) => {
+    try {
+      const { error } = await supabase.from("auditoria_pedidos").insert({
+        pedido_id: pedido?.id ? String(pedido.id) : null,
+        codigo_pedido: pedido ? obtenerCodigoPedido(pedido) : null,
+        accion,
+        detalle,
+        usuario_email: adminUsuario?.email || null,
+        usuario_rol: adminRol,
+        actor: adminActor,
+        created_at: new Date().toISOString(),
+      });
+
+      if (error) {
+        console.warn("Auditoría no registrada:", error.message);
+      }
+    } catch (error) {
+      console.warn("Auditoría no registrada:", error?.message || error);
+    }
+  }, [adminActor, adminRol, adminUsuario]);
+
+  const registrarPedido = useCallback(async () => {
+    if (guardandoPedido) return;
+
+    const itemsValidos = itemsPedido
+      .filter((item) => item.plato || item.proteina)
+      .map((item) => {
+        const esSopa = esCategoriaSopa(item.categoria);
+
+        return {
+          ...item,
+          acompanantes: esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || []),
+          observacionAcompanantes: esSopa ? "" : (item.observacionAcompanantes || "").trim()
+        };
+      });
+
+    if (itemsValidos.length === 0) {
+      mostrarMensaje("Debes escoger al menos un producto.", "warning");
+      return;
+    }
+
+    const camposFaltantes = [];
+
+    if (!cliente.trim()) camposFaltantes.push("nombre");
+    if (!telefono.trim()) camposFaltantes.push("teléfono");
+    if (!ubicacion.trim()) camposFaltantes.push("ubicación");
+    if (!tipoPago) camposFaltantes.push("forma de pago");
+
+    if (camposFaltantes.length > 0) {
+      const textoError = `Falta ingresar: ${camposFaltantes.join(", ")}.`;
+      const posicionActual = window.scrollY;
+
+      setErrorDatosPedido(textoError);
+
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: posicionActual, behavior: "auto" });
+      });
+
+      return;
+    }
+
+    setErrorDatosPedido("");
+
+    const clienteNombre = limpiarTexto(cliente, 120);
+    const telefonoLimpio = limpiarTelefono(telefono);
+    const ubicacionLimpia = limpiarTexto(ubicacion, 200);
+    const observacionesLimpias = limpiarTexto(observaciones, 500);
+
+    if (!clienteNombre || !telefonoLimpio || !ubicacionLimpia) {
+      setErrorDatosPedido("Revisa nombre, teléfono y ubicación. Hay datos inválidos o incompletos.");
+      return;
+    }
+
+    const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
+    const total = calcularTotalItems(itemsValidos);
+
+    const nuevoPedido = {
+      cliente: clienteNombre,
+      cliente_nombre: clienteNombre,
+      telefono: telefonoLimpio,
+      ubicacion: ubicacionLimpia,
+      tipo_pago: tipoPago,
+      observaciones: observacionesLimpias,
+      items: itemsValidos,
+      pedido_texto: pedidoTexto,
+      total,
+      estado: "Pendiente",
+      enviado_whatsapp: false
+    };
+
+    const guardarOfflineCliente = (mensajeOffline) => {
+      const pendiente = guardarPedidoPendienteOffline(nuevoPedido, { origen: "cliente" });
+      const pedidoOffline = {
+        ...nuevoPedido,
+        id_temporal: pendiente.id_temporal,
+        pendiente_offline: true
+      };
+
+      setPedidoFinalizado(pedidoOffline);
+      setMensaje({ texto: "", tipo: "info" });
+      setVista("confirmacion");
+      mostrarMensaje(mensajeOffline, "warning");
+    };
+
+    setGuardandoPedido(true);
+
+    try {
+      if (!window.navigator.onLine) {
+        guardarOfflineCliente("Sin internet: tu pedido quedó guardado en este celular y se enviará automáticamente cuando vuelva la conexión.");
+        return;
+      }
+
+      const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+
+      if (error) {
+        if (esErrorDeConexion(error)) {
+          guardarOfflineCliente("Problema de conexión: tu pedido quedó guardado en este celular y se enviará automáticamente cuando vuelva el internet.");
+          return;
+        }
+
+        mostrarMensaje(`Error guardando pedido: ${error.message}`, "error");
+        return;
+      }
+
+      agregarPedidoAlListadoSiAplica(data);
+      setPedidoFinalizado(data);
+      setMensaje({ texto: "", tipo: "info" });
+      setVista("confirmacion");
+    } catch (error) {
+      if (esErrorDeConexion(error)) {
+        guardarOfflineCliente("Problema de conexión: tu pedido quedó guardado en este celular y se enviará automáticamente cuando vuelva el internet.");
+        return;
+      }
+
+      mostrarMensaje(`Error guardando pedido: ${error?.message || "No se pudo guardar el pedido."}`, "error");
+    } finally {
+      setGuardandoPedido(false);
+    }
+  }, [
+    agregarPedidoAlListadoSiAplica,
+    cliente,
+    guardandoPedido,
+    itemsPedido,
+    observaciones,
+    mostrarMensaje,
+    setErrorDatosPedido,
+    setMensaje,
+    setPedidoFinalizado,
+    setVista,
+    telefono,
+    tipoPago,
+    ubicacion,
+  ]);
+
+  const registrarPedidoMesa = useCallback(async ({ items, acompanantes, modoLlevar = false, mesa, cliente, telefono, ubicacion, mesero, tipoPago, observaciones: obsMesa }) => {
+    if (guardandoPedido) return false;
+
+    const itemsValidos = (Array.isArray(items) ? items : [])
+      .filter((item) => item.plato || item.proteina || item.producto)
+      .map((item) => {
+        if (item.categoria === "cafeteria") {
+          return {
+            ...item,
+            paraLlevar: Boolean(modoLlevar)
+          };
+        }
+
+        return {
+          ...item,
+          acompanantes: limpiarAcompanantesMenu(
+            Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+              ? item.acompanantes
+              : acompanantes || []
+          ),
+          observacionAcompanantes: item.observacionAcompanantes || "",
+          paraLlevar: Boolean(modoLlevar)
+        };
+      });
+
+    if (itemsValidos.length === 0) {
+      mostrarMensaje("Agrega al menos un producto al pedido de mesa.", "warning");
+      return false;
+    }
+
+    const esLlevar = Boolean(modoLlevar);
+    const mesaLimpia = esLlevar ? "Llevar" : (limpiarTexto(mesa, 40) || "Mesa 1");
+    const clienteMesaOpcional = limpiarTexto(cliente, 120);
+    const clienteLimpio = clienteMesaOpcional || (esLlevar ? "Cliente" : mesaLimpia);
+    const telefonoLimpio = esLlevar ? limpiarTelefono(telefono) : "";
+    const ubicacionLimpia = esLlevar ? limpiarTexto(ubicacion, 200) : mesaLimpia;
+    const meseroLimpio = limpiarTexto(mesero, 80) || "Mesero";
+    const tipoPagoLimpio = limpiarTexto(tipoPago, 80) || "Efectivo";
+    const observacionesLimpias = limpiarTexto(obsMesa, 500);
+    const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
+    const total = calcularTotalItems(itemsValidos);
+
+    const nuevoPedido = {
+      cliente: clienteLimpio,
+      cliente_nombre: clienteLimpio,
+      telefono: telefonoLimpio,
+      ubicacion: ubicacionLimpia,
+      tipo_pago: tipoPagoLimpio,
+      tipo_pedido: esLlevar ? "llevar" : "mesa",
+      mesa: mesaLimpia,
+      mesero: meseroLimpio,
+      observaciones: observacionesLimpias,
+      items: itemsValidos,
+      pedido_texto: pedidoTexto,
+      total,
+      estado: "Pendiente",
+      enviado_whatsapp: false
+    };
+
+    const guardarOfflineMesa = (mensajeOffline) => {
+      const pendiente = guardarPedidoPendienteOffline(nuevoPedido, { origen: "mesas" });
+      mostrarMensaje(mensajeOffline, "warning");
+      return { ...nuevoPedido, id_temporal: pendiente.id_temporal, pendiente_offline: true };
+    };
+
+    setGuardandoPedido(true);
+
+    try {
+      if (!window.navigator.onLine) {
+        return guardarOfflineMesa(`Sin internet: el pedido de ${mesaLimpia} quedó guardado pendiente por enviar. Se reenviará cuando vuelva la conexión.`);
+      }
+
+      const { data, error } = await supabase.from("pedidos").insert(nuevoPedido).select().single();
+
+      if (error) {
+        if (esErrorDeConexion(error)) {
+          return guardarOfflineMesa(`Problema de conexión: el pedido de ${mesaLimpia} quedó guardado pendiente por enviar.`);
+        }
+
+        mostrarMensaje(`Error guardando pedido de mesa: ${error.message}`, "error");
+        return false;
+      }
+
+      agregarPedidoAlListadoSiAplica(data);
+      mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} enviado a cocina para ${mesaLimpia}.`, "success");
+      return data;
+    } catch (error) {
+      if (esErrorDeConexion(error)) {
+        return guardarOfflineMesa(`Problema de conexión: el pedido de ${mesaLimpia} quedó guardado pendiente por enviar.`);
+      }
+
+      mostrarMensaje(`Error guardando pedido de mesa: ${error?.message || "No se pudo guardar el pedido."}`, "error");
+      return false;
+    } finally {
+      setGuardandoPedido(false);
+    }
+  }, [agregarPedidoAlListadoSiAplica, guardandoPedido, mostrarMensaje]);
+
+  const cambiarEstadoPedido = useCallback(async (id, estado) => {
+    if (guardandoEstadoPedidoId) return;
+
+    if (!puedeCambiarEstado) {
+      mostrarMensaje("Tu rol no tiene permiso para cambiar el estado de pedidos.", "error");
+      return;
+    }
+
+    const estadoNuevo = estado === "Finalizado" ? "Finalizado" : "Pendiente";
+    const pedidoActual = pedidos.find((pedido) => pedido.id === id);
+    const estadoActual = obtenerEstadoPedido(pedidoActual || {});
+
+    if (estadoNuevo === estadoActual) return;
+
+    if (estadoNuevo === "Finalizado") {
+      const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : "";
+      const confirmar = await confirmarRafiki({
+        tipo: "confirmar",
+        titulo: `Marcar pedido #${codigoPedido} como entregado`,
+        mensaje: CONFIRMACIONES_PEDIDOS.pedidoEntregado(codigoPedido),
+        textoConfirmar: "Sí, entregar",
+      });
+
+      if (!confirmar) return;
+    }
+
+    setGuardandoEstadoPedidoId(id);
+
+    try {
+      const { data, error } = await supabase
+        .from("pedidos")
+        .update({ estado: estadoNuevo })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        mostrarMensaje(`Error cambiando estado: ${error.message}`, "error");
+        return;
+      }
+
+      setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      registrarAuditoria({
+        accion: estadoNuevo === "Finalizado" ? "pedido_entregado" : "pedido_pendiente",
+        pedido: data,
+        detalle: { estadoAnterior: estadoActual, estadoNuevo },
+      });
+
+      if (estadoNuevo === "Finalizado") {
+        try {
+          const resultadoInventario = await registrarDescuentoInventarioPedido(data, { usuario: adminActor || adminUsuario?.email || "Admin Rafiki" });
+          const omitidas = resultadoInventario.omitidas?.length || 0;
+          const mensajeInventario = resultadoInventario.total
+            ? ` Inventario actualizado (${resultadoInventario.total} movimientos${omitidas ? `, ${omitidas} omitidos` : ""}).`
+            : " Sin recetas de inventario para descontar.";
+          mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como Entregado.${mensajeInventario}`, "success");
+        } catch (errorInventario) {
+          console.warn("Inventario no actualizado:", errorInventario?.message || errorInventario);
+          mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como Entregado, pero el inventario no se pudo actualizar: ${errorInventario?.message || errorInventario}`, "warning");
+        }
+      } else {
+        mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} marcado como ${estadoNuevo}.`, "success");
+      }
+    } finally {
+      setGuardandoEstadoPedidoId(null);
+    }
+  }, [adminActor, adminUsuario, confirmarRafiki, guardandoEstadoPedidoId, mostrarMensaje, pedidos, puedeCambiarEstado, registrarAuditoria, setPedidos]);
+
+  const finalizarTodosPendientes = useCallback(async () => {
+    if (finalizandoPendientes || guardandoEstadoPedidoId) return;
+
+    if (!puedeFinalizarPendientes) {
+      mostrarMensaje("Tu rol no tiene permiso para finalizar todos los pedidos.", "error");
+      return;
+    }
+
+    const pendientesParaFinalizar = pedidosPendientes.filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
+
+    if (pendientesParaFinalizar.length === 0) {
+      mostrarMensaje(MENSAJES_PEDIDOS.SIN_PEDIDOS_PENDIENTES, "warning");
+      return;
+    }
+
+    const confirmar = await confirmarRafiki({
+      tipo: "advertencia",
+      titulo: "Finalizar pedidos pendientes",
+      mensaje: CONFIRMACIONES_PEDIDOS.finalizarPendientes(pendientesParaFinalizar.length),
+      textoConfirmar: "Finalizar todos",
+    });
+
+    if (!confirmar) return;
+
+    setFinalizandoPendientes(true);
+
+    try {
+      const ids = pendientesParaFinalizar.map((pedido) => pedido.id);
+      const { data, error } = await supabase
+        .from("pedidos")
+        .update({ estado: "Finalizado" })
+        .in("id", ids)
+        .select();
+
+      if (error) {
+        mostrarMensaje(`Error finalizando pedidos: ${error.message}`, "error");
+        return;
+      }
+
+      const actualizados = data || [];
+      const mapaActualizados = new Map(actualizados.map((pedido) => [pedido.id, pedido]));
+
+      setPedidos((actual) => actual.map((pedido) => mapaActualizados.get(pedido.id) || pedido));
+      await Promise.all((actualizados.length ? actualizados : pendientesParaFinalizar).map((pedido) => registrarAuditoria({
+        accion: "finalizacion_masiva",
+        pedido,
+        detalle: { totalSeleccionados: ids.length },
+      })));
+
+      let movimientosInventario = 0;
+      let erroresInventario = 0;
+      for (const pedido of (actualizados.length ? actualizados : pendientesParaFinalizar)) {
+        try {
+          const resultadoInventario = await registrarDescuentoInventarioPedido(pedido, { usuario: adminActor || adminUsuario?.email || "Admin Rafiki" });
+          movimientosInventario += resultadoInventario.total || 0;
+        } catch (errorInventario) {
+          erroresInventario += 1;
+          console.warn("Inventario no actualizado en finalización masiva:", errorInventario?.message || errorInventario);
+        }
+      }
+
+      const mensajeInventario = movimientosInventario
+        ? ` Inventario actualizado (${movimientosInventario} movimientos).`
+        : "";
+      const mensajeErroresInventario = erroresInventario
+        ? ` ${erroresInventario} pedidos no pudieron actualizar inventario.`
+        : "";
+      mostrarMensaje(`${actualizados.length || ids.length} pedidos pendientes marcados como entregados.${mensajeInventario}${mensajeErroresInventario}`, erroresInventario ? "warning" : "success");
+    } finally {
+      setFinalizandoPendientes(false);
+    }
+  }, [adminActor, adminUsuario, confirmarRafiki, finalizandoPendientes, guardandoEstadoPedidoId, mostrarMensaje, pedidosPendientes, puedeFinalizarPendientes, registrarAuditoria, setPedidos]);
+
+  const eliminarPedidoAdministrador = useCallback(async (id) => {
+    if (eliminandoPedidoId) return;
+
+    if (!puedeEliminarPedido) {
+      mostrarMensaje("Tu rol no tiene permiso para eliminar pedidos.", "error");
+      return;
+    }
+
+    const pedidoActual = pedidos.find((pedido) => pedido.id === id);
+    const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
+
+    const confirmar = await confirmarRafiki({
+      tipo: "eliminar",
+      titulo: `Borrar pedido #${codigoPedido}`,
+      mensaje: CONFIRMACIONES_PEDIDOS.eliminarPedido(codigoPedido),
+      textoConfirmar: "Sí, borrar",
+    });
+
+    if (!confirmar) return;
+
+    setEliminandoPedidoId(id);
+
+    try {
+      const { data, error } = await supabase
+        .from("pedidos")
+        .update({ estado: "Borrado" })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        mostrarMensaje(`Error borrando pedido: ${error.message}`, "error");
+        return;
+      }
+
+      setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      registrarAuditoria({
+        accion: "pedido_borrado",
+        pedido: data,
+        detalle: { estadoAnterior: obtenerEstadoPedido(pedidoActual || {}), requiereClaveLocal: false },
+      });
+      mostrarMensaje(`Pedido #${codigoPedido} movido a Pedidos Borrados.`, "success");
+    } finally {
+      setEliminandoPedidoId(null);
+    }
+  }, [confirmarRafiki, eliminandoPedidoId, mostrarMensaje, pedidos, puedeEliminarPedido, registrarAuditoria, setPedidos]);
+
+
+  const editarPedidoAdministrador = useCallback(async (id, cambios = {}) => {
+    if (editandoPedidoId) return false;
+
+    if (!puedeEditarPedido) {
+      mostrarMensaje("Tu rol no tiene permiso para editar pedidos.", "error");
+      return false;
+    }
+
+    const pedidoActual = pedidos.find((pedido) => pedido.id === id);
+    const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
+
+    const clienteLimpio = limpiarTexto(cambios.cliente || cambios.cliente_nombre || "", 120);
+    const telefonoLimpio = limpiarTelefono(cambios.telefono || "");
+    const ubicacionLimpia = limpiarTexto(cambios.ubicacion || "", 200);
+    const mesaLimpia = limpiarTexto(cambios.mesa || "", 40);
+    const meseroLimpio = limpiarTexto(cambios.mesero || "", 80);
+    const tipoPagoLimpio = limpiarTexto(cambios.tipo_pago || "", 80);
+    const observacionesLimpias = limpiarTexto(cambios.observaciones || "", 500);
+    const pedidoTextoLimpio = limpiarTexto(cambios.pedido_texto || "", 3000);
+    const totalNuevo = Number(cambios.total);
+
+    if (!clienteLimpio) {
+      mostrarMensaje("El pedido debe tener cliente o nombre de mesa.", "warning");
+      return false;
+    }
+
+    if (!Number.isFinite(totalNuevo) || totalNuevo < 0) {
+      mostrarMensaje("El total del pedido no es válido.", "warning");
+      return false;
+    }
+
+    const confirmar = await confirmarRafiki({
+      tipo: "confirmar",
+      titulo: `Editar pedido #${codigoPedido}`,
+      mensaje: "Se actualizarán los datos generales del pedido. Esta acción quedará registrada en auditoría.",
+      textoConfirmar: "Guardar cambios",
+    });
+
+    if (!confirmar) return false;
+
+    setEditandoPedidoId(id);
+
+    try {
+      const payload = {
+        cliente: clienteLimpio,
+        cliente_nombre: clienteLimpio,
+        telefono: telefonoLimpio,
+        ubicacion: ubicacionLimpia || mesaLimpia || "",
+        mesa: mesaLimpia,
+        mesero: meseroLimpio,
+        tipo_pago: tipoPagoLimpio || "Efectivo",
+        observaciones: observacionesLimpias,
+        pedido_texto: pedidoTextoLimpio,
+        total: totalNuevo,
+      };
+
+      const { data, error } = await supabase
+        .from("pedidos")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        mostrarMensaje(`Error editando pedido: ${error.message}`, "error");
+        return false;
+      }
+
+      setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      registrarAuditoria({
+        accion: "pedido_editado",
+        pedido: data,
+        detalle: {
+          antes: {
+            cliente: pedidoActual?.cliente || pedidoActual?.cliente_nombre || "",
+            ubicacion: pedidoActual?.ubicacion || "",
+            mesa: pedidoActual?.mesa || "",
+            total: pedidoActual?.total || 0,
+          },
+          despues: {
+            cliente: data?.cliente || data?.cliente_nombre || "",
+            ubicacion: data?.ubicacion || "",
+            mesa: data?.mesa || "",
+            total: data?.total || 0,
+          },
+        },
+      });
+      mostrarMensaje(`Pedido #${codigoPedido} actualizado correctamente.`, "success");
+      return true;
+    } finally {
+      setEditandoPedidoId(null);
+    }
+  }, [confirmarRafiki, editandoPedidoId, mostrarMensaje, pedidos, puedeEditarPedido, registrarAuditoria, setPedidos]);
+
+  return {
+    guardandoPedido,
+    guardandoEstadoPedidoId,
+    eliminandoPedidoId,
+    editandoPedidoId,
+    finalizandoPendientes,
+    registrarPedido,
+    registrarPedidoMesa,
+    cambiarEstadoPedido,
+    finalizarTodosPendientes,
+    eliminarPedidoAdministrador,
+    editarPedidoAdministrador,
+  };
+}
