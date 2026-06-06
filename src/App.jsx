@@ -40,9 +40,9 @@ import AdminHeaderTabs from "./modules/admin/components/AdminHeaderTabs";
 import AdminPedidosSection from "./modules/admin/components/AdminPedidosSection";
 import PedidoCliente from "./modules/cliente/components/PedidoCliente";
 import ConfirmacionPedidoCliente from "./modules/cliente/components/ConfirmacionPedidoCliente";
-import { useRealtimePedidos } from "./modules/pedidos/hooks/useRealtimePedidos";
-import { usePedidos } from "./modules/pedidos/hooks/usePedidos";
-import { useAdminPedidos } from "./modules/pedidos/hooks/useAdminPedidos";
+import { useRealtimePedidos } from "./shared/hooks/useRealtimePedidos";
+import { usePedidos } from "./shared/hooks/usePedidos";
+import { useAdminPedidos } from "./shared/hooks/useAdminPedidos";
 import { leerUltimoTextoEditorGenerador } from "./utils/generadorMenu";
 
 
