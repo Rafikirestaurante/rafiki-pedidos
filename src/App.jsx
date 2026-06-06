@@ -45,6 +45,7 @@ import { useRealtimePedidos } from "./shared/hooks/useRealtimePedidos";
 import { usePedidos } from "./shared/hooks/usePedidos";
 import { useAdminPedidos } from "./shared/hooks/useAdminPedidos";
 import { leerUltimoTextoEditorGenerador } from "./utils/generadorMenu";
+import { cargarPedidosRango } from "./services/pedidosService";
 
 
 const SolicitudProductos = lazy(() => import("./modules/catalogo/components/SolicitudProductos"));
@@ -604,7 +605,7 @@ export default function App() {
         let { data: menuData, error: menuError } = await conTiempoMaximo(
           supabase
             .from("menu_diario")
-            .select("*")
+            .select("id, fecha, titulo, descripcion, platos_detalle, acompanantes, activo")
             .eq("activo", true)
             .eq("fecha", fechaActualMenu)
             .order("id", { ascending: false })
@@ -618,7 +619,7 @@ export default function App() {
           const respuestaMenuActivo = await conTiempoMaximo(
             supabase
               .from("menu_diario")
-              .select("*")
+              .select("id, fecha, titulo, descripcion, platos_detalle, acompanantes, activo")
               .eq("activo", true)
               .order("id", { ascending: false })
               .limit(1)
@@ -769,12 +770,7 @@ export default function App() {
         const rango = obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
 
         const { data: pedidosData, error: pedidosError } = await conTiempoMaximo(
-          supabase
-            .from("pedidos")
-            .select("*")
-            .gte("created_at", rango.inicio)
-            .lt("created_at", rango.fin)
-            .order("created_at", { ascending: true }),
+          cargarPedidosRango(rango.inicio, rango.fin, { ascendente: true }),
           12000,
           "La carga de pedidos"
         );

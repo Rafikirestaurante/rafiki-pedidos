@@ -9,10 +9,12 @@ export const CATEGORIAS_INVENTARIO = ["Carnes", "Verduras", "Granos", "Lácteos"
 export const UNIDADES_INVENTARIO = ["kg", "g", "lb", "unidad", "paquete", "litro", "ml", "bolsa", "caja"];
 export const TIPOS_MOVIMIENTO_INVENTARIO = ["entrada", "salida", "ajuste", "merma"];
 
+export function formatearFechaInventarioColombia(fecha = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(fecha);
+}
+
 export function obtenerFechaInventarioHoy() {
-  const fecha = new Date();
-  const offsetMs = -5 * 60 * 60 * 1000;
-  return new Date(fecha.getTime() + offsetMs).toISOString().slice(0, 10);
+  return formatearFechaInventarioColombia(new Date());
 }
 
 export function normalizarInsumoInventario(item) {

@@ -254,7 +254,7 @@ export default function SolicitudProductos() {
     try {
       const { data, error } = await supabase
         .from("solicitudes_insumos")
-        .select("*")
+        .select("id, fecha_solicitud, fecha_para, insumos, observaciones, mensaje")
         .eq("fecha_solicitud", fecha)
         .order("id", { ascending: false })
         .limit(80);
@@ -520,7 +520,7 @@ export default function SolicitudProductos() {
       const { data, error } = await supabase
         .from("solicitudes_insumos")
         .insert(nuevaSolicitud)
-        .select()
+        .select("id, fecha_solicitud, fecha_para, insumos, observaciones, mensaje")
         .single();
 
       if (error) {

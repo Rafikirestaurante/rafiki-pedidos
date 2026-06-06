@@ -1,3 +1,4 @@
+import { SELECT_PEDIDOS_ADMIN } from "../../services/pedidosService";
 const STORAGE_KEY = 'rafikiPedidosPendientesOffline';
 const EVENTO_CAMBIO = 'rafiki:pedidos-offline-cambio';
 const ESTADOS = {
@@ -7,6 +8,8 @@ const ESTADOS = {
   ERROR: 'error'
 };
 const BLOQUEO_ENVIO_MS = 90 * 1000;
+const MAX_PEDIDOS_OFFLINE = 80;
+const MAX_PEDIDOS_ENVIADOS_HISTORIAL = 10;
 
 function crearIdTemporal() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -73,10 +76,24 @@ function contarActivos(lista) {
   return lista.filter((registro) => registro.estado !== ESTADOS.ENVIADO).length;
 }
 
+function normalizarColaOffline(lista) {
+  const registros = Array.isArray(lista) ? lista : [];
+  const activos = registros.filter((registro) => registro.estado !== ESTADOS.ENVIADO);
+  const enviados = registros
+    .filter((registro) => registro.estado === ESTADOS.ENVIADO)
+    .slice(-MAX_PEDIDOS_ENVIADOS_HISTORIAL);
+
+  if (activos.length <= MAX_PEDIDOS_OFFLINE) return [...enviados, ...activos];
+
+  const recortados = activos.slice(-MAX_PEDIDOS_OFFLINE);
+  return [...enviados, ...recortados];
+}
+
 function guardarLista(lista) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-  actualizarBadgePedidosPendientes(contarActivos(lista));
-  window.dispatchEvent(new CustomEvent(EVENTO_CAMBIO, { detail: { total: contarActivos(lista) } }));
+  const listaNormalizada = normalizarColaOffline(lista);
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(listaNormalizada));
+  actualizarBadgePedidosPendientes(contarActivos(listaNormalizada));
+  window.dispatchEvent(new CustomEvent(EVENTO_CAMBIO, { detail: { total: contarActivos(listaNormalizada) } }));
 }
 
 export function contarPedidosPendientesOffline() {
@@ -207,7 +224,7 @@ export async function sincronizarPedidosPendientesOffline({ supabase, onPedidoSi
     });
 
     try {
-      const { data, error } = await supabase.from('pedidos').insert(registro.pedido).select().single();
+      const { data, error } = await supabase.from('pedidos').insert(registro.pedido).select(SELECT_PEDIDOS_ADMIN).single();
 
       if (error) throw error;
 
