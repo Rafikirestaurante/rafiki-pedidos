@@ -13,6 +13,7 @@ export default function AdminHeaderTabs({
   puedeVerCatalogo,
   puedeVerGastos,
   puedeVerInventario,
+  puedeVerCaja,
   cerrarPanelAdmin,
   navegar,
 }) {
@@ -107,6 +108,16 @@ export default function AdminHeaderTabs({
             className={adminTab === "inventario" ? "active" : ""}
           >
             Inventario
+          </button>
+        )}
+
+        {puedeVerCaja && (
+          <button
+            type="button"
+            onClick={() => setAdminTab("caja")}
+            className={adminTab === "caja" ? "active" : ""}
+          >
+            Caja
           </button>
         )}
 
