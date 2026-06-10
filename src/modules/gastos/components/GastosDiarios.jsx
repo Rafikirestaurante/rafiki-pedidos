@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useAlertaRafiki } from "../../../shared/components/common";
 import { supabaseConfigMensaje, supabaseConfigOk } from "../../../supabaseClient";
 import {
   CATEGORIAS_GASTOS,
@@ -58,6 +59,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   const [insumosInventario, setInsumosInventario] = useState([]);
   const [actualizarInventario, setActualizarInventario] = useState(false);
   const [lineasInventario, setLineasInventario] = useState([{ insumoId: "", cantidad: "" }]);
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
 
   const totalGastos = useMemo(() => gastos.reduce((total, gasto) => total + Number(gasto.valor || 0), 0), [gastos]);
   const resumenCategorias = useMemo(() => resumirPorCampo(gastos, "categoria"), [gastos]);
@@ -188,7 +190,13 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
             motivo: `Compra ${formulario.proveedor || "proveedor"}${formulario.numeroFactura ? ` · Factura ${formulario.numeroFactura}` : ""} · ${obtenerNombreInsumo(linea.insumoId)}`
           })));
         }
-        setMensaje(actualizarInventario ? "Gasto guardado e inventario actualizado." : "Gasto guardado correctamente.");
+        const mensajeExito = actualizarInventario ? "Gasto guardado e inventario actualizado." : "Gasto guardado correctamente.";
+        setMensaje(mensajeExito);
+        mostrarAlertaRafiki({
+          tipo: "success",
+          titulo: "Gasto guardado",
+          mensaje: "Gasto guardado correctamente"
+        });
       }
       const fechaGuardada = formulario.fecha || obtenerFechaGastoHoy();
       limpiarFormulario();
@@ -369,6 +377,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
           <button type="button" className="button light" onClick={limpiarFormulario}>Limpiar</button>
         </div>
       </form>
+
+      {modalAlertaRafiki}
 
       {mostrarInforme && (
       <section className="box" style={{ marginTop: 16 }}>
