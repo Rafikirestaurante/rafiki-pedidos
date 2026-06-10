@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { dinero } from "../../../shared/utils/pedidos";
+import { cargarCajaArqueoPorFecha, guardarFinCaja, guardarInicioCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
 
@@ -196,7 +197,7 @@ function BloqueCuentas({ estado, setEstado }) {
   );
 }
 
-function FormularioArqueo({ titulo, descripcion, estado, setEstado, totalLabel }) {
+function FormularioArqueo({ titulo, descripcion, estado, setEstado, totalLabel, guardando, onGuardar }) {
   return (
     <div className="caja-formulario">
       <section className="card card-pad caja-intro">
@@ -212,16 +213,82 @@ function FormularioArqueo({ titulo, descripcion, estado, setEstado, totalLabel }
       </div>
 
       <BloqueCuentas estado={estado} setEstado={setEstado} />
+
+      <div className="caja-actions">
+        <button type="button" className="btn primary" onClick={onGuardar} disabled={guardando}>
+          {guardando ? "Guardando..." : "Guardar"}
+        </button>
+      </div>
     </div>
   );
 }
 
 export default function CajaAdmin() {
   const [tabCaja, setTabCaja] = useState("inicio");
+  const [fechaCaja] = useState(() => obtenerFechaCajaHoy());
   const [inicioDia, setInicioDia] = useState(() => crearEstadoArqueo());
   const [finDia, setFinDia] = useState(() => crearEstadoArqueo());
+  const [cargando, setCargando] = useState(true);
+  const [guardandoInicio, setGuardandoInicio] = useState(false);
+  const [guardandoFin, setGuardandoFin] = useState(false);
+  const [mensaje, setMensaje] = useState("");
+  const [error, setError] = useState("");
 
-  const diferenciaPreliminar = useMemo(() => totalArqueo(finDia) - totalArqueo(inicioDia), [inicioDia, finDia]);
+  const totalInicio = useMemo(() => totalArqueo(inicioDia), [inicioDia]);
+  const totalFin = useMemo(() => totalArqueo(finDia), [finDia]);
+  const diferenciaPreliminar = useMemo(() => totalFin - totalInicio, [totalFin, totalInicio]);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarArqueo() {
+      setCargando(true);
+      setError("");
+      try {
+        const registro = await cargarCajaArqueoPorFecha(fechaCaja);
+        if (!activo || !registro) return;
+        if (registro.inicioData) setInicioDia(registro.inicioData);
+        if (registro.finData) setFinDia(registro.finData);
+      } catch (err) {
+        if (activo) setError(err?.message || "No se pudo cargar la caja del día.");
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
+
+    cargarArqueo();
+    return () => {
+      activo = false;
+    };
+  }, [fechaCaja]);
+
+  async function guardarInicio() {
+    setGuardandoInicio(true);
+    setMensaje("");
+    setError("");
+    try {
+      await guardarInicioCaja({ fecha: fechaCaja, estado: inicioDia, total: totalInicio });
+      setMensaje("Inicio del día guardado correctamente.");
+    } catch (err) {
+      setError(err?.message || "No se pudo guardar el inicio del día.");
+    } finally {
+      setGuardandoInicio(false);
+    }
+  }
+
+  async function guardarFin() {
+    setGuardandoFin(true);
+    setMensaje("");
+    setError("");
+    try {
+      await guardarFinCaja({ fecha: fechaCaja, estado: finDia, total: totalFin });
+      setMensaje("Fin del día guardado correctamente.");
+    } catch (err) {
+      setError(err?.message || "No se pudo guardar el fin del día.");
+    } finally {
+      setGuardandoFin(false);
+    }
+  }
 
   return (
     <section className="caja-admin">
@@ -231,8 +298,13 @@ export default function CajaAdmin() {
           <p className="muted">
             Arqueo diario para contar Caja Registradora, Caja Azul y saldos de Bancolombia, Nequi y Rafa.
           </p>
+          <p className="muted small">Fecha de caja: {fechaCaja}</p>
         </div>
       </div>
+
+      {mensaje && <div className="alert alert-success caja-alert">{mensaje}</div>}
+      {error && <div className="alert alert-error caja-alert">{error}</div>}
+      {cargando && <div className="card card-pad muted small">Cargando caja guardada del día...</div>}
 
       <div className="admin-tabs caja-tabs">
         <button type="button" className={tabCaja === "inicio" ? "active" : ""} onClick={() => setTabCaja("inicio")}>
@@ -249,20 +321,24 @@ export default function CajaAdmin() {
       {tabCaja === "inicio" && (
         <FormularioArqueo
           titulo="Inicio del día"
-          descripcion="Registra la base inicial antes de empezar la operación. Esta etapa todavía no guarda en Supabase; queda lista para la fase de persistencia."
+          descripcion="Registra la base inicial antes de empezar la operación y guárdala en Supabase para evitar perder el conteo."
           estado={inicioDia}
           setEstado={setInicioDia}
           totalLabel="Total inicio del día"
+          guardando={guardandoInicio}
+          onGuardar={guardarInicio}
         />
       )}
 
       {tabCaja === "fin" && (
         <FormularioArqueo
           titulo="Fin del día"
-          descripcion="Vuelve a contar cajas y cuentas al cierre. Después se confrontará con ventas y gastos del día."
+          descripcion="Vuelve a contar cajas y cuentas al cierre y guarda el arqueo final del día en Supabase."
           estado={finDia}
           setEstado={setFinDia}
           totalLabel="Total fin del día"
+          guardando={guardandoFin}
+          onGuardar={guardarFin}
         />
       )}
 
@@ -279,7 +355,7 @@ export default function CajaAdmin() {
             </article>
           </div>
           <p className="muted small">
-            Por ahora compara solo fin del día contra inicio del día. En 26D/26E se conectan ventas, gastos y guardado real.
+            Por ahora compara fin del día contra inicio del día guardados en Supabase. En 26E se conectan ventas y gastos.
           </p>
         </section>
       )}
