@@ -258,6 +258,7 @@ function AdminPedidosSectionBase({
   eliminandoPedidoId,
   puedeEditarPedido = false,
   editarPedidoAdministrador,
+  onEditarPedidoEnMesas,
   editandoPedidoId,
   pedidosFinalizados,
   consolidado,
@@ -274,6 +275,15 @@ function AdminPedidosSectionBase({
       return ordenPedidosHoy === "primeros" ? fechaA - fechaB : fechaB - fechaA;
     });
   }, [pedidosActivos, ordenPedidosHoy]);
+
+  const abrirEditorPedido = useCallback((pedido) => {
+    if (onEditarPedidoEnMesas) {
+      onEditarPedidoEnMesas(pedido);
+      return;
+    }
+
+    setPedidoEditando(pedido);
+  }, [onEditarPedidoEnMesas]);
 
   const refrescarPedidos = useCallback(() => {
     setRecargaPedidos((actual) => actual + 1);
@@ -357,7 +367,7 @@ function AdminPedidosSectionBase({
         cambiarEstadoPedido={cambiarEstadoPedido}
         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
         puedeEditarPedido={puedeEditarPedido}
-        onEditarPedido={setPedidoEditando}
+        onEditarPedido={abrirEditorPedido}
         editandoPedidoId={editandoPedidoId}
       />
 
@@ -404,7 +414,7 @@ function AdminPedidosSectionBase({
             guardandoEstadoPedidoId={guardandoEstadoPedidoId}
             onEliminarPedido={puedeEliminarPedido ? eliminarPedidoAdministrador : undefined}
             eliminandoPedidoId={eliminandoPedidoId}
-            onEditarPedido={puedeEditarPedido ? setPedidoEditando : undefined}
+            onEditarPedido={puedeEditarPedido ? abrirEditorPedido : undefined}
             editandoPedidoId={editandoPedidoId}
           />
         )}
@@ -420,7 +430,7 @@ function AdminPedidosSectionBase({
         guardandoEstadoPedidoId={guardandoEstadoPedidoId}
         eliminandoPedidoId={eliminandoPedidoId}
         puedeEditarPedido={puedeEditarPedido}
-        onEditarPedido={setPedidoEditando}
+        onEditarPedido={abrirEditorPedido}
         editandoPedidoId={editandoPedidoId}
       />
 

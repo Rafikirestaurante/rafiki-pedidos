@@ -581,6 +581,126 @@ export function usePedidos({
     }
   }, [confirmarRafiki, editandoPedidoId, mostrarMensaje, pedidos, puedeEditarPedido, registrarAuditoria, setPedidos]);
 
+
+
+  const editarPedidoMesaAdministrador = useCallback(async (id, { items, acompanantes, modoLlevar = false, mesa, cliente, telefono, ubicacion, mesero, tipoPago, observaciones: obsMesa } = {}) => {
+    if (editandoPedidoId || guardandoPedido) return false;
+
+    if (!puedeEditarPedido) {
+      mostrarMensaje("Tu rol no tiene permiso para editar pedidos.", "error");
+      return false;
+    }
+
+    const pedidoActual = pedidos.find((pedido) => pedido.id === id);
+    const codigoPedido = pedidoActual ? obtenerCodigoPedido(pedidoActual) : id;
+
+    const itemsValidos = (Array.isArray(items) ? items : [])
+      .filter((item) => item.plato || item.proteina || item.producto)
+      .map((item) => {
+        if (item.categoria === "cafeteria") {
+          return {
+            ...item,
+            paraLlevar: Boolean(modoLlevar)
+          };
+        }
+
+        return {
+          ...item,
+          acompanantes: limpiarAcompanantesMenu(
+            Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+              ? item.acompanantes
+              : acompanantes || []
+          ),
+          observacionAcompanantes: item.observacionAcompanantes || "",
+          paraLlevar: Boolean(modoLlevar)
+        };
+      });
+
+    if (itemsValidos.length === 0) {
+      mostrarMensaje("Agrega al menos un producto antes de guardar la edición.", "warning");
+      return false;
+    }
+
+    const esLlevar = Boolean(modoLlevar);
+    const mesaLimpia = esLlevar ? "Llevar" : limpiarTexto(mesa, 40);
+    const clienteMesaOpcional = limpiarTexto(cliente, 120);
+    const clienteLimpio = clienteMesaOpcional || (esLlevar ? "Cliente" : mesaLimpia);
+    const telefonoLimpio = esLlevar ? limpiarTelefono(telefono) : "";
+    const ubicacionLimpia = esLlevar ? limpiarTexto(ubicacion, 200) : mesaLimpia;
+    const meseroLimpio = limpiarTexto(mesero, 80);
+    const tipoPagoLimpio = limpiarTexto(tipoPago, 80) || "Efectivo";
+    const observacionesLimpias = limpiarTexto(obsMesa, 500);
+    const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
+    const total = calcularTotalItems(itemsValidos);
+
+    if (!mesaLimpia) {
+      mostrarMensaje("Selecciona la mesa o marca Llevar antes de guardar la edición.", "warning");
+      return false;
+    }
+
+    if (!meseroLimpio) {
+      mostrarMensaje("Selecciona el mesero antes de guardar la edición.", "warning");
+      return false;
+    }
+
+    const confirmar = await confirmarRafiki({
+      tipo: "confirmar",
+      titulo: `Guardar edición del pedido #${codigoPedido}`,
+      mensaje: "Se reemplazará el contenido del pedido original usando el panel de mesas. Esta acción quedará registrada en auditoría.",
+      textoConfirmar: "Guardar edición",
+    });
+
+    if (!confirmar) return false;
+
+    setEditandoPedidoId(id);
+
+    try {
+      const payload = {
+        cliente: clienteLimpio,
+        cliente_nombre: clienteLimpio,
+        telefono: telefonoLimpio,
+        ubicacion: ubicacionLimpia,
+        mesa: mesaLimpia,
+        mesero: meseroLimpio,
+        tipo_pago: tipoPagoLimpio,
+        tipo_pedido: esLlevar ? "llevar" : "mesa",
+        observaciones: observacionesLimpias,
+        items: itemsValidos,
+        pedido_texto: pedidoTexto,
+        total,
+      };
+
+      const { data, error } = await actualizarPedido(id, payload);
+
+      if (error) {
+        mostrarMensaje(`Error editando pedido: ${error.message}`, "error");
+        return false;
+      }
+
+      setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
+      registrarAuditoria({
+        accion: "pedido_editado_desde_mesas",
+        pedido: data,
+        detalle: {
+          antes: {
+            mesa: pedidoActual?.mesa || "",
+            total: pedidoActual?.total || 0,
+            items: Array.isArray(pedidoActual?.items) ? pedidoActual.items.length : 0,
+          },
+          despues: {
+            mesa: data?.mesa || "",
+            total: data?.total || 0,
+            items: Array.isArray(data?.items) ? data.items.length : 0,
+          },
+        },
+      });
+      mostrarMensaje(`Pedido #${codigoPedido} editado correctamente desde mesas.`, "success");
+      return data;
+    } finally {
+      setEditandoPedidoId(null);
+    }
+  }, [confirmarRafiki, editandoPedidoId, guardandoPedido, mostrarMensaje, pedidos, puedeEditarPedido, registrarAuditoria, setPedidos]);
+
   return {
     guardandoPedido,
     guardandoEstadoPedidoId,
@@ -593,5 +713,6 @@ export function usePedidos({
     finalizarTodosPendientes,
     eliminarPedidoAdministrador,
     editarPedidoAdministrador,
+    editarPedidoMesaAdministrador,
   };
 }

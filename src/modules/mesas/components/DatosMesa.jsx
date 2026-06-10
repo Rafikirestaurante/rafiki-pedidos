@@ -24,7 +24,8 @@ export default function DatosMesa({
   onMeseroChange,
   onTipoPagoChange,
   onObservacionesChange,
-  onEnviarPedido
+  onEnviarPedido,
+  modoEdicionAdmin = false
 }) {
   return (
     <>
@@ -143,7 +144,7 @@ export default function DatosMesa({
             className="button"
             style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
           >
-            {guardandoPedido ? "Guardando..." : "Enviar a cocina →"}
+            {guardandoPedido ? "Guardando..." : (modoEdicionAdmin ? "Guardar cambios →" : "Enviar a cocina →")}
           </button>
         </div>
       </div>

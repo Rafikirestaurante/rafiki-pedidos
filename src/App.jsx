@@ -164,6 +164,7 @@ export default function App() {
   const [mensajeCambiosPedidos, setMensajeCambiosPedidos] = useState("");
   const [recargaMenu, setRecargaMenu] = useState(0);
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
+  const [pedidoEditandoEnMesas, setPedidoEditandoEnMesas] = useState(null);
   const [platosTexto, setPlatosTexto] = useState("");
   const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
@@ -1292,6 +1293,7 @@ export default function App() {
     finalizarTodosPendientes,
     eliminarPedidoAdministrador,
     editarPedidoAdministrador,
+    editarPedidoMesaAdministrador,
     editandoPedidoId,
   } = usePedidos({
     itemsPedido,
@@ -1318,6 +1320,27 @@ export default function App() {
     setPedidos,
     pedidoCoincideConFiltroActual,
   });
+
+
+  const abrirEditorPedidoEnMesas = useCallback((pedido) => {
+    if (!puedeEditarPedido) {
+      mostrarMensaje("Tu rol no tiene permiso para editar pedidos.", "error");
+      return;
+    }
+
+    setPedidoEditandoEnMesas(pedido || null);
+    navegar("/mesas", "mesas");
+    mostrarMensaje(`Modo edición activado para el pedido #${pedido?.numero_pedido || pedido?.id || ""}.`, "warning");
+  }, [mostrarMensaje, navegar, puedeEditarPedido]);
+
+  const cancelarEdicionPedidoEnMesas = useCallback((opciones = {}) => {
+    setPedidoEditandoEnMesas(null);
+    if (opciones?.volverAdmin) {
+      guardarAdminTabActiva("pedidos");
+      setAdminTab("pedidos");
+      navegar("/admin", "admin");
+    }
+  }, [navegar]);
 
   async function validarClaveAdmin(e) {
     e.preventDefault();
@@ -1544,6 +1567,7 @@ export default function App() {
                 eliminandoPedidoId={eliminandoPedidoId}
                 puedeEditarPedido={puedeEditarPedido}
                 editarPedidoAdministrador={editarPedidoAdministrador}
+                onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
                 editandoPedidoId={editandoPedidoId}
                 pedidosFinalizados={pedidosFinalizados}
                 consolidado={consolidado}
@@ -1616,6 +1640,10 @@ export default function App() {
                   cargandoMenu={cargandoMenu}
                   guardandoPedido={guardandoPedido}
                   onEnviar={registrarPedidoMesa}
+                  pedidoEditando={pedidoEditandoEnMesas}
+                  modoEdicionAdmin={Boolean(pedidoEditandoEnMesas)}
+                  onGuardarEdicion={editarPedidoMesaAdministrador}
+                  onCancelarEdicion={cancelarEdicionPedidoEnMesas}
                 />
               </Suspense>
             </>
@@ -1691,6 +1719,7 @@ export default function App() {
                   eliminandoPedidoId={eliminandoPedidoId}
                   puedeEditarPedido={puedeEditarPedido}
                   editarPedidoAdministrador={editarPedidoAdministrador}
+                  onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
                   editandoPedidoId={editandoPedidoId}
                   pedidosFinalizados={pedidosFinalizados}
                   consolidado={consolidado}

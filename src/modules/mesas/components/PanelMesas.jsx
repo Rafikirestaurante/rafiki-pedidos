@@ -98,7 +98,7 @@ function saboresCatalogoPorCategoria(productos, categoria, fallback = []) {
   return filtrados.length ? filtrados : fallback;
 }
 
-export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar }) {
+export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion }) {
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("");
   const [modoLlevar, setModoLlevar] = useState(false);
@@ -128,6 +128,38 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [cantidadCafeteria, setCantidadCafeteria] = useState(1);
   const [catalogoProductosMesa, setCatalogoProductosMesa] = useState(() => leerProductosCatalogoStorageMesas());
   const [adicionalesAlmuerzoAbiertos, setAdicionalesAlmuerzoAbiertos] = useState({});
+
+  useEffect(() => {
+    if (!pedidoEditando?.id) return;
+
+    const itemsEditables = Array.isArray(pedidoEditando.items) && pedidoEditando.items.length > 0
+      ? pedidoEditando.items.map((item, index) => ({
+          ...crearItemNuevo(),
+          ...item,
+          id: item.id || `edit-${pedidoEditando.id}-${index}`,
+          cantidad: Number(item.cantidad) || 1,
+          precioPlato: Number(item.precioPlato || item.precioProteina || item.precio || 0),
+          precioProteina: Number(item.precioProteina || item.precioPlato || item.precio || 0),
+          acompanantes: Array.isArray(item.acompanantes) ? item.acompanantes : [],
+          adicionalesAlmuerzo: Array.isArray(item.adicionalesAlmuerzo) ? item.adicionalesAlmuerzo : [],
+        }))
+      : [crearItemNuevo()];
+
+    const esLlevar = String(pedidoEditando.tipo_pedido || pedidoEditando.mesa || "").toLowerCase().includes("llevar");
+    setItemsMesa(itemsEditables);
+    setModoLlevar(esLlevar);
+    setMesaLocal(esLlevar ? "" : (pedidoEditando.mesa || pedidoEditando.ubicacion || ""));
+    setClientePedido(pedidoEditando.cliente || pedidoEditando.cliente_nombre || "");
+    setTelefonoLlevar(pedidoEditando.telefono || "");
+    setUbicacionLlevar(esLlevar ? (pedidoEditando.ubicacion || "") : "");
+    setMeseroLocal(pedidoEditando.mesero || "");
+    setTipoPagoMesa(pedidoEditando.tipo_pago || "Efectivo");
+    setObservacionesLocal(pedidoEditando.observaciones || "");
+    setPedidoMesaConfirmado(null);
+    setErrorMesa("");
+    setCategoriaActivaMesa("almuerzos");
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
+  }, [pedidoEditando]);
 
   useEffect(() => {
     let activo = true;
@@ -372,6 +404,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   function reiniciarPedidoMesa() {
+    if (modoEdicionAdmin && pedidoEditando?.id) {
+      onCancelarEdicion?.();
+      return;
+    }
+
     setItemsMesa([crearItemNuevo()]);
     setMesaLocal("");
     setModoLlevar(false);
@@ -608,7 +645,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       return;
     }
 
-    const pedidoGuardado = await onEnviar({
+    const payloadMesa = {
       items: itemsConModoLlevar,
       modoLlevar,
       mesa: modoLlevar ? "Llevar" : mesaLocal,
@@ -618,7 +655,17 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       mesero: meseroLocal,
       tipoPago: tipoPagoMesa,
       observaciones: observacionesLocal
-    });
+    };
+
+    if (modoEdicionAdmin && pedidoEditando?.id) {
+      const pedidoActualizado = await onGuardarEdicion?.(pedidoEditando.id, payloadMesa);
+      if (pedidoActualizado) {
+        onCancelarEdicion?.({ volverAdmin: true });
+      }
+      return;
+    }
+
+    const pedidoGuardado = await onEnviar(payloadMesa);
 
     if (pedidoGuardado) {
       setPedidoMesaConfirmado(pedidoGuardado);
@@ -642,6 +689,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
         <div className="mesa-panel-title">
           <h2>🍽️ Panel Mesas</h2>
         </div>
+
+        {modoEdicionAdmin && pedidoEditando?.id && (
+          <div className="alert alert-warning edición-pedido-mesas" role="alert">
+            <strong>⚠️ Estás editando el pedido #{pedidoEditando.numero_pedido || pedidoEditando.id}</strong>
+            <p className="muted small">Los cambios reemplazarán el pedido original y solo están permitidos para el rol administrador.</p>
+            <button type="button" className="button light" onClick={() => onCancelarEdicion?.()}>
+              Cancelar edición
+            </button>
+          </div>
+        )}
 
         <div className="mesa-step-nav" aria-label="Navegación rápida del pedido">
           <button type="button" onClick={() => irPasoMesas("proteina")} title="Escoge la proteína">1</button>
@@ -1236,6 +1293,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               onTipoPagoChange={setTipoPagoMesa}
               onObservacionesChange={setObservacionesLocal}
               onEnviarPedido={enviarPedidoMesa}
+              modoEdicionAdmin={modoEdicionAdmin}
             />
           </>
         )}
