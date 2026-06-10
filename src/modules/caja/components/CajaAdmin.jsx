@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { dinero } from "../../../shared/utils/pedidos";
-import { cargarCajaArqueoPorFecha, guardarFinCaja, guardarInicioCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
+import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, guardarFinCaja, guardarInicioCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
 
@@ -223,6 +223,34 @@ function FormularioArqueo({ titulo, descripcion, estado, setEstado, totalLabel, 
   );
 }
 
+function ListaMetodoCaja({ titulo, datos = {} }) {
+  const filas = Object.entries(datos || {}).filter(([, valor]) => Number(valor || 0) > 0);
+
+  return (
+    <section className="card card-pad caja-bloque">
+      <h3>{titulo}</h3>
+      {filas.length ? (
+        <div className="caja-metodos-lista">
+          {filas.map(([metodo, valor]) => (
+            <div className="caja-metodo-row" key={metodo}>
+              <span>{metodo}</span>
+              <strong>{dinero(valor)}</strong>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="muted small">Sin movimientos registrados.</p>
+      )}
+    </section>
+  );
+}
+
+function estadoDiferenciaCaja(diferencia) {
+  if (Math.abs(Number(diferencia || 0)) < 1) return { texto: "Cuadrado", clase: "ok" };
+  if (Number(diferencia || 0) > 0) return { texto: "Sobra dinero", clase: "warning" };
+  return { texto: "Falta dinero", clase: "danger" };
+}
+
 export default function CajaAdmin() {
   const [tabCaja, setTabCaja] = useState("inicio");
   const [fechaCaja] = useState(() => obtenerFechaCajaHoy());
@@ -231,12 +259,18 @@ export default function CajaAdmin() {
   const [cargando, setCargando] = useState(true);
   const [guardandoInicio, setGuardandoInicio] = useState(false);
   const [guardandoFin, setGuardandoFin] = useState(false);
+  const [cuadreReal, setCuadreReal] = useState(null);
+  const [cargandoCuadre, setCargandoCuadre] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
 
   const totalInicio = useMemo(() => totalArqueo(inicioDia), [inicioDia]);
   const totalFin = useMemo(() => totalArqueo(finDia), [finDia]);
-  const diferenciaPreliminar = useMemo(() => totalFin - totalInicio, [totalFin, totalInicio]);
+  const ventasTotal = useMemo(() => Number(cuadreReal?.ventasTotal || 0), [cuadreReal]);
+  const gastosTotal = useMemo(() => Number(cuadreReal?.gastosTotal || 0), [cuadreReal]);
+  const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal, [totalInicio, ventasTotal, gastosTotal]);
+  const diferenciaReal = useMemo(() => totalFin - dineroEsperado, [totalFin, dineroEsperado]);
+  const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
 
   useEffect(() => {
     let activo = true;
@@ -257,6 +291,27 @@ export default function CajaAdmin() {
     }
 
     cargarArqueo();
+    return () => {
+      activo = false;
+    };
+  }, [fechaCaja]);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarDatosCuadre() {
+      setCargandoCuadre(true);
+      try {
+        const resumen = await cargarCuadreRealCaja(fechaCaja);
+        if (activo) setCuadreReal(resumen);
+      } catch (err) {
+        if (activo) setError((prev) => prev || err?.message || "No se pudieron cargar ventas y gastos del día.");
+      } finally {
+        if (activo) setCargandoCuadre(false);
+      }
+    }
+
+    cargarDatosCuadre();
     return () => {
       activo = false;
     };
@@ -314,7 +369,7 @@ export default function CajaAdmin() {
           Fin del día
         </button>
         <button type="button" className={tabCaja === "cuadre" ? "active" : ""} onClick={() => setTabCaja("cuadre")}>
-          Cuadre preliminar
+          Cuadre real
         </button>
       </div>
 
@@ -343,22 +398,55 @@ export default function CajaAdmin() {
       )}
 
       {tabCaja === "cuadre" && (
-        <section className="card card-pad caja-cuadre-card">
-          <h2>Cuadre preliminar</h2>
-          <p className="muted">
-            Esta pantalla queda preparada para conectar ventas, gastos y cierre definitivo en la siguiente etapa.
-          </p>
-          <div className="summary-cards caja-resumen">
-            <article className="summary-card compact">
-              <span>Diferencia preliminar</span>
-              <strong>{dinero(diferenciaPreliminar)}</strong>
-            </article>
+        <div className="caja-formulario">
+          <section className="card card-pad caja-cuadre-card">
+            <div className="section-title-row caja-section-title">
+              <div>
+                <h2>Cuadre real</h2>
+                <p className="muted">
+                  Confronta el inicio del día, las ventas reales, los gastos registrados y el conteo final.
+                </p>
+              </div>
+              {cargandoCuadre && <span className="muted small">Actualizando...</span>}
+            </div>
+
+            <div className="summary-cards caja-resumen">
+              <article className="summary-card compact">
+                <span>Inicio del día</span>
+                <strong>{dinero(totalInicio)}</strong>
+              </article>
+              <article className="summary-card compact">
+                <span>Ventas del día</span>
+                <strong>{dinero(ventasTotal)}</strong>
+              </article>
+              <article className="summary-card compact">
+                <span>Gastos del día</span>
+                <strong>{dinero(gastosTotal)}</strong>
+              </article>
+              <article className="summary-card compact">
+                <span>Dinero esperado</span>
+                <strong>{dinero(dineroEsperado)}</strong>
+              </article>
+              <article className="summary-card compact">
+                <span>Fin del día contado</span>
+                <strong>{dinero(totalFin)}</strong>
+              </article>
+              <article className={`summary-card compact caja-estado-${estadoDiferencia.clase}`}>
+                <span>{estadoDiferencia.texto}</span>
+                <strong>{dinero(diferenciaReal)}</strong>
+              </article>
+            </div>
+
+            <p className="muted small">
+              Fórmula: inicio del día + ventas del día - gastos del día = dinero esperado.
+            </p>
+          </section>
+
+          <div className="caja-grid-principal">
+            <ListaMetodoCaja titulo={`Ventas por método (${cuadreReal?.pedidosCantidad || 0} pedidos)`} datos={cuadreReal?.ventasPorMetodo} />
+            <ListaMetodoCaja titulo={`Gastos por método (${cuadreReal?.gastosCantidad || 0} registros)`} datos={cuadreReal?.gastosPorMetodo} />
           </div>
-          <p className="muted small">
-            Por ahora compara fin del día contra inicio del día guardados en Supabase. En 26E se conectan ventas y gastos.
-          </p>
-        </section>
-      )}
-    </section>
+        </div>
+      )}    </section>
   );
 }

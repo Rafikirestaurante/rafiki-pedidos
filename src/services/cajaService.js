@@ -1,4 +1,7 @@
 import { supabase } from "../supabaseClient";
+import { cargarGastosDiarios } from "./gastosDiariosService";
+import { cargarPedidosRango } from "./pedidosService";
+import { obtenerEstadoPedido, obtenerRangoPedidos } from "../shared/utils/pedidos";
 
 const SELECT_CAJA_ARQUEOS = "id, fecha, inicio_data, fin_data, inicio_total, fin_total, creado_en, actualizado_en";
 
@@ -13,6 +16,29 @@ function numeroSeguro(valor) {
 
 export function obtenerFechaCajaHoy() {
   return hoyISOColombia();
+}
+
+function normalizarMetodoPago(valor) {
+  const texto = String(valor || "No especificado").trim().toLowerCase();
+  if (!texto) return "No especificado";
+  if (texto.includes("efect")) return "Efectivo";
+  if (texto.includes("nequi")) return "Nequi";
+  if (texto.includes("rafa")) return "Rafa";
+  if (texto.includes("bancolombia") || texto.includes("transfer")) return "Bancolombia / Transferencia";
+  if (texto.includes("data") || texto.includes("tarjeta") || texto.includes("datáfono") || texto.includes("datafono")) return "Datáfono";
+  return valor || "No especificado";
+}
+
+function sumarPorMetodo(lista = [], obtenerMetodo, obtenerValor) {
+  return lista.reduce((acc, item) => {
+    const metodo = normalizarMetodoPago(obtenerMetodo(item));
+    acc[metodo] = numeroSeguro(acc[metodo]) + numeroSeguro(obtenerValor(item));
+    return acc;
+  }, {});
+}
+
+function sumarTotal(lista = [], obtenerValor) {
+  return lista.reduce((total, item) => total + numeroSeguro(obtenerValor(item)), 0);
 }
 
 export function normalizarCajaArqueo(registro) {
@@ -78,4 +104,29 @@ export function guardarFinCaja({ fecha, estado, total }) {
     campoData: "fin_data",
     campoTotal: "fin_total",
   });
+}
+
+export async function cargarCuadreRealCaja(fecha = hoyISOColombia()) {
+  const fechaConsulta = fecha || hoyISOColombia();
+  const rango = obtenerRangoPedidos("dia", fechaConsulta);
+  const [{ data: pedidosData, error: pedidosError }, gastos] = await Promise.all([
+    cargarPedidosRango(rango.inicio, rango.fin, { ascendente: true }),
+    cargarGastosDiarios(fechaConsulta),
+  ]);
+
+  if (pedidosError) throw pedidosError;
+
+  const pedidosValidos = (pedidosData || []).filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado");
+  const ventasTotal = sumarTotal(pedidosValidos, (pedido) => pedido.total);
+  const gastosTotal = sumarTotal(gastos, (gasto) => gasto.valor);
+
+  return {
+    fecha: fechaConsulta,
+    pedidosCantidad: pedidosValidos.length,
+    gastosCantidad: gastos.length,
+    ventasTotal,
+    gastosTotal,
+    ventasPorMetodo: sumarPorMetodo(pedidosValidos, (pedido) => pedido.tipo_pago || pedido.forma_pago || pedido.metodo_pago, (pedido) => pedido.total),
+    gastosPorMetodo: sumarPorMetodo(gastos, (gasto) => gasto.metodoPago, (gasto) => gasto.valor),
+  };
 }

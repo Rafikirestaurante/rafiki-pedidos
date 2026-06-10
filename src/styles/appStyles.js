@@ -974,6 +974,47 @@ export const appStyles = `
   gap: 12px;
 }
 
+.caja-metodos-lista {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.caja-metodo-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e7e5e4;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.caja-metodo-row span {
+  font-weight: 800;
+  color: #57534e;
+}
+
+.caja-metodo-row strong {
+  color: #111827;
+}
+
+.caja-estado-ok {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.caja-estado-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.caja-estado-danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
 @media (max-width: 900px) {
   .caja-grid-principal,
   .caja-cuentas-grid {
