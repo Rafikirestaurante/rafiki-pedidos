@@ -863,4 +863,139 @@ export const appStyles = `
     width: 100%;
   }
 }
+
+.caja-admin {
+  display: grid;
+  gap: 16px;
+}
+
+.caja-header h2,
+.caja-intro h2,
+.caja-cuadre-card h2 {
+  margin-top: 0;
+}
+
+.caja-tabs {
+  margin-bottom: 0;
+}
+
+.caja-formulario {
+  display: grid;
+  gap: 16px;
+}
+
+.caja-resumen {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.caja-grid-principal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.caja-bloque h3 {
+  margin: 0 0 4px;
+}
+
+.caja-section-title {
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.caja-total-bloque {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 120px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 15px;
+}
+
+.caja-denominaciones {
+  display: grid;
+  gap: 8px;
+}
+
+.caja-denominacion-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.8fr) minmax(70px, 0.65fr) auto minmax(110px, 1fr);
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #e7e5e4;
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px;
+}
+
+.caja-denominacion-row span {
+  color: #57534e;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.caja-denominacion-row input,
+.caja-cuentas-grid input {
+  width: 100%;
+  border: 1.5px solid #e7e5e4;
+  background: #fafaf9;
+  border-radius: 12px;
+  padding: 10px 11px;
+  outline: none;
+  font-family: inherit;
+  font-weight: 900;
+}
+
+.caja-denominacion-row input:focus,
+.caja-cuentas-grid input:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+  background: #fff;
+}
+
+.caja-denominacion-row strong {
+  text-align: right;
+  color: #111827;
+}
+
+.caja-moneditas-row {
+  border-color: #fed7aa;
+  background: #fffbeb;
+}
+
+.caja-cuentas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .caja-grid-principal,
+  .caja-cuentas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .caja-denominacion-row {
+    grid-template-columns: minmax(76px, 0.9fr) minmax(58px, 0.7fr) auto minmax(90px, 1fr);
+    gap: 6px;
+    padding: 7px;
+  }
+
+  .caja-denominacion-row span,
+  .caja-denominacion-row strong {
+    font-size: 12px;
+  }
+
+  .caja-total-bloque {
+    width: 100%;
+  }
+}
+
 `;

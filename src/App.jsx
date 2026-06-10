@@ -55,11 +55,12 @@ const PanelRafaPrivado = lazy(() => import("./modules/dashboard/components/Panel
 const CatalogoRafa = lazy(() => import("./modules/catalogo/components/CatalogoRafa"));
 const GastosDiarios = lazy(() => import("./modules/gastos/components/GastosDiarios"));
 const InventarioAdmin = lazy(() => import("./modules/inventario/components/InventarioAdmin"));
+const CajaAdmin = lazy(() => import("./modules/caja/components/CajaAdmin"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
-const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "gastos", "inventario", "rafa"]);
+const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "gastos", "inventario", "caja", "rafa"]);
 
 function leerAdminTabGuardada() {
   try {
@@ -181,6 +182,7 @@ export default function App() {
   const puedeVerCatalogo = usuarioPuede(adminRol, "catalogo");
   const puedeVerGastos = usuarioPuede(adminRol, "gastos");
   const puedeVerInventario = usuarioPuede(adminRol, "inventario");
+  const puedeVerCaja = usuarioPuede(adminRol, "caja");
   const puedeVerInformeGastos = usuarioPuede(adminRol, "gastos_informe");
   const puedeEliminarPedido = usuarioPuede(adminRol, "eliminar_pedido");
   const puedeEditarPedido = usuarioPuede(adminRol, "editar_pedido");
@@ -1633,6 +1635,7 @@ export default function App() {
                 puedeVerCatalogo={puedeVerCatalogo}
                 puedeVerGastos={puedeVerGastos}
                 puedeVerInventario={puedeVerInventario}
+                puedeVerCaja={puedeVerCaja}
                 cerrarPanelAdmin={cerrarPanelAdmin}
                 navegar={navegar}
               />
@@ -1722,6 +1725,12 @@ export default function App() {
               {adminTab === "inventario" && puedeVerInventario && (
                 <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
                   <InventarioAdmin />
+                </Suspense>
+              )}
+
+              {adminTab === "caja" && puedeVerCaja && (
+                <Suspense fallback={<CargandoModulo texto="Cargando caja..." />}>
+                  <CajaAdmin />
                 </Suspense>
               )}
 
