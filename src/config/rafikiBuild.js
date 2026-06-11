@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '118.1-FASE26F4-RAFA-MOBILE-TABS-ADMIN-2026-06-11',
-  phase: 'Fase 26F4.1 - Rafa móvil con pestañas tipo Admin',
+  version: '119.0-FASE27A-RAFA-TABLAS-MOBILE-2026-06-11',
+  phase: 'Fase 27A - Rafa tablas optimizadas para celular',
   date: '2026-06-11',
-  fase: '26F4.1',
-  notes: 'Se ajustan las pestañas principales de /rafa para que usen el mismo patrón visual de /admin en celular, sin carrusel horizontal ni desbordes laterales.'
+  fase: '27A',
+  notes: 'Se optimizan las tablas internas de /rafa para celular convirtiéndolas en tarjetas responsivas y evitando desbordes horizontales en Informes, Gastos, Inventario y tablas administrativas.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

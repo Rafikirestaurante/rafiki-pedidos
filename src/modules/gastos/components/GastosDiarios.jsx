@@ -428,13 +428,13 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
                   <tbody>
                     {gastos.map((gasto) => (
                       <tr key={gasto.id}>
-                        <td><strong>{gasto.proveedor}</strong>{gasto.observacion ? <><br /><span className="muted small">{gasto.observacion}</span></> : null}</td>
-                        <td><strong>${dinero(gasto.valor)}</strong></td>
-                        <td>{gasto.articulos || <span className="muted">Sin detalle</span>}</td>
-                        <td>{capitalizar(gasto.categoria)}</td>
-                        <td>{capitalizar(gasto.metodoPago)}</td>
-                        <td>{gasto.numeroFactura || "—"}</td>
-                        <td><div className="gastos-acciones"><button type="button" className="button button-small" onClick={() => editarGasto(gasto)}>Editar</button><button type="button" className="button button-small button-danger" onClick={() => eliminarGasto(gasto)}>Eliminar</button></div></td>
+                        <td data-label="Proveedor"><strong>{gasto.proveedor}</strong>{gasto.observacion ? <><br /><span className="muted small">{gasto.observacion}</span></> : null}</td>
+                        <td data-label="Valor"><strong>${dinero(gasto.valor)}</strong></td>
+                        <td data-label="Artículos">{gasto.articulos || <span className="muted">Sin detalle</span>}</td>
+                        <td data-label="Categoría">{capitalizar(gasto.categoria)}</td>
+                        <td data-label="Pago">{capitalizar(gasto.metodoPago)}</td>
+                        <td data-label="Factura">{gasto.numeroFactura || "—"}</td>
+                        <td data-label="Acciones"><div className="gastos-acciones"><button type="button" className="button button-small" onClick={() => editarGasto(gasto)}>Editar</button><button type="button" className="button button-small button-danger" onClick={() => eliminarGasto(gasto)}>Eliminar</button></div></td>
                       </tr>
                     ))}
                   </tbody>

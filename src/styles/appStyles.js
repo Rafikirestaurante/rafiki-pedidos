@@ -1159,4 +1159,130 @@ export const appStyles = `
   }
 }
 
+/* Fase 27A: /rafa responsive real para tablas internas en celular */
+@media (max-width: 720px) {
+  .rafiki-app .rafa-panel-content,
+  .rafiki-app .rafa-panel-content > *,
+  .rafiki-app .rafa-panel-content .card,
+  .rafiki-app .rafa-panel-content .soft-box,
+  .rafiki-app .rafa-panel-content .catalogo-rafa,
+  .rafiki-app .rafa-panel-content .gastos-diarios-panel {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    box-sizing: border-box;
+  }
+
+  .rafiki-app .rafa-panel-content .pedidos-tabla-wrap,
+  .rafiki-app .rafa-panel-content .gastos-tabla-wrap,
+  .rafiki-app .rafa-panel-content .table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .rafiki-app .rafa-panel-content .pedidos-tabla-compacta,
+  .rafiki-app .rafa-panel-content .gastos-tabla,
+  .rafiki-app .rafa-panel-content .admin-table,
+  .rafiki-app .rafa-panel-content .tabla-admin {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+    max-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: transparent;
+  }
+
+  .rafiki-app .rafa-panel-content .pedidos-tabla-compacta thead,
+  .rafiki-app .rafa-panel-content .gastos-tabla thead,
+  .rafiki-app .rafa-panel-content .admin-table thead,
+  .rafiki-app .rafa-panel-content .tabla-admin thead {
+    display: none;
+  }
+
+  .rafiki-app .rafa-panel-content .pedidos-tabla-compacta tbody,
+  .rafiki-app .rafa-panel-content .gastos-tabla tbody,
+  .rafiki-app .rafa-panel-content .admin-table tbody,
+  .rafiki-app .rafa-panel-content .tabla-admin tbody {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .rafiki-app .rafa-panel-content .pedidos-tabla-compacta tr,
+  .rafiki-app .rafa-panel-content .gastos-tabla tr,
+  .rafiki-app .rafa-panel-content .admin-table tr,
+  .rafiki-app .rafa-panel-content .tabla-admin tr {
+    display: grid;
+    width: 100%;
+    gap: 7px;
+    padding: 12px;
+    border: 1px solid #fed7aa;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  }
+
+  .rafiki-app .rafa-panel-content .pedidos-tabla-compacta td,
+  .rafiki-app .rafa-panel-content .gastos-tabla td,
+  .rafiki-app .rafa-panel-content .admin-table td,
+  .rafiki-app .rafa-panel-content .tabla-admin td {
+    display: grid;
+    grid-template-columns: minmax(88px, 0.42fr) minmax(0, 0.58fr);
+    align-items: start;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    font-size: 13px;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .rafiki-app .rafa-panel-content .pedidos-tabla-compacta td::before,
+  .rafiki-app .rafa-panel-content .gastos-tabla td::before,
+  .rafiki-app .rafa-panel-content .admin-table td::before,
+  .rafiki-app .rafa-panel-content .tabla-admin td::before {
+    content: attr(data-label);
+    color: #9a3412;
+    font-size: 11px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .rafiki-app .rafa-panel-content td[colspan] {
+    display: block !important;
+  }
+
+  .rafiki-app .rafa-panel-content td[colspan]::before {
+    content: none !important;
+  }
+
+  .rafiki-app .rafa-panel-content .td-total,
+  .rafiki-app .rafa-panel-content td strong {
+    overflow-wrap: anywhere;
+  }
+
+  .rafiki-app .rafa-panel-content .gastos-acciones,
+  .rafiki-app .rafa-panel-content td .button,
+  .rafiki-app .rafa-panel-content td .mini-btn {
+    width: 100%;
+  }
+
+  .rafiki-app .rafa-panel-content td .button,
+  .rafiki-app .rafa-panel-content td .mini-btn {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+
 `;

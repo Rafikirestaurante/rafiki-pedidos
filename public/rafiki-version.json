@@ -1,8 +1,8 @@
 {
-  "version": "118.1-FASE26F4-RAFA-MOBILE-TABS-ADMIN-2026-06-11",
-  "fase": "26F4.1",
-  "mensaje": "Panel Rafa móvil ajustado con pestañas tipo Admin sin desbordes laterales.",
-  "build": "118.1",
-  "descripcion": "/rafa mantiene pestañas de módulos ajustadas a la pantalla como /admin.",
-  "label": "118.1 - Rafa mobile UX pestañas tipo Admin"
+  "version": "119.0-FASE27A-RAFA-TABLAS-MOBILE-2026-06-11",
+  "fase": "27A",
+  "mensaje": "Panel Rafa ajustado: tablas internas optimizadas para celular.",
+  "build": "119.0",
+  "descripcion": "/rafa ahora adapta Informes, Gastos diarios, Inventario y tablas administrativas a tarjetas responsivas en celular.",
+  "label": "119.0 - Rafa tablas mobile"
 }

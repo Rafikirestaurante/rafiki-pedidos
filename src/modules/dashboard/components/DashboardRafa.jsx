@@ -221,7 +221,7 @@ function DetalleDashboard({ detalle, onCerrar, detalleRef }) {
           <tbody>
             {detalle.filas.length ? detalle.filas.map((fila, index) => (
               <tr key={`${detalle.titulo}-${index}`}>
-                {fila.map((celda, idx) => <td key={idx}>{celda}</td>)}
+                {fila.map((celda, idx) => <td key={idx} data-label={detalle.columnas[idx] || "Dato"}>{celda}</td>)}
               </tr>
             )) : (
               <tr>

@@ -672,9 +672,9 @@ export default function PanelRafaPrivado() {
               <tbody>
                 {resumenVentas.tabla.map((fila) => (
                   <tr key={fila.nombre}>
-                    <td><strong>{fila.nombre}</strong></td>
-                    <td>{fila.cantidad}</td>
-                    <td className="td-total">{dinero(fila.total)}</td>
+                    <td data-label="Categoría"><strong>{fila.nombre}</strong></td>
+                    <td data-label="Cantidad">{fila.cantidad}</td>
+                    <td data-label="Total" className="td-total">{dinero(fila.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -748,13 +748,13 @@ export default function PanelRafaPrivado() {
                 <tbody>
                   {resumenClientes.slice(0, 12).map((cliente) => (
                     <tr key={cliente.clave}>
-                      <td><strong>{cliente.cliente}</strong></td>
-                      <td>{cliente.telefono || "—"}</td>
-                      <td>{cliente.pedidos}</td>
-                      <td>{cliente.cantidad}</td>
-                      <td className="td-total">{dinero(cliente.total)}</td>
-                      <td className={cliente.pendiente > 0 ? "td-total" : ""}>{cliente.pendiente > 0 ? dinero(cliente.pendiente) : "—"}</td>
-                      <td>{formatearFechaHora(cliente.ultimaCompra)}</td>
+                      <td data-label="Cliente"><strong>{cliente.cliente}</strong></td>
+                      <td data-label="Teléfono">{cliente.telefono || "—"}</td>
+                      <td data-label="Pedidos">{cliente.pedidos}</td>
+                      <td data-label="Cantidad">{cliente.cantidad}</td>
+                      <td data-label="Total comprado" className="td-total">{dinero(cliente.total)}</td>
+                      <td data-label="Posible pendiente" className={cliente.pendiente > 0 ? "td-total" : ""}>{cliente.pendiente > 0 ? dinero(cliente.pendiente) : "—"}</td>
+                      <td data-label="Última compra">{formatearFechaHora(cliente.ultimaCompra)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -785,17 +785,17 @@ export default function PanelRafaPrivado() {
                 <tbody>
                   {filasClientesFiltradas.slice(0, 80).map((fila, index) => (
                     <tr key={fila.idFila || `${fila.codigo}-${index}`}>
-                      <td>{formatearFechaHora(fila.fecha)}</td>
-                      <td><strong>{fila.codigo}</strong></td>
-                      <td>
+                      <td data-label="Fecha">{formatearFechaHora(fila.fecha)}</td>
+                      <td data-label="Pedido"><strong>{fila.codigo}</strong></td>
+                      <td data-label="Cliente">
                         <strong>{fila.cliente}</strong>
                         {fila.telefono && <small style={{ display: "block" }}>{fila.telefono}</small>}
                       </td>
-                      <td>{fila.producto}</td>
-                      <td>{fila.cantidad}</td>
-                      <td className="td-total">{dinero(fila.total)}</td>
-                      <td>{fila.pagoPendiente ? "⚠️ " : ""}{fila.formaPago}</td>
-                      <td>{fila.estado}</td>
+                      <td data-label="Producto">{fila.producto}</td>
+                      <td data-label="Cantidad">{fila.cantidad}</td>
+                      <td data-label="Total" className="td-total">{dinero(fila.total)}</td>
+                      <td data-label="Pago">{fila.pagoPendiente ? "⚠️ " : ""}{fila.formaPago}</td>
+                      <td data-label="Estado">{fila.estado}</td>
                     </tr>
                   ))}
                 </tbody>

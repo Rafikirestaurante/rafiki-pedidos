@@ -318,7 +318,7 @@ export default function InventarioAdmin() {
                 {insumosFiltrados.map((item) => {
                   const bajo = item.stockActual <= item.stockMinimo;
                   const totalRelaciones = relacionesPorInsumo.get(item.id)?.length || 0;
-                  return <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.categoria}</td><td>{item.stockActual} {item.unidad}</td><td>{item.stockMinimo} {item.unidad}</td><td>{dinero(item.costoPromedio)}</td><td>{totalRelaciones}</td><td>{bajo ? "⚠️ Bajo" : "✅ OK"}</td><td><button type="button" className="button light" onClick={() => abrirEditorInsumo(item)}>Editar</button></td></tr>;
+                  return <tr key={item.id}><td data-label="Insumo"><strong>{item.nombre}</strong></td><td data-label="Categoría">{item.categoria}</td><td data-label="Stock">{item.stockActual} {item.unidad}</td><td data-label="Mínimo">{item.stockMinimo} {item.unidad}</td><td data-label="Costo">{dinero(item.costoPromedio)}</td><td data-label="Productos asociados">{totalRelaciones}</td><td data-label="Estado">{bajo ? "⚠️ Bajo" : "✅ OK"}</td><td data-label="Acciones"><button type="button" className="button light" onClick={() => abrirEditorInsumo(item)}>Editar</button></td></tr>;
                 })}
                 {!insumosFiltrados.length && <tr><td colSpan="8" className="muted">Sin insumos registrados todavía. Primero crea/activa insumos en Catálogo → Insumos y luego usa “Traer insumos del catálogo”.</td></tr>}
               </tbody>
