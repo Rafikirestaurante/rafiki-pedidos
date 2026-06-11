@@ -61,15 +61,6 @@ export default function PanelRafaAdmin({
             {seccion.titulo}
           </button>
         ))}
-        {typeof onCerrarPanel === "function" && (
-          <button
-            type="button"
-            onClick={onCerrarPanel}
-            className="button light admin-tab-close"
-          >
-            Cerrar panel
-          </button>
-        )}
       </div>
 
       <div className="rafa-panel-content">

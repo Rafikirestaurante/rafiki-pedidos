@@ -1080,4 +1080,95 @@ export const appStyles = `
   display: grid;
   gap: 16px;
 }
+/* Fase 26F4: Panel Rafa optimizado para celular */
+.rafiki-app .rafa-header-compact {
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.rafiki-app .rafa-header-compact .brand {
+  margin-bottom: 4px;
+}
+
+.rafiki-app .rafa-header-title p {
+  margin: 0;
+}
+
+.rafiki-app .rafa-header-nav {
+  align-items: center;
+}
+
+.rafiki-app .rafa-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  margin-bottom: 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.rafiki-app .rafa-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.rafiki-app .rafa-tabs button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 118px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+@media (max-width: 640px) {
+  .rafiki-app .rafa-header-compact {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .rafiki-app .rafa-header-compact .brand {
+    font-size: 14px;
+    padding: 7px 14px;
+  }
+
+  .rafiki-app .rafa-header-nav {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    border-radius: 18px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .rafiki-app .rafa-header-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rafiki-app .rafa-header-nav button,
+  .rafiki-app .rafa-header-nav .rafiki-clear-cache-button {
+    flex: 0 0 auto;
+    padding: 10px 13px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .rafiki-app .rafa-tabs {
+    border-radius: 18px;
+    padding: 7px;
+  }
+
+  .rafiki-app .rafa-tabs button {
+    min-width: 104px;
+    min-height: 42px;
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .rafiki-app .rafa-panel-content {
+    gap: 12px;
+  }
+}
+
 `;

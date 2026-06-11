@@ -2,32 +2,28 @@ import React from "react";
 import PWAClearCacheButton from "../../../../shared/components/PWAClearCacheButton.jsx";
 
 export default function RafaHeaderTabs({
-  adminUsuario,
   adminNombreRol,
   navegar,
   cerrarPanelAdmin,
 }) {
   return (
-    <header className="topbar admin-panel-header">
-      <div>
+    <header className="topbar admin-panel-header rafa-header-compact">
+      <div className="rafa-header-title">
         <div className="brand">🦁 Panel Rafa</div>
-        <h1>Centro administrativo avanzado</h1>
-        <p className="muted">Informes, catálogo, gastos diarios, inventario y caja.</p>
-        {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
         <p className="muted small">Rol: <strong>{adminNombreRol}</strong></p>
       </div>
-      <div className="nav nav-wrap">
+      <div className="nav nav-wrap rafa-header-nav">
         <button type="button" onClick={() => navegar("/admin", "admin")}>
-          Panel admin
+          Admin
         </button>
         <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-          Panel mesas
+          Mesas
         </button>
         <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
-          Pedidos hoy
+          Pedidos
         </button>
         <button type="button" onClick={cerrarPanelAdmin} className="button light">
-          Cerrar panel
+          Salir
         </button>
         <PWAClearCacheButton compact />
       </div>
