@@ -1,6 +1,7 @@
 {
-  "version": "26F-DIAGNOSTICO-LIVIANO-2026-06-11",
-  "fase": "26E5",
+  "version": "26F1-RAFA-PANEL-AGRUPADO-ADMIN-2026-06-11",
+  "fase": "26F1",
   "mensaje": "Estabilidad en guardado de pedidos: timeouts controlados para evitar Guardando infinito.",
-  "build": "114.0"
+  "build": "114.0",
+  "descripcion": "Panel Rafa agrupado con Informes, Catalogo, Gastos Diarios, Inventario y Caja solo para administrador"
 }
