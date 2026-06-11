@@ -1080,7 +1080,7 @@ export const appStyles = `
   display: grid;
   gap: 16px;
 }
-/* Fase 26F4: Panel Rafa optimizado para celular */
+/* Fase 26F4.1: Panel Rafa con pestañas iguales a /admin en móvil */
 .rafiki-app .rafa-header-compact {
   align-items: center;
   margin-bottom: 12px;
@@ -1099,24 +1099,10 @@ export const appStyles = `
 }
 
 .rafiki-app .rafa-tabs {
-  display: flex;
-  overflow-x: auto;
-  gap: 8px;
-  margin-bottom: 12px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.rafiki-app .rafa-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.rafiki-app .rafa-tabs button {
-  flex: 0 0 auto;
-  width: auto;
-  min-width: 118px;
-  padding-left: 16px;
-  padding-right: 16px;
+  /* Mantiene exactamente el comportamiento visual de .admin-tabs.
+     No usar carrusel horizontal: en celular debe encajar en la pantalla. */
+  overflow: visible;
+  margin-bottom: 18px;
 }
 
 @media (max-width: 640px) {
@@ -1155,15 +1141,17 @@ export const appStyles = `
   }
 
   .rafiki-app .rafa-tabs {
+    grid-template-columns: 1fr 1fr;
     border-radius: 18px;
-    padding: 7px;
+    padding: 8px;
   }
 
   .rafiki-app .rafa-tabs button {
-    min-width: 104px;
-    min-height: 42px;
-    font-size: 13px;
-    padding: 10px 12px;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    font-size: 12px;
+    padding: 12px 8px;
   }
 
   .rafiki-app .rafa-panel-content {
