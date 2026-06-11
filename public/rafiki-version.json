@@ -1,5 +1,5 @@
 {
-  "version": "24C2-GASTOS-MENU-SYNC-2026-06-02",
-  "fase": "24C2",
-  "mensaje": "Ajustes de permisos para Gastos, retiro de Inventario en Mesas y mejora de sincronización del menú diario hacia Cliente."
+  "version": "26E5-ESTABILIDAD-PEDIDOS-MESAS-TIMEOUT-2026-06-11",
+  "fase": "26E5",
+  "mensaje": "Estabilidad en guardado de pedidos: timeouts controlados para evitar Guardando infinito."
 }

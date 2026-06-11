@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { conTiempoMaximo } from "../utils/async";
 import { CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS } from "../constants/textos";
 import {
   calcularTotalItems,
@@ -177,7 +178,11 @@ export function usePedidos({
         return;
       }
 
-      const { data, error } = await crearPedido(nuevoPedido);
+      const { data, error } = await conTiempoMaximo(
+        crearPedido(nuevoPedido),
+        9000,
+        "El guardado del pedido"
+      );
 
       if (error) {
         if (esErrorDeConexion(error)) {
@@ -291,7 +296,11 @@ export function usePedidos({
         return guardarOfflineMesa(`Sin internet: el pedido de ${mesaLimpia} quedó guardado pendiente por enviar. Se reenviará cuando vuelva la conexión.`);
       }
 
-      const { data, error } = await crearPedido(nuevoPedido);
+      const { data, error } = await conTiempoMaximo(
+        crearPedido(nuevoPedido),
+        9000,
+        "El guardado del pedido de mesa"
+      );
 
       if (error) {
         if (esErrorDeConexion(error)) {

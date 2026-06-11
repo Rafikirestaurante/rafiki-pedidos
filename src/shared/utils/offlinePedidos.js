@@ -1,4 +1,5 @@
 import { SELECT_PEDIDOS_ADMIN } from "../../services/pedidosService";
+import { conTiempoMaximo } from "./async";
 const STORAGE_KEY = 'rafikiPedidosPendientesOffline';
 const EVENTO_CAMBIO = 'rafiki:pedidos-offline-cambio';
 const ESTADOS = {
@@ -195,7 +196,9 @@ export function esErrorDeConexion(error) {
     mensaje.includes('network') ||
     mensaje.includes('fetch') ||
     mensaje.includes('load failed') ||
-    mensaje.includes('timeout')
+    mensaje.includes('timeout') ||
+    mensaje.includes('tardó demasiado') ||
+    mensaje.includes('tardo demasiado')
   );
 }
 
@@ -224,7 +227,11 @@ export async function sincronizarPedidosPendientesOffline({ supabase, onPedidoSi
     });
 
     try {
-      const { data, error } = await supabase.from('pedidos').insert(registro.pedido).select(SELECT_PEDIDOS_ADMIN).single();
+      const { data, error } = await conTiempoMaximo(
+        supabase.from('pedidos').insert(registro.pedido).select(SELECT_PEDIDOS_ADMIN).single(),
+        9000,
+        'El reenvío del pedido pendiente'
+      );
 
       if (error) throw error;
 
