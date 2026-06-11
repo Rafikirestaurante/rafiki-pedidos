@@ -618,22 +618,6 @@ export default function App() {
           "La carga del menú actual"
         );
 
-        if (!menuData && !menuError) {
-          const respuestaMenuActivo = await conTiempoMaximo(
-            supabase
-              .from("menu_diario")
-              .select("id, fecha, titulo, descripcion, platos_detalle, acompanantes, activo")
-              .eq("activo", true)
-              .order("id", { ascending: false })
-              .limit(1)
-              .maybeSingle(),
-            7000,
-            "La carga del menú activo"
-          );
-          menuData = respuestaMenuActivo.data;
-          menuError = respuestaMenuActivo.error;
-        }
-
         if (cancelado) return;
 
         if (menuError) {
@@ -661,11 +645,31 @@ export default function App() {
             setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
 
             setItemsPedido((actual) => {
-              const hayPedidoEnCurso = actual.some((item) => item.plato || item.proteina);
-              return hayPedidoEnCurso ? actual : [crearItemNuevo()];
+              const nombresMenuActual = new Set(
+                menuNormalizado.platos_detalle.map((plato) => String(plato.nombre || "").trim()).filter(Boolean)
+              );
+
+              const itemsValidosMenuActual = actual
+                .map((item) => {
+                  const nombreItem = String(item.plato || item.proteina || "").trim();
+                  if (!nombreItem) return item;
+                  return nombresMenuActual.has(nombreItem) ? item : crearItemNuevo();
+                })
+                .filter((item, index, lista) => {
+                  const tieneProducto = Boolean(item.plato || item.proteina);
+                  if (tieneProducto) return true;
+                  return lista.every((otro) => !(otro.plato || otro.proteina)) && index === 0;
+                });
+
+              return itemsValidosMenuActual.length ? itemsValidosMenuActual : [crearItemNuevo()];
             });
           }
         } else {
+          const menuVacioHoy = normalizarMenu({ fecha: fechaActualMenu, platos_detalle: [], acompanantes: [] });
+          menuHashRef.current = JSON.stringify({ fecha: fechaActualMenu, platos_detalle: [], acompanantes: [] });
+          setMenu(menuVacioHoy);
+          guardarMenuCache(menuVacioHoy);
+          menuCacheDisponibleRef.current = false;
           setPlatosTexto("");
           setAcompanantesTexto("");
         }
