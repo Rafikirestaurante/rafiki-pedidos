@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '26E3-CLIENTE-MENU-HOY-SEGURO-2026-06-11',
-  phase: 'Fase 26E3 - Protección de menú vigente en cliente',
+  version: '26E4-CLIENTE-MINIMO-2-ACOMPANANTES-2026-06-11',
+  phase: 'Fase 26E4 - Validación de acompañantes en cliente',
   date: '2026-06-11',
-  fase: '26E3',
-  notes: 'El panel cliente deja de usar menús activos de días anteriores, ignora caché vencida y limpia productos seleccionados que no pertenezcan al menú vigente del día.'
+  fase: '26E4',
+  notes: 'El panel cliente exige mínimo 2 acompañantes por almuerzo antes de continuar o enviar el pedido, usando el modal de alertas Rafiki.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

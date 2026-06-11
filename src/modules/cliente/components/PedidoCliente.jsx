@@ -1,4 +1,4 @@
-import { CampoTexto, SelectorCantidad } from "../../../shared/components/common";
+import { CampoTexto, SelectorCantidad, useAlertaRafiki } from "../../../shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   calcularTotalItem,
@@ -38,6 +38,53 @@ export default function PedidoCliente({
   irAElemento,
   registrarPedido,
 }) {
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
+
+  const obtenerItemsSinMinimoAcompanantes = () => itemsPedido
+    .filter((item) => item.plato || item.proteina)
+    .filter((item) => !esCategoriaSopa(item.categoria))
+    .filter((item) => !Array.isArray(item.acompanantes) || item.acompanantes.length < 2);
+
+  const mostrarAlertaMinimoAcompanantes = (itemsSinMinimo) => {
+    const primerItem = itemsSinMinimo[0];
+    const nombreProducto = primerItem?.plato || primerItem?.proteina || "este producto";
+
+    mostrarAlertaRafiki({
+      tipo: "advertencia",
+      titulo: "Faltan acompañantes",
+      mensaje: `Debes seleccionar mínimo 2 acompañantes para ${nombreProducto}.\nPor favor completa los acompañantes antes de continuar.`,
+      textoCerrar: "Entendido"
+    });
+
+    if (primerItem?.id) {
+      irAElemento(`paso-acompanantes-${primerItem.id}`);
+    }
+  };
+
+  const validarMinimoAcompanantesCliente = () => {
+    const itemsSinMinimo = obtenerItemsSinMinimoAcompanantes();
+
+    if (itemsSinMinimo.length === 0) return true;
+
+    mostrarAlertaMinimoAcompanantes(itemsSinMinimo);
+    return false;
+  };
+
+  const irAResumenSiCumpleAcompanantes = () => {
+    if (!validarMinimoAcompanantesCliente()) return;
+    irAElemento("resumen-pedido");
+  };
+
+  const irADatosSiCumpleAcompanantes = () => {
+    if (!validarMinimoAcompanantesCliente()) return;
+    irAElemento("paso-datos-entrega");
+  };
+
+  const registrarPedidoSiCumpleAcompanantes = () => {
+    if (!validarMinimoAcompanantesCliente()) return;
+    registrarPedido();
+  };
+
   return (
 <main className="layout">
               <section className="card" id="inicio-pedido-cliente">
@@ -243,7 +290,7 @@ export default function PedidoCliente({
                                 <button
                                   type="button"
                                   className="button continue-button"
-                                  onClick={() => irAElemento("resumen-pedido")}
+                                  onClick={irAResumenSiCumpleAcompanantes}
                                 >
                                   Ver resumen y continuar
                                 </button>
@@ -325,7 +372,7 @@ export default function PedidoCliente({
 
                     <button
                       type="button"
-                      onClick={() => irAElemento("paso-datos-entrega")}
+                      onClick={irADatosSiCumpleAcompanantes}
                       className="button continue-button"
                     >
                       Continuar
@@ -410,7 +457,7 @@ export default function PedidoCliente({
 
                           <button
                             type="button"
-                            onClick={registrarPedido}
+                            onClick={registrarPedidoSiCumpleAcompanantes}
                             disabled={guardandoPedido || itemsConProducto.length === 0}
                             className="button"
                             style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
@@ -423,6 +470,7 @@ export default function PedidoCliente({
                   </>
                 )}
               </aside>
+              {modalAlertaRafiki}
             </main>
   );
 }
