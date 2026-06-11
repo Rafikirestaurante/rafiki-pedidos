@@ -27,6 +27,10 @@ export function obtenerVistaInicial() {
     return adminActivo ? "admin" : "adminLogin";
   }
 
+  if (ruta === "/rafa") {
+    return adminActivo ? "rafa" : "adminLogin";
+  }
+
   if (ruta === "/pedidos") {
     return adminActivo ? "pedidos" : "adminLogin";
   }

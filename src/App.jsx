@@ -65,8 +65,8 @@ const PanelRafaAdmin = lazy(() => import("./modules/admin/components/rafa/PanelR
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
-const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "rafa"]);
-const ADMIN_TABS_AVANZADAS_REAGRUPADAS = new Set(["catalogo", "gastos", "inventario", "caja"]);
+const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador"]);
+const ADMIN_TABS_AVANZADAS_REAGRUPADAS = new Set(["catalogo", "gastos", "inventario", "caja", "rafa"]);
 
 function leerAdminTabGuardada() {
   try {
@@ -270,7 +270,7 @@ export default function App() {
 
   useEffect(() => {
     let activo = true;
-    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario";
+    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario" || vista === "rafa";
 
     const enviarALoginAdmin = () => {
       localStorage.removeItem("rafikiAdminActivo");
@@ -414,11 +414,6 @@ export default function App() {
     if (!adminAutenticado || adminAuthCargando) return;
     const pestanaPermitida = primeraPestanaPermitida(adminRol);
 
-    if (ADMIN_TABS_AVANZADAS_REAGRUPADAS.has(adminTab) && usuarioPuede(adminRol, "rafa")) {
-      guardarAdminTabActiva("rafa");
-      setAdminTab("rafa");
-      return;
-    }
 
     if (!usuarioPuede(adminRol, adminTab)) {
       guardarAdminTabActiva(pestanaPermitida);
@@ -600,7 +595,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos";
+  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "rafa";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
@@ -1441,6 +1436,8 @@ export default function App() {
       navegar("/pedidos", "pedidos");
     } else if (rutaActual === "/inventario") {
       navegar("/inventario", "inventario");
+    } else if (rutaActual === "/rafa") {
+      navegar("/rafa", "rafa");
     } else {
       navegar("/admin", "admin");
     }
@@ -1456,7 +1453,7 @@ export default function App() {
     setAdminEmail("");
     setAdminPassword("");
     setErrorClaveAdmin("");
-    navegar(rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : "/admin", "adminLogin");
+    navegar(rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : rutaActual === "/rafa" ? "/rafa" : "/admin", "adminLogin");
   }
 
   function nuevoPedidoCliente() {
@@ -1472,7 +1469,7 @@ export default function App() {
 
       <div className="app">
         <div className="container">
-          {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && (
+          {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && vista !== "rafa" && (
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
@@ -1709,6 +1706,54 @@ export default function App() {
             </>
           )}
 
+          {!cargando && vista === "rafa" && adminAutenticado && (
+            <main className="admin-layout">
+              <header className="topbar admin-panel-header">
+                <div>
+                  <div className="brand">🦁 Panel Rafa</div>
+                  <h1>Centro administrativo avanzado</h1>
+                  <p className="muted">Informes, catálogo, gastos, inventario y caja.</p>
+                  {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
+                  <p className="muted small">Rol: <strong>{adminNombreRol}</strong></p>
+                </div>
+                <div className="nav nav-wrap">
+                  <button type="button" onClick={() => navegar("/admin", "admin")}>
+                    Panel admin
+                  </button>
+                  <button type="button" onClick={() => navegar("/mesas", "mesas")}>
+                    Panel mesas
+                  </button>
+                  <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
+                    Pedidos hoy
+                  </button>
+                  <button type="button" onClick={cerrarPanelAdmin} className="button light">
+                    Cerrar panel
+                  </button>
+                </div>
+              </header>
+
+              {puedeVerRafa ? (
+                <Suspense fallback={<CargandoModulo texto="Cargando panel Rafa..." />}>
+                  <PanelRafaAdmin
+                    puedeVerCatalogo={puedeVerCatalogo}
+                    puedeVerGastos={puedeVerGastos}
+                    puedeVerInventario={puedeVerInventario}
+                    puedeVerCaja={puedeVerCaja}
+                    puedeVerInformeGastos={puedeVerInformeGastos}
+                  />
+                </Suspense>
+              ) : (
+                <section className="card card-pad">
+                  <h2>Acceso restringido</h2>
+                  <p className="muted">El Panel Rafa solo está disponible para usuarios registrados con rol administrador.</p>
+                  <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>
+                    Volver al panel admin
+                  </button>
+                </section>
+              )}
+            </main>
+          )}
+
           {!cargando && vista === "admin" && adminAutenticado && (
             <main className="admin-layout">
               <AdminHeaderTabs
@@ -1799,18 +1844,6 @@ export default function App() {
                 </Suspense>
               )}
 
-
-              {adminTab === "rafa" && puedeVerRafa && (
-                <Suspense fallback={<CargandoModulo texto="Cargando panel Rafa..." />}>
-                  <PanelRafaAdmin
-                    puedeVerCatalogo={puedeVerCatalogo}
-                    puedeVerGastos={puedeVerGastos}
-                    puedeVerInventario={puedeVerInventario}
-                    puedeVerCaja={puedeVerCaja}
-                    puedeVerInformeGastos={puedeVerInformeGastos}
-                  />
-                </Suspense>
-              )}
 
               {adminTab === "menu" && puedeVerMenu && (
                 <MenuDiarioTab

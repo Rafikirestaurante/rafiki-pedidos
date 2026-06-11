@@ -30,6 +30,11 @@ export default function AdminHeaderTabs({
           <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
             Pedidos hoy
           </button>
+          {puedeVerRafa && (
+            <button type="button" onClick={() => navegar("/rafa", "rafa")}>
+              Panel Rafa
+            </button>
+          )}
           <PWAClearCacheButton compact />
         </div>
       </header>
@@ -73,15 +78,6 @@ export default function AdminHeaderTabs({
           </button>
         )}
 
-        {puedeVerRafa && (
-          <button
-            type="button"
-            onClick={() => setAdminTab("rafa")}
-            className={adminTab === "rafa" ? "active" : ""}
-          >
-            Panel Rafa
-          </button>
-        )}
 
         <button
           type="button"

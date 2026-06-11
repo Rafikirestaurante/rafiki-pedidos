@@ -1,7 +1,8 @@
 {
-  "version": "26F1-RAFA-PANEL-AGRUPADO-ADMIN-2026-06-11",
+  "version": "116.0-FASE26F2-RAFA-RUTA-INDEPENDIENTE-2026-06-11",
   "fase": "26F1",
   "mensaje": "Estabilidad en guardado de pedidos: timeouts controlados para evitar Guardando infinito.",
   "build": "114.0",
-  "descripcion": "Panel Rafa agrupado con Informes, Catalogo, Gastos Diarios, Inventario y Caja solo para administrador"
+  "descripcion": "Panel Rafa agrupado con Informes, Catalogo, Gastos Diarios, Inventario y Caja solo para administrador",
+  "label": "116.0 - Fase 26F2 Rafa como ruta independiente /rafa"
 }
