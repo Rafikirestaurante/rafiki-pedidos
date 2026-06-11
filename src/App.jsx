@@ -28,7 +28,14 @@ import {
   textoAPlatosDetalle,
 } from "./shared/utils/pedidos";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
-import { describirActor, nombreRol, obtenerRolUsuarioDesdeTabla, primeraPestanaPermitida, usuarioPuede } from "./shared/utils/authAdmin";
+import {
+  describirActor,
+  nombreRol,
+  obtenerRolCacheadoRapido,
+  obtenerRolUsuarioDesdeTabla,
+  primeraPestanaPermitida,
+  usuarioPuede
+} from "./shared/utils/authAdmin";
 import CargandoModulo from "./shared/components/CargandoModulo";
 import { conTiempoMaximo } from "./shared/utils/async";
 import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "./shared/utils/menuCache";
@@ -173,6 +180,7 @@ export default function App() {
   const alertaPedidoTimer = useRef(null);
   const sincronizandoOfflineRef = useRef(false);
   const pedidosCargaHashRef = useRef("");
+  const verificacionAdminRef = useRef({ enCurso: false, ultimoChequeo: 0 });
 
   const adminNombreRol = nombreRol(adminRol);
   const adminActor = describirActor(adminUsuario, adminAutenticado ? "Clave administrativa local" : "Sin sesión");
@@ -264,7 +272,6 @@ export default function App() {
   useEffect(() => {
     let activo = true;
     const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario";
-    const haySesionTemporalAdmin = obtenerSesionActiva("rafikiAdminActivo");
 
     const enviarALoginAdmin = () => {
       localStorage.removeItem("rafikiAdminActivo");
@@ -276,47 +283,85 @@ export default function App() {
       }
     };
 
-    if (!supabaseConfigOk || (!rutaAdmin && !haySesionTemporalAdmin)) {
+    if (!supabaseConfigOk || !rutaAdmin) {
       setAdminAuthCargando(false);
       return () => {
         activo = false;
       };
     }
 
-    setAdminAuthCargando(rutaAdmin);
+    const ahora = Date.now();
+    const verificacionReciente = ahora - verificacionAdminRef.current.ultimoChequeo < 120000;
+
+    // En celular/PWA no bloqueamos el panel si ya hay una sesión local reciente.
+    // La verificación completa sigue corriendo, pero en segundo plano para evitar
+    // que la pantalla quede pegada en "Verificando sesión administrativa...".
+    if (adminAutenticado && adminUsuario && verificacionReciente) {
+      setAdminAuthCargando(false);
+      return () => {
+        activo = false;
+      };
+    }
+
+    if (verificacionAdminRef.current.enCurso) {
+      setAdminAuthCargando(false);
+      return () => {
+        activo = false;
+      };
+    }
+
+    setAdminAuthCargando(!adminAutenticado);
 
     async function revisarSesionAdmin() {
+      verificacionAdminRef.current.enCurso = true;
       try {
         const { data } = await conTiempoMaximo(
           supabase.auth.getSession(),
-          6000,
+          adminAutenticado ? 3000 : 4500,
           "La revisión de sesión administrativa"
         );
         if (!activo) return;
 
         const usuario = data?.session?.user || null;
-        setAdminUsuario(usuario);
+        verificacionAdminRef.current.ultimoChequeo = Date.now();
 
         if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
-          const rol = await cargarRolAdmin(usuario);
-          if (!activo) return;
-          activarSesionAdmin(usuario, rol, { preservarPestana: true });
+          const rolRapido = obtenerRolCacheadoRapido(usuario);
+          activarSesionAdmin(usuario, rolRapido, { preservarPestana: true });
+          setAdminAuthCargando(false);
+
+          // Validamos el rol real en segundo plano. Si la red móvil está lenta,
+          // el panel no queda bloqueado; se mantiene el último rol cacheado.
+          cargarRolAdmin(usuario).catch((error) => {
+            console.warn("No se pudo refrescar el rol administrativo:", error?.message || error);
+          });
+
           if (window.location.pathname.replace(/\/$/, "") === "/admin") {
             setVista("admin");
           }
-        } else if (usuario && !obtenerSesionActiva("rafikiAdminActivo")) {
+          return;
+        }
+
+        if (usuario && !obtenerSesionActiva("rafikiAdminActivo")) {
           await supabase.auth.signOut();
           if (!activo) return;
-          enviarALoginAdmin();
-        } else {
-          enviarALoginAdmin();
         }
+
+        enviarALoginAdmin();
       } catch (error) {
         console.warn("No se pudo revisar la sesión administrativa:", error?.message || error);
-        if (activo && rutaAdmin) {
+        if (!activo) return;
+
+        if (adminAutenticado && obtenerSesionActiva("rafikiAdminActivo")) {
+          setAdminAuthCargando(false);
+          return;
+        }
+
+        if (rutaAdmin) {
           enviarALoginAdmin();
         }
       } finally {
+        verificacionAdminRef.current.enCurso = false;
         if (activo) setAdminAuthCargando(false);
       }
     }
@@ -326,23 +371,29 @@ export default function App() {
     return () => {
       activo = false;
     };
-  }, [vista, cargarRolAdmin, activarSesionAdmin]);
+  }, [vista, adminAutenticado, adminUsuario, cargarRolAdmin, activarSesionAdmin]);
 
   useEffect(() => {
     if (!supabaseConfigOk) return undefined;
 
     let activo = true;
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!activo) return;
 
       const usuario = session?.user || null;
       setAdminUsuario(usuario);
 
       if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
-        const rol = await cargarRolAdmin(usuario);
-        if (!activo) return;
-        activarSesionAdmin(usuario, rol, { preservarPestana: true });
+        const rolRapido = obtenerRolCacheadoRapido(usuario);
+        activarSesionAdmin(usuario, rolRapido, { preservarPestana: true });
         setErrorClaveAdmin("");
+
+        window.setTimeout(() => {
+          if (!activo) return;
+          cargarRolAdmin(usuario).catch((error) => {
+            console.warn("No se pudo refrescar el rol administrativo:", error?.message || error);
+          });
+        }, 0);
         return;
       }
 

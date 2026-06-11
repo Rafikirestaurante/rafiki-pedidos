@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardRafa from "./DashboardRafa";
+import DiagnosticoRafiki, { iniciarDiagnosticoRafikiLigero } from "./DiagnosticoRafiki";
 import { crearDetalleDashboardSeleccionado } from "../utils/dashboardStats";
 import {
   cargarGastosDashboardRango,
@@ -42,6 +43,8 @@ function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTota
     </ul>
   );
 }
+
+iniciarDiagnosticoRafikiLigero();
 
 export default function PanelRafaPrivado() {
   const hoy = fechaISOColombia();
@@ -544,6 +547,9 @@ export default function PanelRafaPrivado() {
         <button type="button" onClick={() => setPestanaRafa("clientes")} className={pestanaRafa === "clientes" ? "active" : ""}>
           👤 Clientes
         </button>
+        <button type="button" onClick={() => setPestanaRafa("diagnostico")} className={pestanaRafa === "diagnostico" ? "active" : ""}>
+          🩺 Diagnóstico
+        </button>
       </div>
 
       {errorRafa && <div className="alert alert-error">{errorRafa}</div>}
@@ -585,6 +591,8 @@ export default function PanelRafaPrivado() {
           onCerrarDetalle={() => setDetalleDashboard("")}
         />
       )}
+
+      {pestanaRafa === "diagnostico" && <DiagnosticoRafiki />}
 
       {pestanaRafa === "informe" && (
       <>

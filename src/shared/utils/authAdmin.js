@@ -18,7 +18,7 @@ const PERMISOS_POR_ROL = {
 const STORAGE_ROL_ADMIN = "rafikiAdminRolCache";
 const ROL_CACHE_MS = 12 * 60 * 60 * 1000;
 
-function leerRolCache(email) {
+export function leerRolCache(email) {
   try {
     const normalizado = String(email || "").trim().toLowerCase();
     if (!normalizado) return "";
@@ -56,6 +56,11 @@ export function obtenerRolUsuario(usuario) {
   const appMetadata = usuario?.app_metadata || {};
   const rol = limpiarRol(metadata.rol || metadata.role || appMetadata.rol || appMetadata.role);
   return PERMISOS_POR_ROL[rol] ? rol : ROL_POR_DEFECTO;
+}
+
+export function obtenerRolCacheadoRapido(usuario) {
+  const email = String(usuario?.email || "").trim().toLowerCase();
+  return leerRolCache(email) || obtenerRolUsuario(usuario);
 }
 
 export async function obtenerRolUsuarioDesdeTabla(supabase, usuario) {
