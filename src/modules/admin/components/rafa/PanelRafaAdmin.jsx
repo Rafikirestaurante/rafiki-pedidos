@@ -8,58 +8,12 @@ const InventarioAdmin = lazy(() => import("../../../inventario/components/Invent
 const CajaAdmin = lazy(() => import("../../../caja/components/CajaAdmin.jsx"));
 
 const SECCIONES = [
-  {
-    id: "informes",
-    titulo: "Informes",
-    descripcion: "Dashboard, informe diario, clientes y diagnóstico de estabilidad.",
-    icono: "📊",
-    permiso: "rafa",
-  },
-  {
-    id: "catalogo",
-    titulo: "Catálogo",
-    descripcion: "Productos, insumos y configuración base del menú.",
-    icono: "📦",
-    permiso: "catalogo",
-  },
-  {
-    id: "gastos",
-    titulo: "Gastos Diarios",
-    descripcion: "Registro, consulta e informe de gastos del restaurante.",
-    icono: "💸",
-    permiso: "gastos",
-  },
-  {
-    id: "inventario",
-    titulo: "Inventario",
-    descripcion: "Movimientos, existencias y control operativo de insumos.",
-    icono: "🧾",
-    permiso: "inventario",
-  },
-  {
-    id: "caja",
-    titulo: "Caja",
-    descripcion: "Inicio del día, fin del día y cuadre real de dinero.",
-    icono: "💰",
-    permiso: "caja",
-  },
+  { id: "informes", titulo: "Informes", permiso: "rafa" },
+  { id: "catalogo", titulo: "Catálogo", permiso: "catalogo" },
+  { id: "gastos", titulo: "Gastos diarios", permiso: "gastos" },
+  { id: "inventario", titulo: "Inventario", permiso: "inventario" },
+  { id: "caja", titulo: "Caja", permiso: "caja" },
 ];
-
-function BotonSeccion({ seccion, activa, onClick }) {
-  return (
-    <button
-      type="button"
-      className={`card card-pad rafa-panel-link ${activa ? "active" : ""}`}
-      onClick={onClick}
-    >
-      <div className="rafa-panel-link-icon" aria-hidden="true">{seccion.icono}</div>
-      <div>
-        <strong>{seccion.titulo}</strong>
-        <p className="muted small">{seccion.descripcion}</p>
-      </div>
-    </button>
-  );
-}
 
 export default function PanelRafaAdmin({
   puedeVerCatalogo = false,
@@ -67,6 +21,7 @@ export default function PanelRafaAdmin({
   puedeVerInventario = false,
   puedeVerCaja = false,
   puedeVerInformeGastos = false,
+  onCerrarPanel,
 }) {
   const permisos = useMemo(() => ({
     rafa: true,
@@ -95,26 +50,26 @@ export default function PanelRafaAdmin({
 
   return (
     <section className="rafa-admin-panel">
-      <div className="card card-pad">
-        <div className="section-header-row">
-          <div>
-            <h2>Panel Rafa</h2>
-            <p className="muted">
-              Centro administrativo privado para informes, catálogo, gastos, inventario y caja.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid rafa-panel-grid">
-          {seccionesDisponibles.map((seccion) => (
-            <BotonSeccion
-              key={seccion.id}
-              seccion={seccion}
-              activa={seccion.id === seccionActual.id}
-              onClick={() => setSeccionActiva(seccion.id)}
-            />
-          ))}
-        </div>
+      <div className="admin-tabs rafa-tabs">
+        {seccionesDisponibles.map((seccion) => (
+          <button
+            key={seccion.id}
+            type="button"
+            onClick={() => setSeccionActiva(seccion.id)}
+            className={seccion.id === seccionActual.id ? "active" : ""}
+          >
+            {seccion.titulo}
+          </button>
+        ))}
+        {typeof onCerrarPanel === "function" && (
+          <button
+            type="button"
+            onClick={onCerrarPanel}
+            className="button light admin-tab-close"
+          >
+            Cerrar panel
+          </button>
+        )}
       </div>
 
       <div className="rafa-panel-content">

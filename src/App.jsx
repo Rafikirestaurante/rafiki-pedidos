@@ -44,6 +44,7 @@ import {
   actualizarBadgePedidosPendientes
 } from "./shared/utils/offlinePedidos";
 import AdminHeaderTabs from "./modules/admin/components/layout/AdminHeaderTabs";
+import RafaHeaderTabs from "./modules/admin/components/rafa/RafaHeaderTabs";
 import AdminPedidosSection from "./modules/admin/components/pedidos/AdminPedidosSection";
 import MenuDiarioTab from "./modules/admin/tabs/MenuDiarioTab";
 import PedidoCliente from "./modules/cliente/components/PedidoCliente";
@@ -1708,29 +1709,12 @@ export default function App() {
 
           {!cargando && vista === "rafa" && adminAutenticado && (
             <main className="admin-layout">
-              <header className="topbar admin-panel-header">
-                <div>
-                  <div className="brand">🦁 Panel Rafa</div>
-                  <h1>Centro administrativo avanzado</h1>
-                  <p className="muted">Informes, catálogo, gastos, inventario y caja.</p>
-                  {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
-                  <p className="muted small">Rol: <strong>{adminNombreRol}</strong></p>
-                </div>
-                <div className="nav nav-wrap">
-                  <button type="button" onClick={() => navegar("/admin", "admin")}>
-                    Panel admin
-                  </button>
-                  <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-                    Panel mesas
-                  </button>
-                  <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
-                    Pedidos hoy
-                  </button>
-                  <button type="button" onClick={cerrarPanelAdmin} className="button light">
-                    Cerrar panel
-                  </button>
-                </div>
-              </header>
+              <RafaHeaderTabs
+                adminUsuario={adminUsuario}
+                adminNombreRol={adminNombreRol}
+                navegar={navegar}
+                cerrarPanelAdmin={cerrarPanelAdmin}
+              />
 
               {puedeVerRafa ? (
                 <Suspense fallback={<CargandoModulo texto="Cargando panel Rafa..." />}>
@@ -1740,6 +1724,7 @@ export default function App() {
                     puedeVerInventario={puedeVerInventario}
                     puedeVerCaja={puedeVerCaja}
                     puedeVerInformeGastos={puedeVerInformeGastos}
+                    onCerrarPanel={cerrarPanelAdmin}
                   />
                 </Suspense>
               ) : (
