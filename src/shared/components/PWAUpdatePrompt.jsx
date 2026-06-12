@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { activarNuevaVersion } from '../../registerSW.js';
 import { esRutaInternaPWA } from '../utils/pwa.js';
-import { limpiarCachesYRecargar } from '../utils/pwaVersion.js';
+import { limpiarCachesYRecargar, suprimirAvisosTemporalmente } from '../utils/pwaVersion.js';
 
 export default function PWAUpdatePrompt() {
   const [actualizar, setActualizar] = useState(null);
@@ -71,7 +71,10 @@ export default function PWAUpdatePrompt() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             type="button"
-            onClick={() => setVisible(false)}
+            onClick={() => {
+              suprimirAvisosTemporalmente(window.sessionStorage, 60);
+              setVisible(false);
+            }}
             disabled={limpiando}
             style={{
               border: '1px solid rgba(255,255,255,.32)',

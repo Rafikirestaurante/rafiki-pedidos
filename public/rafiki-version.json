@@ -1,8 +1,7 @@
 {
-  "version": "119.0-FASE27A-RAFA-TABLAS-MOBILE-2026-06-11",
-  "fase": "27A",
-  "mensaje": "Panel Rafa ajustado: tablas internas optimizadas para celular.",
-  "build": "119.0",
-  "descripcion": "/rafa ahora adapta Informes, Gastos diarios, Inventario y tablas administrativas a tarjetas responsivas en celular.",
-  "label": "119.0 - Rafa tablas mobile"
+  "version": "120.0-FASE26G-BASE114-ESTABILIZACION-AUTH-PWA-2026-06-12",
+  "fase": "26G",
+  "mensaje": "Estabilización Auth/PWA desde base 114: evita aviso repetido de 119 tras rollback y refuerza sesión administrativa.",
+  "build": "120.0",
+  "base_estable": "114.0"
 }

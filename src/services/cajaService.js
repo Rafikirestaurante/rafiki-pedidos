@@ -41,6 +41,19 @@ function sumarTotal(lista = [], obtenerValor) {
   return lista.reduce((total, item) => total + numeroSeguro(obtenerValor(item)), 0);
 }
 
+async function exigirSesionSupabaseCaja() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    throw new Error(`No se pudo validar la sesión de Supabase: ${error.message}`);
+  }
+
+  if (!data?.session?.user) {
+    throw new Error("Debes iniciar sesión nuevamente como administrador para guardar Caja. La sesión de Supabase no está activa.");
+  }
+
+  return data.session;
+}
+
 export function normalizarCajaArqueo(registro) {
   if (!registro) return null;
   return {
@@ -68,6 +81,7 @@ export async function cargarCajaArqueoPorFecha(fecha = hoyISOColombia()) {
 }
 
 async function guardarCajaArqueoParcial({ fecha, campoData, campoTotal, estado, total }) {
+  await exigirSesionSupabaseCaja();
   const fechaGuardar = fecha || hoyISOColombia();
   const payload = {
     fecha: fechaGuardar,

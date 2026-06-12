@@ -137,7 +137,7 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminUsuario, setAdminUsuario] = useState(null);
   const [adminRol, setAdminRol] = useState("usuario");
-  const [adminAuthCargando, setAdminAuthCargando] = useState(true);
+  const [adminAuthCargando, setAdminAuthCargando] = useState(false);
   const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
   const [menu, setMenu] = useState(() => leerMenuCache());
   const [pedidos, setPedidos] = useState([]);
@@ -343,8 +343,12 @@ export default function App() {
         }
 
         if (usuario && !obtenerSesionActiva("rafikiAdminActivo")) {
-          await supabase.auth.signOut();
-          if (!activo) return;
+          // No cerramos la sesión global de Supabase aquí. En móvil/PWA, forzar
+          // signOut durante verificaciones lentas puede dejar módulos como Caja
+          // intentando operar como anon y disparar errores RLS. La autorización
+          // del panel sigue dependiendo de rafikiAdminActivo y del rol.
+          enviarALoginAdmin();
+          return;
         }
 
         enviarALoginAdmin();
@@ -595,7 +599,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos";
+  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),

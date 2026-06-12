@@ -14,6 +14,7 @@ function crearClienteSupabaseSeguro() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        storageKey: "rafiki-supabase-auth-v1",
       },
     });
   }
