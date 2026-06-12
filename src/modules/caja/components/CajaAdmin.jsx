@@ -49,12 +49,13 @@ function crearCajaVacia() {
   return {
     billetes: DENOMINACIONES.reduce((acc, denominacion) => ({ ...acc, [denominacion]: "" }), {}),
     moneditas: "",
+    paquetes: "",
   };
 }
 
 function calcularTotalCaja(caja) {
   const totalBilletes = DENOMINACIONES.reduce((total, denominacion) => total + denominacion * limpiarNumero(caja.billetes?.[denominacion]), 0);
-  return totalBilletes + limpiarNumero(caja.moneditas);
+  return totalBilletes + limpiarNumero(caja.moneditas) + limpiarNumero(caja.paquetes);
 }
 
 function crearEstadoArqueo() {
@@ -133,6 +134,12 @@ function BloqueCaja({ titulo, cajaId, estado, setEstado }) {
           <input type="number" min="0" inputMode="numeric" value={caja.moneditas} onChange={(event) => actualizarConteoCaja(setEstado, cajaId, "moneditas", event.target.value)} placeholder="0" />
           <span>=</span>
           <strong>{dinero(limpiarNumero(caja.moneditas))}</strong>
+        </label>
+        <label className="caja-denominacion-row caja-moneditas-row">
+          <span>Paquetes</span>
+          <input type="number" min="0" inputMode="numeric" value={caja.paquetes} onChange={(event) => actualizarConteoCaja(setEstado, cajaId, "paquetes", event.target.value)} placeholder="0" />
+          <span>=</span>
+          <strong>{dinero(limpiarNumero(caja.paquetes))}</strong>
         </label>
       </div>
     </section>

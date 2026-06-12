@@ -21,7 +21,7 @@ export default function AdminHeaderTabs({
     <>
       <header className="topbar admin-panel-header">
         <div>
-          <div className="brand">⚙️ Panel Administrativo</div>
+          <div className="brand">⚙️ Admin</div>
           <h1>Gestión de pedidos y ventas</h1>
           <p className="muted">Control de pedidos, menú diario, solicitudes y estadísticas.</p>
           {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
@@ -29,16 +29,11 @@ export default function AdminHeaderTabs({
         </div>
         <div className="nav nav-wrap">
           <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-            Panel mesas
+            Mesas
           </button>
           <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
             Pedidos hoy
           </button>
-          {puedeVerGastos && (
-            <button type="button" onClick={() => navegar("/gastos", "gastos")}>
-              Gastos
-            </button>
-          )}
           <PWAClearCacheButton compact />
         </div>
       </header>

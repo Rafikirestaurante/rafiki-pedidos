@@ -1,9 +1,9 @@
 {
-  "version": "118.5-FASE27A5-GENERADOR-INFORME-HISTORIAL-2026-06-12",
-  "fase": "27A5",
-  "mensaje": "Generador de menú ajustado: informe de últimos 12 menús primero, WhatsApp e historial paginado de 5 en 5.",
-  "build": "118.5",
-  "base_estable": "118.4",
-  "phase": "Fase 27A5 - Generador de menú: informe primero e historial paginado",
+  "version": "118.8-FASE27D-NAVEGACION-CAJA-PAQUETES-2026-06-12",
+  "fase": "27D",
+  "mensaje": "Navegación unificada y campo Paquetes agregado en Caja.",
+  "build": "118.8",
+  "base_estable": "118.7",
+  "phase": "Fase 27D - Navegación unificada y paquetes en Caja",
   "date": "2026-06-12"
 }

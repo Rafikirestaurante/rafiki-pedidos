@@ -1497,7 +1497,7 @@ export default function App() {
                     type="button"
                     onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
                   >
-                    Panel admin
+                    Admin
                   </button>
                   <button
                     type="button"
@@ -1518,9 +1518,15 @@ export default function App() {
                 <div className="nav nav-wrap">
                   <button
                     type="button"
+                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
+                  >
+                    Admin
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => navegar("/mesas", "mesas")}
                   >
-                    Panel mesas
+                    Mesas
                   </button>
                   <button
                     type="button"
@@ -1528,18 +1534,6 @@ export default function App() {
                   >
                     Pedidos hoy
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
-                  >
-                    Panel admin
-                  </button>
-                  {vista === "gastos" && puedeVerInventario && (
-                    <button type="button" onClick={() => navegar("/inventario", "inventario")}>Inventario</button>
-                  )}
-                  {vista === "inventario" && (
-                    <button type="button" onClick={() => navegar("/gastos", "gastos")}>Gastos</button>
-                  )}
                 </div>
               )}
 
@@ -1549,13 +1543,13 @@ export default function App() {
                     type="button"
                     onClick={() => navegar("/mesas", "mesas")}
                   >
-                    Panel mesas
+                    Mesas
                   </button>
                   <button
                     type="button"
                     onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
                   >
-                    Panel admin
+                    Admin
                   </button>
                   <button
                     type="button"
@@ -1589,7 +1583,7 @@ export default function App() {
             <section className="card card-pad">
               <h2>Acceso restringido</h2>
               <p className="muted">El módulo de inventario solo está disponible para el rol administrador.</p>
-              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>Volver al panel admin</button>
+              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>Volver a Admin</button>
             </section>
           )}
 
