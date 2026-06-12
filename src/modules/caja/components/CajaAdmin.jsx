@@ -7,6 +7,7 @@ const CUENTAS_INICIALES = [
   { id: "bancolombia", nombre: "Bancolombia" },
   { id: "nequi", nombre: "Nequi" },
   { id: "rafa", nombre: "Rafa" },
+  { id: "datafono", nombre: "Datafono" },
 ];
 
 function limpiarNumero(valor) {
@@ -64,6 +65,25 @@ function crearEstadoArqueo() {
   };
 }
 
+function normalizarEstadoArqueo(estado) {
+  const base = crearEstadoArqueo();
+  if (!estado || typeof estado !== "object") return base;
+
+  return {
+    cajaRegistradora: {
+      ...base.cajaRegistradora,
+      ...(estado.cajaRegistradora || {}),
+      billetes: { ...base.cajaRegistradora.billetes, ...(estado.cajaRegistradora?.billetes || {}) },
+    },
+    cajaAzul: {
+      ...base.cajaAzul,
+      ...(estado.cajaAzul || {}),
+      billetes: { ...base.cajaAzul.billetes, ...(estado.cajaAzul?.billetes || {}) },
+    },
+    cuentas: { ...base.cuentas, ...(estado.cuentas || {}) },
+  };
+}
+
 function totalCuentas(cuentas) {
   return CUENTAS_INICIALES.reduce((total, cuenta) => total + limpiarNumero(cuentas[cuenta.id]), 0);
 }
@@ -85,17 +105,6 @@ function actualizarBilleteCaja(setEstado, cajaId, denominacion, valor) {
 
 function actualizarCuenta(setEstado, cuentaId, valor) {
   setEstado((actual) => ({ ...actual, cuentas: { ...actual.cuentas, [cuentaId]: valor } }));
-}
-
-function ResumenArqueo({ titulo, estado }) {
-  return (
-    <section className="summary-cards caja-resumen">
-      <article className="summary-card compact"><span>{titulo}</span><strong>{dinero(totalArqueo(estado))}</strong></article>
-      <article className="summary-card compact"><span>Caja registradora</span><strong>{dinero(calcularTotalCaja(estado.cajaRegistradora))}</strong></article>
-      <article className="summary-card compact"><span>Caja azul</span><strong>{dinero(calcularTotalCaja(estado.cajaAzul))}</strong></article>
-      <article className="summary-card compact"><span>Bancos / cuentas</span><strong>{dinero(totalCuentas(estado.cuentas))}</strong></article>
-    </section>
-  );
 }
 
 function BloqueCaja({ titulo, cajaId, estado, setEstado }) {
@@ -141,7 +150,7 @@ function BloqueCuentas({ estado, setEstado }) {
         {CUENTAS_INICIALES.map((cuenta) => (
           <label className="field" key={cuenta.id}>
             <span>{cuenta.nombre}</span>
-            <input type="number" min="0" inputMode="numeric" value={estado.cuentas[cuenta.id]} onChange={(event) => actualizarCuenta(setEstado, cuenta.id, event.target.value)} placeholder="0" />
+            <input type="number" min="0" inputMode="numeric" value={estado.cuentas[cuenta.id] ?? ""} onChange={(event) => actualizarCuenta(setEstado, cuenta.id, event.target.value)} placeholder="0" />
           </label>
         ))}
       </div>
@@ -149,11 +158,10 @@ function BloqueCuentas({ estado, setEstado }) {
   );
 }
 
-function FormularioArqueo({ titulo, descripcion, estado, setEstado, totalLabel, guardando, onGuardar }) {
+function FormularioArqueo({ titulo, descripcion, estado, setEstado, guardando, onGuardar }) {
   return (
     <div className="caja-formulario">
       <section className="card card-pad caja-intro"><h2>{titulo}</h2><p className="muted">{descripcion}</p></section>
-      <ResumenArqueo titulo={totalLabel} estado={estado} />
       <div className="caja-grid-principal">
         <BloqueCaja titulo="Caja Registradora" cajaId="cajaRegistradora" estado={estado} setEstado={setEstado} />
         <BloqueCaja titulo="Caja Azul" cajaId="cajaAzul" estado={estado} setEstado={setEstado} />
@@ -238,8 +246,8 @@ export default function CajaAdmin() {
       try {
         const registro = await cargarCajaArqueoPorFecha(fechaCaja);
         if (!activo) return;
-        if (registro?.inicioData) setInicioDia(registro.inicioData);
-        if (registro?.finData) setFinDia(registro.finData);
+        if (registro?.inicioData) setInicioDia(normalizarEstadoArqueo(registro.inicioData));
+        if (registro?.finData) setFinDia(normalizarEstadoArqueo(registro.finData));
       } catch (err) {
         if (activo) setError(err?.message || "No se pudo cargar la caja de la fecha seleccionada.");
       } finally {
@@ -364,7 +372,7 @@ export default function CajaAdmin() {
       <div className="card card-pad caja-header">
         <div>
           <h2>💵 Caja</h2>
-          <p className="muted">Arqueo para controlar Caja Registradora, Caja Azul y saldos de Bancolombia, Nequi y Rafa.</p>
+          <p className="muted">Arqueo para controlar Caja Registradora, Caja Azul y saldos de Bancolombia, Nequi, Rafa y Datafono.</p>
         </div>
         <label className="field caja-fecha-field">
           <span>Fecha</span>
@@ -382,8 +390,8 @@ export default function CajaAdmin() {
         <button type="button" className={tabCaja === "informe" ? "active" : ""} onClick={() => setTabCaja("informe")}>Informe Caja</button>
       </div>
 
-      {tabCaja === "inicio" && <FormularioArqueo titulo="Inicio del día" descripcion="Registra la base inicial antes de empezar la operación." estado={inicioDia} setEstado={setInicioDia} totalLabel="Total inicio del día" guardando={guardandoInicio} onGuardar={guardarInicio} />}
-      {tabCaja === "fin" && <FormularioArqueo titulo="Arqueo" descripcion="Cuenta cajas y bancos en cualquier momento del día. Por ahora queda guardado como último arqueo de la fecha." estado={finDia} setEstado={setFinDia} totalLabel="Total arqueo contado" guardando={guardandoFin} onGuardar={guardarFin} />}
+      {tabCaja === "inicio" && <FormularioArqueo titulo="Inicio del día" descripcion="Registra la base inicial antes de empezar la operación." estado={inicioDia} setEstado={setInicioDia} guardando={guardandoInicio} onGuardar={guardarInicio} />}
+      {tabCaja === "fin" && <FormularioArqueo titulo="Arqueo" descripcion="Cuenta cajas y bancos en cualquier momento del día. Por ahora queda guardado como último arqueo de la fecha." estado={finDia} setEstado={setFinDia} guardando={guardandoFin} onGuardar={guardarFin} />}
 
       {tabCaja === "informe" && (
         <div className="caja-formulario">
