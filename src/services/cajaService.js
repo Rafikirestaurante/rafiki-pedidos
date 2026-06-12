@@ -4,6 +4,7 @@ import { cargarPedidosRango } from "./pedidosService";
 import { obtenerEstadoPedido, obtenerRangoPedidos } from "../shared/utils/pedidos";
 
 const SELECT_CAJA_ARQUEOS = "id, fecha, inicio_data, fin_data, inicio_total, fin_total, creado_en, actualizado_en";
+const SELECT_CAJA_ARQUEOS_HISTORIAL = "id, fecha, arqueo_data, arqueo_total, creado_en";
 
 function hoyISOColombia(fecha = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(fecha);
@@ -52,6 +53,17 @@ async function exigirSesionSupabaseCaja() {
   }
 
   return data.session;
+}
+
+function normalizarArqueoHistorial(registro) {
+  if (!registro) return null;
+  return {
+    id: registro.id,
+    fecha: registro.fecha || hoyISOColombia(),
+    arqueoData: registro.arqueo_data || null,
+    arqueoTotal: numeroSeguro(registro.arqueo_total),
+    creadoEn: registro.creado_en || "",
+  };
 }
 
 export function normalizarCajaArqueo(registro) {
@@ -110,14 +122,60 @@ export function guardarInicioCaja({ fecha, estado, total }) {
   });
 }
 
-export function guardarFinCaja({ fecha, estado, total }) {
-  return guardarCajaArqueoParcial({
+export async function guardarFinCaja({ fecha, estado, total }) {
+  const registro = await guardarCajaArqueoParcial({
     fecha,
     estado,
     total,
     campoData: "fin_data",
     campoTotal: "fin_total",
   });
+
+  // El arqueo principal guarda el último conteo del día; este historial conserva cada cierre parcial.
+  try {
+    await guardarArqueoHistorialCaja({ fecha, estado, total });
+  } catch (error) {
+    console.warn("No se pudo guardar el historial de arqueos:", error?.message || error);
+  }
+
+  return registro;
+}
+
+export async function guardarArqueoHistorialCaja({ fecha, estado, total }) {
+  await exigirSesionSupabaseCaja();
+  const fechaGuardar = fecha || hoyISOColombia();
+  const payload = {
+    fecha: fechaGuardar,
+    arqueo_data: estado || null,
+    arqueo_total: numeroSeguro(total),
+    creado_en: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("caja_arqueos_historial")
+    .insert(payload)
+    .select(SELECT_CAJA_ARQUEOS_HISTORIAL)
+    .single();
+
+  if (error) throw error;
+  return normalizarArqueoHistorial(data);
+}
+
+export async function cargarHistorialArqueosCaja(fecha = hoyISOColombia()) {
+  const fechaConsulta = fecha || hoyISOColombia();
+  const { data, error } = await supabase
+    .from("caja_arqueos_historial")
+    .select(SELECT_CAJA_ARQUEOS_HISTORIAL)
+    .eq("fecha", fechaConsulta)
+    .order("creado_en", { ascending: false });
+
+  if (error) {
+    // Permite que la app siga funcionando si el SQL de historial aún no se ha ejecutado.
+    if (error.code === "42P01" || String(error.message || "").includes("caja_arqueos_historial")) return [];
+    throw error;
+  }
+
+  return (data || []).map(normalizarArqueoHistorial).filter(Boolean);
 }
 
 export async function cargarCuadreRealCaja(fecha = hoyISOColombia()) {

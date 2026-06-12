@@ -1,7 +1,7 @@
 {
-  "version": "116.0-FASE26H-INFORME-CAJA-PROFESIONAL-BASE115-2026-06-12",
-  "fase": "26H",
-  "mensaje": "Informe Caja Profesional sobre base estable 115: selector de fecha, gastos detallados y arqueo más claro.",
-  "build": "116.0",
-  "base_estable": "115.0"
+  "version": "117.0-FASE26H1-INFORME-CAJA-HISTORIAL-WHATSAPP-EXCEL-BASE116-2026-06-12",
+  "fase": "26H1",
+  "mensaje": "Informe Caja con historial de arqueos, WhatsApp y exportación compatible con Excel.",
+  "build": "117.0",
+  "base_estable": "116.0"
 }

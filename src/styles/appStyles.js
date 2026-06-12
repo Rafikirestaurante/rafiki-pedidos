@@ -510,7 +510,64 @@ export const appStyles = `
           to { transform: translateY(0) scale(1); opacity: 1; }
         }
 
-        @media (max-width: 900px) {
+        
+.caja-gasto-detalle-sub {
+  padding: 6px 0 6px 14px;
+  margin-left: 8px;
+  font-size: 12px;
+  border-bottom: 1px dashed #f1f5f9;
+}
+
+.caja-gasto-detalle-sub > div > strong,
+.caja-gasto-detalle-sub > strong {
+  font-size: 12px;
+}
+
+.caja-gasto-detalle-sub span {
+  font-size: 11px;
+}
+
+.caja-informe-title-row {
+  align-items: flex-start;
+}
+
+.caja-informe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+}
+
+.caja-arqueo-historial-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px dashed #f1f5f9;
+  padding: 8px 0 8px 14px;
+  margin-left: 8px;
+  font-size: 12px;
+}
+
+.caja-arqueo-historial-row > div {
+  display: grid;
+  gap: 2px;
+}
+
+.caja-arqueo-historial-row > div > strong,
+.caja-arqueo-historial-row > strong {
+  color: #111827;
+  font-size: 12px;
+}
+
+.caja-arqueo-historial-row span {
+  color: #57534e;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-actions-stack, .contador-sin-revisar, .alerta-pedido-nuevo, .admin-stats, .rafiki-modal-actions { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
           .topbar h1 { font-size: clamp(28px, 9vw, 40px); }
@@ -1101,7 +1158,73 @@ export const appStyles = `
   margin: 10px 0 0;
 }
 
+
+.caja-gasto-detalle-sub {
+  padding: 6px 0 6px 14px;
+  margin-left: 8px;
+  font-size: 12px;
+  border-bottom: 1px dashed #f1f5f9;
+}
+
+.caja-gasto-detalle-sub > div > strong,
+.caja-gasto-detalle-sub > strong {
+  font-size: 12px;
+}
+
+.caja-gasto-detalle-sub span {
+  font-size: 11px;
+}
+
+.caja-informe-title-row {
+  align-items: flex-start;
+}
+
+.caja-informe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+}
+
+.caja-arqueo-historial-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px dashed #f1f5f9;
+  padding: 8px 0 8px 14px;
+  margin-left: 8px;
+  font-size: 12px;
+}
+
+.caja-arqueo-historial-row > div {
+  display: grid;
+  gap: 2px;
+}
+
+.caja-arqueo-historial-row > div > strong,
+.caja-arqueo-historial-row > strong {
+  color: #111827;
+  font-size: 12px;
+}
+
+.caja-arqueo-historial-row span {
+  color: #57534e;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
+  .caja-informe-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .caja-informe-actions .btn {
+    flex: 1;
+  }
+
   .caja-header {
     flex-direction: column;
   }
