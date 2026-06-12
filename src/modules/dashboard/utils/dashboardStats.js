@@ -417,6 +417,46 @@ function compactarBusquedaCliente(valor) {
   return normalizarBusquedaCliente(valor).replace(/\s+/g, "");
 }
 
+function calcularDistanciaEdicion(a, b) {
+  const textoA = String(a || "");
+  const textoB = String(b || "");
+  if (textoA === textoB) return 0;
+  if (!textoA) return textoB.length;
+  if (!textoB) return textoA.length;
+
+  const anterior = Array.from({ length: textoB.length + 1 }, (_, i) => i);
+  const actual = Array(textoB.length + 1).fill(0);
+
+  for (let i = 1; i <= textoA.length; i += 1) {
+    actual[0] = i;
+    for (let j = 1; j <= textoB.length; j += 1) {
+      const costo = textoA[i - 1] === textoB[j - 1] ? 0 : 1;
+      actual[j] = Math.min(
+        anterior[j] + 1,
+        actual[j - 1] + 1,
+        anterior[j - 1] + costo
+      );
+    }
+    for (let j = 0; j <= textoB.length; j += 1) anterior[j] = actual[j];
+  }
+
+  return anterior[textoB.length];
+}
+
+function tokenCoincideBusqueda(termino, contenido) {
+  if (!termino) return true;
+  if (contenido.texto.includes(termino) || contenido.compacto.includes(termino)) return true;
+
+  // Tolerancia controlada para errores pequeños de digitación: cecila -> cecilia, lauara -> laura.
+  if (termino.length < 4) return false;
+
+  const tolerancia = termino.length >= 7 ? 2 : 1;
+  return contenido.tokens.some((token) => {
+    if (!token || Math.abs(token.length - termino.length) > tolerancia) return false;
+    return calcularDistanciaEdicion(termino, token) <= tolerancia;
+  });
+}
+
 function obtenerContenidoBusquedaCliente(fila) {
   const valores = [
     fila.cliente,
@@ -428,14 +468,16 @@ function obtenerContenidoBusquedaCliente(fila) {
     fila.estado,
     fila.observaciones,
     fila.linea,
-    fila.fecha
+    fila.fecha,
+    fila.pagoPendiente ? "pendiente credito fiado debe por pagar" : ""
   ];
 
   const texto = valores.map(normalizarBusquedaCliente).filter(Boolean).join(" ");
   const compacto = valores.map(compactarBusquedaCliente).filter(Boolean).join(" ");
   const digitos = valores.map((valor) => String(valor || "").replace(/\D+/g, "")).filter(Boolean).join(" ");
+  const tokens = Array.from(new Set(texto.split(" ").filter(Boolean)));
 
-  return { texto, compacto, digitos };
+  return { texto, compacto, digitos, tokens };
 }
 
 export function filtrarFilasClientes(filas, busqueda) {
@@ -451,11 +493,9 @@ export function filtrarFilasClientes(filas, busqueda) {
     // Búsqueda numérica: permite encontrar teléfonos o códigos aunque se escriban con espacios o signos.
     if (digitos && contenido.digitos.includes(digitos)) return true;
 
-    // Búsqueda por tokens: todas las palabras deben aparecer, sin importar orden, tildes ni mayúsculas.
-    return terminos.every((termino) => (
-      contenido.texto.includes(termino) ||
-      contenido.compacto.includes(termino)
-    ));
+    // Motor por tokens: todas las palabras deben aparecer, sin importar orden, tildes ni mayúsculas.
+    // Además tolera errores pequeños de digitación para nombres y productos.
+    return terminos.every((termino) => tokenCoincideBusqueda(termino, contenido));
   });
 }
 

@@ -64,14 +64,56 @@ export async function actualizarPedido(id, payload) {
     .single();
 }
 
+const TAMANO_PAGINA_PEDIDOS_RANGO = 1000;
+const MAXIMO_PAGINAS_PEDIDOS_RANGO = 250;
+
 export async function cargarPedidosRango(inicio, fin, opciones = {}) {
-  const { ascendente = true } = opciones;
-  return supabase
-    .from("pedidos")
-    .select(SELECT_PEDIDOS_ADMIN)
-    .gte("created_at", inicio)
-    .lt("created_at", fin)
-    .order("created_at", { ascending: ascendente });
+  const { ascendente = true, paginar = true } = opciones;
+
+  if (!paginar) {
+    return supabase
+      .from("pedidos")
+      .select(SELECT_PEDIDOS_ADMIN)
+      .gte("created_at", inicio)
+      .lt("created_at", fin)
+      .order("created_at", { ascending: ascendente });
+  }
+
+  const acumulado = [];
+  let totalEsperado = null;
+
+  for (let pagina = 0; pagina < MAXIMO_PAGINAS_PEDIDOS_RANGO; pagina += 1) {
+    const desde = pagina * TAMANO_PAGINA_PEDIDOS_RANGO;
+    const hasta = desde + TAMANO_PAGINA_PEDIDOS_RANGO - 1;
+
+    const consulta = supabase
+      .from("pedidos")
+      .select(SELECT_PEDIDOS_ADMIN, pagina === 0 ? { count: "exact" } : undefined)
+      .gte("created_at", inicio)
+      .lt("created_at", fin)
+      .order("created_at", { ascending: ascendente })
+      .range(desde, hasta);
+
+    const { data, error, count } = await consulta;
+
+    if (error) return { data: acumulado, error };
+    if (pagina === 0 && Number.isFinite(count)) totalEsperado = count;
+
+    const lote = Array.isArray(data) ? data : [];
+    acumulado.push(...lote);
+
+    if (lote.length < TAMANO_PAGINA_PEDIDOS_RANGO || (totalEsperado !== null && acumulado.length >= totalEsperado)) {
+      return { data: acumulado, error: null, count: totalEsperado, completo: true };
+    }
+  }
+
+  return {
+    data: acumulado,
+    error: null,
+    count: totalEsperado,
+    completo: false,
+    advertencia: `Se cargaron ${acumulado.length} registros, pero el rango puede tener más. Para auditoría crítica, reduce el rango o exporta por periodos.`
+  };
 }
 
 export function crearCanalPedidosRealtime(nombreCanal, onCambio, onEstado) {

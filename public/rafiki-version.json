@@ -1,9 +1,9 @@
 {
-  "version": "118.1-FASE27A2-CLIENTES-BUSQUEDA-TOKENS-EXCEL-2026-06-12",
-  "fase": "26H1",
-  "mensaje": "Informe Caja con historial de arqueos, WhatsApp y exportación compatible con Excel.",
-  "build": "117.0",
-  "base_estable": "116.0",
-  "phase": "Fase 27A2 - Clientes búsqueda agresiva y exportación Excel",
+  "version": "118.3-FASE27A3-MOTOR-CLIENTES-CREDITOS-2026-06-12",
+  "fase": "27A3",
+  "mensaje": "Motor reforzado en Rafa > Clientes para búsquedas largas, créditos y exportación Excel.",
+  "build": "118.3",
+  "base_estable": "118.2",
+  "phase": "Fase 27A3 - Motor potente de clientes y créditos",
   "date": "2026-06-12"
 }

@@ -74,6 +74,7 @@ export default function PanelRafaPrivado() {
   const [fechaInicioRafa, setFechaInicioRafa] = useState(hoy);
   const [fechaFinRafa, setFechaFinRafa] = useState(hoy);
   const [pedidosRafa, setPedidosRafa] = useState([]);
+  const [metaPedidosRafa, setMetaPedidosRafa] = useState({ count: null, completo: true, advertencia: "" });
   const [gastosRafa, setGastosRafa] = useState([]);
   const [cargandoRafa, setCargandoRafa] = useState(false);
   const [errorRafa, setErrorRafa] = useState("");
@@ -122,21 +123,24 @@ export default function PanelRafaPrivado() {
       setErrorRafa("");
 
       try {
-        const { data, error } = await cargarPedidosDashboardRango(rangoRafa.inicio, rangoRafa.fin);
+        const { data, error, count, completo = true, advertencia = "" } = await cargarPedidosDashboardRango(rangoRafa.inicio, rangoRafa.fin);
 
         if (cancelado) return;
 
         if (error) {
           setErrorRafa(`Error cargando informe: ${error.message}`);
           setPedidosRafa([]);
+          setMetaPedidosRafa({ count: null, completo: false, advertencia: "" });
           return;
         }
 
         setPedidosRafa(data || []);
+        setMetaPedidosRafa({ count: count ?? null, completo, advertencia });
       } catch (error) {
         if (!cancelado) {
           setErrorRafa(`No se pudo cargar el informe. ${error.message || ""}`.trim());
           setPedidosRafa([]);
+          setMetaPedidosRafa({ count: null, completo: false, advertencia: "" });
         }
       } finally {
         if (!cancelado) setCargandoRafa(false);
@@ -172,7 +176,7 @@ export default function PanelRafaPrivado() {
     };
   }, [rangoRafa]);
 
-  const { pedidosValidos, filasClientes, resumenVentas, dashboardRafa } = crearDatosDashboardRafa(pedidosRafa);
+  const { pedidosValidos, filasClientes, resumenVentas, dashboardRafa } = useMemo(() => crearDatosDashboardRafa(pedidosRafa), [pedidosRafa]);
   const totalAdicionalesParaLlevar = (resumenVentas.adicionalesParaLlevar || []).reduce((suma, item) => suma + (Number(item.total) || 0), 0);
   const cantidadAdicionalesParaLlevar = (resumenVentas.adicionalesParaLlevar || []).reduce((suma, item) => suma + (Number(item.cantidad) || 0), 0);
   const totalVentasBrutas = resumenVentas.restaurante.total + resumenVentas.cafeteria.total;
@@ -184,8 +188,8 @@ export default function PanelRafaPrivado() {
   const tituloPeriodo = modoFecha === "rango"
     ? `${rangoRafa.inicioTexto} al ${rangoRafa.finTexto}`
     : rangoRafa.inicioTexto;
-  const filasClientesFiltradas = filtrarFilasClientes(filasClientes, busquedaClienteAplicada);
-  const resumenClientes = crearResumenClientes(filasClientesFiltradas);
+  const filasClientesFiltradas = useMemo(() => filtrarFilasClientes(filasClientes, busquedaClienteAplicada), [filasClientes, busquedaClienteAplicada]);
+  const resumenClientes = useMemo(() => crearResumenClientes(filasClientesFiltradas), [filasClientesFiltradas]);
   const totalClientesFiltrados = resumenClientes.length;
   const totalComprasCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.total) || 0), 0);
   const totalCantidadCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
@@ -784,6 +788,17 @@ export default function PanelRafaPrivado() {
             Exportar Excel
           </button>
         </div>
+
+        {metaPedidosRafa.advertencia && (
+          <div className="alert alert-warning" style={{ marginTop: 10 }}>
+            ⚠️ {metaPedidosRafa.advertencia}
+          </div>
+        )}
+        {metaPedidosRafa.count !== null && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            Motor de búsqueda: {pedidosRafa.length} de {metaPedidosRafa.count} pedidos cargados para el rango seleccionado.
+          </p>
+        )}
 
         <label className="field" style={{ marginTop: 10 }}>
           <span>Buscar cliente o compra</span>
