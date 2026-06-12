@@ -3,7 +3,7 @@ import { cargarGastosDiarios } from "./gastosDiariosService";
 import { cargarPedidosRango } from "./pedidosService";
 import { obtenerEstadoPedido, obtenerRangoPedidos } from "../shared/utils/pedidos";
 
-const SELECT_CAJA_ARQUEOS = "id, fecha, inicio_data, fin_data, inicio_total, fin_total, creado_en, actualizado_en";
+const SELECT_CAJA_ARQUEOS = "id, fecha, inicio_data, fin_data, ajustes_data, inicio_total, fin_total, creado_en, actualizado_en";
 const SELECT_CAJA_ARQUEOS_HISTORIAL = "id, fecha, arqueo_data, arqueo_total, creado_en";
 
 function hoyISOColombia(fecha = new Date()) {
@@ -75,6 +75,7 @@ export function normalizarCajaArqueo(registro) {
     finData: registro.fin_data || null,
     inicioTotal: numeroSeguro(registro.inicio_total),
     finTotal: numeroSeguro(registro.fin_total),
+    ajustesData: registro.ajustes_data || null,
     creadoEn: registro.creado_en || "",
     actualizadoEn: registro.actualizado_en || "",
   };
@@ -99,6 +100,25 @@ async function guardarCajaArqueoParcial({ fecha, campoData, campoTotal, estado, 
     fecha: fechaGuardar,
     [campoData]: estado || null,
     [campoTotal]: numeroSeguro(total),
+    actualizado_en: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("caja_arqueos")
+    .upsert(payload, { onConflict: "fecha" })
+    .select(SELECT_CAJA_ARQUEOS)
+    .single();
+
+  if (error) throw error;
+  return normalizarCajaArqueo(data);
+}
+
+export async function guardarAjustesCaja({ fecha, ajustes }) {
+  await exigirSesionSupabaseCaja();
+  const fechaGuardar = fecha || hoyISOColombia();
+  const payload = {
+    fecha: fechaGuardar,
+    ajustes_data: ajustes || null,
     actualizado_en: new Date().toISOString(),
   };
 

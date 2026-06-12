@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { dinero } from "../../../shared/utils/pedidos";
-import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, guardarFinCaja, guardarInicioCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
+import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, guardarAjustesCaja, guardarFinCaja, guardarInicioCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
 const CUENTAS_INICIALES = [
@@ -56,6 +56,23 @@ function crearCajaVacia() {
 function calcularTotalCaja(caja) {
   const totalBilletes = DENOMINACIONES.reduce((total, denominacion) => total + denominacion * limpiarNumero(caja.billetes?.[denominacion]), 0);
   return totalBilletes + limpiarNumero(caja.moneditas) + limpiarNumero(caja.paquetes);
+}
+
+function crearAjustesCajaVacios() {
+  return {
+    gastosRafa: "",
+    cuentasPorCobrar: "",
+  };
+}
+
+function normalizarAjustesCaja(ajustes) {
+  const base = crearAjustesCajaVacios();
+  if (!ajustes || typeof ajustes !== "object") return base;
+  return {
+    ...base,
+    gastosRafa: ajustes.gastosRafa ?? ajustes.gastos_rafa ?? "",
+    cuentasPorCobrar: ajustes.cuentasPorCobrar ?? ajustes.cuentas_por_cobrar ?? "",
+  };
 }
 
 function crearEstadoArqueo() {
@@ -231,8 +248,10 @@ export default function CajaAdmin() {
   const [cargando, setCargando] = useState(true);
   const [guardandoInicio, setGuardandoInicio] = useState(false);
   const [guardandoFin, setGuardandoFin] = useState(false);
+  const [guardandoAjustes, setGuardandoAjustes] = useState(false);
   const [cuadreReal, setCuadreReal] = useState(null);
   const [historialArqueos, setHistorialArqueos] = useState([]);
+  const [ajustesCaja, setAjustesCaja] = useState(() => crearAjustesCajaVacios());
   const [cargandoCuadre, setCargandoCuadre] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
@@ -241,7 +260,9 @@ export default function CajaAdmin() {
   const totalFin = useMemo(() => totalArqueo(finDia), [finDia]);
   const ventasTotal = useMemo(() => Number(cuadreReal?.ventasTotal || 0), [cuadreReal]);
   const gastosTotal = useMemo(() => Number(cuadreReal?.gastosTotal || 0), [cuadreReal]);
-  const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal, [totalInicio, ventasTotal, gastosTotal]);
+  const gastosRafaTotal = useMemo(() => limpiarNumero(ajustesCaja.gastosRafa), [ajustesCaja.gastosRafa]);
+  const cuentasPorCobrarTotal = useMemo(() => limpiarNumero(ajustesCaja.cuentasPorCobrar), [ajustesCaja.cuentasPorCobrar]);
+  const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal - gastosRafaTotal - cuentasPorCobrarTotal, [totalInicio, ventasTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
   const diferenciaReal = useMemo(() => totalFin - dineroEsperado, [totalFin, dineroEsperado]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
 
@@ -249,12 +270,13 @@ export default function CajaAdmin() {
     let activo = true;
     async function cargarArqueo() {
       setCargando(true); setError(""); setMensaje("");
-      setInicioDia(crearEstadoArqueo()); setFinDia(crearEstadoArqueo());
+      setInicioDia(crearEstadoArqueo()); setFinDia(crearEstadoArqueo()); setAjustesCaja(crearAjustesCajaVacios());
       try {
         const registro = await cargarCajaArqueoPorFecha(fechaCaja);
         if (!activo) return;
         if (registro?.inicioData) setInicioDia(normalizarEstadoArqueo(registro.inicioData));
         if (registro?.finData) setFinDia(normalizarEstadoArqueo(registro.finData));
+        if (registro?.ajustesData) setAjustesCaja(normalizarAjustesCaja(registro.ajustesData));
       } catch (err) {
         if (activo) setError(err?.message || "No se pudo cargar la caja de la fecha seleccionada.");
       } finally {
@@ -307,6 +329,23 @@ export default function CajaAdmin() {
     finally { setGuardandoFin(false); }
   }
 
+  function actualizarAjusteCaja(campo, valor) {
+    setAjustesCaja((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  async function guardarAjustesInformeCaja() {
+    setGuardandoAjustes(true); setMensaje(""); setError("");
+    try {
+      const registro = await guardarAjustesCaja({ fecha: fechaCaja, ajustes: ajustesCaja });
+      setAjustesCaja(normalizarAjustesCaja(registro?.ajustesData));
+      setMensaje("Ajustes de caja guardados correctamente.");
+    } catch (err) {
+      setError(err?.message || "No se pudieron guardar los ajustes de caja.");
+    } finally {
+      setGuardandoAjustes(false);
+    }
+  }
+
   function construirTextoInformeCaja() {
     const lineas = [
       `*Informe Caja Rafiki*`,
@@ -314,7 +353,9 @@ export default function CajaAdmin() {
       "",
       `Inicio del día: ${dinero(totalInicio)}`,
       `Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos): ${dinero(ventasTotal)}`,
-      `Gastos del día: ${dinero(gastosTotal)}`,
+      `Gastos operativos: ${dinero(gastosTotal)}`,
+      `Gastos Rafa: ${dinero(gastosRafaTotal)}`,
+      `Cuentas por cobrar: ${dinero(cuentasPorCobrarTotal)}`,
     ];
 
     const gastos = cuadreReal?.gastosDetalle || [];
@@ -356,8 +397,10 @@ export default function CajaAdmin() {
       ["Concepto", "Valor"],
       ["Inicio del día", totalInicio],
       [`Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos)`, ventasTotal],
-      ["Gastos del día", gastosTotal],
-      ["Dinero esperado", dineroEsperado],
+      ["Gastos operativos", gastosTotal],
+      ["Gastos Rafa", gastosRafaTotal],
+      ["Cuentas por cobrar", cuentasPorCobrarTotal],
+      ["Caja esperada", dineroEsperado],
       ["Arqueo contado", totalFin],
       [estadoDiferencia.etiqueta, Math.abs(diferenciaReal)],
       ["", ""],
@@ -415,12 +458,28 @@ export default function CajaAdmin() {
               <FilaInforme etiqueta="Inicio del día" valor={totalInicio} />
               <FilaInforme etiqueta={`Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos)`} valor={ventasTotal} />
               <DetalleGastos gastos={cuadreReal?.gastosDetalle || []} total={gastosTotal} />
-              <FilaInforme etiqueta="Dinero esperado" valor={dineroEsperado} fuerte />
+              <section className="caja-informe-bloque caja-ajustes-bloque">
+                <div className="caja-informe-row fuerte"><span>Ajustes de Caja</span><strong>{dinero(gastosRafaTotal + cuentasPorCobrarTotal)}</strong></div>
+                <div className="caja-ajustes-grid">
+                  <label className="field">
+                    <span>Gastos Rafa</span>
+                    <input type="number" min="0" inputMode="numeric" value={ajustesCaja.gastosRafa} onChange={(event) => actualizarAjusteCaja("gastosRafa", event.target.value)} placeholder="0" />
+                    <small className="muted">Gastos personales o retiros del día. Resta a la caja esperada.</small>
+                  </label>
+                  <label className="field">
+                    <span>Cuentas x Cobrar</span>
+                    <input type="number" min="0" inputMode="numeric" value={ajustesCaja.cuentasPorCobrar} onChange={(event) => actualizarAjusteCaja("cuentasPorCobrar", event.target.value)} placeholder="0" />
+                    <small className="muted">Ventas reales que aún no han entrado en efectivo/banco. Resta a la caja esperada.</small>
+                  </label>
+                </div>
+                <div className="caja-actions caja-ajustes-actions"><button type="button" className="btn secondary" onClick={guardarAjustesInformeCaja} disabled={guardandoAjustes}>{guardandoAjustes ? "Guardando..." : "Guardar ajustes"}</button></div>
+              </section>
+              <FilaInforme etiqueta="Caja esperada" valor={dineroEsperado} fuerte />
               <FilaInforme etiqueta="Fin / arqueo contado" valor={totalFin} />
               <HistorialArqueos historial={historialArqueos} />
               <FilaInforme etiqueta={estadoDiferencia.etiqueta} valor={Math.abs(diferenciaReal)} fuerte estado={estadoDiferencia.clase} />
             </div>
-            <p className="muted small caja-formula">Fórmula: inicio del día + ventas del día - gastos del día = dinero esperado.</p>
+            <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada.</p>
           </section>
         </div>
       )}
