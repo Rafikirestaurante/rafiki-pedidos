@@ -142,5 +142,14 @@ export async function cargarCuadreRealCaja(fecha = hoyISOColombia()) {
     gastosTotal,
     ventasPorMetodo: sumarPorMetodo(pedidosValidos, (pedido) => pedido.tipo_pago || pedido.forma_pago || pedido.metodo_pago, (pedido) => pedido.total),
     gastosPorMetodo: sumarPorMetodo(gastos, (gasto) => gasto.metodoPago, (gasto) => gasto.valor),
+    gastosDetalle: (gastos || []).map((gasto) => ({
+      id: gasto.id,
+      proveedor: gasto.proveedor || "Sin proveedor",
+      valor: numeroSeguro(gasto.valor),
+      categoria: gasto.categoria || "",
+      articulos: gasto.articulos || "",
+      metodoPago: gasto.metodoPago || "",
+      creadoEn: gasto.creadoEn || "",
+    })),
   };
 }

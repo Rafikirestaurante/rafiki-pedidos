@@ -1015,7 +1015,101 @@ export const appStyles = `
   background: #fef2f2;
 }
 
+
+.caja-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.caja-fecha-field {
+  min-width: 170px;
+}
+
+.caja-fecha-field input {
+  border: 1.5px solid #fed7aa;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-weight: 900;
+}
+
+.caja-informe-lista,
+.caja-informe-bloque {
+  display: grid;
+  gap: 8px;
+}
+
+.caja-informe-row,
+.caja-gasto-detalle-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 10px 0;
+}
+
+.caja-informe-row span,
+.caja-gasto-detalle-row span {
+  color: #57534e;
+  font-weight: 800;
+}
+
+.caja-informe-row.fuerte {
+  border-top: 1.5px solid #fed7aa;
+  border-bottom: 1.5px solid #fed7aa;
+  margin-top: 4px;
+  padding: 12px 0;
+}
+
+.caja-informe-row strong,
+.caja-gasto-detalle-row strong {
+  color: #111827;
+  white-space: nowrap;
+}
+
+.caja-gasto-detalle-row > div {
+  display: grid;
+  gap: 2px;
+}
+
+.caja-gasto-detalle-row > div > strong {
+  white-space: normal;
+}
+
+.caja-gasto-detalle-row span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.caja-informe-ok strong {
+  color: #15803d;
+}
+
+.caja-informe-warning strong {
+  color: #b45309;
+}
+
+.caja-informe-danger strong {
+  color: #b91c1c;
+}
+
+.caja-formula,
+.caja-sin-movimientos {
+  margin: 10px 0 0;
+}
+
 @media (max-width: 900px) {
+  .caja-header {
+    flex-direction: column;
+  }
+
+  .caja-fecha-field {
+    width: 100%;
+  }
+
   .caja-grid-principal,
   .caja-cuentas-grid {
     grid-template-columns: 1fr;

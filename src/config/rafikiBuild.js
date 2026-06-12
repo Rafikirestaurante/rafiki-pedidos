@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '120.0-FASE26G-BASE114-ESTABILIZACION-AUTH-PWA-2026-06-12',
-  phase: 'Fase 26G - Estabilización Auth/PWA desde base 114',
+  version: '116.0-FASE26H-INFORME-CAJA-PROFESIONAL-BASE115-2026-06-12',
+  phase: 'Fase 26H - Informe Caja Profesional',
   date: '2026-06-12',
-  fase: '26G',
-  notes: 'Hotfix de estabilización construido sobre la base estable 114. Corrige comparación de versiones PWA tras rollback, endurece persistencia de sesión administrativa y valida sesión Supabase antes de guardar Caja.'
+  fase: '26H',
+  notes: 'Mejora modular de Caja sobre base estable 115: renombra Fin del día a Arqueo, Cuadre real a Informe Caja, agrega selector de fecha y muestra gastos detallados por proveedor.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

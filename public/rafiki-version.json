@@ -1,7 +1,7 @@
 {
-  "version": "120.0-FASE26G-BASE114-ESTABILIZACION-AUTH-PWA-2026-06-12",
-  "fase": "26G",
-  "mensaje": "Estabilización Auth/PWA desde base 114: evita aviso repetido de 119 tras rollback y refuerza sesión administrativa.",
-  "build": "120.0",
-  "base_estable": "114.0"
+  "version": "116.0-FASE26H-INFORME-CAJA-PROFESIONAL-BASE115-2026-06-12",
+  "fase": "26H",
+  "mensaje": "Informe Caja Profesional sobre base estable 115: selector de fecha, gastos detallados y arqueo más claro.",
+  "build": "116.0",
+  "base_estable": "115.0"
 }
