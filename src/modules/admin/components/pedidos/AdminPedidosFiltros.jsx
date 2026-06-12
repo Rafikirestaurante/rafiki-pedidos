@@ -56,7 +56,7 @@ function AdminPedidosFiltrosBase({
         etiqueta="Buscar pedido"
         value={busqueda}
         onChange={setBusqueda}
-        placeholder="Buscar por cliente, ubicación o pago..."
+        placeholder="Buscar por cliente, pedido, producto, pago, mesa, estado u observación..."
       />
     </>
   );

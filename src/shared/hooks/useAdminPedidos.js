@@ -4,7 +4,12 @@ import {
   obtenerCliente,
   obtenerCodigoPedido,
   obtenerEstadoPedido,
+  obtenerItemsPedido,
 } from "../utils/pedidos";
+import {
+  coincideBusquedaAvanzada,
+  crearContenidoBusquedaAvanzada,
+} from "../utils/busquedaAvanzada";
 
 export function useAdminPedidos({
   pedidos,
@@ -17,28 +22,58 @@ export function useAdminPedidos({
   }, [pedidos]);
 
   const pedidosFiltrados = useMemo(() => {
-    const q = busquedaDebounced.trim().toLowerCase();
+    const q = String(busquedaDebounced || "").trim();
 
     if (!q) return pedidosOrdenados;
 
     return pedidosOrdenados.filter((pedido) => {
       const codigo = String(obtenerCodigoPedido(pedido) || "");
       const id = String(pedido?.id || "");
-      const textoBusqueda = [
+      const items = obtenerItemsPedido(pedido);
+      const textoItems = items
+        .map((item) => [
+          item?.nombre,
+          item?.plato,
+          item?.proteina,
+          item?.categoria,
+          item?.termino,
+          item?.acompanantes,
+          item?.bebida,
+          item?.sopa,
+          item?.observacionesItem,
+          item?.observacionAcompanantes,
+          item?.empaque,
+        ].filter(Boolean).join(" "))
+        .join(" ");
+
+      const contenido = crearContenidoBusquedaAvanzada([
         codigo,
         id,
         `#${codigo}`,
         obtenerCliente(pedido),
+        pedido?.cliente,
+        pedido?.nombre_cliente,
+        pedido?.nombre,
         pedido?.telefono,
         pedido?.ubicacion,
         pedido?.mesa,
+        pedido?.numero_mesa,
         pedido?.mesero,
+        pedido?.nombre_mesero,
+        pedido?.atendido_por,
         pedido?.tipo_pago,
+        pedido?.forma_pago,
+        pedido?.metodo_pago,
         pedido?.pedido_texto,
+        pedido?.observaciones,
+        pedido?.nota,
+        pedido?.notas,
+        pedido?.estado,
         obtenerEstadoPedido(pedido),
-      ].filter(Boolean).join(" ").toLowerCase();
+        textoItems,
+      ]);
 
-      return textoBusqueda.includes(q);
+      return coincideBusquedaAvanzada(contenido, q);
     });
   }, [pedidosOrdenados, busquedaDebounced]);
 
