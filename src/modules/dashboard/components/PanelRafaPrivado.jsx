@@ -17,6 +17,24 @@ import {
   obtenerEstadoPedido
 } from "../../../shared/utils/pedidos";
 
+
+function textoCsv(valor) {
+  const texto = String(valor ?? "").replace(/"/g, '""');
+  return `"${texto}"`;
+}
+
+function descargarArchivo(nombreArchivo, contenido, tipo = "text/csv;charset=utf-8") {
+  const blob = new Blob([contenido], { type: tipo });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombreArchivo;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
+}
+
 function ListaResumen({ items, vacio = "Sin datos en este periodo.", mostrarTotal = true, mostrarDetalles = false }) {
   if (!items.length) return <p className="muted">{vacio}</p>;
 
@@ -161,6 +179,28 @@ export default function PanelRafaPrivado() {
   const totalCantidadCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
   const totalPendienteCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (fila.pagoPendiente ? (Number(fila.total) || 0) : 0), 0);
   const totalItemsVendidos = filasClientes.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
+
+  function exportarClientesFiltradosExcel() {
+    const filas = [
+      ["Fecha", "Pedido", "Cliente", "Teléfono", "Producto", "Cantidad", "Total", "Pago", "Estado", "Ubicación"],
+      ...filasClientesFiltradas.map((fila) => [
+        formatearFechaHora(fila.fecha),
+        fila.codigo,
+        fila.cliente,
+        fila.telefono || "",
+        fila.producto,
+        fila.cantidad,
+        Number(fila.total) || 0,
+        fila.formaPago || "",
+        fila.estado || "",
+        fila.ubicacion || ""
+      ])
+    ];
+
+    const csv = filas.map((fila) => fila.map(textoCsv).join(";")).join("\n");
+    const fechaBase = modoFecha === "rango" ? `${rangoRafa.inicioTexto}-a-${rangoRafa.finTexto}` : rangoRafa.inicioTexto;
+    descargarArchivo(`clientes-rafiki-${fechaBase}.csv`, `\ufeff${csv}`);
+  }
   const totalBaseHoras = Math.max(...dashboardRafa.horas.map((item) => item.total), 0);
   const totalBaseProductos = Math.max(...dashboardRafa.productosTop.map((item) => item.cantidad), 0);
   const totalBaseMesas = Math.max(...dashboardRafa.mesasTop.map((item) => item.total), 0);
@@ -708,8 +748,16 @@ export default function PanelRafaPrivado() {
         <div className="admin-top-row">
           <div>
             <h3>👤 Historial de clientes</h3>
-            <p className="muted">Busca por nombre, teléfono, producto, forma de pago o número de pedido.</p>
+            <p className="muted">Busca por nombre, teléfono, producto, forma de pago o número de pedido. La búsqueda no diferencia tildes, mayúsculas ni espacios.</p>
           </div>
+          <button
+            type="button"
+            className="button secondary"
+            disabled={filasClientesFiltradas.length === 0}
+            onClick={exportarClientesFiltradosExcel}
+          >
+            Exportar Excel
+          </button>
         </div>
 
         <label className="field" style={{ marginTop: 10 }}>
@@ -718,7 +766,7 @@ export default function PanelRafaPrivado() {
             type="search"
             value={busquedaCliente}
             onChange={(e) => setBusquedaCliente(e.target.value)}
-            placeholder="Ej: Laura, pechuga, pendiente, 3001234567..."
+            placeholder="Ej: Laura pechuga, paola pendiente, 3001234567..."
           />
         </label>
 

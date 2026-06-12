@@ -406,15 +406,54 @@ export function crearResumenClientes(filas) {
     .sort((a, b) => b.total - a.total || b.cantidad - a.cantidad);
 }
 
+function normalizarBusquedaCliente(valor) {
+  return normalizarTexto(valor)
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function compactarBusquedaCliente(valor) {
+  return normalizarBusquedaCliente(valor).replace(/\s+/g, "");
+}
+
+function obtenerContenidoBusquedaCliente(fila) {
+  const valores = [
+    fila.cliente,
+    fila.telefono,
+    fila.producto,
+    fila.formaPago,
+    fila.ubicacion,
+    fila.codigo,
+    fila.estado,
+    fila.linea,
+    fila.fecha
+  ];
+
+  const texto = valores.map(normalizarBusquedaCliente).filter(Boolean).join(" ");
+  const compacto = valores.map(compactarBusquedaCliente).filter(Boolean).join(" ");
+  const digitos = valores.map((valor) => String(valor || "").replace(/\D+/g, "")).filter(Boolean).join(" ");
+
+  return { texto, compacto, digitos };
+}
+
 export function filtrarFilasClientes(filas, busqueda) {
-  const texto = normalizarTexto(busqueda);
-  if (!texto) return filas;
+  const texto = normalizarBusquedaCliente(busqueda);
+  const compacto = compactarBusquedaCliente(busqueda);
+  const digitos = String(busqueda || "").replace(/\D+/g, "");
+  const palabras = texto.split(" ").filter(Boolean);
+
+  if (!texto && !digitos) return filas;
 
   return filas.filter((fila) => {
-    const contenido = [fila.cliente, fila.telefono, fila.producto, fila.formaPago, fila.ubicacion, fila.codigo]
-      .map(normalizarTexto)
-      .join(" ");
-    return contenido.includes(texto);
+    const contenido = obtenerContenidoBusquedaCliente(fila);
+
+    if (texto && contenido.texto.includes(texto)) return true;
+    if (compacto && contenido.compacto.includes(compacto)) return true;
+    if (digitos && contenido.digitos.includes(digitos)) return true;
+
+    // Búsqueda más flexible: permite encontrar por varias palabras en distinto orden.
+    return palabras.length > 0 && palabras.every((palabra) => contenido.texto.includes(palabra) || contenido.compacto.includes(palabra));
   });
 }
 
