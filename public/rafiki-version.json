@@ -1,9 +1,9 @@
 {
-  "version": "118.3-FASE27A3-MOTOR-CLIENTES-CREDITOS-2026-06-12",
-  "fase": "27A3",
-  "mensaje": "Motor reforzado en Rafa > Clientes para búsquedas largas, créditos y exportación Excel.",
-  "build": "118.3",
-  "base_estable": "118.2",
-  "phase": "Fase 27A3 - Motor potente de clientes y créditos",
+  "version": "118.5-FASE27A5-GENERADOR-INFORME-HISTORIAL-2026-06-12",
+  "fase": "27A5",
+  "mensaje": "Generador de menú ajustado: informe de últimos 12 menús primero, WhatsApp e historial paginado de 5 en 5.",
+  "build": "118.5",
+  "base_estable": "118.4",
+  "phase": "Fase 27A5 - Generador de menú: informe primero e historial paginado",
   "date": "2026-06-12"
 }
