@@ -242,6 +242,13 @@ function AdminPedidosSectionBase({
   hayBusquedaPedidos,
   setBusqueda,
   busqueda,
+  busquedaNumeroPedido = "",
+  setBusquedaNumeroPedido,
+  buscarPedidoPorNumeroGlobal,
+  limpiarBusquedaNumeroPedido,
+  resultadoNumeroPedido = [],
+  cargandoNumeroPedido = false,
+  errorNumeroPedido = "",
   cargandoPedidos = false,
   errorCargaPedidos = "",
   pedidosFiltrados,
@@ -343,7 +350,34 @@ function AdminPedidosSectionBase({
         hayBusquedaPedidos={hayBusquedaPedidos}
         setBusqueda={setBusqueda}
         busqueda={busqueda}
+        busquedaNumeroPedido={busquedaNumeroPedido}
+        setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+        buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+        limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+        cargandoNumeroPedido={cargandoNumeroPedido}
       />
+
+      {(resultadoNumeroPedido.length > 0 || errorNumeroPedido) && (
+        <div className="pedido-numero-global-resultados">
+          <div className="section-heading section-heading-pedidos-unificados">
+            <h3>🔎 Resultado por número de pedido</h3>
+            <span>{resultadoNumeroPedido.length}</span>
+          </div>
+          {errorNumeroPedido && resultadoNumeroPedido.length === 0 ? (
+            <div className="alert alert-warning">{errorNumeroPedido}</div>
+          ) : (
+            <TablaPedidosCompacta
+              pedidos={resultadoNumeroPedido}
+              onCambiarEstado={cambiarEstadoPedido}
+              guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+              onEliminarPedido={puedeEliminarPedido ? eliminarPedidoAdministrador : undefined}
+              eliminandoPedidoId={eliminandoPedidoId}
+              onEditarPedido={puedeEditarPedido ? abrirEditorPedido : undefined}
+              editandoPedidoId={editandoPedidoId}
+            />
+          )}
+        </div>
+      )}
 
       {cargandoPedidos && (
         <div className="box soft admin-loading-state" role="status">

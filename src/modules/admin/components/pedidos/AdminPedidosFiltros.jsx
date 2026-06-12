@@ -10,6 +10,11 @@ function AdminPedidosFiltrosBase({
   hayBusquedaPedidos,
   setBusqueda,
   busqueda,
+  busquedaNumeroPedido = "",
+  setBusquedaNumeroPedido,
+  buscarPedidoPorNumeroGlobal,
+  limpiarBusquedaNumeroPedido,
+  cargandoNumeroPedido = false,
 }) {
   const seleccionarHoy = useCallback(() => {
     setFiltroPedidos("hoy");
@@ -24,6 +29,17 @@ function AdminPedidosFiltrosBase({
   const limpiarBusqueda = useCallback(() => {
     setBusqueda("");
   }, [setBusqueda]);
+
+  const cambiarBusquedaNumero = useCallback((valor) => {
+    if (setBusquedaNumeroPedido) {
+      setBusquedaNumeroPedido(String(valor || "").replace(/\D+/g, ""));
+    }
+  }, [setBusquedaNumeroPedido]);
+
+  const enviarBusquedaNumero = useCallback((event) => {
+    event.preventDefault();
+    if (buscarPedidoPorNumeroGlobal) buscarPedidoPorNumeroGlobal();
+  }, [buscarPedidoPorNumeroGlobal]);
 
   return (
     <>
@@ -56,8 +72,27 @@ function AdminPedidosFiltrosBase({
         etiqueta="Buscar pedido"
         value={busqueda}
         onChange={setBusqueda}
-        placeholder="Buscar por cliente, pedido, producto, pago, mesa, estado u observación..."
+        placeholder="Buscar por cliente, producto, pago, mesa, estado u observación..."
       />
+
+      <form className="pedido-numero-global" onSubmit={enviarBusquedaNumero}>
+        <CampoTexto
+          etiqueta="Buscar número de pedido sin fecha"
+          value={busquedaNumeroPedido}
+          onChange={cambiarBusquedaNumero}
+          placeholder="Ej: 1234"
+        />
+        <div className="pedido-numero-global-actions">
+          <button type="submit" className="button light" disabled={cargandoNumeroPedido}>
+            {cargandoNumeroPedido ? "Buscando..." : "Buscar número"}
+          </button>
+          {busquedaNumeroPedido && (
+            <button type="button" className="button light" onClick={limpiarBusquedaNumeroPedido} disabled={cargandoNumeroPedido}>
+              Limpiar número
+            </button>
+          )}
+        </div>
+      </form>
     </>
   );
 }

@@ -64,3 +64,26 @@ textarea {
     max-width: none;
   }
 }
+
+.pedido-numero-global {
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.035);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.pedido-numero-global-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.pedido-numero-global-resultados {
+  margin: 0.85rem 0 1rem;
+  padding: 0.85rem;
+  border-radius: 16px;
+  background: #fffdf5;
+  border: 1px solid rgba(180, 83, 9, 0.18);
+}

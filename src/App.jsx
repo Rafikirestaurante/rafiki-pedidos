@@ -52,7 +52,7 @@ import { useRealtimePedidos } from "./shared/hooks/useRealtimePedidos";
 import { usePedidos } from "./shared/hooks/usePedidos";
 import { useAdminPedidos } from "./shared/hooks/useAdminPedidos";
 import { leerUltimoTextoEditorGenerador } from "./shared/utils/generadorMenu";
-import { cargarPedidosRango } from "./services/pedidosService";
+import { buscarPedidosPorNumeroGlobal, cargarPedidosRango } from "./services/pedidosService";
 
 
 const SolicitudProductos = lazy(() => import("./modules/catalogo/components/SolicitudProductos"));
@@ -149,6 +149,10 @@ export default function App() {
   const [observaciones, setObservaciones] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [busquedaDebounced, setBusquedaDebounced] = useState("");
+  const [busquedaNumeroPedido, setBusquedaNumeroPedido] = useState("");
+  const [resultadoNumeroPedido, setResultadoNumeroPedido] = useState([]);
+  const [cargandoNumeroPedido, setCargandoNumeroPedido] = useState(false);
+  const [errorNumeroPedido, setErrorNumeroPedido] = useState("");
   const [filtroPedidos, setFiltroPedidos] = useState("hoy");
   const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaISOColombia());
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
@@ -626,6 +630,57 @@ export default function App() {
     filtroPedidos,
     fechaSeleccionada,
   });
+
+
+  const buscarPedidoPorNumeroGlobal = useCallback(async () => {
+    const numeroLimpio = String(busquedaNumeroPedido || "").replace(/\D+/g, "");
+
+    if (!numeroLimpio) {
+      setResultadoNumeroPedido([]);
+      setErrorNumeroPedido("Escribe el número del pedido que quieres buscar.");
+      return;
+    }
+
+    if (!supabaseConfigOk) {
+      setResultadoNumeroPedido([]);
+      setErrorNumeroPedido(supabaseConfigMensaje);
+      return;
+    }
+
+    setCargandoNumeroPedido(true);
+    setErrorNumeroPedido("");
+
+    try {
+      const { data, error } = await conTiempoMaximo(
+        buscarPedidosPorNumeroGlobal(numeroLimpio),
+        10000,
+        "La búsqueda por número de pedido"
+      );
+
+      if (error) {
+        setResultadoNumeroPedido([]);
+        setErrorNumeroPedido(`Error buscando pedido #${numeroLimpio}: ${error.message}`);
+        return;
+      }
+
+      const encontrados = Array.isArray(data) ? data : [];
+      setResultadoNumeroPedido(encontrados);
+      if (!encontrados.length) {
+        setErrorNumeroPedido(`No encontré pedidos con número ${numeroLimpio}.`);
+      }
+    } catch (error) {
+      setResultadoNumeroPedido([]);
+      setErrorNumeroPedido(`No se pudo buscar el pedido. ${error.message || ""}`.trim());
+    } finally {
+      setCargandoNumeroPedido(false);
+    }
+  }, [busquedaNumeroPedido, mostrarMensaje]);
+
+  const limpiarBusquedaNumeroPedido = useCallback(() => {
+    setBusquedaNumeroPedido("");
+    setResultadoNumeroPedido([]);
+    setErrorNumeroPedido("");
+  }, []);
 
   const platosAgrupados = useMemo(
     () => agruparPlatosPorCategoria(menu.platos_detalle),
@@ -1604,6 +1659,13 @@ export default function App() {
                 hayBusquedaPedidos={hayBusquedaPedidos}
                 setBusqueda={setBusqueda}
                 busqueda={busqueda}
+                busquedaNumeroPedido={busquedaNumeroPedido}
+                setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+                buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+                limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+                resultadoNumeroPedido={resultadoNumeroPedido}
+                cargandoNumeroPedido={cargandoNumeroPedido}
+                errorNumeroPedido={errorNumeroPedido}
                 cargandoPedidos={cargandoPedidos}
                 errorCargaPedidos={errorCargaPedidos}
                 pedidosFiltrados={pedidosFiltrados}
@@ -1756,6 +1818,13 @@ export default function App() {
                   hayBusquedaPedidos={hayBusquedaPedidos}
                   setBusqueda={setBusqueda}
                   busqueda={busqueda}
+                  busquedaNumeroPedido={busquedaNumeroPedido}
+                  setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+                  buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+                  limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+                  resultadoNumeroPedido={resultadoNumeroPedido}
+                  cargandoNumeroPedido={cargandoNumeroPedido}
+                  errorNumeroPedido={errorNumeroPedido}
                   cargandoPedidos={cargandoPedidos}
                   errorCargaPedidos={errorCargaPedidos}
                   pedidosFiltrados={pedidosFiltrados}

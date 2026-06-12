@@ -116,6 +116,23 @@ export async function cargarPedidosRango(inicio, fin, opciones = {}) {
   };
 }
 
+
+export async function buscarPedidosPorNumeroGlobal(numeroPedido, opciones = {}) {
+  const numero = Number(String(numeroPedido || "").replace(/\D+/g, ""));
+  const limite = Number(opciones.limite) || 20;
+
+  if (!Number.isFinite(numero) || numero <= 0) {
+    return { data: [], error: null };
+  }
+
+  return supabase
+    .from("pedidos")
+    .select(SELECT_PEDIDOS_ADMIN)
+    .eq("numero_pedido", numero)
+    .order("created_at", { ascending: false })
+    .limit(limite);
+}
+
 export function crearCanalPedidosRealtime(nombreCanal, onCambio, onEstado) {
   return supabase
     .channel(nombreCanal)

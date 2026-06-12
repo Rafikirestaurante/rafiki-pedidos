@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '118.8-FASE27D-NAVEGACION-CAJA-PAQUETES-2026-06-12',
-  phase: 'Fase 27D - Navegación unificada y paquetes en Caja',
+  version: '118.9-FASE27E-BUSQUEDA-NUMERO-PEDIDO-GLOBAL-2026-06-12',
+  phase: 'Fase 27E - Búsqueda global por número de pedido',
   date: '2026-06-12',
-  fase: '27D',
-  notes: 'Unifica navegación superior: Admin, Mesas y Pedidos hoy según ruta; elimina acceso rápido a Inventario desde Gastos; agrega campo Paquetes debajo de Moneditas en Inicio del día y Arqueo.'
+  fase: '27E',
+  notes: 'Agrega en Pedidos hoy un buscador complementario por número exacto de pedido que consulta toda la base sin depender de la fecha seleccionada.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
