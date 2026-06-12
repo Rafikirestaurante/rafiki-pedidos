@@ -18,9 +18,12 @@ import {
 } from "../../../shared/utils/pedidos";
 
 
-function textoCsv(valor) {
-  const texto = String(valor ?? "").replace(/"/g, '""');
-  return `"${texto}"`;
+function escaparHtmlExcel(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function descargarArchivo(nombreArchivo, contenido, tipo = "text/csv;charset=utf-8") {
@@ -78,6 +81,7 @@ export default function PanelRafaPrivado() {
   const [guardandoCierre, setGuardandoCierre] = useState(false);
   const [observacionesCierre, setObservacionesCierre] = useState("");
   const [busquedaCliente, setBusquedaCliente] = useState("");
+  const [busquedaClienteAplicada, setBusquedaClienteAplicada] = useState("");
   const [pestanaRafa, setPestanaRafa] = useState("informe");
   const [detalleDashboard, setDetalleDashboard] = useState("");
   const [mostrarTablasDashboard, setMostrarTablasDashboard] = useState(() => {
@@ -85,6 +89,14 @@ export default function PanelRafaPrivado() {
     return window.localStorage.getItem("rafikiMostrarTablasDashboard") === "true";
   });
   const detalleDashboardRef = useRef(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setBusquedaClienteAplicada(busquedaCliente);
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [busquedaCliente]);
 
   const rangoRafa = useMemo(() => {
     const inicioTexto = modoFecha === "rango" ? (fechaInicioRafa || hoy) : (fechaRafa || hoy);
@@ -172,7 +184,7 @@ export default function PanelRafaPrivado() {
   const tituloPeriodo = modoFecha === "rango"
     ? `${rangoRafa.inicioTexto} al ${rangoRafa.finTexto}`
     : rangoRafa.inicioTexto;
-  const filasClientesFiltradas = filtrarFilasClientes(filasClientes, busquedaCliente);
+  const filasClientesFiltradas = filtrarFilasClientes(filasClientes, busquedaClienteAplicada);
   const resumenClientes = crearResumenClientes(filasClientesFiltradas);
   const totalClientesFiltrados = resumenClientes.length;
   const totalComprasCliente = filasClientesFiltradas.reduce((suma, fila) => suma + (Number(fila.total) || 0), 0);
@@ -181,26 +193,39 @@ export default function PanelRafaPrivado() {
   const totalItemsVendidos = filasClientes.reduce((suma, fila) => suma + (Number(fila.cantidad) || 0), 0);
 
   function exportarClientesFiltradosExcel() {
-    const filas = [
-      ["Fecha", "Pedido", "Cliente", "Teléfono", "Producto", "Cantidad", "Total", "Pago", "Estado", "Ubicación"],
-      ...filasClientesFiltradas.map((fila) => [
-        formatearFechaHora(fila.fecha),
-        fila.codigo,
-        fila.cliente,
-        fila.telefono || "",
-        fila.producto,
-        fila.cantidad,
-        Number(fila.total) || 0,
-        fila.formaPago || "",
-        fila.estado || "",
-        fila.ubicacion || ""
-      ])
-    ];
+    const encabezados = ["Fecha", "Pedido", "Cliente", "Teléfono", "Producto", "Cantidad", "Total", "Pago", "Estado", "Ubicación", "Observaciones"];
+    const filas = filasClientesFiltradas.map((fila) => [
+      formatearFechaHora(fila.fecha),
+      fila.codigo,
+      fila.cliente,
+      fila.telefono || "",
+      fila.producto,
+      fila.cantidad,
+      Number(fila.total) || 0,
+      fila.formaPago || "",
+      fila.estado || "",
+      fila.ubicacion || "",
+      fila.observaciones || ""
+    ]);
 
-    const csv = filas.map((fila) => fila.map(textoCsv).join(";")).join("\n");
+    const tabla = [encabezados, ...filas]
+      .map((fila, indiceFila) => `<tr>${fila.map((celda) => {
+        const etiqueta = indiceFila === 0 ? "th" : "td";
+        return `<${etiqueta}>${escaparHtmlExcel(celda)}</${etiqueta}>`;
+      }).join("")}</tr>`)
+      .join("");
+
+    const contenido = `<!doctype html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body>
+<table border="1">${tabla}</table>
+</body>
+</html>`;
     const fechaBase = modoFecha === "rango" ? `${rangoRafa.inicioTexto}-a-${rangoRafa.finTexto}` : rangoRafa.inicioTexto;
-    descargarArchivo(`clientes-rafiki-${fechaBase}.csv`, `\ufeff${csv}`);
+    descargarArchivo(`clientes-rafiki-${fechaBase}.xls`, contenido, "application/vnd.ms-excel;charset=utf-8");
   }
+
   const totalBaseHoras = Math.max(...dashboardRafa.horas.map((item) => item.total), 0);
   const totalBaseProductos = Math.max(...dashboardRafa.productosTop.map((item) => item.cantidad), 0);
   const totalBaseMesas = Math.max(...dashboardRafa.mesasTop.map((item) => item.total), 0);
@@ -748,7 +773,7 @@ export default function PanelRafaPrivado() {
         <div className="admin-top-row">
           <div>
             <h3>👤 Historial de clientes</h3>
-            <p className="muted">Busca por nombre, teléfono, producto, forma de pago o número de pedido. La búsqueda no diferencia tildes, mayúsculas ni espacios.</p>
+            <p className="muted">Busca por nombre, teléfono, producto, forma de pago, estado, observaciones o número de pedido. La búsqueda no diferencia tildes, mayúsculas ni orden de palabras.</p>
           </div>
           <button
             type="button"
@@ -762,12 +787,20 @@ export default function PanelRafaPrivado() {
 
         <label className="field" style={{ marginTop: 10 }}>
           <span>Buscar cliente o compra</span>
-          <input
-            type="search"
-            value={busquedaCliente}
-            onChange={(e) => setBusquedaCliente(e.target.value)}
-            placeholder="Ej: Laura pechuga, paola pendiente, 3001234567..."
-          />
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="search"
+              value={busquedaCliente}
+              onChange={(e) => setBusquedaCliente(e.target.value)}
+              placeholder="Ej: Laura pechuga, pechuga laura, finalizado efectivo, 3001234567..."
+              style={{ flex: 1 }}
+            />
+            {busquedaCliente && (
+              <button type="button" className="button secondary" onClick={() => setBusquedaCliente("")}>
+                Limpiar
+              </button>
+            )}
+          </div>
         </label>
 
         <div className="admin-stats" style={{ marginTop: 14 }}>
@@ -777,7 +810,7 @@ export default function PanelRafaPrivado() {
           <div className="stat-card"><span>Posible pendiente</span><strong>{dinero(totalPendienteCliente)}</strong></div>
         </div>
 
-        {busquedaCliente.trim() && resumenClientes.length > 0 && (
+        {busquedaClienteAplicada.trim() && resumenClientes.length > 0 && (
           <div style={{ marginTop: 14 }}>
             <h4>Resumen del cliente</h4>
             <div className="pedidos-tabla-wrap">

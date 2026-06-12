@@ -1,7 +1,9 @@
 {
-  "version": "117.0-FASE26H1-INFORME-CAJA-HISTORIAL-WHATSAPP-EXCEL-BASE116-2026-06-12",
+  "version": "118.1-FASE27A2-CLIENTES-BUSQUEDA-TOKENS-EXCEL-2026-06-12",
   "fase": "26H1",
   "mensaje": "Informe Caja con historial de arqueos, WhatsApp y exportación compatible con Excel.",
   "build": "117.0",
-  "base_estable": "116.0"
+  "base_estable": "116.0",
+  "phase": "Fase 27A2 - Clientes búsqueda agresiva y exportación Excel",
+  "date": "2026-06-12"
 }

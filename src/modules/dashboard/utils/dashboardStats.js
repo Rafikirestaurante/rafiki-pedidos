@@ -426,6 +426,7 @@ function obtenerContenidoBusquedaCliente(fila) {
     fila.ubicacion,
     fila.codigo,
     fila.estado,
+    fila.observaciones,
     fila.linea,
     fila.fecha
   ];
@@ -439,23 +440,25 @@ function obtenerContenidoBusquedaCliente(fila) {
 
 export function filtrarFilasClientes(filas, busqueda) {
   const texto = normalizarBusquedaCliente(busqueda);
-  const compacto = compactarBusquedaCliente(busqueda);
   const digitos = String(busqueda || "").replace(/\D+/g, "");
-  const palabras = texto.split(" ").filter(Boolean);
+  const terminos = texto.split(" ").filter(Boolean);
 
-  if (!texto && !digitos) return filas;
+  if (!terminos.length && !digitos) return filas;
 
   return filas.filter((fila) => {
     const contenido = obtenerContenidoBusquedaCliente(fila);
 
-    if (texto && contenido.texto.includes(texto)) return true;
-    if (compacto && contenido.compacto.includes(compacto)) return true;
+    // Búsqueda numérica: permite encontrar teléfonos o códigos aunque se escriban con espacios o signos.
     if (digitos && contenido.digitos.includes(digitos)) return true;
 
-    // Búsqueda más flexible: permite encontrar por varias palabras en distinto orden.
-    return palabras.length > 0 && palabras.every((palabra) => contenido.texto.includes(palabra) || contenido.compacto.includes(palabra));
+    // Búsqueda por tokens: todas las palabras deben aparecer, sin importar orden, tildes ni mayúsculas.
+    return terminos.every((termino) => (
+      contenido.texto.includes(termino) ||
+      contenido.compacto.includes(termino)
+    ));
   });
 }
+
 
 
 

@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '117.0-FASE26H1-INFORME-CAJA-HISTORIAL-WHATSAPP-EXCEL-BASE116-2026-06-12',
-  phase: 'Fase 26H1 - Informe Caja con historial y exportaciones',
+  version: '118.1-FASE27A2-CLIENTES-BUSQUEDA-TOKENS-EXCEL-2026-06-12',
+  phase: 'Fase 27A2 - Clientes búsqueda agresiva y exportación Excel',
   date: '2026-06-12',
-  fase: '26H1',
-  notes: 'Mejora modular de Caja sobre base 116: historial de arqueos, gastos detallados más compactos, informe para WhatsApp y exportación CSV compatible con Excel.'
+  fase: '27A2',
+  notes: 'Corrige la búsqueda en Rafa > Clientes con tokens sin importar orden, tildes ni mayúsculas; incluye estado y observaciones; agrega debounce, botón limpiar y exportación Excel del resultado filtrado.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
