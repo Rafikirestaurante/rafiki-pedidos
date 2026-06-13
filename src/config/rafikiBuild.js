@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '118.17-FASE28B1-B2-CREDITO-MESAS-CLIENTES-CREDITO-2026-06-13',
-  phase: 'Fase 28B.1 y 28B.2 - Crédito en mesas y clientes de crédito',
+  version: '118.18-FASE29A-DIRECTORIO-CLIENTES-CREDITO-2026-06-13',
+  phase: 'Fase 29A - Directorio de Clientes Crédito',
   date: '2026-06-13',
-  fase: '28B.1-28B.2',
-  notes: 'Nueva forma de pago Crédito solo en Panel Mesas, cliente obligatorio para crédito, sugerencias desde clientes_credito y respaldo local seguro.'
+  fase: '29A',
+  notes: 'Gerencia > Cartera ahora administra clientes crédito: crear, editar, buscar, activar/desactivar e indicadores iniciales de cartera.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

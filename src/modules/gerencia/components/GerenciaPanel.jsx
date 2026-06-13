@@ -6,6 +6,7 @@ const CajaAdmin = lazy(() => import("../../caja/components/CajaAdmin.jsx"));
 const InventarioAdmin = lazy(() => import("../../inventario/components/InventarioAdmin.jsx"));
 const CatalogoRafa = lazy(() => import("../../catalogo/components/CatalogoRafa.jsx"));
 const GastosDiarios = lazy(() => import("../../gastos/components/GastosDiarios.jsx"));
+const CarteraClientesCredito = lazy(() => import("../../cartera/components/CarteraClientesCredito.jsx"));
 
 const TABS_GERENCIA = [
   { id: "inicio", label: "Inicio" },
@@ -51,7 +52,7 @@ export default function GerenciaPanel({
       },
       {
         titulo: "Cartera",
-        texto: "Base preparada para cuentas por cobrar a clientes en la Etapa 28B.",
+        texto: "Directorio de clientes crédito y base para cuentas por cobrar.",
         tab: "cartera",
         disponible: true,
       },
@@ -150,15 +151,9 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "cartera" && (
-        <section className="card card-pad">
-          <h2>Cartera</h2>
-          <p className="muted">
-            Módulo reservado para la Etapa 28B. Aquí se administrarán clientes con cuentas por cobrar, abonos, saldos y estados pendiente/pagado.
-          </p>
-          <div className="alert alert-info">
-            Base creada con seguridad: la ruta ya existe, pero todavía no modifica base de datos ni afecta Caja.
-          </div>
-        </section>
+        <Suspense fallback={<CargandoModulo texto="Cargando clientes crédito..." />}>
+          <CarteraClientesCredito />
+        </Suspense>
       )}
 
       {tabActiva !== "inicio" && tabActiva !== "cartera" && (
