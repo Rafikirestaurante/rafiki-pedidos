@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '118.9-FASE27E-BUSQUEDA-NUMERO-PEDIDO-GLOBAL-2026-06-12',
-  phase: 'Fase 27E - Búsqueda global por número de pedido',
-  date: '2026-06-12',
-  fase: '27E',
-  notes: 'Agrega en Pedidos hoy un buscador complementario por número exacto de pedido que consulta toda la base sin depender de la fecha seleccionada.'
+  version: '118.12-FASE27H-REFACTOR-BUSQUEDA-INICIO-DESDE-ARQUEO-ANTERIOR-2026-06-13',
+  phase: 'Fase 27H - Refactor motor de búsqueda e inicio desde arqueo anterior',
+  date: '2026-06-13',
+  fase: '27H',
+  notes: 'Centraliza el motor de búsqueda avanzada y agrega en Caja > Inicio del día la opción de traer el último arqueo del día anterior para verificar y guardar manualmente.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

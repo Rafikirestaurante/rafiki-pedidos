@@ -1,9 +1,9 @@
 {
-  "version": "118.8-FASE27D-NAVEGACION-CAJA-PAQUETES-2026-06-12",
-  "fase": "27D",
-  "mensaje": "Navegación unificada y campo Paquetes agregado en Caja.",
-  "build": "118.8",
-  "base_estable": "118.7",
-  "phase": "Fase 27D - Navegación unificada y paquetes en Caja",
-  "date": "2026-06-12"
+  "version": "118.12-FASE27H-REFACTOR-BUSQUEDA-INICIO-DESDE-ARQUEO-ANTERIOR-2026-06-13",
+  "fase": "27H",
+  "mensaje": "Refactor del motor de búsqueda y carga opcional del inicio del día desde el último arqueo anterior.",
+  "build": "118.12",
+  "base_estable": "118.11",
+  "phase": "Fase 27H - Refactor motor de búsqueda e inicio desde arqueo anterior",
+  "date": "2026-06-13"
 }

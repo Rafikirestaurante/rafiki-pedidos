@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { dinero } from "../../../shared/utils/pedidos";
-import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
+import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, cargarUltimoArqueoDiaAnterior, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
 const CUENTAS_INICIALES = [
@@ -194,7 +194,7 @@ function BloqueCuentas({ estado, setEstado }) {
   );
 }
 
-function FormularioArqueo({ titulo, descripcion, estado, setEstado, guardando, onGuardar, onNuevo, historial }) {
+function FormularioArqueo({ titulo, descripcion, estado, setEstado, guardando, onGuardar, onNuevo, onTraerAnterior, historial }) {
   return (
     <div className="caja-formulario">
       <section className="card card-pad caja-intro"><h2>{titulo}</h2><p className="muted">{descripcion}</p></section>
@@ -204,6 +204,7 @@ function FormularioArqueo({ titulo, descripcion, estado, setEstado, guardando, o
       </div>
       <BloqueCuentas estado={estado} setEstado={setEstado} />
       <div className="caja-actions caja-arqueo-actions">
+        {onTraerAnterior && <button type="button" className="btn secondary" onClick={onTraerAnterior} disabled={guardando}>Traer último arqueo anterior</button>}
         {onNuevo && <button type="button" className="btn secondary" onClick={onNuevo} disabled={guardando}>Arqueo Nuevo</button>}
         <button type="button" className="btn primary" onClick={onGuardar} disabled={guardando}>{guardando ? "Guardando..." : "Guardar"}</button>
       </div>
@@ -365,6 +366,23 @@ export default function CajaAdmin() {
     finally { setGuardandoInicio(false); }
   }
 
+  async function traerUltimoArqueoAnteriorAInicio() {
+    setGuardandoInicio(true); setMensaje(""); setError("");
+    try {
+      const anterior = await cargarUltimoArqueoDiaAnterior(fechaCaja);
+      if (!anterior?.estado) {
+        setMensaje("No se encontró arqueo del día anterior para traer.");
+        return;
+      }
+      setInicioDia(normalizarEstadoArqueo(anterior.estado));
+      setMensaje(`Información del último arqueo anterior cargada desde ${anterior.fecha}. Verifica los valores y luego guarda manualmente el inicio del día.`);
+    } catch (err) {
+      setError(err?.message || "No se pudo traer el último arqueo del día anterior.");
+    } finally {
+      setGuardandoInicio(false);
+    }
+  }
+
   async function guardarFin() {
     setGuardandoFin(true); setMensaje(""); setError("");
     try {
@@ -524,7 +542,7 @@ export default function CajaAdmin() {
         <button type="button" className={tabCaja === "informe" ? "active" : ""} onClick={() => setTabCaja("informe")}>Informe Caja</button>
       </div>
 
-      {tabCaja === "inicio" && <FormularioArqueo titulo="Inicio del día" descripcion="Registra la base inicial antes de empezar la operación." estado={inicioDia} setEstado={setInicioDia} guardando={guardandoInicio} onGuardar={guardarInicio} />}
+      {tabCaja === "inicio" && <FormularioArqueo titulo="Inicio del día" descripcion="Registra la base inicial antes de empezar la operación. Puedes traer el último arqueo del día anterior, revisarlo y guardar manualmente." estado={inicioDia} setEstado={setInicioDia} guardando={guardandoInicio} onGuardar={guardarInicio} onTraerAnterior={traerUltimoArqueoAnteriorAInicio} />}
       {tabCaja === "fin" && <FormularioArqueo titulo="Arqueo" descripcion="Cuenta cajas y bancos en cualquier momento del día. Guarda el conteo y usa Arqueo Nuevo para archivarlo y empezar otro desde cero." estado={finDia} setEstado={setFinDia} guardando={guardandoFin} onGuardar={guardarFin} onNuevo={iniciarArqueoNuevo} historial={historialArqueos} />}
 
       {tabCaja === "informe" && (

@@ -10,6 +10,12 @@ function hoyISOColombia(fecha = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(fecha);
 }
 
+function obtenerFechaAnteriorISO(fechaISO) {
+  const base = fechaISO ? new Date(`${fechaISO}T12:00:00-05:00`) : new Date();
+  base.setDate(base.getDate() - 1);
+  return hoyISOColombia(base);
+}
+
 function numeroSeguro(valor) {
   const numero = Number(valor || 0);
   return Number.isFinite(numero) ? numero : 0;
@@ -208,6 +214,47 @@ export async function cargarHistorialArqueosCaja(fecha = hoyISOColombia()) {
   }
 
   return (data || []).map(normalizarArqueoHistorial).filter(Boolean);
+}
+
+export async function cargarUltimoArqueoDiaAnterior(fecha = hoyISOColombia()) {
+  const fechaAnterior = obtenerFechaAnteriorISO(fecha || hoyISOColombia());
+
+  const { data: historialData, error: historialError } = await supabase
+    .from("caja_arqueos_historial")
+    .select(SELECT_CAJA_ARQUEOS_HISTORIAL)
+    .eq("fecha", fechaAnterior)
+    .order("creado_en", { ascending: false })
+    .limit(1);
+
+  if (historialError) {
+    if (!(historialError.code === "42P01" || String(historialError.message || "").includes("caja_arqueos_historial"))) {
+      throw historialError;
+    }
+  }
+
+  const ultimoHistorial = normalizarArqueoHistorial(historialData?.[0]);
+  if (ultimoHistorial?.arqueoData) {
+    return {
+      fecha: fechaAnterior,
+      origen: "historial",
+      estado: ultimoHistorial.arqueoData,
+      total: ultimoHistorial.arqueoTotal,
+      creadoEn: ultimoHistorial.creadoEn,
+    };
+  }
+
+  const registroAnterior = await cargarCajaArqueoPorFecha(fechaAnterior);
+  if (registroAnterior?.finData) {
+    return {
+      fecha: fechaAnterior,
+      origen: "ultimo_arqueo",
+      estado: registroAnterior.finData,
+      total: registroAnterior.finTotal,
+      creadoEn: registroAnterior.actualizadoEn || registroAnterior.creadoEn,
+    };
+  }
+
+  return null;
 }
 
 export async function cargarCuadreRealCaja(fecha = hoyISOColombia()) {
