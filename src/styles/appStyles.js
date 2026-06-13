@@ -1121,6 +1121,36 @@ export const appStyles = `
   padding: 12px 0;
 }
 
+.caja-saldos-detalle {
+  display: grid;
+  gap: 2px;
+  padding: 0 0 4px 12px;
+}
+
+.caja-informe-row.detalle {
+  border-bottom: 0;
+  padding: 3px 0;
+  gap: 10px;
+}
+
+.caja-informe-row.detalle span,
+.caja-informe-row.detalle strong {
+  color: #78716c;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.caja-informe-row.detalle span::before {
+  content: "+ ";
+  color: #fb923c;
+  font-weight: 900;
+}
+
+.caja-ultimo-arqueo-saldos .caja-informe-row.detalle span,
+.caja-ultimo-arqueo-saldos .caja-informe-row.detalle strong {
+  font-size: 11.5px;
+}
+
 .caja-informe-row strong,
 .caja-gasto-detalle-row strong {
   color: #111827;

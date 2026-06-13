@@ -219,8 +219,36 @@ function estadoDiferenciaCaja(diferencia) {
   return { texto: "Falta dinero", clase: "danger", etiqueta: "Falta dinero" };
 }
 
-function FilaInforme({ etiqueta, valor, fuerte = false, estado = "" }) {
-  return <div className={`caja-informe-row ${fuerte ? "fuerte" : ""} ${estado ? `caja-informe-${estado}` : ""}`}><span>{etiqueta}</span><strong>{dinero(valor)}</strong></div>;
+function FilaInforme({ etiqueta, valor, fuerte = false, estado = "", detalle = false }) {
+  return (
+    <div className={`caja-informe-row ${fuerte ? "fuerte" : ""} ${detalle ? "detalle" : ""} ${estado ? `caja-informe-${estado}` : ""}`}>
+      <span>{etiqueta}</span>
+      <strong>{dinero(valor)}</strong>
+    </div>
+  );
+}
+
+function DetalleSaldosArqueo({ estado, className = "" }) {
+  const saldos = obtenerSaldosArqueo(estado);
+  return (
+    <div className={`caja-saldos-detalle ${className}`.trim()}>
+      <FilaInforme etiqueta="Caja Registradora" valor={saldos.cajaRegistradora} detalle />
+      <FilaInforme etiqueta="Caja Azul" valor={saldos.cajaAzul} detalle />
+      <FilaInforme etiqueta="Bancolombia" valor={saldos.bancolombia} detalle />
+      <FilaInforme etiqueta="Nequi" valor={saldos.nequi} detalle />
+      <FilaInforme etiqueta="Rafa" valor={saldos.rafa} detalle />
+      <FilaInforme etiqueta="Datafono" valor={saldos.datafono} detalle />
+    </div>
+  );
+}
+
+function InicioDiaInforme({ estado, total }) {
+  return (
+    <section className="caja-informe-bloque caja-inicio-dia-saldos">
+      <FilaInforme etiqueta="Inicio del día" valor={total} fuerte />
+      <DetalleSaldosArqueo estado={estado} />
+    </section>
+  );
 }
 
 function DetalleGastos({ gastos = [], total }) {
@@ -275,12 +303,7 @@ function SaldosUltimoArqueo({ arqueo, respaldo }) {
         <strong>{dinero(total)}</strong>
       </div>
       {tieneHistorial && <p className="muted small caja-sin-movimientos">Último arqueo: {formatearFechaHoraColombia(arqueo.creadoEn)}</p>}
-      <FilaInforme etiqueta="Caja Registradora" valor={saldos.cajaRegistradora} />
-      <FilaInforme etiqueta="Caja Azul" valor={saldos.cajaAzul} />
-      <FilaInforme etiqueta="Bancolombia" valor={saldos.bancolombia} />
-      <FilaInforme etiqueta="Nequi" valor={saldos.nequi} />
-      <FilaInforme etiqueta="Rafa" valor={saldos.rafa} />
-      <FilaInforme etiqueta="Datafono" valor={saldos.datafono} />
+      <DetalleSaldosArqueo estado={estado} className="caja-ultimo-arqueo-detalle" />
     </section>
   );
 }
@@ -557,7 +580,7 @@ export default function CajaAdmin() {
               </div>
             </div>
             <div className="caja-informe-lista">
-              <FilaInforme etiqueta="Inicio del día" valor={totalInicio} />
+              <InicioDiaInforme estado={inicioDia} total={totalInicio} />
               <FilaInforme etiqueta={`Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos)`} valor={ventasTotal} />
               <DetalleGastos gastos={cuadreReal?.gastosDetalle || []} total={gastosTotal} />
               <section className="caja-informe-bloque caja-ajustes-bloque">
