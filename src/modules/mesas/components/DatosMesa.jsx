@@ -1,7 +1,7 @@
 import React from "react";
 import { CampoTexto } from "../../../shared/components/common";
 import { dinero } from "../../../shared/utils/pedidos";
-import { FORMAS_PAGO_MESA, MESAS_DISPONIBLES, MESEROS_DISPONIBLES } from "../../../shared/utils/mesas";
+import { FORMA_PAGO_CREDITO, FORMAS_PAGO_MESA, MESAS_DISPONIBLES, MESEROS_DISPONIBLES } from "../../../shared/utils/mesas";
 
 export default function DatosMesa({
   modoLlevar,
@@ -16,6 +16,7 @@ export default function DatosMesa({
   errorMesa,
   guardandoPedido,
   itemsConProducto,
+  clientesCreditoMesa = [],
   onSeleccionarMesa,
   onAlternarModoLlevar,
   onClienteChange,
@@ -60,12 +61,28 @@ export default function DatosMesa({
           </div>
 
           <div className="datos-llevar-grid" style={{ marginTop: 12 }}>
-            <CampoTexto
-              etiqueta="Cliente (opcional)"
-              value={clientePedido}
-              onChange={onClienteChange}
-              placeholder="Ej: Sra. Inés, Juan Pérez..."
-            />
+            <label className="field" id="mesa-cliente-credito">
+              <span>
+                Cliente {tipoPagoMesa === FORMA_PAGO_CREDITO ? <span className="requerido">*</span> : "(opcional)"}
+              </span>
+              <input
+                type="text"
+                value={clientePedido}
+                onChange={(e) => onClienteChange(e.target.value)}
+                placeholder={tipoPagoMesa === FORMA_PAGO_CREDITO ? "Busca o escribe el cliente de crédito" : "Ej: Sra. Inés, Juan Pérez..."}
+                list={tipoPagoMesa === FORMA_PAGO_CREDITO ? "clientes-credito-mesas" : undefined}
+              />
+              {tipoPagoMesa === FORMA_PAGO_CREDITO && (
+                <>
+                  <datalist id="clientes-credito-mesas">
+                    {clientesCreditoMesa.map((cliente) => (
+                      <option key={cliente} value={cliente} />
+                    ))}
+                  </datalist>
+                  <small className="muted">Selecciona un cliente existente cuando sea posible para mantener la cartera unificada.</small>
+                </>
+              )}
+            </label>
             {modoLlevar && (
               <>
                 <CampoTexto

@@ -31,12 +31,16 @@ import {
 } from "../../../data/menuCafeteria";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
 import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
+import { asegurarClienteCredito, listarClientesCreditoActivos } from "../../../services/clientesCreditoService";
 import { SelectorCantidad } from "../../../shared/components/common";
 import ConfirmacionPedidoMesa from "./ConfirmacionPedidoMesa";
 import MesaTabs from "./MesaTabs";
 import DatosMesa from "./DatosMesa";
 import {
+  FORMA_PAGO_CREDITO,
+  guardarClienteCredito,
   irAElementoMesas,
+  leerClientesCreditoGuardados,
   vibracionCortaMesas
 } from "../../../shared/utils/mesas";
 
@@ -128,6 +132,30 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [cantidadCafeteria, setCantidadCafeteria] = useState(1);
   const [catalogoProductosMesa, setCatalogoProductosMesa] = useState(() => leerProductosCatalogoStorageMesas());
   const [adicionalesAlmuerzoAbiertos, setAdicionalesAlmuerzoAbiertos] = useState({});
+  const [clientesCreditoMesa, setClientesCreditoMesa] = useState(() => leerClientesCreditoGuardados());
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarClientesCreditoMesa() {
+      const clientesSupabase = await listarClientesCreditoActivos();
+      if (cancelado || clientesSupabase.length === 0) return;
+
+      const nombres = clientesSupabase
+        .map((cliente) => cliente?.nombre)
+        .filter(Boolean);
+      const respaldoLocal = leerClientesCreditoGuardados();
+      const unificados = Array.from(new Set([...respaldoLocal, ...nombres]))
+        .sort((a, b) => a.localeCompare(b, "es"));
+      setClientesCreditoMesa(unificados);
+    }
+
+    cargarClientesCreditoMesa();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!pedidoEditando?.id) return;
@@ -645,6 +673,12 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       return;
     }
 
+    if (tipoPagoMesa === FORMA_PAGO_CREDITO && !clientePedido.trim()) {
+      setErrorMesa("Para pago a crédito debes escribir o seleccionar el nombre del cliente.");
+      irAElementoMesas("mesa-cliente-credito", 80, "center");
+      return;
+    }
+
     const payloadMesa = {
       items: itemsConModoLlevar,
       modoLlevar,
@@ -668,6 +702,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     const pedidoGuardado = await onEnviar(payloadMesa);
 
     if (pedidoGuardado) {
+      if (tipoPagoMesa === FORMA_PAGO_CREDITO) {
+        const listaLocal = guardarClienteCredito(clientePedido);
+        setClientesCreditoMesa(listaLocal);
+
+        const clienteSupabase = await asegurarClienteCredito(clientePedido);
+        if (clienteSupabase?.nombre) {
+          setClientesCreditoMesa((prev) => Array.from(new Set([...prev, clienteSupabase.nombre]))
+            .sort((a, b) => a.localeCompare(b, "es")));
+        }
+      }
       setPedidoMesaConfirmado(pedidoGuardado);
     }
   }
@@ -1290,7 +1334,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               onTelefonoChange={(valor) => { setTelefonoLlevar(valor); setErrorMesa(""); }}
               onUbicacionChange={(valor) => { setUbicacionLlevar(valor); setErrorMesa(""); }}
               onMeseroChange={(mesero) => { setMeseroLocal(mesero); setErrorMesa(""); }}
-              onTipoPagoChange={setTipoPagoMesa}
+              clientesCreditoMesa={clientesCreditoMesa}
+              onTipoPagoChange={(pago) => { setTipoPagoMesa(pago); setErrorMesa(""); }}
               onObservacionesChange={setObservacionesLocal}
               onEnviarPedido={enviarPedidoMesa}
               modoEdicionAdmin={modoEdicionAdmin}
