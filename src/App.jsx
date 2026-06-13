@@ -1534,8 +1534,6 @@ export default function App() {
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
-                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "inventario" ? "Inventario" : vista === "pedidos" ? "Pedidos hoy" : vista === "gerencia" ? "Gerencia" : "Menú diario y pedidos por WhatsApp"}</h1>
-                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "inventario" ? "Control de insumos, stock mínimo y alertas." : vista === "pedidos" ? "Control liviano de pedidos del día." : vista === "gerencia" ? "Gestión estratégica separada de la operación diaria." : "App real conectada a Supabase."}</p>
               </div>
 
               {(vista === "cliente" || vista === "confirmacion") && (

@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '118.12-FASE27H-REFACTOR-BUSQUEDA-INICIO-DESDE-ARQUEO-ANTERIOR-2026-06-13',
-  phase: 'Fase 27H - Refactor motor de búsqueda e inicio desde arqueo anterior',
+  version: '118.15-FASE28A2-LIMPIEZA-VISUAL-PANELES-2026-06-13',
+  phase: 'Fase 28A.2 - Limpieza visual de paneles',
   date: '2026-06-13',
-  fase: '27H',
-  notes: 'Centraliza el motor de búsqueda avanzada y agrega en Caja > Inicio del día la opción de traer el último arqueo del día anterior para verificar y guardar manualmente.'
+  fase: '28A.2',
+  notes: 'Limpieza de encabezados en Mesas, Admin y Gerencia para dejar paneles más despejados, manteniendo navegación y permisos sin cambios funcionales.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

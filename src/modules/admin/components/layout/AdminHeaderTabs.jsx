@@ -2,8 +2,6 @@ import React from "react";
 import PWAClearCacheButton from "../../../../shared/components/PWAClearCacheButton.jsx";
 
 export default function AdminHeaderTabs({
-  adminUsuario,
-  adminNombreRol,
   adminTab,
   setAdminTab,
   puedeVerMenu,
@@ -21,10 +19,6 @@ export default function AdminHeaderTabs({
       <header className="topbar admin-panel-header">
         <div>
           <div className="brand">⚙️ Admin</div>
-          <h1>Gestión de pedidos y ventas</h1>
-          <p className="muted">Control de pedidos, menú diario, solicitudes y estadísticas.</p>
-          {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
-          <p className="muted small">Rol: <strong>{adminNombreRol}</strong></p>
         </div>
         <div className="nav nav-wrap">
           <button type="button" onClick={() => navegar("/mesas", "mesas")}>

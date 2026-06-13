@@ -18,8 +18,6 @@ const TABS_GERENCIA = [
 ];
 
 export default function GerenciaPanel({
-  adminUsuario,
-  adminNombreRol,
   puedeVerInformes,
   puedeVerCaja,
   puedeVerGastos,
@@ -78,10 +76,6 @@ export default function GerenciaPanel({
       <header className="topbar admin-panel-header">
         <div>
           <div className="brand">📊 Gerencia</div>
-          <h1>Gestión estratégica Rafiki</h1>
-          <p className="muted">Informes, caja, cartera, inventario y catálogo en una sección separada de la operación diaria.</p>
-          {adminUsuario?.email && <p className="muted small">Sesión activa: {adminUsuario.email}</p>}
-          <p className="muted small">Rol: <strong>{adminNombreRol}</strong></p>
         </div>
         <div className="nav nav-wrap">
           <button type="button" onClick={() => navegar("/admin", "admin")}>Admin</button>
@@ -106,10 +100,6 @@ export default function GerenciaPanel({
 
       {tabActiva === "inicio" && (
         <section className="card card-pad">
-          <h2>Centro de gerencia</h2>
-          <p className="muted">
-            Esta nueva ruta separa la gestión estratégica de la operación diaria. En esta etapa no se elimina ningún módulo anterior: se reutilizan los componentes actuales para migrar con seguridad.
-          </p>
           <div className="dashboard-grid">
             {tarjetasInicio.map((tarjeta) => (
               <article key={tarjeta.tab} className="card card-pad soft-card">
