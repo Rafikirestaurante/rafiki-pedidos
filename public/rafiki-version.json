@@ -1,9 +1,9 @@
 {
-  "version": "118.12-FASE27H-REFACTOR-BUSQUEDA-INICIO-DESDE-ARQUEO-ANTERIOR-2026-06-13",
-  "fase": "27H",
-  "mensaje": "Refactor del motor de búsqueda y carga opcional del inicio del día desde el último arqueo anterior.",
-  "build": "118.12",
-  "base_estable": "118.11",
-  "phase": "Fase 27H - Refactor motor de búsqueda e inicio desde arqueo anterior",
+  "version": "118.13-FASE28A-RUTA-GERENCIA-SEGURA-2026-06-13",
+  "fase": "28A",
+  "mensaje": "Nueva ruta /gerencia con navegación protegida y base para módulos estratégicos sin retirar /admin ni Rafa.",
+  "build": "118.13",
+  "base_estable": "118.12",
+  "phase": "Fase 28A - Nueva ruta Gerencia",
   "date": "2026-06-13"
 }

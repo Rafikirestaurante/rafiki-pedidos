@@ -34,6 +34,11 @@ export default function AdminHeaderTabs({
           <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
             Pedidos hoy
           </button>
+          {puedeVerRafa && (
+            <button type="button" onClick={() => navegar("/gerencia", "gerencia")}>
+              Gerencia
+            </button>
+          )}
           <PWAClearCacheButton compact />
         </div>
       </header>

@@ -63,6 +63,7 @@ const CatalogoRafa = lazy(() => import("./modules/catalogo/components/CatalogoRa
 const GastosDiarios = lazy(() => import("./modules/gastos/components/GastosDiarios"));
 const InventarioAdmin = lazy(() => import("./modules/inventario/components/InventarioAdmin"));
 const CajaAdmin = lazy(() => import("./modules/caja/components/CajaAdmin"));
+const GerenciaPanel = lazy(() => import("./modules/gerencia/components/GerenciaPanel"));
 
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
@@ -275,7 +276,7 @@ export default function App() {
 
   useEffect(() => {
     let activo = true;
-    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario";
+    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario" || vista === "gerencia";
 
     const enviarALoginAdmin = () => {
       localStorage.removeItem("rafikiAdminActivo");
@@ -340,8 +341,12 @@ export default function App() {
             console.warn("No se pudo refrescar el rol administrativo:", error?.message || error);
           });
 
-          if (window.location.pathname.replace(/\/$/, "") === "/admin") {
+          const rutaActualAdmin = window.location.pathname.replace(/\/$/, "");
+          if (rutaActualAdmin === "/admin") {
             setVista("admin");
+          }
+          if (rutaActualAdmin === "/gerencia" || rutaActualAdmin === "/rafa") {
+            setVista("gerencia");
           }
           return;
         }
@@ -603,7 +608,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario";
+  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario" || vista === "gerencia";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
@@ -1530,8 +1535,8 @@ export default function App() {
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
-                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : vista === "inventario" ? "Inventario" : vista === "pedidos" ? "Pedidos hoy" : "Menú diario y pedidos por WhatsApp"}</h1>
-                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : vista === "inventario" ? "Control de insumos, stock mínimo y alertas." : vista === "pedidos" ? "Control liviano de pedidos del día." : "App real conectada a Supabase."}</p>
+                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : vista === "inventario" ? "Inventario" : vista === "pedidos" ? "Pedidos hoy" : vista === "gerencia" ? "Gerencia" : "Menú diario y pedidos por WhatsApp"}</h1>
+                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : vista === "inventario" ? "Control de insumos, stock mínimo y alertas." : vista === "pedidos" ? "Control liviano de pedidos del día." : vista === "gerencia" ? "Gestión estratégica separada de la operación diaria." : "App real conectada a Supabase."}</p>
               </div>
 
               {(vista === "cliente" || vista === "confirmacion") && (
@@ -1566,6 +1571,14 @@ export default function App() {
                   >
                     Gastos
                   </button>
+                  {puedeVerRafa && (
+                    <button
+                      type="button"
+                      onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
+                    >
+                      Gerencia
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -1589,6 +1602,14 @@ export default function App() {
                   >
                     Pedidos hoy
                   </button>
+                  {puedeVerRafa && (
+                    <button
+                      type="button"
+                      onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
+                    >
+                      Gerencia
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -1612,6 +1633,14 @@ export default function App() {
                   >
                     Gastos
                   </button>
+                  {puedeVerRafa && (
+                    <button
+                      type="button"
+                      onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
+                    >
+                      Gerencia
+                    </button>
+                  )}
                 </div>
               )}
             </header>
@@ -1762,6 +1791,29 @@ export default function App() {
                 />
               </Suspense>
             </>
+          )}
+
+          {!cargando && vista === "gerencia" && adminAutenticado && puedeVerRafa && (
+            <Suspense fallback={<CargandoModulo texto="Cargando gerencia..." />}>
+              <GerenciaPanel
+                adminUsuario={adminUsuario}
+                adminNombreRol={adminNombreRol}
+                puedeVerInformes={puedeVerRafa}
+                puedeVerCaja={puedeVerCaja}
+                puedeVerInventario={puedeVerInventario}
+                puedeVerCatalogo={puedeVerCatalogo}
+                cerrarPanelAdmin={cerrarPanelAdmin}
+                navegar={navegar}
+              />
+            </Suspense>
+          )}
+
+          {!cargando && vista === "gerencia" && adminAutenticado && !puedeVerRafa && (
+            <section className="card card-pad">
+              <h2>Acceso restringido</h2>
+              <p className="muted">Gerencia solo está disponible para el rol administrador.</p>
+              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>Volver a Admin</button>
+            </section>
           )}
 
           {!cargando && vista === "admin" && adminAutenticado && (
