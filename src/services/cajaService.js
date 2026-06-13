@@ -142,23 +142,35 @@ export function guardarInicioCaja({ fecha, estado, total }) {
   });
 }
 
-export async function guardarFinCaja({ fecha, estado, total }) {
-  const registro = await guardarCajaArqueoParcial({
+export function guardarFinCaja({ fecha, estado, total }) {
+  // Guarda únicamente el último arqueo vigente. El historial se crea al presionar "Arqueo Nuevo".
+  return guardarCajaArqueoParcial({
     fecha,
     estado,
     total,
     campoData: "fin_data",
     campoTotal: "fin_total",
   });
+}
 
-  // El arqueo principal guarda el último conteo del día; este historial conserva cada cierre parcial.
-  try {
-    await guardarArqueoHistorialCaja({ fecha, estado, total });
-  } catch (error) {
-    console.warn("No se pudo guardar el historial de arqueos:", error?.message || error);
-  }
+export async function limpiarUltimoArqueoCaja({ fecha }) {
+  await exigirSesionSupabaseCaja();
+  const fechaGuardar = fecha || hoyISOColombia();
+  const payload = {
+    fecha: fechaGuardar,
+    fin_data: null,
+    fin_total: 0,
+    actualizado_en: new Date().toISOString(),
+  };
 
-  return registro;
+  const { data, error } = await supabase
+    .from("caja_arqueos")
+    .upsert(payload, { onConflict: "fecha" })
+    .select(SELECT_CAJA_ARQUEOS)
+    .single();
+
+  if (error) throw error;
+  return normalizarCajaArqueo(data);
 }
 
 export async function guardarArqueoHistorialCaja({ fecha, estado, total }) {

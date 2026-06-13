@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { dinero } from "../../../shared/utils/pedidos";
-import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, guardarAjustesCaja, guardarFinCaja, guardarInicioCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
+import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
 const CUENTAS_INICIALES = [
@@ -110,6 +110,18 @@ function totalArqueo(estado) {
   return calcularTotalCaja(estado.cajaRegistradora) + calcularTotalCaja(estado.cajaAzul) + totalCuentas(estado.cuentas);
 }
 
+function obtenerSaldosArqueo(estado) {
+  const arqueo = normalizarEstadoArqueo(estado);
+  return {
+    cajaRegistradora: calcularTotalCaja(arqueo.cajaRegistradora),
+    cajaAzul: calcularTotalCaja(arqueo.cajaAzul),
+    bancolombia: limpiarNumero(arqueo.cuentas.bancolombia),
+    nequi: limpiarNumero(arqueo.cuentas.nequi),
+    rafa: limpiarNumero(arqueo.cuentas.rafa),
+    datafono: limpiarNumero(arqueo.cuentas.datafono),
+  };
+}
+
 function actualizarConteoCaja(setEstado, cajaId, campo, valor) {
   setEstado((actual) => ({ ...actual, [cajaId]: { ...actual[cajaId], [campo]: valor } }));
 }
@@ -182,7 +194,7 @@ function BloqueCuentas({ estado, setEstado }) {
   );
 }
 
-function FormularioArqueo({ titulo, descripcion, estado, setEstado, guardando, onGuardar }) {
+function FormularioArqueo({ titulo, descripcion, estado, setEstado, guardando, onGuardar, onNuevo, historial }) {
   return (
     <div className="caja-formulario">
       <section className="card card-pad caja-intro"><h2>{titulo}</h2><p className="muted">{descripcion}</p></section>
@@ -191,7 +203,11 @@ function FormularioArqueo({ titulo, descripcion, estado, setEstado, guardando, o
         <BloqueCaja titulo="Caja Azul" cajaId="cajaAzul" estado={estado} setEstado={setEstado} />
       </div>
       <BloqueCuentas estado={estado} setEstado={setEstado} />
-      <div className="caja-actions"><button type="button" className="btn primary" onClick={onGuardar} disabled={guardando}>{guardando ? "Guardando..." : "Guardar"}</button></div>
+      <div className="caja-actions caja-arqueo-actions">
+        {onNuevo && <button type="button" className="btn secondary" onClick={onNuevo} disabled={guardando}>Arqueo Nuevo</button>}
+        <button type="button" className="btn primary" onClick={onGuardar} disabled={guardando}>{guardando ? "Guardando..." : "Guardar"}</button>
+      </div>
+      {Array.isArray(historial) && <HistorialArqueos historial={historial} titulo="Historial de arqueos" />}
     </div>
   );
 }
@@ -223,19 +239,47 @@ function DetalleGastos({ gastos = [], total }) {
   );
 }
 
-function HistorialArqueos({ historial = [] }) {
+function HistorialArqueos({ historial = [], titulo = "Arqueos realizados" }) {
   return (
     <section className="caja-informe-bloque caja-historial-arqueos">
-      <div className="caja-informe-row fuerte"><span>Arqueos realizados</span><strong>{historial.length}</strong></div>
-      {historial.length ? historial.map((arqueo, index) => (
-        <div className="caja-arqueo-historial-row" key={arqueo.id || `${arqueo.creadoEn}-${index}`}>
-          <div>
-            <strong>{index === 0 ? "Último arqueo" : `Arqueo ${historial.length - index}`}</strong>
-            <span>{formatearFechaHoraColombia(arqueo.creadoEn)}</span>
+      <div className="caja-informe-row fuerte"><span>{titulo}</span><strong>{historial.length}</strong></div>
+      {historial.length ? historial.map((arqueo, index) => {
+        const saldos = obtenerSaldosArqueo(arqueo.arqueoData);
+        return (
+          <div className="caja-arqueo-historial-row" key={arqueo.id || `${arqueo.creadoEn}-${index}`}>
+            <div>
+              <strong>{index === 0 ? "Último arqueo" : `Arqueo ${historial.length - index}`}</strong>
+              <span>{formatearFechaHoraColombia(arqueo.creadoEn)}</span>
+              <span>Registradora {dinero(saldos.cajaRegistradora)} · Azul {dinero(saldos.cajaAzul)}</span>
+              <span>Bancolombia {dinero(saldos.bancolombia)} · Nequi {dinero(saldos.nequi)} · Rafa {dinero(saldos.rafa)} · Datafono {dinero(saldos.datafono)}</span>
+            </div>
+            <strong>{dinero(arqueo.arqueoTotal)}</strong>
           </div>
-          <strong>{dinero(arqueo.arqueoTotal)}</strong>
-        </div>
-      )) : <p className="muted small caja-sin-movimientos">Sin arqueos guardados para esta fecha.</p>}
+        );
+      }) : <p className="muted small caja-sin-movimientos">Sin arqueos guardados para esta fecha.</p>}
+    </section>
+  );
+}
+
+function SaldosUltimoArqueo({ arqueo, respaldo }) {
+  const tieneHistorial = Boolean(arqueo?.arqueoData);
+  const estado = tieneHistorial ? arqueo.arqueoData : respaldo;
+  const saldos = obtenerSaldosArqueo(estado);
+  const total = tieneHistorial ? limpiarNumero(arqueo.arqueoTotal) : totalArqueo(estado);
+
+  return (
+    <section className="caja-informe-bloque caja-ultimo-arqueo-saldos">
+      <div className="caja-informe-row fuerte">
+        <span>Saldos último arqueo</span>
+        <strong>{dinero(total)}</strong>
+      </div>
+      {tieneHistorial && <p className="muted small caja-sin-movimientos">Último arqueo: {formatearFechaHoraColombia(arqueo.creadoEn)}</p>}
+      <FilaInforme etiqueta="Caja Registradora" valor={saldos.cajaRegistradora} />
+      <FilaInforme etiqueta="Caja Azul" valor={saldos.cajaAzul} />
+      <FilaInforme etiqueta="Bancolombia" valor={saldos.bancolombia} />
+      <FilaInforme etiqueta="Nequi" valor={saldos.nequi} />
+      <FilaInforme etiqueta="Rafa" valor={saldos.rafa} />
+      <FilaInforme etiqueta="Datafono" valor={saldos.datafono} />
     </section>
   );
 }
@@ -263,7 +307,11 @@ export default function CajaAdmin() {
   const gastosRafaTotal = useMemo(() => limpiarNumero(ajustesCaja.gastosRafa), [ajustesCaja.gastosRafa]);
   const cuentasPorCobrarTotal = useMemo(() => limpiarNumero(ajustesCaja.cuentasPorCobrar), [ajustesCaja.cuentasPorCobrar]);
   const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal - gastosRafaTotal - cuentasPorCobrarTotal, [totalInicio, ventasTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
-  const diferenciaReal = useMemo(() => totalFin - dineroEsperado, [totalFin, dineroEsperado]);
+  const totalUltimoArqueoInforme = useMemo(() => {
+    if (historialArqueos[0]?.arqueoData) return limpiarNumero(historialArqueos[0].arqueoTotal);
+    return totalFin;
+  }, [historialArqueos, totalFin]);
+  const diferenciaReal = useMemo(() => totalUltimoArqueoInforme - dineroEsperado, [totalUltimoArqueoInforme, dineroEsperado]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
 
   useEffect(() => {
@@ -321,12 +369,28 @@ export default function CajaAdmin() {
     setGuardandoFin(true); setMensaje(""); setError("");
     try {
       await guardarFinCaja({ fecha: fechaCaja, estado: finDia, total: totalFin });
-      setMensaje("Arqueo guardado correctamente.");
-      const historial = await cargarHistorialArqueosCaja(fechaCaja);
-      setHistorialArqueos(historial);
+      setMensaje("Arqueo guardado correctamente como último conteo.");
     }
     catch (err) { setError(err?.message || "No se pudo guardar el arqueo."); }
     finally { setGuardandoFin(false); }
+  }
+
+  async function iniciarArqueoNuevo() {
+    setGuardandoFin(true); setMensaje(""); setError("");
+    try {
+      if (totalFin > 0) {
+        await guardarArqueoHistorialCaja({ fecha: fechaCaja, estado: finDia, total: totalFin });
+      }
+      await limpiarUltimoArqueoCaja({ fecha: fechaCaja });
+      setFinDia(crearEstadoArqueo());
+      const historial = await cargarHistorialArqueosCaja(fechaCaja);
+      setHistorialArqueos(historial);
+      setMensaje(totalFin > 0 ? "Último arqueo archivado. Ya puedes iniciar un arqueo nuevo." : "Arqueo limpiado. Ya puedes iniciar un arqueo nuevo.");
+    } catch (err) {
+      setError(err?.message || "No se pudo iniciar un arqueo nuevo.");
+    } finally {
+      setGuardandoFin(false);
+    }
   }
 
   function actualizarAjusteCaja(campo, valor) {
@@ -369,8 +433,20 @@ export default function CajaAdmin() {
     lineas.push(
       "",
       `Dinero esperado: ${dinero(dineroEsperado)}`,
-      `Arqueo contado: ${dinero(totalFin)}`,
+      `Arqueo contado: ${dinero(totalUltimoArqueoInforme)}`,
       `${estadoDiferencia.etiqueta}: ${dinero(Math.abs(diferenciaReal))}`,
+    );
+
+    const saldosUltimo = obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia);
+    lineas.push(
+      "",
+      "*Saldos último arqueo*",
+      `Caja Registradora: ${dinero(saldosUltimo.cajaRegistradora)}`,
+      `Caja Azul: ${dinero(saldosUltimo.cajaAzul)}`,
+      `Bancolombia: ${dinero(saldosUltimo.bancolombia)}`,
+      `Nequi: ${dinero(saldosUltimo.nequi)}`,
+      `Rafa: ${dinero(saldosUltimo.rafa)}`,
+      `Datafono: ${dinero(saldosUltimo.datafono)}`,
     );
 
     if (historialArqueos.length) {
@@ -401,8 +477,16 @@ export default function CajaAdmin() {
       ["Gastos Rafa", gastosRafaTotal],
       ["Cuentas por cobrar", cuentasPorCobrarTotal],
       ["Caja esperada", dineroEsperado],
-      ["Arqueo contado", totalFin],
+      ["Arqueo contado", totalUltimoArqueoInforme],
       [estadoDiferencia.etiqueta, Math.abs(diferenciaReal)],
+      ["", ""],
+      ["Saldos último arqueo", ""],
+      ["Caja Registradora", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).cajaRegistradora],
+      ["Caja Azul", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).cajaAzul],
+      ["Bancolombia", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).bancolombia],
+      ["Nequi", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).nequi],
+      ["Rafa", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).rafa],
+      ["Datafono", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).datafono],
       ["", ""],
       ["Detalle gastos", ""],
       ["Proveedor", "Valor", "Categoría / artículos"],
@@ -441,7 +525,7 @@ export default function CajaAdmin() {
       </div>
 
       {tabCaja === "inicio" && <FormularioArqueo titulo="Inicio del día" descripcion="Registra la base inicial antes de empezar la operación." estado={inicioDia} setEstado={setInicioDia} guardando={guardandoInicio} onGuardar={guardarInicio} />}
-      {tabCaja === "fin" && <FormularioArqueo titulo="Arqueo" descripcion="Cuenta cajas y bancos en cualquier momento del día. Por ahora queda guardado como último arqueo de la fecha." estado={finDia} setEstado={setFinDia} guardando={guardandoFin} onGuardar={guardarFin} />}
+      {tabCaja === "fin" && <FormularioArqueo titulo="Arqueo" descripcion="Cuenta cajas y bancos en cualquier momento del día. Guarda el conteo y usa Arqueo Nuevo para archivarlo y empezar otro desde cero." estado={finDia} setEstado={setFinDia} guardando={guardandoFin} onGuardar={guardarFin} onNuevo={iniciarArqueoNuevo} historial={historialArqueos} />}
 
       {tabCaja === "informe" && (
         <div className="caja-formulario">
@@ -475,7 +559,8 @@ export default function CajaAdmin() {
                 <div className="caja-actions caja-ajustes-actions"><button type="button" className="btn secondary" onClick={guardarAjustesInformeCaja} disabled={guardandoAjustes}>{guardandoAjustes ? "Guardando..." : "Guardar ajustes"}</button></div>
               </section>
               <FilaInforme etiqueta="Caja esperada" valor={dineroEsperado} fuerte />
-              <FilaInforme etiqueta="Fin / arqueo contado" valor={totalFin} />
+              <SaldosUltimoArqueo arqueo={historialArqueos[0]} respaldo={finDia} />
+              <FilaInforme etiqueta="Fin / arqueo contado" valor={totalUltimoArqueoInforme} />
               <HistorialArqueos historial={historialArqueos} />
               <FilaInforme etiqueta={estadoDiferencia.etiqueta} valor={Math.abs(diferenciaReal)} fuerte estado={estadoDiferencia.clase} />
             </div>
