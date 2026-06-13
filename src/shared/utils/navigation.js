@@ -21,6 +21,11 @@ export function obtenerVistaInicial() {
   if (ruta !== rutaOriginal) {
     window.history.replaceState({}, "", ruta);
   }
+  if (ruta === "/gastos") {
+    ruta = "/gerencia";
+    window.history.replaceState({}, "", ruta);
+  }
+
   const adminActivo = obtenerSesionActiva("rafikiAdminActivo");
 
   if (ruta === "/admin") {
@@ -47,9 +52,6 @@ export function obtenerVistaInicial() {
     return "mesas";
   }
 
-  if (ruta === "/gastos") {
-    return "gastos";
-  }
 
   return "inicio";
 }

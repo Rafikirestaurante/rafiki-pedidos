@@ -60,7 +60,6 @@ const GeneradorMenu = lazy(() => import("./modules/catalogo/components/Generador
 const PanelMesasPOS = lazy(() => import("./modules/mesas/components/PanelMesas"));
 const PanelRafaPrivado = lazy(() => import("./modules/dashboard/components/PanelRafaPrivado"));
 const CatalogoRafa = lazy(() => import("./modules/catalogo/components/CatalogoRafa"));
-const GastosDiarios = lazy(() => import("./modules/gastos/components/GastosDiarios"));
 const InventarioAdmin = lazy(() => import("./modules/inventario/components/InventarioAdmin"));
 const CajaAdmin = lazy(() => import("./modules/caja/components/CajaAdmin"));
 const GerenciaPanel = lazy(() => import("./modules/gerencia/components/GerenciaPanel"));
@@ -68,7 +67,7 @@ const GerenciaPanel = lazy(() => import("./modules/gerencia/components/GerenciaP
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
-const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "gastos", "inventario", "caja", "rafa"]);
+const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "inventario", "caja", "rafa"]);
 
 function leerAdminTabGuardada() {
   try {
@@ -1535,8 +1534,8 @@ export default function App() {
             <header className="topbar">
               <div>
                 <div className="brand">🍽️ Rafiki Pedidos</div>
-                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "gastos" ? "Gastos rápidos" : vista === "inventario" ? "Inventario" : vista === "pedidos" ? "Pedidos hoy" : vista === "gerencia" ? "Gerencia" : "Menú diario y pedidos por WhatsApp"}</h1>
-                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "gastos" ? "Registro rápido de compras y salidas de dinero." : vista === "inventario" ? "Control de insumos, stock mínimo y alertas." : vista === "pedidos" ? "Control liviano de pedidos del día." : vista === "gerencia" ? "Gestión estratégica separada de la operación diaria." : "App real conectada a Supabase."}</p>
+                <h1>{vista === "mesas" ? "Panel de mesas" : vista === "inventario" ? "Inventario" : vista === "pedidos" ? "Pedidos hoy" : vista === "gerencia" ? "Gerencia" : "Menú diario y pedidos por WhatsApp"}</h1>
+                <p className="muted">{vista === "mesas" ? "Toma rápida de pedidos internos." : vista === "inventario" ? "Control de insumos, stock mínimo y alertas." : vista === "pedidos" ? "Control liviano de pedidos del día." : vista === "gerencia" ? "Gestión estratégica separada de la operación diaria." : "App real conectada a Supabase."}</p>
               </div>
 
               {(vista === "cliente" || vista === "confirmacion") && (
@@ -1565,12 +1564,6 @@ export default function App() {
                   >
                     Pedidos hoy
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/gastos", "gastos")}
-                  >
-                    Gastos
-                  </button>
                   {puedeVerRafa && (
                     <button
                       type="button"
@@ -1582,7 +1575,7 @@ export default function App() {
                 </div>
               )}
 
-              {(vista === "gastos" || vista === "inventario") && (
+              {vista === "inventario" && (
                 <div className="nav nav-wrap">
                   <button
                     type="button"
@@ -1627,12 +1620,6 @@ export default function App() {
                   >
                     Admin
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/gastos", "gastos")}
-                  >
-                    Gastos
-                  </button>
                   {puedeVerRafa && (
                     <button
                       type="button"
@@ -1651,11 +1638,6 @@ export default function App() {
 
           {!cargando && vista === "inicio" && <InicioRafiki navegar={navegar} />}
 
-          {!cargando && vista === "gastos" && (
-            <Suspense fallback={<CargandoModulo texto="Cargando gastos rápidos..." />}>
-              <GastosDiarios modoRapido mostrarInforme={false} />
-            </Suspense>
-          )}
 
           {!cargando && vista === "inventario" && adminAutenticado && puedeVerInventario && (
             <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
@@ -1800,6 +1782,8 @@ export default function App() {
                 adminNombreRol={adminNombreRol}
                 puedeVerInformes={puedeVerRafa}
                 puedeVerCaja={puedeVerCaja}
+                puedeVerGastos={puedeVerGastos}
+                puedeVerInformeGastos={puedeVerInformeGastos}
                 puedeVerInventario={puedeVerInventario}
                 puedeVerCatalogo={puedeVerCatalogo}
                 cerrarPanelAdmin={cerrarPanelAdmin}
@@ -1828,7 +1812,6 @@ export default function App() {
                 puedeVerGenerador={puedeVerGenerador}
                 puedeVerRafa={puedeVerRafa}
                 puedeVerCatalogo={puedeVerCatalogo}
-                puedeVerGastos={puedeVerGastos}
                 puedeVerInventario={puedeVerInventario}
                 puedeVerCaja={puedeVerCaja}
                 cerrarPanelAdmin={cerrarPanelAdmin}
@@ -1919,12 +1902,6 @@ export default function App() {
                   <CatalogoRafa />
                 </Suspense>
               )}
-              {adminTab === "gastos" && puedeVerGastos && (
-                <Suspense fallback={<CargandoModulo texto="Cargando gastos diarios..." />}>
-                  <GastosDiarios esAdministrador={puedeVerInformeGastos} />
-                </Suspense>
-              )}
-
               {adminTab === "inventario" && puedeVerInventario && (
                 <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
                   <InventarioAdmin />

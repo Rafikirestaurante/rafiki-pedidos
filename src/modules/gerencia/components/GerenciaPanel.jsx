@@ -5,11 +5,13 @@ const PanelRafaPrivado = lazy(() => import("../../dashboard/components/PanelRafa
 const CajaAdmin = lazy(() => import("../../caja/components/CajaAdmin.jsx"));
 const InventarioAdmin = lazy(() => import("../../inventario/components/InventarioAdmin.jsx"));
 const CatalogoRafa = lazy(() => import("../../catalogo/components/CatalogoRafa.jsx"));
+const GastosDiarios = lazy(() => import("../../gastos/components/GastosDiarios.jsx"));
 
 const TABS_GERENCIA = [
   { id: "inicio", label: "Inicio" },
   { id: "informes", label: "Informes" },
   { id: "caja", label: "Caja" },
+  { id: "gastos", label: "Gastos" },
   { id: "cartera", label: "Cartera" },
   { id: "inventario", label: "Inventario" },
   { id: "catalogo", label: "Catálogo" },
@@ -20,6 +22,8 @@ export default function GerenciaPanel({
   adminNombreRol,
   puedeVerInformes,
   puedeVerCaja,
+  puedeVerGastos,
+  puedeVerInformeGastos,
   puedeVerInventario,
   puedeVerCatalogo,
   cerrarPanelAdmin,
@@ -42,6 +46,12 @@ export default function GerenciaPanel({
         disponible: puedeVerCaja,
       },
       {
+        titulo: "Gastos",
+        texto: "Registro y control gerencial de compras y salidas de dinero.",
+        tab: "gastos",
+        disponible: puedeVerGastos,
+      },
+      {
         titulo: "Cartera",
         texto: "Base preparada para cuentas por cobrar a clientes en la Etapa 28B.",
         tab: "cartera",
@@ -60,7 +70,7 @@ export default function GerenciaPanel({
         disponible: puedeVerCatalogo,
       },
     ],
-    [puedeVerCatalogo, puedeVerCaja, puedeVerInformes, puedeVerInventario]
+    [puedeVerCatalogo, puedeVerCaja, puedeVerGastos, puedeVerInformes, puedeVerInventario]
   );
 
   return (
@@ -131,6 +141,12 @@ export default function GerenciaPanel({
         </Suspense>
       )}
 
+      {tabActiva === "gastos" && puedeVerGastos && (
+        <Suspense fallback={<CargandoModulo texto="Cargando gastos gerenciales..." />}>
+          <GastosDiarios esAdministrador={puedeVerInformeGastos} />
+        </Suspense>
+      )}
+
       {tabActiva === "inventario" && puedeVerInventario && (
         <Suspense fallback={<CargandoModulo texto="Cargando inventario gerencial..." />}>
           <InventarioAdmin />
@@ -158,6 +174,7 @@ export default function GerenciaPanel({
       {tabActiva !== "inicio" && tabActiva !== "cartera" && (
         ((tabActiva === "informes" && !puedeVerInformes) ||
           (tabActiva === "caja" && !puedeVerCaja) ||
+          (tabActiva === "gastos" && !puedeVerGastos) ||
           (tabActiva === "inventario" && !puedeVerInventario) ||
           (tabActiva === "catalogo" && !puedeVerCatalogo)) && (
           <section className="card card-pad">
