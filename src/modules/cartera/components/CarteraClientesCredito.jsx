@@ -14,12 +14,28 @@ const FORM_INICIAL = {
   observaciones: "",
 };
 
+const FILTROS_INICIALES = {
+  texto: "",
+  estado: "todos",
+  fechaInicio: "",
+  fechaFin: "",
+  soloConSaldo: true,
+};
+
 function dinero(valor) {
   return Number(valor || 0).toLocaleString("es-CO", {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0,
   });
+}
+
+function normalizarTexto(valor) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 function formatearFecha(valor) {
@@ -29,38 +45,113 @@ function formatearFecha(valor) {
   return fecha.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function formatearFechaHora(valor) {
+  if (!valor) return "—";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "—";
+  return fecha.toLocaleString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function fechaDentroRango(valor, fechaInicio, fechaFin) {
+  if (!fechaInicio && !fechaFin) return true;
+  if (!valor) return false;
+
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return false;
+
+  if (fechaInicio) {
+    const inicio = new Date(`${fechaInicio}T00:00:00`);
+    if (fecha < inicio) return false;
+  }
+
+  if (fechaFin) {
+    const fin = new Date(`${fechaFin}T23:59:59.999`);
+    if (fecha > fin) return false;
+  }
+
+  return true;
+}
+
+function estadoCartera(movimiento) {
+  return String(movimiento?.estado || "pendiente").trim().toLowerCase();
+}
+
+function saldoMovimiento(movimiento) {
+  return Number(movimiento?.saldo_movimiento ?? movimiento?.valor ?? 0) || 0;
+}
+
+function movimientoPendiente(movimiento) {
+  const estado = estadoCartera(movimiento);
+  return estado !== "pagado" && estado !== "anulado" && saldoMovimiento(movimiento) > 0;
+}
+
+function telefonoWhatsApp(telefono) {
+  const digitos = String(telefono || "").replace(/\D/g, "");
+  if (!digitos) return "";
+  if (digitos.length === 10) return `57${digitos}`;
+  return digitos;
+}
+
+function textoBusquedaMovimiento(movimiento) {
+  return [
+    movimiento.numero_pedido,
+    movimiento.cliente_nombre,
+    movimiento.concepto,
+    movimiento.estado,
+    movimiento.observaciones,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export default function CarteraClientesCredito() {
   const [clientes, setClientes] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
+  const [movimientosCartera, setMovimientosCartera] = useState([]);
+  const [busquedaClientes, setBusquedaClientes] = useState("");
   const [mostrarInactivos, setMostrarInactivos] = useState(true);
+  const [filtros, setFiltros] = useState(FILTROS_INICIALES);
   const [cargando, setCargando] = useState(false);
+  const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [formulario, setFormulario] = useState(FORM_INICIAL);
   const [clienteEditandoId, setClienteEditandoId] = useState(null);
   const [clienteDetalleId, setClienteDetalleId] = useState(null);
-  const [movimientos, setMovimientos] = useState([]);
-  const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
     setError("");
-    const data = await listarClientesCredito({ busqueda, incluirInactivos: mostrarInactivos });
+    const data = await listarClientesCredito({ busqueda: busquedaClientes, incluirInactivos: mostrarInactivos });
     setClientes(data);
     setCargando(false);
-  }, [busqueda, mostrarInactivos]);
+  }, [busquedaClientes, mostrarInactivos]);
+
+  const cargarMovimientos = useCallback(async () => {
+    setCargandoMovimientos(true);
+    const data = await listarMovimientosCartera({ estado: "todos", limite: 1500 });
+    setMovimientosCartera(data);
+    setCargandoMovimientos(false);
+  }, []);
+
+  const actualizarTodo = useCallback(async () => {
+    await Promise.all([cargarClientes(), cargarMovimientos()]);
+  }, [cargarClientes, cargarMovimientos]);
 
   useEffect(() => {
     cargarClientes();
   }, [cargarClientes]);
 
-  const indicadores = useMemo(() => {
-    const activos = clientes.filter((cliente) => cliente.activo !== false);
-    const conSaldo = clientes.filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0);
-    const saldoTotal = clientes.reduce((total, cliente) => total + Number(cliente.saldo_pendiente || 0), 0);
-    return { activos: activos.length, conSaldo: conSaldo.length, saldoTotal };
-  }, [clientes]);
+  useEffect(() => {
+    cargarMovimientos();
+  }, [cargarMovimientos]);
 
   const clienteEditando = useMemo(
     () => clientes.find((cliente) => cliente.id === clienteEditandoId) || null,
@@ -72,28 +163,101 @@ export default function CarteraClientesCredito() {
     [clientes, clienteDetalleId]
   );
 
-  const cargarMovimientosCliente = useCallback(async (clienteId) => {
-    if (!clienteId) {
-      setMovimientos([]);
-      return;
-    }
-    setCargandoMovimientos(true);
-    const data = await listarMovimientosCartera({ clienteId, estado: "pendiente" });
-    setMovimientos(data);
-    setCargandoMovimientos(false);
-  }, []);
+  const movimientosFiltrados = useMemo(() => {
+    const texto = normalizarTexto(filtros.texto);
 
-  useEffect(() => {
-    cargarMovimientosCliente(clienteDetalleId);
-  }, [clienteDetalleId, cargarMovimientosCliente]);
+    return movimientosCartera.filter((movimiento) => {
+      const estado = estadoCartera(movimiento);
+      if (filtros.estado !== "todos" && estado !== filtros.estado) return false;
+      if (!fechaDentroRango(movimiento.fecha_movimiento || movimiento.created_at, filtros.fechaInicio, filtros.fechaFin)) return false;
+      if (texto && !normalizarTexto(textoBusquedaMovimiento(movimiento)).includes(texto)) return false;
+      return true;
+    });
+  }, [filtros, movimientosCartera]);
+
+  const clientesVisibles = useMemo(() => {
+    const texto = normalizarTexto(busquedaClientes);
+    return clientes.filter((cliente) => {
+      if (!mostrarInactivos && cliente.activo === false) return false;
+      if (filtros.soloConSaldo && Number(cliente.saldo_pendiente || 0) <= 0) return false;
+      if (!texto) return true;
+      return normalizarTexto([
+        cliente.nombre,
+        cliente.telefono,
+        cliente.observaciones,
+        ...(Array.isArray(cliente.alias) ? cliente.alias : []),
+      ].filter(Boolean).join(" ")).includes(texto);
+    });
+  }, [busquedaClientes, clientes, filtros.soloConSaldo, mostrarInactivos]);
+
+  const indicadores = useMemo(() => {
+    const activos = clientes.filter((cliente) => cliente.activo !== false);
+    const clientesConSaldo = clientes.filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0);
+    const saldoTotal = clientes.reduce((total, cliente) => total + Number(cliente.saldo_pendiente || 0), 0);
+    const pedidosPendientes = movimientosCartera.filter(movimientoPendiente).length;
+    const carteraPagada = movimientosCartera
+      .filter((movimiento) => estadoCartera(movimiento) === "pagado")
+      .reduce((total, movimiento) => total + Number(movimiento.valor || 0), 0);
+    const saldoFiltrado = movimientosFiltrados.reduce((total, movimiento) => {
+      if (!movimientoPendiente(movimiento)) return total;
+      return total + saldoMovimiento(movimiento);
+    }, 0);
+
+    return {
+      activos: activos.length,
+      clientesConSaldo: clientesConSaldo.length,
+      saldoTotal,
+      pedidosPendientes,
+      carteraPagada,
+      saldoFiltrado,
+      movimientosFiltrados: movimientosFiltrados.length,
+    };
+  }, [clientes, movimientosCartera, movimientosFiltrados]);
+
+  const rankingClientes = useMemo(() => {
+    const activos = clientes.filter((cliente) => cliente.activo !== false);
+    const topSaldo = [...activos]
+      .filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0)
+      .sort((a, b) => Number(b.saldo_pendiente || 0) - Number(a.saldo_pendiente || 0))
+      .slice(0, 5);
+    const recientes = [...activos]
+      .filter((cliente) => cliente.fecha_ultimo_pedido)
+      .sort((a, b) => new Date(b.fecha_ultimo_pedido).getTime() - new Date(a.fecha_ultimo_pedido).getTime())
+      .slice(0, 5);
+    const sinTelefono = [...activos]
+      .filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0 && !String(cliente.telefono || "").trim())
+      .sort((a, b) => Number(b.saldo_pendiente || 0) - Number(a.saldo_pendiente || 0))
+      .slice(0, 5);
+    return { topSaldo, recientes, sinTelefono };
+  }, [clientes]);
+
+  const movimientosClienteDetalle = useMemo(() => {
+    if (!clienteDetalleId) return [];
+    return movimientosFiltrados.filter((movimiento) => movimiento.cliente_credito_id === clienteDetalleId);
+  }, [clienteDetalleId, movimientosFiltrados]);
+
+  const resumenDetalle = useMemo(() => {
+    const total = movimientosClienteDetalle.reduce((acum, movimiento) => acum + Number(movimiento.valor || 0), 0);
+    const saldo = movimientosClienteDetalle.reduce((acum, movimiento) => {
+      if (!movimientoPendiente(movimiento)) return acum;
+      return acum + saldoMovimiento(movimiento);
+    }, 0);
+    const pendientes = movimientosClienteDetalle.filter(movimientoPendiente).length;
+    return { total, saldo, pendientes };
+  }, [movimientosClienteDetalle]);
 
   function limpiarFormulario() {
     setFormulario(FORM_INICIAL);
     setClienteEditandoId(null);
+    setMostrarFormulario(false);
   }
 
   function cambiarCampo(campo, valor) {
     setFormulario((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function cambiarFiltro(campo, valor) {
+    setFiltros((actual) => ({ ...actual, [campo]: valor }));
   }
 
   function editar(cliente) {
@@ -103,6 +267,7 @@ export default function CarteraClientesCredito() {
       telefono: cliente.telefono || "",
       observaciones: cliente.observaciones || "",
     });
+    setMostrarFormulario(true);
     setMensaje("");
     setError("");
   }
@@ -157,116 +322,280 @@ export default function CarteraClientesCredito() {
     }
   }
 
+  function abrirWhatsApp(cliente) {
+    const telefono = telefonoWhatsApp(cliente.telefono);
+    if (!telefono) return;
+    const mensajeRecordatorio = encodeURIComponent(
+      `Hola ${cliente.nombre}, te saludamos de Rafiki. Te compartimos el recordatorio de tu saldo pendiente en cartera: ${dinero(cliente.saldo_pendiente)}.`
+    );
+    window.open(`https://wa.me/${telefono}?text=${mensajeRecordatorio}`, "_blank", "noopener,noreferrer");
+  }
+
   return (
-    <section className="cartera-clientes-panel">
+    <section className="cartera-clientes-panel cartera-profesional-panel">
       <style>{`
-        .cartera-clientes-panel .cartera-indicadores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
-        .cartera-clientes-panel .cartera-indicador { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 12px; }
-        .cartera-clientes-panel .cartera-indicador small { display: block; color: #9a3412; font-weight: 800; margin-bottom: 4px; }
-        .cartera-clientes-panel .cartera-indicador strong { display: block; font-size: 20px; color: #431407; }
-        .cartera-clientes-panel .cartera-form { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; align-items: end; margin-top: 10px; }
-        .cartera-clientes-panel .cartera-form textarea { grid-column: 1 / -1; }
-        .cartera-clientes-panel input, .cartera-clientes-panel textarea { width: 100%; min-height: 44px; border: 1px solid #e7e5e4; border-radius: 14px; padding: 10px 12px; font: inherit; background: #fff; }
-        .cartera-clientes-panel textarea { min-height: 76px; resize: vertical; }
-        .cartera-clientes-panel .cartera-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        .cartera-clientes-panel .cartera-filtros { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0 8px; }
-        .cartera-clientes-panel .cartera-filtros input { flex: 1 1 220px; }
-        .cartera-clientes-panel .estado-cliente { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 900; background: #dcfce7; color: #166534; }
-        .cartera-clientes-panel .estado-cliente.inactivo { background: #fee2e2; color: #991b1b; }
-        .cartera-clientes-panel .pedidos-tabla-compacta { min-width: 900px; }
-        .cartera-clientes-panel .detalle-cartera { margin-top: 14px; border: 1px solid #fed7aa; border-radius: 18px; background: #fffaf5; padding: 12px; }
-        .cartera-clientes-panel .detalle-cartera h3 { margin: 0 0 8px; }
-        .cartera-clientes-panel .detalle-cartera table { min-width: 680px; }
-        @media (max-width: 760px) { .cartera-clientes-panel .cartera-indicadores, .cartera-clientes-panel .cartera-form { grid-template-columns: 1fr; } .cartera-clientes-panel .cartera-form textarea { grid-column: auto; } }
+        .cartera-profesional-panel .cartera-indicadores { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+        .cartera-profesional-panel .cartera-indicador { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 12px; }
+        .cartera-profesional-panel .cartera-indicador small { display: block; color: #9a3412; font-weight: 800; margin-bottom: 4px; }
+        .cartera-profesional-panel .cartera-indicador strong { display: block; font-size: 18px; color: #431407; line-height: 1.15; }
+        .cartera-profesional-panel .cartera-indicador.neutral { background: #f8fafc; border-color: #e2e8f0; }
+        .cartera-profesional-panel .cartera-indicador.neutral small { color: #475569; }
+        .cartera-profesional-panel .cartera-indicador.neutral strong { color: #0f172a; }
+        .cartera-profesional-panel .cartera-form { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; align-items: end; margin-top: 10px; }
+        .cartera-profesional-panel .cartera-form textarea { grid-column: 1 / -1; }
+        .cartera-profesional-panel input, .cartera-profesional-panel textarea, .cartera-profesional-panel select { width: 100%; min-height: 44px; border: 1px solid #e7e5e4; border-radius: 14px; padding: 10px 12px; font: inherit; background: #fff; }
+        .cartera-profesional-panel textarea { min-height: 76px; resize: vertical; }
+        .cartera-profesional-panel .cartera-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
+        .cartera-profesional-panel .estado-cliente, .cartera-profesional-panel .estado-movimiento { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 900; background: #dcfce7; color: #166534; text-transform: capitalize; }
+        .cartera-profesional-panel .estado-cliente.inactivo { background: #fee2e2; color: #991b1b; }
+        .cartera-profesional-panel .estado-movimiento.pendiente { background: #ffedd5; color: #9a3412; }
+        .cartera-profesional-panel .estado-movimiento.parcial { background: #dbeafe; color: #1d4ed8; }
+        .cartera-profesional-panel .estado-movimiento.pagado { background: #dcfce7; color: #166534; }
+        .cartera-profesional-panel .estado-movimiento.anulado { background: #fee2e2; color: #991b1b; }
+        .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 980px; }
+        .cartera-profesional-panel .detalle-cartera { margin-top: 14px; border: 1px solid #fed7aa; border-radius: 18px; background: #fffaf5; padding: 12px; }
+        .cartera-profesional-panel .detalle-cartera h3 { margin: 0 0 8px; }
+        .cartera-profesional-panel .detalle-cartera table { min-width: 780px; }
+        .cartera-profesional-panel .ranking-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+        .cartera-profesional-panel .ranking-card { border: 1px solid #e7e5e4; background: #fff; border-radius: 16px; padding: 12px; }
+        .cartera-profesional-panel .ranking-card h3 { margin: 0 0 8px; font-size: 16px; }
+        .cartera-profesional-panel .ranking-list { display: grid; gap: 8px; }
+        .cartera-profesional-panel .ranking-item { display: flex; justify-content: space-between; gap: 10px; border-top: 1px dashed #e7e5e4; padding-top: 8px; }
+        .cartera-profesional-panel .ranking-item:first-child { border-top: 0; padding-top: 0; }
+        .cartera-profesional-panel .ranking-item strong, .cartera-profesional-panel td strong { display: block; }
+        .cartera-profesional-panel .ranking-item small, .cartera-profesional-panel td small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
+        .cartera-profesional-panel .td-acciones { min-width: 230px; }
+        .cartera-profesional-panel .subtle-row { background: #fffaf5; }
+        @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } }
       `}</style>
 
       <div className="section-heading section-heading-pedidos-unificados">
         <div>
-          <h2>Clientes Crédito</h2>
-          <p className="muted small">Directorio y saldos generados automáticamente desde pedidos pagados con Crédito.</p>
+          <h2>Cartera</h2>
+          <p className="muted small">Control gerencial de clientes crédito, saldos pendientes y pedidos asociados.</p>
+        </div>
+        <div className="cartera-actions" style={{ marginTop: 0 }}>
+          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={actualizarTodo} disabled={cargando || cargandoMovimientos}>
+            {cargando || cargandoMovimientos ? "Actualizando..." : "Actualizar cartera"}
+          </button>
+          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarFormulario((valor) => !valor)}>
+            {mostrarFormulario ? "Cerrar cliente" : "+ Nuevo cliente"}
+          </button>
         </div>
       </div>
 
       <div className="cartera-indicadores">
-        <div className="cartera-indicador"><small>Clientes activos</small><strong>{indicadores.activos}</strong></div>
-        <div className="cartera-indicador"><small>Clientes con saldo</small><strong>{indicadores.conSaldo}</strong></div>
-        <div className="cartera-indicador"><small>Total cartera pendiente</small><strong>{dinero(indicadores.saldoTotal)}</strong></div>
+        <div className="cartera-indicador"><small>Cartera pendiente total</small><strong>{dinero(indicadores.saldoTotal)}</strong></div>
+        <div className="cartera-indicador"><small>Clientes con saldo</small><strong>{indicadores.clientesConSaldo}</strong></div>
+        <div className="cartera-indicador"><small>Pedidos pendientes</small><strong>{indicadores.pedidosPendientes}</strong></div>
+        <div className="cartera-indicador neutral"><small>Cartera pagada</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
+        <div className="cartera-indicador neutral"><small>Saldo según filtros</small><strong>{dinero(indicadores.saldoFiltrado)}</strong></div>
       </div>
 
-      <form className="card card-pad" onSubmit={guardarCliente}>
-        <h3>{clienteEditando ? "Editar cliente" : "+ Nuevo cliente"}</h3>
-        <div className="cartera-form">
-          <input value={formulario.nombre} onChange={(e) => cambiarCampo("nombre", e.target.value)} placeholder="Nombre del cliente" />
-          <input value={formulario.telefono} onChange={(e) => cambiarCampo("telefono", e.target.value)} placeholder="Teléfono" />
-          <textarea value={formulario.observaciones} onChange={(e) => cambiarCampo("observaciones", e.target.value)} placeholder="Observaciones" />
-        </div>
-        <div className="cartera-actions">
-          <button type="submit" className="button" disabled={guardando}>{guardando ? "Guardando..." : clienteEditando ? "Guardar cambios" : "Crear cliente"}</button>
-          {clienteEditando && <button type="button" className="button light" onClick={limpiarFormulario}>Cancelar edición</button>}
-        </div>
-      </form>
+      <div className="ranking-grid">
+        <article className="ranking-card">
+          <h3>Top saldos pendientes</h3>
+          <div className="ranking-list">
+            {rankingClientes.topSaldo.length === 0 ? <p className="muted small">Sin saldos pendientes.</p> : rankingClientes.topSaldo.map((cliente) => (
+              <div key={cliente.id} className="ranking-item">
+                <span><strong>{cliente.nombre}</strong><small>{cliente.telefono || "Sin teléfono"}</small></span>
+                <strong>{dinero(cliente.saldo_pendiente)}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className="ranking-card">
+          <h3>Créditos recientes</h3>
+          <div className="ranking-list">
+            {rankingClientes.recientes.length === 0 ? <p className="muted small">Sin créditos recientes.</p> : rankingClientes.recientes.map((cliente) => (
+              <div key={cliente.id} className="ranking-item">
+                <span><strong>{cliente.nombre}</strong><small>Último pedido: {formatearFecha(cliente.fecha_ultimo_pedido)}</small></span>
+                <strong>{dinero(cliente.saldo_pendiente)}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className="ranking-card">
+          <h3>Clientes sin teléfono</h3>
+          <div className="ranking-list">
+            {rankingClientes.sinTelefono.length === 0 ? <p className="muted small">Todos los saldos tienen teléfono.</p> : rankingClientes.sinTelefono.map((cliente) => (
+              <div key={cliente.id} className="ranking-item">
+                <span><strong>{cliente.nombre}</strong><small>{Number(cliente.total_pedidos || 0)} pedido(s)</small></span>
+                <strong>{dinero(cliente.saldo_pendiente)}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
+      </div>
+
+      {mostrarFormulario && (
+        <form className="card card-pad" onSubmit={guardarCliente}>
+          <h3>{clienteEditando ? "Editar cliente" : "+ Nuevo cliente"}</h3>
+          <div className="cartera-form">
+            <input value={formulario.nombre} onChange={(e) => cambiarCampo("nombre", e.target.value)} placeholder="Nombre del cliente" />
+            <input value={formulario.telefono} onChange={(e) => cambiarCampo("telefono", e.target.value)} placeholder="Teléfono" />
+            <textarea value={formulario.observaciones} onChange={(e) => cambiarCampo("observaciones", e.target.value)} placeholder="Observaciones" />
+          </div>
+          <div className="cartera-actions">
+            <button type="submit" className="button" disabled={guardando}>{guardando ? "Guardando..." : clienteEditando ? "Guardar cambios" : "Crear cliente"}</button>
+            <button type="button" className="button light" onClick={limpiarFormulario}>Cancelar</button>
+          </div>
+        </form>
+      )}
 
       {mensaje && <div className="alert success" style={{ marginTop: 10 }}>{mensaje}</div>}
       {error && <div className="alert error" style={{ marginTop: 10 }}>{error}</div>}
 
-      <div className="cartera-filtros">
-        <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre, teléfono u observación" />
-        <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarInactivos((valor) => !valor)}>
-          {mostrarInactivos ? "Ocultar inactivos" : "Mostrar inactivos"}
-        </button>
-        <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarClientes} disabled={cargando}>
-          {cargando ? "Cargando..." : "Actualizar"}
-        </button>
-      </div>
+      <section className="card card-pad" style={{ marginTop: 12 }}>
+        <div className="section-heading section-heading-pedidos-unificados">
+          <div>
+            <h3>Clientes con crédito</h3>
+            <p className="muted small">Consulta saldos, estado, teléfono y detalle de pedidos por cliente.</p>
+          </div>
+        </div>
 
-      <div className="pedidos-tabla-wrap">
-        <table className="pedidos-tabla-compacta">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Teléfono</th>
-              <th>Último pedido</th>
-              <th>Total pedidos</th>
-              <th>Saldo</th>
-              <th>Estado</th>
-              <th>Observaciones</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clientes.length === 0 ? (
-              <tr><td colSpan="8">{cargando ? "Cargando clientes..." : "Sin clientes registrados."}</td></tr>
-            ) : clientes.map((cliente) => (
-              <tr key={cliente.id} className={cliente.activo === false ? "fila-borrada" : ""}>
-                <td><strong>{cliente.nombre}</strong><small>{Array.isArray(cliente.alias) && cliente.alias.length ? cliente.alias.join(", ") : "Sin alias"}</small></td>
-                <td>{cliente.telefono || "—"}</td>
-                <td>{formatearFecha(cliente.fecha_ultimo_pedido)}</td>
-                <td>{Number(cliente.total_pedidos || 0)}</td>
-                <td className="td-total">{dinero(cliente.saldo_pendiente)}</td>
-                <td><span className={`estado-cliente ${cliente.activo === false ? "inactivo" : ""}`}>{cliente.activo === false ? "Inactivo" : "Activo"}</span></td>
-                <td className="td-obs">{cliente.observaciones || "—"}</td>
-                <td className="td-acciones">
-                  <button type="button" className="mini-btn print" onClick={() => setClienteDetalleId(cliente.id)} disabled={guardando}>Ver cartera</button>
-                  <button type="button" className="mini-btn" onClick={() => editar(cliente)} disabled={guardando}>Editar</button>
-                  <button type="button" className={`mini-btn ${cliente.activo === false ? "green" : "danger"}`} onClick={() => cambiarEstado(cliente)} disabled={guardando}>
-                    {cliente.activo === false ? "Activar" : "Desactivar"}
-                  </button>
-                </td>
+        <div className="cartera-filtros">
+          <input value={busquedaClientes} onChange={(e) => setBusquedaClientes(e.target.value)} placeholder="Buscar cliente, teléfono u observación" />
+          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => cambiarFiltro("soloConSaldo", !filtros.soloConSaldo)}>
+            {filtros.soloConSaldo ? "Ver todos" : "Solo con saldo"}
+          </button>
+          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarInactivos((valor) => !valor)}>
+            {mostrarInactivos ? "Ocultar inactivos" : "Mostrar inactivos"}
+          </button>
+          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarClientes} disabled={cargando}>
+            {cargando ? "Cargando..." : "Actualizar clientes"}
+          </button>
+        </div>
+
+        <div className="pedidos-tabla-wrap">
+          <table className="pedidos-tabla-compacta">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Teléfono</th>
+                <th>Último pedido</th>
+                <th>Total pedidos</th>
+                <th>Saldo pendiente</th>
+                <th>Estado</th>
+                <th>Observaciones</th>
+                <th>Acción</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {clientesVisibles.length === 0 ? (
+                <tr><td colSpan="8">{cargando ? "Cargando clientes..." : "Sin clientes para los filtros actuales."}</td></tr>
+              ) : clientesVisibles.map((cliente) => {
+                const whatsapp = telefonoWhatsApp(cliente.telefono);
+                return (
+                  <tr key={cliente.id} className={cliente.activo === false ? "fila-borrada" : ""}>
+                    <td><strong>{cliente.nombre}</strong><small>{Array.isArray(cliente.alias) && cliente.alias.length ? cliente.alias.join(", ") : "Sin alias"}</small></td>
+                    <td>{cliente.telefono || "—"}</td>
+                    <td>{formatearFecha(cliente.fecha_ultimo_pedido)}</td>
+                    <td>{Number(cliente.total_pedidos || 0)}</td>
+                    <td className="td-total">{dinero(cliente.saldo_pendiente)}</td>
+                    <td><span className={`estado-cliente ${cliente.activo === false ? "inactivo" : ""}`}>{cliente.activo === false ? "Inactivo" : "Activo"}</span></td>
+                    <td className="td-obs">{cliente.observaciones || "—"}</td>
+                    <td className="td-acciones">
+                      <button type="button" className="mini-btn print" onClick={() => setClienteDetalleId(cliente.id)} disabled={guardando}>Ver cartera</button>
+                      <button type="button" className="mini-btn" onClick={() => editar(cliente)} disabled={guardando}>Editar</button>
+                      {whatsapp && <button type="button" className="mini-btn green" onClick={() => abrirWhatsApp(cliente)} disabled={Number(cliente.saldo_pendiente || 0) <= 0}>WhatsApp</button>}
+                      <button type="button" className={`mini-btn ${cliente.activo === false ? "green" : "danger"}`} onClick={() => cambiarEstado(cliente)} disabled={guardando}>
+                        {cliente.activo === false ? "Activar" : "Desactivar"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="card card-pad" style={{ marginTop: 12 }}>
+        <div className="section-heading section-heading-pedidos-unificados">
+          <div>
+            <h3>Movimientos de cartera</h3>
+            <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Los abonos se habilitarán en la Fase 29F.</p>
+          </div>
+          <strong className="muted small">{indicadores.movimientosFiltrados} movimiento(s)</strong>
+        </div>
+
+        <div className="cartera-filtros">
+          <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Buscar por pedido, cliente o concepto" />
+          <select value={filtros.estado} onChange={(e) => cambiarFiltro("estado", e.target.value)}>
+            <option value="todos">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="parcial">Parcial</option>
+            <option value="pagado">Pagado</option>
+            <option value="anulado">Anulado</option>
+          </select>
+          <input type="date" value={filtros.fechaInicio} onChange={(e) => cambiarFiltro("fechaInicio", e.target.value)} />
+          <input type="date" value={filtros.fechaFin} onChange={(e) => cambiarFiltro("fechaFin", e.target.value)} />
+        </div>
+        <div className="cartera-actions">
+          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setFiltros(FILTROS_INICIALES)}>Limpiar filtros</button>
+          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarMovimientos} disabled={cargandoMovimientos}>
+            {cargandoMovimientos ? "Cargando..." : "Actualizar movimientos"}
+          </button>
+        </div>
+
+        <div className="pedidos-tabla-wrap" style={{ marginTop: 10 }}>
+          <table className="pedidos-tabla-compacta">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Concepto</th>
+                <th>Valor</th>
+                <th>Saldo</th>
+                <th>Estado</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movimientosFiltrados.length === 0 ? (
+                <tr><td colSpan="8">{cargandoMovimientos ? "Cargando movimientos..." : "Sin movimientos para los filtros actuales."}</td></tr>
+              ) : movimientosFiltrados.slice(0, 300).map((movimiento) => {
+                const estado = estadoCartera(movimiento);
+                return (
+                  <tr key={movimiento.id} className={movimientoPendiente(movimiento) ? "" : "subtle-row"}>
+                    <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
+                    <td>#{movimiento.numero_pedido || "—"}</td>
+                    <td>{movimiento.cliente_nombre || "—"}</td>
+                    <td>{movimiento.concepto || "Pedido crédito"}</td>
+                    <td className="td-total">{dinero(movimiento.valor)}</td>
+                    <td className="td-total">{dinero(movimiento.saldo_movimiento)}</td>
+                    <td><span className={`estado-movimiento ${estado}`}>{estado}</span></td>
+                    <td className="td-obs">{movimiento.observaciones || "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {movimientosFiltrados.length > 300 && <p className="muted small">Se muestran los primeros 300 movimientos. Usa filtros para acotar la búsqueda.</p>}
+      </section>
 
       {clienteDetalle && (
         <div className="detalle-cartera">
           <div className="section-heading section-heading-pedidos-unificados">
             <div>
               <h3>Cartera de {clienteDetalle.nombre}</h3>
-              <p className="muted small">Pedidos pendientes registrados automáticamente con forma de pago Crédito.</p>
+              <p className="muted small">Detalle del cliente según los filtros activos de movimientos.</p>
             </div>
             <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
           </div>
+
+          <div className="cartera-indicadores" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+            <div className="cartera-indicador"><small>Saldo actual cliente</small><strong>{dinero(clienteDetalle.saldo_pendiente)}</strong></div>
+            <div className="cartera-indicador"><small>Saldo filtrado</small><strong>{dinero(resumenDetalle.saldo)}</strong></div>
+            <div className="cartera-indicador neutral"><small>Total filtrado</small><strong>{dinero(resumenDetalle.total)}</strong></div>
+            <div className="cartera-indicador neutral"><small>Pedidos pendientes</small><strong>{resumenDetalle.pendientes}</strong></div>
+          </div>
+
           <div className="pedidos-tabla-wrap">
             <table className="pedidos-tabla-compacta">
               <thead>
@@ -277,21 +606,26 @@ export default function CarteraClientesCredito() {
                   <th>Valor</th>
                   <th>Saldo</th>
                   <th>Estado</th>
+                  <th>Observación</th>
                 </tr>
               </thead>
               <tbody>
-                {movimientos.length === 0 ? (
-                  <tr><td colSpan="6">{cargandoMovimientos ? "Cargando cartera..." : "Sin pedidos pendientes para este cliente."}</td></tr>
-                ) : movimientos.map((movimiento) => (
-                  <tr key={movimiento.id}>
-                    <td>{formatearFecha(movimiento.fecha_movimiento || movimiento.created_at)}</td>
-                    <td>#{movimiento.numero_pedido || "—"}</td>
-                    <td>{movimiento.concepto || "Pedido crédito"}</td>
-                    <td className="td-total">{dinero(movimiento.valor)}</td>
-                    <td className="td-total">{dinero(movimiento.saldo_movimiento)}</td>
-                    <td>{movimiento.estado || "pendiente"}</td>
-                  </tr>
-                ))}
+                {movimientosClienteDetalle.length === 0 ? (
+                  <tr><td colSpan="7">Sin movimientos para este cliente con los filtros actuales.</td></tr>
+                ) : movimientosClienteDetalle.map((movimiento) => {
+                  const estado = estadoCartera(movimiento);
+                  return (
+                    <tr key={movimiento.id}>
+                      <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
+                      <td>#{movimiento.numero_pedido || "—"}</td>
+                      <td>{movimiento.concepto || "Pedido crédito"}</td>
+                      <td className="td-total">{dinero(movimiento.valor)}</td>
+                      <td className="td-total">{dinero(movimiento.saldo_movimiento)}</td>
+                      <td><span className={`estado-movimiento ${estado}`}>{estado}</span></td>
+                      <td className="td-obs">{movimiento.observaciones || "—"}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
