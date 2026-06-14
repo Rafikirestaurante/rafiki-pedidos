@@ -17,7 +17,7 @@ import {
   guardarPedidoPendienteOffline,
 } from "../utils/offlinePedidos";
 import { registrarDescuentoInventarioPedido } from "../../services/inventarioService";
-import { registrarCarteraPedidoCredito } from "../../services/carteraService";
+import { anularCarteraPedidoCredito, registrarCarteraPedidoCredito } from "../../services/carteraService";
 import {
   actualizarEstadoPedido,
   actualizarPedido,
@@ -569,6 +569,19 @@ export function usePedidos({
         total: totalNuevo,
       };
 
+      const pagoAnteriorEsCredito = String(pedidoActual?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
+      const pagoNuevoEsCredito = String(payload?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
+
+      if (pagoAnteriorEsCredito && !pagoNuevoEsCredito) {
+        try {
+          await anularCarteraPedidoCredito(pedidoActual, `Pedido #${codigoPedido} retirado de crédito. Pago corregido a ${payload?.tipo_pago || "otro método"}.`);
+        } catch (errorCartera) {
+          console.warn("No se pudo retirar de crédito antes de editar el pedido:", errorCartera?.message || errorCartera);
+          mostrarMensaje(errorCartera?.message || `No se pudo retirar el pedido #${codigoPedido} de cartera.`, "warning");
+          return false;
+        }
+      }
+
       const { data, error } = await actualizarPedido(id, payload);
 
       if (error) {
@@ -576,7 +589,7 @@ export function usePedidos({
         return false;
       }
 
-      if (String(data?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito") {
+      if (pagoNuevoEsCredito) {
         try {
           await registrarCarteraPedidoCredito(data);
         } catch (errorCartera) {

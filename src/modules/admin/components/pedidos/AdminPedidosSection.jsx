@@ -230,10 +230,12 @@ function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
   );
 }
 
-function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, guardando = false, mensaje = "" }) {
+function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, onRetirar, guardando = false, mensaje = "" }) {
   const [nombre, setNombre] = useState(() => pedido?.cliente_nombre || pedido?.cliente || "");
   const [clientesCredito, setClientesCredito] = useState([]);
   const [cargandoClientes, setCargandoClientes] = useState(false);
+  const [formaPagoRetiro, setFormaPagoRetiro] = useState("Efectivo");
+  const pedidoEsCredito = String(pedido?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
 
   useEffect(() => {
     let activo = true;
@@ -270,14 +272,19 @@ function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, guardando = 
     if (ok) onCerrar?.();
   };
 
+  const retirar = async () => {
+    const ok = await onRetirar?.(pedido, formaPagoRetiro);
+    if (ok) onCerrar?.();
+  };
+
   return (
     <div className="admin-mesa-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Clasificar pedido ${obtenerCodigoPedido(pedido)} como crédito`}>
       <form className="admin-mesa-modal editar-pedido-modal" onSubmit={guardar}>
         <div className="admin-mesa-modal-head">
           <div>
-            <span>Clasificar como crédito</span>
+            <span>{pedidoEsCredito ? "Gestionar crédito" : "Clasificar como crédito"}</span>
             <h3>Pedido #{obtenerCodigoPedido(pedido)}</h3>
-            <p>Esta acción cambia el pedido a Crédito, ajusta el nombre del cliente y registra la cuenta por cobrar.</p>
+            <p>{pedidoEsCredito ? "Puedes corregir el cliente crédito o retirar este pedido de cartera si realmente fue pagado por otro medio." : "Esta acción cambia el pedido a Crédito, ajusta el nombre del cliente y registra la cuenta por cobrar."}</p>
           </div>
           <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cerrar</button>
         </div>
@@ -316,12 +323,34 @@ function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, guardando = 
           <div className="editar-pedido-form-full cartera-correccion-resumen">
             <strong>Valor a cartera:</strong> {dinero(pedido?.total || 0)} · <strong>Pago actual:</strong> {pedido?.tipo_pago || "—"}
           </div>
+
+          {pedidoEsCredito ? (
+            <div className="editar-pedido-form-full cartera-retiro-credito-box">
+              <h4>¿Este pedido no era crédito?</h4>
+              <p className="muted small">Retíralo de cartera y cambia la forma de pago real. El pedido no se borra; solo se anula el movimiento de cartera y se recalcula el saldo del cliente.</p>
+              <label>
+                Forma de pago real
+                <select value={formaPagoRetiro} onChange={(event) => setFormaPagoRetiro(event.target.value)} disabled={guardando}>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Datafono">Datafono</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Bancolombia">Bancolombia</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </label>
+              <button type="button" className="button danger" onClick={retirar} disabled={guardando}>
+                {guardando ? "Guardando..." : "Quitar de crédito"}
+              </button>
+            </div>
+          ) : null}
+
           {mensaje ? <div className="alert alert-warning editar-pedido-form-full">{mensaje}</div> : null}
         </div>
 
         <div className="editar-pedido-actions">
           <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cancelar</button>
-          <button type="submit" className="button green" disabled={guardando}>{guardando ? "Guardando..." : "Pasar a crédito"}</button>
+          <button type="submit" className="button green" disabled={guardando}>{guardando ? "Guardando..." : pedidoEsCredito ? "Actualizar cliente crédito" : "Pasar a crédito"}</button>
         </div>
       </form>
     </div>
@@ -432,6 +461,40 @@ function AdminPedidosSectionBase({
       return true;
     } catch (error) {
       setMensajeCorreccionCliente(error?.message || "No se pudo clasificar el pedido como crédito.");
+      return false;
+    } finally {
+      setGuardandoCorreccionClienteId(null);
+    }
+  }, [editarPedidoAdministrador, setRecargaPedidos]);
+
+  const retirarPedidoDeCredito = useCallback(async (pedido, nuevoTipoPago = "Efectivo") => {
+    if (!pedido?.id) {
+      setMensajeCorreccionCliente("No se pudo identificar el pedido.");
+      return false;
+    }
+
+    const pagoReal = String(nuevoTipoPago || "Efectivo").trim() || "Efectivo";
+    if (pagoReal.toLowerCase().replace("é", "e") === "credito") {
+      setMensajeCorreccionCliente("Selecciona una forma de pago diferente a Crédito.");
+      return false;
+    }
+
+    setGuardandoCorreccionClienteId(pedido.id);
+    setMensajeCorreccionCliente("");
+
+    try {
+      const pedidoActualizado = {
+        ...pedido,
+        tipo_pago: pagoReal,
+      };
+
+      const okPedido = await editarPedidoAdministrador?.(pedido.id, pedidoActualizado);
+      if (!okPedido) return false;
+
+      setRecargaPedidos((actual) => actual + 1);
+      return true;
+    } catch (error) {
+      setMensajeCorreccionCliente(error?.message || "No se pudo retirar el pedido de crédito.");
       return false;
     } finally {
       setGuardandoCorreccionClienteId(null);
@@ -639,6 +702,7 @@ function AdminPedidosSectionBase({
             setMensajeCorreccionCliente("");
           }}
           onGuardar={guardarCorreccionClienteCredito}
+          onRetirar={retirarPedidoDeCredito}
           guardando={guardandoCorreccionClienteId === pedidoCorrigiendoCliente.id}
           mensaje={mensajeCorreccionCliente}
         />

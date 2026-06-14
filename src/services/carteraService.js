@@ -213,6 +213,70 @@ export async function corregirClienteCreditoDePedido(pedido = {}, nombreDestino 
   };
 }
 
+
+export async function anularCarteraPedidoCredito(pedido = {}, motivo = "Pedido retirado de crédito") {
+  if (!supabaseConfigOk || !pedido?.id) return null;
+
+  const { data: movimientosActuales, error: errorMovimientosActuales } = await supabase
+    .from("cartera_movimientos")
+    .select(SELECT_CARTERA_MOVIMIENTOS)
+    .eq("pedido_id", String(pedido.id))
+    .eq("tipo_movimiento", "pedido_credito");
+
+  if (errorMovimientosActuales) throw errorMovimientosActuales;
+
+  const movimientos = Array.isArray(movimientosActuales) ? movimientosActuales : [];
+  if (movimientos.length === 0) return { movimientos: [], clientesRecalculados: [] };
+
+  const movimientosActivos = movimientos.filter((movimiento) => {
+    const estado = String(movimiento.estado || "").toLowerCase();
+    return estado !== "anulado" && estado !== "pagado";
+  });
+
+  const idsMovimientos = movimientos.map((movimiento) => movimiento.id).filter(Boolean);
+
+  if (idsMovimientos.length > 0) {
+    const { data: abonosAsociados, error: errorAbonos } = await supabase
+      .from("cartera_abonos")
+      .select("id,cartera_movimiento_id,valor_abono")
+      .in("cartera_movimiento_id", idsMovimientos)
+      .limit(1);
+
+    if (!errorAbonos && Array.isArray(abonosAsociados) && abonosAsociados.length > 0) {
+      throw new Error("Este pedido ya tiene abonos registrados. Revisa el historial antes de retirarlo de crédito.");
+    }
+  }
+
+  if (movimientosActivos.length > 0) {
+    const observacionAnulacion = limpiarTexto(motivo) || "Pedido retirado de crédito";
+    const idsActivos = movimientosActivos.map((movimiento) => movimiento.id).filter(Boolean);
+
+    const { error: errorUpdateMovimientos } = await supabase
+      .from("cartera_movimientos")
+      .update({
+        saldo_movimiento: 0,
+        estado: "anulado",
+        observaciones: observacionAnulacion,
+      })
+      .in("id", idsActivos);
+
+    if (errorUpdateMovimientos) throw errorUpdateMovimientos;
+  }
+
+  const idsClientes = Array.from(new Set(
+    movimientos
+      .map((movimiento) => movimiento.cliente_credito_id)
+      .filter(Boolean)
+  ));
+
+  await Promise.all(idsClientes.map((clienteId) => recalcularResumenClienteCredito(clienteId)));
+
+  return {
+    movimientos: movimientosActivos,
+    clientesRecalculados: idsClientes,
+  };
+}
+
 export async function recalcularResumenClienteCredito(clienteId) {
   if (!supabaseConfigOk || !clienteId) return null;
 
@@ -228,12 +292,14 @@ export async function recalcularResumenClienteCredito(clienteId) {
   }
 
   const lista = Array.isArray(movimientos) ? movimientos : [];
-  const pedidos = lista.length;
-  const saldo = lista.reduce((total, movimiento) => {
-    if (String(movimiento.estado || "").toLowerCase() === "pagado") return total;
+  const movimientosActivos = lista.filter((movimiento) => String(movimiento.estado || "").toLowerCase() !== "anulado");
+  const pedidos = movimientosActivos.length;
+  const saldo = movimientosActivos.reduce((total, movimiento) => {
+    const estado = String(movimiento.estado || "").toLowerCase();
+    if (estado === "pagado" || estado === "anulado") return total;
     return total + normalizarNumero(movimiento.saldo_movimiento ?? movimiento.valor);
   }, 0);
-  const ultimaFecha = lista
+  const ultimaFecha = movimientosActivos
     .map((movimiento) => movimiento.fecha_movimiento)
     .filter(Boolean)
     .sort()
