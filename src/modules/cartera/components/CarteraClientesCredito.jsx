@@ -12,6 +12,11 @@ import {
   registrarAbonoClienteCredito,
   sincronizarCarteraCompleta,
 } from "../../../services/carteraService";
+import RafikiActionMenu from "../../../shared/components/RafikiActionMenu";
+import RafikiBadge from "../../../shared/components/RafikiBadge";
+import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
+import RafikiModal from "../../../shared/components/RafikiModal";
+import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 const FORM_INICIAL = {
@@ -29,6 +34,8 @@ const FILTROS_INICIALES = {
 };
 
 const METODOS_ABONO = ["Efectivo", "Transferencia", "Datafono", "Nequi", "Bancolombia", "Otro"];
+
+const VISTA_CARTERA_INICIAL = "resumen";
 
 function fechaHoyInput() {
   const fecha = new Date();
@@ -154,6 +161,8 @@ export default function CarteraClientesCredito() {
   const [clienteAbonoId, setClienteAbonoId] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [formularioAbono, setFormularioAbono] = useState(ABONO_INICIAL);
+  const [vistaCartera, setVistaCartera] = useState(VISTA_CARTERA_INICIAL);
+  const [mostrarRankings, setMostrarRankings] = useState(false);
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -343,6 +352,14 @@ export default function CarteraClientesCredito() {
     setMostrarFormulario(false);
   }
 
+  function abrirNuevoCliente() {
+    setFormulario(FORM_INICIAL);
+    setClienteEditandoId(null);
+    setMostrarFormulario(true);
+    setMensaje("");
+    setError("");
+  }
+
   function cambiarCampo(campo, valor) {
     setFormulario((actual) => ({ ...actual, [campo]: valor }));
   }
@@ -481,49 +498,57 @@ export default function CarteraClientesCredito() {
     window.open(`https://wa.me/${telefono}?text=${mensajeRecordatorio}`, "_blank", "noopener,noreferrer");
   }
 
+  const tabsCartera = [
+    { id: "resumen", label: "Resumen", icon: "📊" },
+    { id: "clientes", label: "Clientes", icon: "👥", count: clientesVisibles.length },
+    { id: "movimientos", label: "Movimientos", icon: "🧾", count: indicadores.movimientosFiltrados },
+    { id: "detalle", label: "Detalle cliente", icon: "🔎", count: clienteDetalle ? 1 : null },
+  ];
+
   return (
-    <section className="cartera-clientes-panel cartera-profesional-panel">
+    <section className="cartera-clientes-panel cartera-profesional-panel cartera-ui-limpia">
       <style>{`
         .cartera-profesional-panel .cartera-indicadores { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
-        .cartera-profesional-panel .cartera-indicador { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 12px; }
+        .cartera-profesional-panel .cartera-indicador { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 12px; box-shadow: 0 8px 18px rgba(249,115,22,0.06); }
         .cartera-profesional-panel .cartera-indicador small { display: block; color: #9a3412; font-weight: 800; margin-bottom: 4px; }
         .cartera-profesional-panel .cartera-indicador strong { display: block; font-size: 18px; color: #431407; line-height: 1.15; }
         .cartera-profesional-panel .cartera-indicador.neutral { background: #f8fafc; border-color: #e2e8f0; }
         .cartera-profesional-panel .cartera-indicador.neutral small { color: #475569; }
         .cartera-profesional-panel .cartera-indicador.neutral strong { color: #0f172a; }
         .cartera-profesional-panel .cartera-form { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; align-items: end; margin-top: 10px; }
-        .cartera-profesional-panel .abono-form { border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 12px; margin-top: 12px; }
-        .cartera-profesional-panel .abono-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: end; }
+        .cartera-profesional-panel .abono-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; }
         .cartera-profesional-panel .cartera-form textarea { grid-column: 1 / -1; }
         .cartera-profesional-panel input, .cartera-profesional-panel textarea, .cartera-profesional-panel select { width: 100%; min-height: 44px; border: 1px solid #e7e5e4; border-radius: 14px; padding: 10px 12px; font: inherit; background: #fff; }
         .cartera-profesional-panel textarea { min-height: 76px; resize: vertical; }
         .cartera-profesional-panel .cartera-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
         .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
-        .cartera-profesional-panel .estado-cliente, .cartera-profesional-panel .estado-movimiento { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 900; background: #dcfce7; color: #166534; text-transform: capitalize; }
-        .cartera-profesional-panel .estado-cliente.inactivo { background: #fee2e2; color: #991b1b; }
-        .cartera-profesional-panel .estado-movimiento.pendiente { background: #ffedd5; color: #9a3412; }
-        .cartera-profesional-panel .estado-movimiento.parcial { background: #dbeafe; color: #1d4ed8; }
-        .cartera-profesional-panel .estado-movimiento.pagado { background: #dcfce7; color: #166534; }
-        .cartera-profesional-panel .estado-movimiento.anulado { background: #fee2e2; color: #991b1b; }
         .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 980px; }
+        .cartera-profesional-panel .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 8; background: #fff7ed; box-shadow: 0 1px 0 #fed7aa; }
         .cartera-profesional-panel .detalle-cartera { margin-top: 14px; border: 1px solid #fed7aa; border-radius: 18px; background: #fffaf5; padding: 12px; }
         .cartera-profesional-panel .detalle-cartera h3 { margin: 0 0 8px; }
         .cartera-profesional-panel .detalle-cartera table { min-width: 780px; }
         .cartera-profesional-panel .ranking-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
-        .cartera-profesional-panel .ranking-card { border: 1px solid #e7e5e4; background: #fff; border-radius: 16px; padding: 12px; }
+        .cartera-profesional-panel .ranking-card { border: 1px solid #e7e5e4; background: #fff; border-radius: 16px; padding: 12px; box-shadow: 0 8px 18px rgba(28,25,23,0.04); }
         .cartera-profesional-panel .ranking-card h3 { margin: 0 0 8px; font-size: 16px; }
         .cartera-profesional-panel .ranking-list { display: grid; gap: 8px; }
         .cartera-profesional-panel .ranking-item { display: flex; justify-content: space-between; gap: 10px; border-top: 1px dashed #e7e5e4; padding-top: 8px; }
         .cartera-profesional-panel .ranking-item:first-child { border-top: 0; padding-top: 0; }
         .cartera-profesional-panel .ranking-item strong, .cartera-profesional-panel td strong { display: block; }
         .cartera-profesional-panel .ranking-item small, .cartera-profesional-panel td small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
-        .cartera-profesional-panel .td-acciones { min-width: 230px; }
+        .cartera-profesional-panel .td-acciones { min-width: 160px; }
         .cartera-profesional-panel .subtle-row { background: #fffaf5; }
         .cartera-profesional-panel .auditoria-resumen { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 16px; padding: 10px 12px; margin-top: 10px; }
         .cartera-profesional-panel .auditoria-resumen strong { display: block; margin-bottom: 4px; }
         .cartera-profesional-panel .auditoria-resumen span { display: inline-block; margin-right: 12px; font-size: 12px; font-weight: 800; }
+        .cartera-profesional-panel .saldo-pendiente { color: #991b1b; font-weight: 900; }
+        .cartera-profesional-panel .saldo-cero { color: #78716c; font-weight: 900; }
+        .cartera-profesional-panel .abono-valor { color: #166534; font-weight: 900; }
+        .cartera-ui-limpia .cartera-resumen-card { margin-top: 12px; }
+        .cartera-ui-limpia .cartera-resumen-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+        .cartera-ui-limpia .cartera-resumen-header h3 { margin: 0; color: #9a3412; }
+        .cartera-ui-limpia .cartera-table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } }
+        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } }
       `}</style>
 
       <div className="section-heading section-heading-pedidos-unificados">
@@ -538,60 +563,25 @@ export default function CarteraClientesCredito() {
           <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={auditarCartera} disabled={cargando || cargandoMovimientos || cargandoAbonos || auditando}>
             {auditando ? "Auditando..." : "Auditar cartera"}
           </button>
-          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarFormulario((valor) => !valor)} disabled={auditando}>
-            {mostrarFormulario ? "Cerrar cliente" : "+ Nuevo cliente"}
+          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={abrirNuevoCliente} disabled={auditando}>
+            + Nuevo cliente
           </button>
         </div>
       </div>
 
-      <div className="cartera-indicadores">
-        <div className="cartera-indicador"><small>Cartera pendiente total</small><strong>{dinero(indicadores.saldoTotal)}</strong></div>
-        <div className="cartera-indicador"><small>Clientes con saldo</small><strong>{indicadores.clientesConSaldo}</strong></div>
-        <div className="cartera-indicador"><small>Pedidos pendientes</small><strong>{indicadores.pedidosPendientes}</strong></div>
-        <div className="cartera-indicador neutral"><small>Abonos recibidos</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
-        <div className="cartera-indicador neutral"><small>Cantidad de abonos</small><strong>{indicadores.abonosRecibidos}</strong></div>
-        <div className="cartera-indicador neutral"><small>Saldo según filtros</small><strong>{dinero(indicadores.saldoFiltrado)}</strong></div>
-      </div>
+      {mensaje && <div className="alert success" style={{ marginTop: 10 }}>{mensaje}</div>}
+      {error && <div className="alert error" style={{ marginTop: 10 }}>{error}</div>}
 
-      <div className="ranking-grid">
-        <article className="ranking-card">
-          <h3>Top saldos pendientes</h3>
-          <div className="ranking-list">
-            {rankingClientes.topSaldo.length === 0 ? <p className="muted small">Sin saldos pendientes.</p> : rankingClientes.topSaldo.map((cliente) => (
-              <div key={cliente.id} className="ranking-item">
-                <span><strong>{cliente.nombre}</strong><small>{cliente.telefono || "Sin teléfono"}</small></span>
-                <strong>{dinero(cliente.saldo_pendiente)}</strong>
-              </div>
-            ))}
-          </div>
-        </article>
-        <article className="ranking-card">
-          <h3>Créditos recientes</h3>
-          <div className="ranking-list">
-            {rankingClientes.recientes.length === 0 ? <p className="muted small">Sin créditos recientes.</p> : rankingClientes.recientes.map((cliente) => (
-              <div key={cliente.id} className="ranking-item">
-                <span><strong>{cliente.nombre}</strong><small>Último pedido: {formatearFecha(cliente.fecha_ultimo_pedido)}</small></span>
-                <strong>{dinero(cliente.saldo_pendiente)}</strong>
-              </div>
-            ))}
-          </div>
-        </article>
-        <article className="ranking-card">
-          <h3>Clientes sin teléfono</h3>
-          <div className="ranking-list">
-            {rankingClientes.sinTelefono.length === 0 ? <p className="muted small">Todos los saldos tienen teléfono.</p> : rankingClientes.sinTelefono.map((cliente) => (
-              <div key={cliente.id} className="ranking-item">
-                <span><strong>{cliente.nombre}</strong><small>{Number(cliente.total_pedidos || 0)} pedido(s)</small></span>
-                <strong>{dinero(cliente.saldo_pendiente)}</strong>
-              </div>
-            ))}
-          </div>
-        </article>
-      </div>
+      <RafikiTabs tabs={tabsCartera} activeTab={vistaCartera} onChange={setVistaCartera} ariaLabel="Secciones de cartera" />
 
-      {mostrarFormulario && (
-        <form className="card card-pad" onSubmit={guardarCliente}>
-          <h3>{clienteEditando ? "Editar cliente" : "+ Nuevo cliente"}</h3>
+      <RafikiModal
+        open={mostrarFormulario}
+        title={clienteEditando ? "Editar cliente crédito" : "Nuevo cliente crédito"}
+        description="Guarda solo la información básica del cliente. Los saldos se actualizan automáticamente desde pedidos y abonos."
+        onClose={limpiarFormulario}
+        size="md"
+      >
+        <form onSubmit={guardarCliente}>
           <div className="cartera-form">
             <input value={formulario.nombre} onChange={(e) => cambiarCampo("nombre", e.target.value)} placeholder="Nombre del cliente" />
             <input value={formulario.telefono} onChange={(e) => cambiarCampo("telefono", e.target.value)} placeholder="Teléfono" />
@@ -602,218 +592,227 @@ export default function CarteraClientesCredito() {
             <button type="button" className="button light" onClick={limpiarFormulario}>Cancelar</button>
           </div>
         </form>
+      </RafikiModal>
+
+      <RafikiModal
+        open={Boolean(clienteAbono)}
+        title="Registrar abono"
+        description={clienteAbono ? `${clienteAbono.nombre} debe actualmente ${dinero(clienteAbono.saldo_pendiente)}. El abono se aplica automáticamente a los pedidos más antiguos.` : ""}
+        onClose={cerrarAbono}
+        size="lg"
+      >
+        {clienteAbono && (
+          <form onSubmit={guardarAbono}>
+            <div className="abono-form-grid">
+              <label>
+                Valor del abono
+                <input type="number" min="0" step="100" value={formularioAbono.valorAbono} onChange={(e) => cambiarCampoAbono("valorAbono", e.target.value)} placeholder="Ej. 50000" required />
+              </label>
+              <label>
+                Método de pago
+                <select value={formularioAbono.metodoPago} onChange={(e) => cambiarCampoAbono("metodoPago", e.target.value)}>
+                  {METODOS_ABONO.map((metodo) => <option key={metodo} value={metodo}>{metodo}</option>)}
+                </select>
+              </label>
+              <label>
+                Fecha
+                <input type="date" value={formularioAbono.fechaAbono} onChange={(e) => cambiarCampoAbono("fechaAbono", e.target.value)} />
+              </label>
+              <label>
+                Observación
+                <input value={formularioAbono.observacion} onChange={(e) => cambiarCampoAbono("observacion", e.target.value)} placeholder="Opcional" />
+              </label>
+            </div>
+            <div className="cartera-actions">
+              <button type="submit" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} disabled={guardando}>{guardando ? "Guardando..." : "Guardar abono"}</button>
+              <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAbono} disabled={guardando}>Cancelar</button>
+            </div>
+          </form>
+        )}
+      </RafikiModal>
+
+      {vistaCartera === "resumen" && (
+        <section className="card card-pad cartera-resumen-card">
+          <div className="cartera-indicadores">
+            <div className="cartera-indicador"><small>Cartera pendiente total</small><strong>{dinero(indicadores.saldoTotal)}</strong></div>
+            <div className="cartera-indicador"><small>Clientes con saldo</small><strong>{indicadores.clientesConSaldo}</strong></div>
+            <div className="cartera-indicador"><small>Pedidos pendientes</small><strong>{indicadores.pedidosPendientes}</strong></div>
+            <div className="cartera-indicador neutral"><small>Abonos recibidos</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
+            <div className="cartera-indicador neutral"><small>Cantidad de abonos</small><strong>{indicadores.abonosRecibidos}</strong></div>
+            <div className="cartera-indicador neutral"><small>Saldo según filtros</small><strong>{dinero(indicadores.saldoFiltrado)}</strong></div>
+          </div>
+
+          <div className="cartera-resumen-header">
+            <div>
+              <h3>Análisis rápido</h3>
+              <p className="muted small">Los rankings quedan ocultos para que el panel cargue más limpio. Puedes abrirlos cuando necesites revisar prioridades de cobro.</p>
+            </div>
+            <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarRankings((valor) => !valor)}>
+              {mostrarRankings ? "Ocultar rankings" : "📊 Ver rankings y estadísticas"}
+            </button>
+          </div>
+
+          {mostrarRankings && (
+            <div className="ranking-grid">
+              <article className="ranking-card">
+                <h3>Top saldos pendientes</h3>
+                <div className="ranking-list">
+                  {rankingClientes.topSaldo.length === 0 ? <RafikiEmptyState icon="✅" title="Sin saldos pendientes" description="No hay clientes activos con saldo pendiente." /> : rankingClientes.topSaldo.map((cliente) => (
+                    <div key={cliente.id} className="ranking-item">
+                      <span><strong>{cliente.nombre}</strong><small>{cliente.telefono || "Sin teléfono"}</small></span>
+                      <strong className="saldo-pendiente">{dinero(cliente.saldo_pendiente)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+              <article className="ranking-card">
+                <h3>Créditos recientes</h3>
+                <div className="ranking-list">
+                  {rankingClientes.recientes.length === 0 ? <RafikiEmptyState icon="🧾" title="Sin créditos recientes" description="Aún no hay últimos pedidos registrados para clientes crédito." /> : rankingClientes.recientes.map((cliente) => (
+                    <div key={cliente.id} className="ranking-item">
+                      <span><strong>{cliente.nombre}</strong><small>Último pedido: {formatearFecha(cliente.fecha_ultimo_pedido)}</small></span>
+                      <strong className={Number(cliente.saldo_pendiente || 0) > 0 ? "saldo-pendiente" : "saldo-cero"}>{dinero(cliente.saldo_pendiente)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+              <article className="ranking-card">
+                <h3>Clientes sin teléfono</h3>
+                <div className="ranking-list">
+                  {rankingClientes.sinTelefono.length === 0 ? <RafikiEmptyState icon="📱" title="Teléfonos completos" description="Todos los clientes con saldo pendiente tienen teléfono registrado." /> : rankingClientes.sinTelefono.map((cliente) => (
+                    <div key={cliente.id} className="ranking-item">
+                      <span><strong>{cliente.nombre}</strong><small>{Number(cliente.total_pedidos || 0)} pedido(s)</small></span>
+                      <strong className="saldo-pendiente">{dinero(cliente.saldo_pendiente)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </div>
+          )}
+
+          {resultadoAuditoria && (
+            <div className="auditoria-resumen">
+              <strong>Última auditoría de cartera</strong>
+              <span>Revisados: {resultadoAuditoria.movimientosRevisados || 0}</span>
+              <span>Anulados: {resultadoAuditoria.anulados || 0}</span>
+              <span>Borrados: {resultadoAuditoria.anuladosBorrados || 0}</span>
+              <span>No crédito: {resultadoAuditoria.anuladosNoCredito || 0}</span>
+              <span>Huérfanos: {resultadoAuditoria.anuladosHuerfanos || 0}</span>
+              <span>Duplicados: {resultadoAuditoria.duplicadosAnulados || 0}</span>
+              <span>Saldos ajustados: {resultadoAuditoria.valoresAjustados || 0}</span>
+            </div>
+          )}
+        </section>
       )}
 
-      {mensaje && <div className="alert success" style={{ marginTop: 10 }}>{mensaje}</div>}
-      {error && <div className="alert error" style={{ marginTop: 10 }}>{error}</div>}
-      {resultadoAuditoria && (
-        <div className="auditoria-resumen">
-          <strong>Última auditoría de cartera</strong>
-          <span>Revisados: {resultadoAuditoria.movimientosRevisados || 0}</span>
-          <span>Anulados: {resultadoAuditoria.anulados || 0}</span>
-          <span>Borrados: {resultadoAuditoria.anuladosBorrados || 0}</span>
-          <span>No crédito: {resultadoAuditoria.anuladosNoCredito || 0}</span>
-          <span>Huérfanos: {resultadoAuditoria.anuladosHuerfanos || 0}</span>
-          <span>Duplicados: {resultadoAuditoria.duplicadosAnulados || 0}</span>
-          <span>Saldos ajustados: {resultadoAuditoria.valoresAjustados || 0}</span>
-        </div>
-      )}
-
-      {clienteAbono && (
-        <form className="abono-form" onSubmit={guardarAbono}>
+      {vistaCartera === "clientes" && (
+        <section className="card card-pad" style={{ marginTop: 12 }}>
           <div className="section-heading section-heading-pedidos-unificados">
             <div>
-              <h3>Registrar abono</h3>
-              <p className="muted small">{clienteAbono.nombre} debe actualmente {dinero(clienteAbono.saldo_pendiente)}. El abono se aplica automáticamente a los pedidos más antiguos.</p>
-            </div>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAbono} disabled={guardando}>Cerrar</button>
-          </div>
-          <div className="abono-form-grid">
-            <label>
-              Valor del abono
-              <input type="number" min="0" step="100" value={formularioAbono.valorAbono} onChange={(e) => cambiarCampoAbono("valorAbono", e.target.value)} placeholder="Ej. 50000" required />
-            </label>
-            <label>
-              Método de pago
-              <select value={formularioAbono.metodoPago} onChange={(e) => cambiarCampoAbono("metodoPago", e.target.value)}>
-                {METODOS_ABONO.map((metodo) => <option key={metodo} value={metodo}>{metodo}</option>)}
-              </select>
-            </label>
-            <label>
-              Fecha
-              <input type="date" value={formularioAbono.fechaAbono} onChange={(e) => cambiarCampoAbono("fechaAbono", e.target.value)} />
-            </label>
-            <label>
-              Observación
-              <input value={formularioAbono.observacion} onChange={(e) => cambiarCampoAbono("observacion", e.target.value)} placeholder="Opcional" />
-            </label>
-          </div>
-          <div className="cartera-actions">
-            <button type="submit" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} disabled={guardando}>{guardando ? "Guardando..." : "Guardar abono"}</button>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAbono} disabled={guardando}>Cancelar</button>
-          </div>
-        </form>
-      )}
-
-      <section className="card card-pad" style={{ marginTop: 12 }}>
-        <div className="section-heading section-heading-pedidos-unificados">
-          <div>
-            <h3>Clientes con crédito</h3>
-            <p className="muted small">Consulta saldos, estado, teléfono y detalle de pedidos por cliente.</p>
-          </div>
-        </div>
-
-        <div className="cartera-filtros">
-          <input value={busquedaClientes} onChange={(e) => setBusquedaClientes(e.target.value)} placeholder="Buscar cliente, teléfono u observación" />
-          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => cambiarFiltro("soloConSaldo", !filtros.soloConSaldo)}>
-            {filtros.soloConSaldo ? "Ver todos" : "Solo con saldo"}
-          </button>
-          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarInactivos((valor) => !valor)}>
-            {mostrarInactivos ? "Ocultar inactivos" : "Mostrar inactivos"}
-          </button>
-          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarClientes} disabled={cargando}>
-            {cargando ? "Cargando..." : "Actualizar clientes"}
-          </button>
-        </div>
-
-        <div className="pedidos-tabla-wrap">
-          <table className="pedidos-tabla-compacta">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Teléfono</th>
-                <th>Último pedido</th>
-                <th>Total pedidos</th>
-                <th>Saldo pendiente</th>
-                <th>Estado</th>
-                <th>Observaciones</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientesVisibles.length === 0 ? (
-                <tr><td colSpan="8">{cargando ? "Cargando clientes..." : "Sin clientes para los filtros actuales."}</td></tr>
-              ) : clientesVisibles.map((cliente) => {
-                const whatsapp = telefonoWhatsApp(cliente.telefono);
-                return (
-                  <tr key={cliente.id} className={cliente.activo === false ? "fila-borrada" : ""}>
-                    <td><strong>{cliente.nombre}</strong><small>{Array.isArray(cliente.alias) && cliente.alias.length ? cliente.alias.join(", ") : "Sin alias"}</small></td>
-                    <td>{cliente.telefono || "—"}</td>
-                    <td>{formatearFecha(cliente.fecha_ultimo_pedido)}</td>
-                    <td>{Number(cliente.total_pedidos || 0)}</td>
-                    <td className="td-total">{dinero(cliente.saldo_pendiente)}</td>
-                    <td><span className={`estado-cliente ${cliente.activo === false ? "inactivo" : ""}`}>{cliente.activo === false ? "Inactivo" : "Activo"}</span></td>
-                    <td className="td-obs">{cliente.observaciones || "—"}</td>
-                    <td className="td-acciones">
-                      <button type="button" className="mini-btn print" onClick={() => setClienteDetalleId(cliente.id)} disabled={guardando}>Ver cartera</button>
-                      <button type="button" className="mini-btn green" onClick={() => abrirAbono(cliente)} disabled={guardando || Number(cliente.saldo_pendiente || 0) <= 0}>Abono</button>
-                      <button type="button" className="mini-btn" onClick={() => editar(cliente)} disabled={guardando}>Editar</button>
-                      {whatsapp && <button type="button" className="mini-btn green" onClick={() => abrirWhatsApp(cliente)} disabled={Number(cliente.saldo_pendiente || 0) <= 0}>WhatsApp</button>}
-                      <button type="button" className={`mini-btn ${cliente.activo === false ? "green" : "danger"}`} onClick={() => cambiarEstado(cliente)} disabled={guardando}>
-                        {cliente.activo === false ? "Activar" : "Desactivar"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="card card-pad" style={{ marginTop: 12 }}>
-        <div className="section-heading section-heading-pedidos-unificados">
-          <div>
-            <h3>Movimientos de cartera</h3>
-            <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Incluye pedidos crédito, saldos actualizados y estados según abonos registrados.</p>
-          </div>
-          <strong className="muted small">{indicadores.movimientosFiltrados} movimiento(s)</strong>
-        </div>
-
-        <div className="cartera-filtros">
-          <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Buscar por pedido, cliente o concepto" />
-          <select value={filtros.estado} onChange={(e) => cambiarFiltro("estado", e.target.value)}>
-            <option value="todos">Todos los estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="parcial">Parcial</option>
-            <option value="pagado">Pagado</option>
-            <option value="anulado">Anulado</option>
-          </select>
-          <input type="date" value={filtros.fechaInicio} onChange={(e) => cambiarFiltro("fechaInicio", e.target.value)} />
-          <input type="date" value={filtros.fechaFin} onChange={(e) => cambiarFiltro("fechaFin", e.target.value)} />
-        </div>
-        <div className="cartera-actions">
-          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setFiltros(FILTROS_INICIALES)}>Limpiar filtros</button>
-          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarMovimientos} disabled={cargandoMovimientos}>
-            {cargandoMovimientos ? "Cargando..." : "Actualizar movimientos"}
-          </button>
-        </div>
-
-        <div className="pedidos-tabla-wrap" style={{ marginTop: 10 }}>
-          <table className="pedidos-tabla-compacta">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Pedido</th>
-                <th>Cliente</th>
-                <th>Concepto</th>
-                <th>Valor</th>
-                <th>Saldo</th>
-                <th>Estado</th>
-                <th>Observación</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movimientosFiltrados.length === 0 ? (
-                <tr><td colSpan="8">{cargandoMovimientos ? "Cargando movimientos..." : "Sin movimientos para los filtros actuales."}</td></tr>
-              ) : movimientosFiltrados.slice(0, 300).map((movimiento) => {
-                const estado = estadoCartera(movimiento);
-                return (
-                  <tr key={movimiento.id} className={movimientoPendiente(movimiento) ? "" : "subtle-row"}>
-                    <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
-                    <td>#{movimiento.numero_pedido || "—"}</td>
-                    <td>{movimiento.cliente_nombre || "—"}</td>
-                    <td>{movimiento.concepto || "Pedido crédito"}</td>
-                    <td className="td-total">{dinero(movimiento.valor)}</td>
-                    <td className="td-total">{dinero(movimiento.saldo_movimiento)}</td>
-                    <td><span className={`estado-movimiento ${estado}`}>{estado}</span></td>
-                    <td className="td-obs">{movimiento.observaciones || "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {movimientosFiltrados.length > 300 && <p className="muted small">Se muestran los primeros 300 movimientos. Usa filtros para acotar la búsqueda.</p>}
-      </section>
-
-      {clienteDetalle && (
-        <div className="detalle-cartera">
-          <div className="section-heading section-heading-pedidos-unificados">
-            <div>
-              <h3>Cartera de {clienteDetalle.nombre}</h3>
-              <p className="muted small">Detalle del cliente según los filtros activos de movimientos.</p>
-            </div>
-            <div className="cartera-actions" style={{ marginTop: 0 }}>
-              <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={() => abrirAbono(clienteDetalle)} disabled={Number(clienteDetalle.saldo_pendiente || 0) <= 0}>Registrar abono</button>
-              <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
+              <h3>Clientes con crédito</h3>
+              <p className="muted small">Consulta saldos, estado, teléfono y detalle de pedidos por cliente.</p>
             </div>
           </div>
 
-          <div className="cartera-indicadores" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
-            <div className="cartera-indicador"><small>Saldo actual cliente</small><strong>{dinero(clienteDetalle.saldo_pendiente)}</strong></div>
-            <div className="cartera-indicador"><small>Saldo filtrado</small><strong>{dinero(resumenDetalle.saldo)}</strong></div>
-            <div className="cartera-indicador neutral"><small>Total filtrado</small><strong>{dinero(resumenDetalle.total)}</strong></div>
-            <div className="cartera-indicador neutral"><small>Abonado</small><strong>{dinero(resumenDetalle.abonado)}</strong></div>
-            <div className="cartera-indicador neutral"><small>Pedidos pendientes</small><strong>{resumenDetalle.pendientes}</strong></div>
+          <div className="cartera-filtros">
+            <input value={busquedaClientes} onChange={(e) => setBusquedaClientes(e.target.value)} placeholder="Buscar cliente, teléfono u observación" />
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => cambiarFiltro("soloConSaldo", !filtros.soloConSaldo)}>
+              {filtros.soloConSaldo ? "Ver todos" : "Solo con saldo"}
+            </button>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarInactivos((valor) => !valor)}>
+              {mostrarInactivos ? "Ocultar inactivos" : "Mostrar inactivos"}
+            </button>
+            <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarClientes} disabled={cargando}>
+              {cargando ? "Cargando..." : "Actualizar clientes"}
+            </button>
           </div>
 
           <div className="pedidos-tabla-wrap">
             <table className="pedidos-tabla-compacta">
               <thead>
                 <tr>
+                  <th>Cliente</th>
+                  <th>Teléfono</th>
+                  <th>Último pedido</th>
+                  <th>Total pedidos</th>
+                  <th>Saldo pendiente</th>
+                  <th>Estado</th>
+                  <th>Observaciones</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientesVisibles.length === 0 ? (
+                  <tr><td colSpan="8"><RafikiEmptyState icon="👥" title={cargando ? "Cargando clientes..." : "Sin clientes visibles"} description={cargando ? "Estamos consultando el directorio de clientes crédito." : "No hay clientes para los filtros actuales. Puedes limpiar filtros o crear un cliente nuevo."} /></td></tr>
+                ) : clientesVisibles.map((cliente) => {
+                  const whatsapp = telefonoWhatsApp(cliente.telefono);
+                  const saldoPendiente = Number(cliente.saldo_pendiente || 0);
+                  return (
+                    <tr key={cliente.id} className={cliente.activo === false ? "fila-borrada" : ""}>
+                      <td><strong>{cliente.nombre}</strong><small>{Array.isArray(cliente.alias) && cliente.alias.length ? cliente.alias.join(", ") : "Sin alias"}</small></td>
+                      <td>{cliente.telefono || "—"}</td>
+                      <td>{formatearFecha(cliente.fecha_ultimo_pedido)}</td>
+                      <td>{Number(cliente.total_pedidos || 0)}</td>
+                      <td className={`td-total ${saldoPendiente > 0 ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(cliente.saldo_pendiente)}</td>
+                      <td><RafikiBadge estado={cliente.activo === false ? "Inactivo" : "Activo"} /></td>
+                      <td className="td-obs">{cliente.observaciones || "—"}</td>
+                      <td className="td-acciones">
+                        <button type="button" className="mini-btn green" onClick={() => abrirAbono(cliente)} disabled={guardando || saldoPendiente <= 0}>Abono</button>
+                        <RafikiActionMenu
+                          disabled={guardando}
+                          items={[
+                            { id: "ver", label: "Ver cartera", icon: "🔎", variant: "info", onClick: () => { setClienteDetalleId(cliente.id); setVistaCartera("detalle"); } },
+                            { id: "editar", label: "Editar cliente", icon: "✏️", onClick: () => editar(cliente) },
+                            whatsapp ? { id: "whatsapp", label: "Enviar WhatsApp", icon: "💬", variant: "success", disabled: saldoPendiente <= 0, onClick: () => abrirWhatsApp(cliente) } : null,
+                            { id: "estado", label: cliente.activo === false ? "Activar cliente" : "Desactivar cliente", icon: cliente.activo === false ? "✅" : "🚫", variant: cliente.activo === false ? "success" : "danger", onClick: () => cambiarEstado(cliente) },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {vistaCartera === "movimientos" && (
+        <section className="card card-pad" style={{ marginTop: 12 }}>
+          <div className="section-heading section-heading-pedidos-unificados">
+            <div>
+              <h3>Movimientos de cartera</h3>
+              <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Incluye pedidos crédito, saldos actualizados y estados según abonos registrados.</p>
+            </div>
+            <strong className="muted small">{indicadores.movimientosFiltrados} movimiento(s)</strong>
+          </div>
+
+          <div className="cartera-filtros">
+            <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Buscar por pedido, cliente o concepto" />
+            <select value={filtros.estado} onChange={(e) => cambiarFiltro("estado", e.target.value)}>
+              <option value="todos">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="parcial">Parcial</option>
+              <option value="pagado">Pagado</option>
+              <option value="anulado">Anulado</option>
+            </select>
+            <input type="date" value={filtros.fechaInicio} onChange={(e) => cambiarFiltro("fechaInicio", e.target.value)} />
+            <input type="date" value={filtros.fechaFin} onChange={(e) => cambiarFiltro("fechaFin", e.target.value)} />
+          </div>
+          <div className="cartera-actions">
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setFiltros(FILTROS_INICIALES)}>Limpiar filtros</button>
+            <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarMovimientos} disabled={cargandoMovimientos}>
+              {cargandoMovimientos ? "Cargando..." : "Actualizar movimientos"}
+            </button>
+          </div>
+
+          <div className="pedidos-tabla-wrap" style={{ marginTop: 10 }}>
+            <table className="pedidos-tabla-compacta">
+              <thead>
+                <tr>
                   <th>Fecha</th>
                   <th>Pedido</th>
+                  <th>Cliente</th>
                   <th>Concepto</th>
                   <th>Valor</th>
                   <th>Saldo</th>
@@ -822,18 +821,20 @@ export default function CarteraClientesCredito() {
                 </tr>
               </thead>
               <tbody>
-                {movimientosClienteDetalle.length === 0 ? (
-                  <tr><td colSpan="7">Sin movimientos para este cliente con los filtros actuales.</td></tr>
-                ) : movimientosClienteDetalle.map((movimiento) => {
+                {movimientosFiltrados.length === 0 ? (
+                  <tr><td colSpan="8"><RafikiEmptyState icon="🧾" title={cargandoMovimientos ? "Cargando movimientos..." : "Sin movimientos"} description={cargandoMovimientos ? "Estamos consultando los movimientos de cartera." : "No hay movimientos para los filtros actuales."} /></td></tr>
+                ) : movimientosFiltrados.slice(0, 300).map((movimiento) => {
                   const estado = estadoCartera(movimiento);
+                  const saldoPendiente = saldoMovimiento(movimiento);
                   return (
-                    <tr key={movimiento.id}>
+                    <tr key={movimiento.id} className={movimientoPendiente(movimiento) ? "" : "subtle-row"}>
                       <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
                       <td>#{movimiento.numero_pedido || "—"}</td>
+                      <td>{movimiento.cliente_nombre || "—"}</td>
                       <td>{movimiento.concepto || "Pedido crédito"}</td>
                       <td className="td-total">{dinero(movimiento.valor)}</td>
-                      <td className="td-total">{dinero(movimiento.saldo_movimiento)}</td>
-                      <td><span className={`estado-movimiento ${estado}`}>{estado}</span></td>
+                      <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
+                      <td><RafikiBadge estado={estado} /></td>
                       <td className="td-obs">{movimiento.observaciones || "—"}</td>
                     </tr>
                   );
@@ -841,44 +842,114 @@ export default function CarteraClientesCredito() {
               </tbody>
             </table>
           </div>
+          {movimientosFiltrados.length > 300 && <p className="muted small">Se muestran los primeros 300 movimientos. Usa filtros para acotar la búsqueda.</p>}
+        </section>
+      )}
 
-          <div className="section-heading section-heading-pedidos-unificados" style={{ marginTop: 14 }}>
-            <div>
-              <h3>Historial de abonos</h3>
-              <p className="muted small">Pagos registrados y aplicados a los pedidos de este cliente.</p>
-            </div>
-          </div>
-          <div className="pedidos-tabla-wrap">
-            <table className="pedidos-tabla-compacta">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Pedido aplicado</th>
-                  <th>Valor abonado</th>
-                  <th>Método</th>
-                  <th>Saldo antes</th>
-                  <th>Saldo después</th>
-                  <th>Observación</th>
-                </tr>
-              </thead>
-              <tbody>
-                {abonosClienteDetalle.length === 0 ? (
-                  <tr><td colSpan="7">Sin abonos registrados para este cliente.</td></tr>
-                ) : abonosClienteDetalle.map((abono) => (
-                  <tr key={abono.id} className="subtle-row">
-                    <td>{formatearFechaHora(abono.fecha_abono || abono.created_at)}</td>
-                    <td>#{abono.numero_pedido || "—"}</td>
-                    <td className="td-total">{dinero(abono.valor_abono)}</td>
-                    <td>{abono.metodo_pago || "—"}</td>
-                    <td className="td-total">{dinero(abono.saldo_anterior)}</td>
-                    <td className="td-total">{dinero(abono.saldo_nuevo)}</td>
-                    <td className="td-obs">{abono.observacion || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {vistaCartera === "detalle" && (
+        <section className="detalle-cartera">
+          {!clienteDetalle ? (
+            <RafikiEmptyState
+              icon="🔎"
+              title="Selecciona un cliente"
+              description="Desde la pestaña Clientes puedes abrir la cartera individual de cualquier cliente crédito."
+              action={<button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={() => setVistaCartera("clientes")}>Ir a clientes</button>}
+            />
+          ) : (
+            <>
+              <div className="section-heading section-heading-pedidos-unificados">
+                <div>
+                  <h3>Cartera de {clienteDetalle.nombre}</h3>
+                  <p className="muted small">Detalle del cliente según los filtros activos de movimientos.</p>
+                </div>
+                <div className="cartera-actions" style={{ marginTop: 0 }}>
+                  <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={() => abrirAbono(clienteDetalle)} disabled={Number(clienteDetalle.saldo_pendiente || 0) <= 0}>Registrar abono</button>
+                  <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
+                </div>
+              </div>
+
+              <div className="cartera-indicadores" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+                <div className="cartera-indicador"><small>Saldo actual cliente</small><strong>{dinero(clienteDetalle.saldo_pendiente)}</strong></div>
+                <div className="cartera-indicador"><small>Saldo filtrado</small><strong>{dinero(resumenDetalle.saldo)}</strong></div>
+                <div className="cartera-indicador neutral"><small>Total filtrado</small><strong>{dinero(resumenDetalle.total)}</strong></div>
+                <div className="cartera-indicador neutral"><small>Abonado</small><strong className="abono-valor">{dinero(resumenDetalle.abonado)}</strong></div>
+                <div className="cartera-indicador neutral"><small>Pedidos pendientes</small><strong>{resumenDetalle.pendientes}</strong></div>
+              </div>
+
+              <div className="pedidos-tabla-wrap">
+                <table className="pedidos-tabla-compacta">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Pedido</th>
+                      <th>Concepto</th>
+                      <th>Valor</th>
+                      <th>Saldo</th>
+                      <th>Estado</th>
+                      <th>Observación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {movimientosClienteDetalle.length === 0 ? (
+                      <tr><td colSpan="7"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente no tiene movimientos con los filtros actuales." /></td></tr>
+                    ) : movimientosClienteDetalle.map((movimiento) => {
+                      const estado = estadoCartera(movimiento);
+                      const saldoPendiente = saldoMovimiento(movimiento);
+                      return (
+                        <tr key={movimiento.id}>
+                          <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
+                          <td>#{movimiento.numero_pedido || "—"}</td>
+                          <td>{movimiento.concepto || "Pedido crédito"}</td>
+                          <td className="td-total">{dinero(movimiento.valor)}</td>
+                          <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
+                          <td><RafikiBadge estado={estado} /></td>
+                          <td className="td-obs">{movimiento.observaciones || "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="section-heading section-heading-pedidos-unificados" style={{ marginTop: 14 }}>
+                <div>
+                  <h3>Historial de abonos</h3>
+                  <p className="muted small">Pagos registrados y aplicados a los pedidos de este cliente.</p>
+                </div>
+              </div>
+              <div className="pedidos-tabla-wrap">
+                <table className="pedidos-tabla-compacta">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Pedido aplicado</th>
+                      <th>Valor abonado</th>
+                      <th>Método</th>
+                      <th>Saldo antes</th>
+                      <th>Saldo después</th>
+                      <th>Observación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {abonosClienteDetalle.length === 0 ? (
+                      <tr><td colSpan="7"><RafikiEmptyState icon="💵" title="Sin abonos" description="Este cliente aún no tiene abonos registrados." /></td></tr>
+                    ) : abonosClienteDetalle.map((abono) => (
+                      <tr key={abono.id} className="subtle-row">
+                        <td>{formatearFechaHora(abono.fecha_abono || abono.created_at)}</td>
+                        <td>#{abono.numero_pedido || "—"}</td>
+                        <td className="td-total abono-valor">{dinero(abono.valor_abono)}</td>
+                        <td>{abono.metodo_pago || "—"}</td>
+                        <td className="td-total">{dinero(abono.saldo_anterior)}</td>
+                        <td className="td-total">{dinero(abono.saldo_nuevo)}</td>
+                        <td className="td-obs">{abono.observacion || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
       )}
     </section>
   );

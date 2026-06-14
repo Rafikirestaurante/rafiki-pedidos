@@ -1,4 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
+import RafikiBadge from "../../../shared/components/RafikiBadge";
+import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
+import RafikiModal from "../../../shared/components/RafikiModal";
+import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { dinero } from "../../../shared/utils/pedidos";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, cargarUltimoArqueoDiaAnterior, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
@@ -220,12 +224,56 @@ function estadoDiferenciaCaja(diferencia) {
   return { texto: "Falta dinero", clase: "danger", etiqueta: "Falta dinero" };
 }
 
-function FilaInforme({ etiqueta, valor, fuerte = false, estado = "", detalle = false }) {
+function tipoBadgeDiferencia(clase) {
+  if (clase === "ok") return "success";
+  if (clase === "warning") return "warning";
+  if (clase === "danger") return "danger";
+  return "neutral";
+}
+
+function FilaInforme({ etiqueta, valor, fuerte = false, estado = "", detalle = false, tipo = "" }) {
   return (
-    <div className={`caja-informe-row ${fuerte ? "fuerte" : ""} ${detalle ? "detalle" : ""} ${estado ? `caja-informe-${estado}` : ""}`}>
+    <div className={`caja-informe-row ${fuerte ? "fuerte" : ""} ${detalle ? "detalle" : ""} ${estado ? `caja-informe-${estado}` : ""} ${tipo ? `caja-movimiento-${tipo}` : ""}`}>
       <span>{etiqueta}</span>
       <strong>{dinero(valor)}</strong>
     </div>
+  );
+}
+
+function CajaResumenVisual({ totalInicio, totalFin, ventasTotal, gastosTotal, dineroEsperado, diferenciaReal, estadoDiferencia, pedidosCantidad }) {
+  return (
+    <section className="caja-resumen-visual">
+      <article className="card card-pad caja-resumen-card">
+        <span>Inicio</span>
+        <strong>{dinero(totalInicio)}</strong>
+        <small>Base inicial del día</small>
+      </article>
+      <article className="card card-pad caja-resumen-card caja-resumen-ingreso">
+        <span>Ventas</span>
+        <strong>{dinero(ventasTotal)}</strong>
+        <small>{pedidosCantidad || 0} pedidos registrados</small>
+      </article>
+      <article className="card card-pad caja-resumen-card caja-resumen-egreso">
+        <span>Gastos</span>
+        <strong>{dinero(gastosTotal)}</strong>
+        <small>Gastos operativos</small>
+      </article>
+      <article className="card card-pad caja-resumen-card">
+        <span>Esperado</span>
+        <strong>{dinero(dineroEsperado)}</strong>
+        <small>Según ventas y ajustes</small>
+      </article>
+      <article className={`card card-pad caja-resumen-card caja-resumen-diferencia caja-estado-${estadoDiferencia.clase}`}>
+        <span>Resultado</span>
+        <strong>{dinero(Math.abs(diferenciaReal))}</strong>
+        <RafikiBadge tipo={tipoBadgeDiferencia(estadoDiferencia.clase)}>{estadoDiferencia.texto}</RafikiBadge>
+      </article>
+      <article className="card card-pad caja-resumen-card">
+        <span>Último arqueo</span>
+        <strong>{dinero(totalFin)}</strong>
+        <small>Conteo actual guardado</small>
+      </article>
+    </section>
   );
 }
 
@@ -255,7 +303,7 @@ function InicioDiaInforme({ estado, total }) {
 function DetalleGastos({ gastos = [], total }) {
   return (
     <section className="caja-informe-bloque">
-      <FilaInforme etiqueta="Gastos del día" valor={total} fuerte />
+      <FilaInforme etiqueta="Gastos del día" valor={total} fuerte tipo="egreso" />
       {gastos.length ? gastos.map((gasto) => (
         <div className="caja-gasto-detalle-row caja-gasto-detalle-sub" key={gasto.id || `${gasto.proveedor}-${gasto.valor}-${gasto.creadoEn}`}>
           <div>
@@ -264,7 +312,13 @@ function DetalleGastos({ gastos = [], total }) {
           </div>
           <strong>{dinero(gasto.valor)}</strong>
         </div>
-      )) : <p className="muted small caja-sin-movimientos">Sin gastos registrados para esta fecha.</p>}
+      )) : (
+        <RafikiEmptyState
+          icon="🧾"
+          title="Sin gastos registrados"
+          description="No hay egresos guardados para la fecha seleccionada."
+        />
+      )}
     </section>
   );
 }
@@ -286,7 +340,13 @@ function HistorialArqueos({ historial = [], titulo = "Arqueos realizados" }) {
             <strong>{dinero(arqueo.arqueoTotal)}</strong>
           </div>
         );
-      }) : <p className="muted small caja-sin-movimientos">Sin arqueos guardados para esta fecha.</p>}
+      }) : (
+        <RafikiEmptyState
+          icon="💵"
+          title="Sin arqueos guardados"
+          description="Cuando guardes un arqueo nuevo, aparecerá aquí con fecha, hora y saldos."
+        />
+      )}
     </section>
   );
 }
@@ -294,7 +354,6 @@ function HistorialArqueos({ historial = [], titulo = "Arqueos realizados" }) {
 function SaldosUltimoArqueo({ arqueo, respaldo }) {
   const tieneHistorial = Boolean(arqueo?.arqueoData);
   const estado = tieneHistorial ? arqueo.arqueoData : respaldo;
-  const saldos = obtenerSaldosArqueo(estado);
   const total = tieneHistorial ? limpiarNumero(arqueo.arqueoTotal) : totalArqueo(estado);
 
   return (
@@ -324,6 +383,8 @@ export default function CajaAdmin() {
   const [cargandoCuadre, setCargandoCuadre] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
+  const [modalAjustesAbierto, setModalAjustesAbierto] = useState(false);
+  const [modalGastosAbierto, setModalGastosAbierto] = useState(false);
 
   const totalInicio = useMemo(() => totalArqueo(inicioDia), [inicioDia]);
   const totalFin = useMemo(() => totalArqueo(finDia), [finDia]);
@@ -338,6 +399,12 @@ export default function CajaAdmin() {
   }, [historialArqueos, totalFin]);
   const diferenciaReal = useMemo(() => totalUltimoArqueoInforme - dineroEsperado, [totalUltimoArqueoInforme, dineroEsperado]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
+  const tabsCaja = useMemo(() => ([
+    { id: "inicio", label: "Inicio", icon: "🌅" },
+    { id: "fin", label: "Arqueo", icon: "💵" },
+    { id: "informe", label: "Informe", icon: "📊" },
+    { id: "historial", label: "Historial", icon: "🕒", count: historialArqueos.length },
+  ]), [historialArqueos.length]);
 
   useEffect(() => {
     let activo = true;
@@ -569,14 +636,36 @@ export default function CajaAdmin() {
       {error && <div className="alert alert-error caja-alert">{error}</div>}
       {cargando && <div className="card card-pad muted small">Cargando caja guardada...</div>}
 
-      <div className="admin-tabs caja-tabs">
-        <button type="button" className={tabCaja === "inicio" ? "active" : ""} onClick={() => setTabCaja("inicio")}>Inicio del día</button>
-        <button type="button" className={tabCaja === "fin" ? "active" : ""} onClick={() => setTabCaja("fin")}>Arqueo</button>
-        <button type="button" className={tabCaja === "informe" ? "active" : ""} onClick={() => setTabCaja("informe")}>Informe Caja</button>
-      </div>
+      <RafikiTabs tabs={tabsCaja} activeTab={tabCaja} onChange={setTabCaja} className="caja-tabs" ariaLabel="Secciones de caja" />
+
+      <CajaResumenVisual
+        totalInicio={totalInicio}
+        totalFin={totalUltimoArqueoInforme}
+        ventasTotal={ventasTotal}
+        gastosTotal={gastosTotal + gastosRafaTotal + cuentasPorCobrarTotal}
+        dineroEsperado={dineroEsperado}
+        diferenciaReal={diferenciaReal}
+        estadoDiferencia={estadoDiferencia}
+        pedidosCantidad={cuadreReal?.pedidosCantidad || 0}
+      />
 
       {tabCaja === "inicio" && <FormularioArqueo titulo="Inicio del día" descripcion="Registra la base inicial antes de empezar la operación. Puedes traer el último arqueo del día anterior, revisarlo y guardar manualmente." estado={inicioDia} setEstado={setInicioDia} guardando={guardandoInicio} onGuardar={guardarInicio} onTraerAnterior={traerUltimoArqueoAnteriorAInicio} />}
-      {tabCaja === "fin" && <FormularioArqueo titulo="Arqueo" descripcion="Cuenta cajas y bancos en cualquier momento del día. Guarda el conteo y usa Arqueo Nuevo para archivarlo y empezar otro desde cero." estado={finDia} setEstado={setFinDia} guardando={guardandoFin} onGuardar={guardarFin} onNuevo={iniciarArqueoNuevo} historial={historialArqueos} />}
+      {tabCaja === "fin" && <FormularioArqueo titulo="Arqueo" descripcion="Cuenta cajas y bancos en cualquier momento del día. Guarda el conteo y usa Arqueo Nuevo para archivarlo y empezar otro desde cero." estado={finDia} setEstado={setFinDia} guardando={guardandoFin} onGuardar={guardarFin} onNuevo={iniciarArqueoNuevo} />}
+
+      {tabCaja === "historial" && (
+        <div className="caja-formulario">
+          <section className="card card-pad caja-informe-card">
+            <div className="section-title-row caja-section-title caja-informe-title-row">
+              <div>
+                <h2>Historial de arqueos</h2>
+                <p className="muted">Consulta los conteos realizados durante la fecha seleccionada sin mezclarlo con el formulario del arqueo actual.</p>
+              </div>
+              {cargandoCuadre && <span className="muted small">Actualizando...</span>}
+            </div>
+            <HistorialArqueos historial={historialArqueos} titulo="Arqueos realizados" />
+          </section>
+        </div>
+      )}
 
       {tabCaja === "informe" && (
         <div className="caja-formulario">
@@ -591,34 +680,70 @@ export default function CajaAdmin() {
             </div>
             <div className="caja-informe-lista">
               <InicioDiaInforme estado={inicioDia} total={totalInicio} />
-              <FilaInforme etiqueta={`Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos)`} valor={ventasTotal} />
-              <DetalleGastos gastos={cuadreReal?.gastosDetalle || []} total={gastosTotal} />
-              <section className="caja-informe-bloque caja-ajustes-bloque">
-                <div className="caja-informe-row fuerte"><span>Ajustes de Caja</span><strong>{dinero(gastosRafaTotal + cuentasPorCobrarTotal)}</strong></div>
-                <div className="caja-ajustes-grid">
-                  <label className="field">
-                    <span>Gastos Rafa</span>
-                    <input type="number" min="0" inputMode="numeric" value={ajustesCaja.gastosRafa} onChange={(event) => actualizarAjusteCaja("gastosRafa", event.target.value)} placeholder="0" />
-                    <small className="muted">Gastos personales o retiros del día. Resta a la caja esperada.</small>
-                  </label>
-                  <label className="field">
-                    <span>Cuentas x Cobrar</span>
-                    <input type="number" min="0" inputMode="numeric" value={ajustesCaja.cuentasPorCobrar} onChange={(event) => actualizarAjusteCaja("cuentasPorCobrar", event.target.value)} placeholder="0" />
-                    <small className="muted">Ventas reales que aún no han entrado en efectivo/banco. Resta a la caja esperada.</small>
-                  </label>
+              <FilaInforme etiqueta={`Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos)`} valor={ventasTotal} tipo="ingreso" />
+              <section className="caja-informe-bloque caja-detalle-compacto">
+                <FilaInforme etiqueta="Gastos operativos" valor={gastosTotal} fuerte tipo="egreso" />
+                <button type="button" className="btn secondary" onClick={() => setModalGastosAbierto(true)}>Ver detalle de gastos</button>
+              </section>
+              <section className="caja-informe-bloque caja-ajustes-bloque caja-ajustes-compacto">
+                <div className="caja-informe-row fuerte caja-movimiento-egreso"><span>Ajustes de Caja</span><strong>{dinero(gastosRafaTotal + cuentasPorCobrarTotal)}</strong></div>
+                <div className="caja-ajustes-resumen">
+                  <span>Gastos Rafa: <strong>{dinero(gastosRafaTotal)}</strong></span>
+                  <span>Cuentas x cobrar: <strong>{dinero(cuentasPorCobrarTotal)}</strong></span>
                 </div>
-                <div className="caja-actions caja-ajustes-actions"><button type="button" className="btn secondary" onClick={guardarAjustesInformeCaja} disabled={guardandoAjustes}>{guardandoAjustes ? "Guardando..." : "Guardar ajustes"}</button></div>
+                <div className="caja-actions caja-ajustes-actions"><button type="button" className="btn secondary" onClick={() => setModalAjustesAbierto(true)}>Editar ajustes</button></div>
               </section>
               <FilaInforme etiqueta="Caja esperada" valor={dineroEsperado} fuerte />
               <SaldosUltimoArqueo arqueo={historialArqueos[0]} respaldo={finDia} />
               <FilaInforme etiqueta="Fin / arqueo contado" valor={totalUltimoArqueoInforme} />
-              <HistorialArqueos historial={historialArqueos} />
-              <FilaInforme etiqueta={estadoDiferencia.etiqueta} valor={Math.abs(diferenciaReal)} fuerte estado={estadoDiferencia.clase} />
+              <section className="caja-informe-bloque caja-historial-resumen">
+                <div className="caja-informe-row fuerte"><span>Arqueos realizados</span><strong>{historialArqueos.length}</strong></div>
+                <button type="button" className="btn secondary" onClick={() => setTabCaja("historial")}>Ver historial completo</button>
+              </section>
+              <div className="caja-resultado-final">
+                <FilaInforme etiqueta={estadoDiferencia.etiqueta} valor={Math.abs(diferenciaReal)} fuerte estado={estadoDiferencia.clase} />
+                <RafikiBadge tipo={tipoBadgeDiferencia(estadoDiferencia.clase)}>{estadoDiferencia.texto}</RafikiBadge>
+              </div>
             </div>
             <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada.</p>
           </section>
         </div>
       )}
+
+      <RafikiModal
+        open={modalGastosAbierto}
+        title="Detalle de gastos"
+        description="Egresos operativos usados para calcular el informe de caja."
+        onClose={() => setModalGastosAbierto(false)}
+        size="lg"
+      >
+        <DetalleGastos gastos={cuadreReal?.gastosDetalle || []} total={gastosTotal} />
+      </RafikiModal>
+
+      <RafikiModal
+        open={modalAjustesAbierto}
+        title="Ajustes de Caja"
+        description="Registra valores que restan a la caja esperada sin cargar el informe visualmente."
+        onClose={() => setModalAjustesAbierto(false)}
+        footer={(
+          <button type="button" className="btn primary" onClick={guardarAjustesInformeCaja} disabled={guardandoAjustes}>
+            {guardandoAjustes ? "Guardando..." : "Guardar ajustes"}
+          </button>
+        )}
+      >
+        <div className="caja-ajustes-grid">
+          <label className="field">
+            <span>Gastos Rafa</span>
+            <input type="number" min="0" inputMode="numeric" value={ajustesCaja.gastosRafa} onChange={(event) => actualizarAjusteCaja("gastosRafa", event.target.value)} placeholder="0" />
+            <small className="muted">Gastos personales o retiros del día. Resta a la caja esperada.</small>
+          </label>
+          <label className="field">
+            <span>Cuentas x Cobrar</span>
+            <input type="number" min="0" inputMode="numeric" value={ajustesCaja.cuentasPorCobrar} onChange={(event) => actualizarAjusteCaja("cuentasPorCobrar", event.target.value)} placeholder="0" />
+            <small className="muted">Ventas reales que aún no han entrado en efectivo/banco. Resta a la caja esperada.</small>
+          </label>
+        </div>
+      </RafikiModal>
     </section>
   );
 }

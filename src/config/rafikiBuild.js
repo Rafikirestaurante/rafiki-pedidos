@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "120.4-FASE30E-ERRORES-SUPABASE-2026-06-14",
-  phase: "Fase 30E - Manejo profesional de errores Supabase",
+  version: "121.1-FASE31C-INTERFAZ-CAJA-2026-06-14",
+  phase: "Fase 31C - Limpieza visual del panel Caja",
   date: "2026-06-14",
-  fase: "30E",
+  fase: "31C",
   notes:
-    "Centraliza la traducción de errores Supabase por códigos y mejora mensajes visibles en pedidos, Pedidos Hoy, menú diario, cartera, caja, inventario, gastos, catálogo y solicitudes."
+    "Aplica el sistema visual Rafiki al panel Caja con pestañas reutilizables, resumen compacto, historial separado, modales para ajustes/detalle de gastos, badges de resultado y estados vacíos sin alterar cálculos ni servicios."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
