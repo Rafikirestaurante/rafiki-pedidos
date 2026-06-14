@@ -1,16 +1,21 @@
-import { describe, expect, it, vi } from 'vitest';
-import { esVersionRemotaMasNueva, guardarVersionActual, obtenerVersionGuardada, RAFIKI_APP_VERSION } from '../pwaVersion';
+import { describe, expect, it, vi } from "vitest";
+import {
+  esVersionRemotaMasNueva,
+  guardarVersionActual,
+  obtenerVersionGuardada,
+  RAFIKI_APP_VERSION
+} from "../pwaVersion";
 
-describe('utils/pwaVersion', () => {
-  it('detecta cuando la versión remota es diferente', () => {
-    expect(esVersionRemotaMasNueva('99Z-2026-05-18')).toBe(true);
+describe("utils/pwaVersion", () => {
+  it("detecta cuando la versión remota es diferente", () => {
+    expect(esVersionRemotaMasNueva("999Z-2026-05-18")).toBe(true);
     expect(esVersionRemotaMasNueva(RAFIKI_APP_VERSION)).toBe(false);
-    expect(esVersionRemotaMasNueva('')).toBe(false);
+    expect(esVersionRemotaMasNueva("")).toBe(false);
   });
 
-  it('guarda y lee la versión actual', () => {
+  it("guarda y lee la versión actual", () => {
     const storage = {
-      valor: '',
+      valor: "",
       getItem: vi.fn(() => storage.valor),
       setItem: vi.fn((_, valor) => {
         storage.valor = valor;

@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useMemo, useState } from "react";
 import CargandoModulo from "../../../shared/components/CargandoModulo.jsx";
+import ErrorBoundary from "../../../shared/components/ErrorBoundary.jsx";
 
 const PanelRafaPrivado = lazy(() => import("../../dashboard/components/PanelRafaPrivado.jsx"));
 const CajaAdmin = lazy(() => import("../../caja/components/CajaAdmin.jsx"));
@@ -15,7 +16,7 @@ const TABS_GERENCIA = [
   { id: "gastos", label: "Gastos" },
   { id: "cartera", label: "Cartera" },
   { id: "inventario", label: "Inventario" },
-  { id: "catalogo", label: "Catálogo" },
+  { id: "catalogo", label: "Catálogo" }
 ];
 
 export default function GerenciaPanel({
@@ -26,7 +27,7 @@ export default function GerenciaPanel({
   puedeVerInventario,
   puedeVerCatalogo,
   cerrarPanelAdmin,
-  navegar,
+  navegar
 }) {
   const [tabActiva, setTabActiva] = useState("inicio");
 
@@ -36,38 +37,38 @@ export default function GerenciaPanel({
         titulo: "Informes",
         texto: "Consulta ventas, clientes, estadísticas y reportes gerenciales.",
         tab: "informes",
-        disponible: puedeVerInformes,
+        disponible: puedeVerInformes
       },
       {
         titulo: "Caja",
         texto: "Controla inicio del día, arqueos, cierres e Informe Caja.",
         tab: "caja",
-        disponible: puedeVerCaja,
+        disponible: puedeVerCaja
       },
       {
         titulo: "Gastos",
         texto: "Registro y control gerencial de compras y salidas de dinero.",
         tab: "gastos",
-        disponible: puedeVerGastos,
+        disponible: puedeVerGastos
       },
       {
         titulo: "Cartera",
         texto: "Directorio de clientes crédito y base para cuentas por cobrar.",
         tab: "cartera",
-        disponible: true,
+        disponible: true
       },
       {
         titulo: "Inventario",
         texto: "Acceso gerencial al control de insumos y alertas.",
         tab: "inventario",
-        disponible: puedeVerInventario,
+        disponible: puedeVerInventario
       },
       {
         titulo: "Catálogo",
         texto: "Gestión del catálogo conectado a productos e insumos.",
         tab: "catalogo",
-        disponible: puedeVerCatalogo,
-      },
+        disponible: puedeVerCatalogo
+      }
     ],
     [puedeVerCatalogo, puedeVerCaja, puedeVerGastos, puedeVerInformes, puedeVerInventario]
   );
@@ -79,10 +80,18 @@ export default function GerenciaPanel({
           <div className="brand">📊 Gerencia</div>
         </div>
         <div className="nav nav-wrap">
-          <button type="button" onClick={() => navegar("/admin", "admin")}>Admin</button>
-          <button type="button" onClick={() => navegar("/mesas", "mesas")}>Mesas</button>
-          <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>Pedidos hoy</button>
-          <button type="button" className="button light" onClick={cerrarPanelAdmin}>Cerrar panel</button>
+          <button type="button" onClick={() => navegar("/admin", "admin")}>
+            Admin
+          </button>
+          <button type="button" onClick={() => navegar("/mesas", "mesas")}>
+            Mesas
+          </button>
+          <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
+            Pedidos hoy
+          </button>
+          <button type="button" className="button light" onClick={cerrarPanelAdmin}>
+            Cerrar panel
+          </button>
         </div>
       </header>
 
@@ -121,42 +130,55 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "informes" && puedeVerInformes && (
-        <Suspense fallback={<CargandoModulo texto="Cargando informes gerenciales..." />}>
-          <PanelRafaPrivado />
-        </Suspense>
+        <ErrorBoundary nombreModulo="Informes gerenciales">
+          <Suspense fallback={<CargandoModulo texto="Cargando informes gerenciales..." />}>
+            <PanelRafaPrivado />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {tabActiva === "caja" && puedeVerCaja && (
-        <Suspense fallback={<CargandoModulo texto="Cargando caja gerencial..." />}>
-          <CajaAdmin />
-        </Suspense>
+        <ErrorBoundary nombreModulo="Caja gerencial">
+          <Suspense fallback={<CargandoModulo texto="Cargando caja gerencial..." />}>
+            <CajaAdmin />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {tabActiva === "gastos" && puedeVerGastos && (
-        <Suspense fallback={<CargandoModulo texto="Cargando gastos gerenciales..." />}>
-          <GastosDiarios esAdministrador={puedeVerInformeGastos} />
-        </Suspense>
+        <ErrorBoundary nombreModulo="Gastos gerenciales">
+          <Suspense fallback={<CargandoModulo texto="Cargando gastos gerenciales..." />}>
+            <GastosDiarios esAdministrador={puedeVerInformeGastos} />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {tabActiva === "inventario" && puedeVerInventario && (
-        <Suspense fallback={<CargandoModulo texto="Cargando inventario gerencial..." />}>
-          <InventarioAdmin />
-        </Suspense>
+        <ErrorBoundary nombreModulo="Inventario gerencial">
+          <Suspense fallback={<CargandoModulo texto="Cargando inventario gerencial..." />}>
+            <InventarioAdmin />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {tabActiva === "catalogo" && puedeVerCatalogo && (
-        <Suspense fallback={<CargandoModulo texto="Cargando catálogo gerencial..." />}>
-          <CatalogoRafa />
-        </Suspense>
+        <ErrorBoundary nombreModulo="Catálogo gerencial">
+          <Suspense fallback={<CargandoModulo texto="Cargando catálogo gerencial..." />}>
+            <CatalogoRafa />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {tabActiva === "cartera" && (
-        <Suspense fallback={<CargandoModulo texto="Cargando clientes crédito..." />}>
-          <CarteraClientesCredito />
-        </Suspense>
+        <ErrorBoundary nombreModulo="Cartera">
+          <Suspense fallback={<CargandoModulo texto="Cargando clientes crédito..." />}>
+            <CarteraClientesCredito />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
-      {tabActiva !== "inicio" && tabActiva !== "cartera" && (
+      {tabActiva !== "inicio" &&
+        tabActiva !== "cartera" &&
         ((tabActiva === "informes" && !puedeVerInformes) ||
           (tabActiva === "caja" && !puedeVerCaja) ||
           (tabActiva === "gastos" && !puedeVerGastos) ||
@@ -166,8 +188,7 @@ export default function GerenciaPanel({
             <h2>Acceso restringido</h2>
             <p className="muted">Este módulo solo está disponible para usuarios autorizados.</p>
           </section>
-        )
-      )}
+        )}
     </main>
   );
 }

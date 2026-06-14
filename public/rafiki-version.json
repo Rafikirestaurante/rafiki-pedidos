@@ -1,9 +1,9 @@
 {
-  "version": "118.13-FASE28A-RUTA-GERENCIA-SEGURA-2026-06-13",
-  "fase": "28A",
-  "mensaje": "Nueva ruta /gerencia con navegación protegida y base para módulos estratégicos sin retirar /admin ni Rafa.",
-  "build": "118.13",
-  "base_estable": "118.12",
-  "phase": "Fase 28A - Nueva ruta Gerencia",
+  "version": "120.0-FASE30A-PROTECCION-PANTALLA-BLANCA",
+  "fase": "30A",
+  "mensaje": "Protección contra pantalla blanca: ErrorBoundary reutilizable y módulos pesados protegidos con botón Reintentar cargar módulo.",
+  "build": "120.0",
+  "base_estable": "119.8",
+  "phase": "Fase 30A - Protección contra pantalla blanca",
   "date": "2026-06-13"
 }

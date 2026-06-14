@@ -25,7 +25,7 @@ import {
   obtenerRangoPedidos,
   obtenerSesionActiva,
   platosATexto,
-  textoAPlatosDetalle,
+  textoAPlatosDetalle
 } from "./shared/utils/pedidos";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import {
@@ -37,6 +37,7 @@ import {
   usuarioPuede
 } from "./shared/utils/authAdmin";
 import CargandoModulo from "./shared/components/CargandoModulo";
+import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
 import { conTiempoMaximo } from "./shared/utils/async";
 import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "./shared/utils/menuCache";
 import {
@@ -54,7 +55,6 @@ import { useAdminPedidos } from "./shared/hooks/useAdminPedidos";
 import { leerUltimoTextoEditorGenerador } from "./shared/utils/generadorMenu";
 import { buscarPedidosPorNumeroGlobal, cargarPedidosRango } from "./services/pedidosService";
 
-
 const SolicitudProductos = lazy(() => import("./modules/catalogo/components/SolicitudProductos"));
 const GeneradorMenu = lazy(() => import("./modules/catalogo/components/GeneradorMenu"));
 const PanelMesasPOS = lazy(() => import("./modules/mesas/components/PanelMesas"));
@@ -67,7 +67,16 @@ const GerenciaPanel = lazy(() => import("./modules/gerencia/components/GerenciaP
 const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
-const ADMIN_TABS_VALIDAS = new Set(["pedidos", "menu", "productos", "generador", "catalogo", "inventario", "caja", "rafa"]);
+const ADMIN_TABS_VALIDAS = new Set([
+  "pedidos",
+  "menu",
+  "productos",
+  "generador",
+  "catalogo",
+  "inventario",
+  "caja",
+  "rafa"
+]);
 
 function leerAdminTabGuardada() {
   try {
@@ -101,10 +110,13 @@ function leerBorradorEditorMenuDiario() {
 
 function guardarBorradorEditorMenuDiario(payload) {
   try {
-    window.localStorage.setItem(MENU_EDITOR_DRAFT_KEY, JSON.stringify({
-      ...payload,
-      actualizadoEn: new Date().toISOString()
-    }));
+    window.localStorage.setItem(
+      MENU_EDITOR_DRAFT_KEY,
+      JSON.stringify({
+        ...payload,
+        actualizadoEn: new Date().toISOString()
+      })
+    );
   } catch {
     // El borrador es una ayuda operativa; no debe bloquear la app.
   }
@@ -189,7 +201,10 @@ export default function App() {
   const verificacionAdminRef = useRef({ enCurso: false, ultimoChequeo: 0 });
 
   const adminNombreRol = nombreRol(adminRol);
-  const adminActor = describirActor(adminUsuario, adminAutenticado ? "Clave administrativa local" : "Sin sesión");
+  const adminActor = describirActor(
+    adminUsuario,
+    adminAutenticado ? "Clave administrativa local" : "Sin sesión"
+  );
   const puedeVerMenu = usuarioPuede(adminRol, "menu");
   const puedeVerProductos = usuarioPuede(adminRol, "productos");
   const puedeVerGenerador = usuarioPuede(adminRol, "generador");
@@ -277,7 +292,12 @@ export default function App() {
 
   useEffect(() => {
     let activo = true;
-    const rutaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario" || vista === "gerencia";
+    const rutaAdmin =
+      vista === "admin" ||
+      vista === "adminLogin" ||
+      vista === "pedidos" ||
+      vista === "inventario" ||
+      vista === "gerencia";
 
     const enviarALoginAdmin = () => {
       localStorage.removeItem("rafikiAdminActivo");
@@ -494,7 +514,10 @@ export default function App() {
     alertaPedidoTimer.current = setTimeout(() => setAlertaPedidoNuevo(null), 12000);
   }, []);
 
-  const realtimePuedeActualizarPedidos = realtimeAdminActivo && adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
+  const realtimePuedeActualizarPedidos =
+    realtimeAdminActivo &&
+    adminAutenticado &&
+    ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
 
   const cambiarEstadoRealtimeAdmin = useCallback(() => {
     setRealtimeAdminActivo((activoActual) => {
@@ -517,11 +540,14 @@ export default function App() {
     });
   }, [adminAutenticado, vista]);
 
-  const marcarCambiosPedidosPendientes = useCallback((detalle = "Hay nuevos cambios en pedidos.") => {
-    if (!realtimeAdminActivo) return;
-    setCambiosPedidosPendientes(true);
-    setMensajeCambiosPedidos(detalle);
-  }, [realtimeAdminActivo]);
+  const marcarCambiosPedidosPendientes = useCallback(
+    (detalle = "Hay nuevos cambios en pedidos.") => {
+      if (!realtimeAdminActivo) return;
+      setCambiosPedidosPendientes(true);
+      setMensajeCambiosPedidos(detalle);
+    },
+    [realtimeAdminActivo]
+  );
 
   const cambiarAdminTabSeguro = useCallback((tab) => {
     if (!ADMIN_TABS_VALIDAS.has(tab)) return;
@@ -538,7 +564,6 @@ export default function App() {
   const irAPedidosYActualizar = useCallback(() => {
     cambiarAdminTabSeguro("pedidos");
   }, [cambiarAdminTabSeguro]);
-
 
   useEffect(() => {
     if (adminTab !== "menu" || borradorEditorMenuRestauradoRef.current) return;
@@ -611,7 +636,12 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const vistaProtegidaAdmin = vista === "admin" || vista === "adminLogin" || vista === "pedidos" || vista === "inventario" || vista === "gerencia";
+  const vistaProtegidaAdmin =
+    vista === "admin" ||
+    vista === "adminLogin" ||
+    vista === "pedidos" ||
+    vista === "inventario" ||
+    vista === "gerencia";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
   const itemsConProducto = useMemo(
     () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
@@ -631,16 +661,15 @@ export default function App() {
     pedidosBorrados,
     pedidosActivos,
     consolidado,
-    tituloPedidos,
+    tituloPedidos
   } = useAdminPedidos({
     pedidos,
     busquedaDebounced,
     filtroPedidos,
     fechaSeleccionada,
     fechaInicioRangoPedidos,
-    fechaFinRangoPedidos,
+    fechaFinRangoPedidos
   });
-
 
   const buscarPedidoPorNumeroGlobal = useCallback(async () => {
     const numeroLimpio = String(busquedaNumeroPedido || "").replace(/\D+/g, "");
@@ -706,9 +735,10 @@ export default function App() {
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
   const whatsappRafikiDisponible = Boolean(limpiarTelefonoWhatsApp(WHATSAPP_RAFIKI));
 
-  const linkWhatsAppFinal = pedidoFinalizado && whatsappRafikiDisponible
-    ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
-    : "#";
+  const linkWhatsAppFinal =
+    pedidoFinalizado && whatsappRafikiDisponible
+      ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
+      : "#";
 
   useEffect(() => {
     let cancelado = false;
@@ -766,7 +796,9 @@ export default function App() {
 
             setItemsPedido((actual) => {
               const nombresMenuActual = new Set(
-                menuNormalizado.platos_detalle.map((plato) => String(plato.nombre || "").trim()).filter(Boolean)
+                menuNormalizado.platos_detalle
+                  .map((plato) => String(plato.nombre || "").trim())
+                  .filter(Boolean)
               );
 
               const itemsValidosMenuActual = actual
@@ -785,8 +817,16 @@ export default function App() {
             });
           }
         } else {
-          const menuVacioHoy = normalizarMenu({ fecha: fechaActualMenu, platos_detalle: [], acompanantes: [] });
-          menuHashRef.current = JSON.stringify({ fecha: fechaActualMenu, platos_detalle: [], acompanantes: [] });
+          const menuVacioHoy = normalizarMenu({
+            fecha: fechaActualMenu,
+            platos_detalle: [],
+            acompanantes: []
+          });
+          menuHashRef.current = JSON.stringify({
+            fecha: fechaActualMenu,
+            platos_detalle: [],
+            acompanantes: []
+          });
           setMenu(menuVacioHoy);
           guardarMenuCache(menuVacioHoy);
           menuCacheDisponibleRef.current = false;
@@ -844,11 +884,7 @@ export default function App() {
 
     const canalMenu = supabase
       .channel(`${instanciaRealtimeRef.current}-menu`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "menu_diario" },
-        pedirRecargaMenu
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_diario" }, pedirRecargaMenu)
       .subscribe();
 
     return () => {
@@ -875,7 +911,8 @@ export default function App() {
 
   useEffect(() => {
     let cancelado = false;
-    const debeCargarPedidos = adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
+    const debeCargarPedidos =
+      adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
 
     if (!debeCargarPedidos) {
       setCargandoPedidos(false);
@@ -894,9 +931,10 @@ export default function App() {
       }
 
       try {
-        const rango = filtroPedidos === "rango"
-          ? obtenerRangoPedidos("rango", fechaInicioRangoPedidos, fechaFinRangoPedidos)
-          : obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
+        const rango =
+          filtroPedidos === "rango"
+            ? obtenerRangoPedidos("rango", fechaInicioRangoPedidos, fechaFinRangoPedidos)
+            : obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
 
         const { data: pedidosData, error: pedidosError } = await conTiempoMaximo(
           cargarPedidosRango(rango.inicio, rango.fin, { ascendente: true }),
@@ -926,7 +964,8 @@ export default function App() {
         });
       } catch (error) {
         if (!cancelado) {
-          const detalle = `No se pudieron cargar los pedidos. Se conserva la última información visible. ${error.message || ""}`.trim();
+          const detalle =
+            `No se pudieron cargar los pedidos. Se conserva la última información visible. ${error.message || ""}`.trim();
           setErrorCargaPedidos(detalle);
           mostrarMensaje(detalle, "error");
         }
@@ -942,12 +981,20 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [vista, adminAutenticado, adminTab, filtroPedidos, fechaSeleccionada, fechaInicioRangoPedidos, fechaFinRangoPedidos, recargaPedidos, mostrarMensaje]);
+  }, [
+    vista,
+    adminAutenticado,
+    adminTab,
+    filtroPedidos,
+    fechaSeleccionada,
+    fechaInicioRangoPedidos,
+    fechaFinRangoPedidos,
+    recargaPedidos,
+    mostrarMensaje
+  ]);
 
   function actualizarItem(id, cambios) {
-    setItemsPedido((actual) =>
-      actual.map((item) => (item.id === id ? { ...item, ...cambios } : item))
-    );
+    setItemsPedido((actual) => actual.map((item) => (item.id === id ? { ...item, ...cambios } : item)));
   }
 
   function cambiarPlatoItem(id, platoSeleccionado) {
@@ -1060,7 +1107,7 @@ export default function App() {
     const payloadCompleto = {
       ...menuActualizado,
       proteinas_detalle: menuActualizado.proteinas_detalle,
-      platos_detalle: menuActualizado.platos_detalle,
+      platos_detalle: menuActualizado.platos_detalle
     };
 
     const payloadCompatible = {
@@ -1070,7 +1117,7 @@ export default function App() {
       precio: menuActualizado.precio,
       proteinas: menuActualizado.proteinas,
       acompanantes: menuActualizado.acompanantes,
-      activo: menuActualizado.activo,
+      activo: menuActualizado.activo
     };
 
     const payloadMinimo = {
@@ -1078,7 +1125,7 @@ export default function App() {
       precio: menuActualizado.precio,
       proteinas: menuActualizado.proteinas,
       acompanantes: menuActualizado.acompanantes,
-      activo: menuActualizado.activo,
+      activo: menuActualizado.activo
     };
 
     return [payloadCompleto, payloadCompatible, payloadMinimo];
@@ -1183,17 +1230,17 @@ export default function App() {
         .replace(/'/g, "&#039;");
 
     const platosHtml = resultadoPlatos.platos
-      .map((plato) => `
+      .map(
+        (plato) => `
           <div class="item">
             <div class="nombre">${escaparHtml(plato.nombre)}</div>
             <div class="precio">$ ${dinero(plato.precio).replace("$", "").trim()}</div>
           </div>
-        `)
+        `
+      )
       .join("");
 
-    const acompanantesHtml = acompanantes
-      .map((item) => `<li>${escaparHtml(item)}</li>`)
-      .join("");
+    const acompanantesHtml = acompanantes.map((item) => `<li>${escaparHtml(item)}</li>`).join("");
 
     const fechaTexto = menu.fecha || fechaISOColombia();
     const tituloTexto = menu.titulo || "Menú del día";
@@ -1308,16 +1355,17 @@ export default function App() {
     const menuActualizado = {
       fecha: menu.fecha || fechaISOColombia(),
       titulo: menu.titulo || "Almuerzo ejecutivo Rafiki",
-      descripcion: menu.descripcion || "Escoge tu plato del día y máximo 3 acompañantes. Incluye sopa y bebida.",
+      descripcion:
+        menu.descripcion || "Escoge tu plato del día y máximo 3 acompañantes. Incluye sopa y bebida.",
       precio: Number(resultadoPlatos.platos[0]?.precio) || 0,
       proteinas: resultadoPlatos.platos.map((item) => item.nombre),
       proteinas_detalle: resultadoPlatos.platos.map((item) => ({
         nombre: item.nombre,
-        precio: item.precio,
+        precio: item.precio
       })),
       platos_detalle: resultadoPlatos.platos,
       acompanantes,
-      activo: true,
+      activo: true
     };
 
     setGuardandoMenu(true);
@@ -1329,7 +1377,7 @@ export default function App() {
       const { payloadUsado } = await ejecutarGuardadoMenuConFallback({
         eraEdicion,
         id: menu.id,
-        payloads,
+        payloads
       });
 
       let idMenuGuardado = menu.id || null;
@@ -1352,11 +1400,7 @@ export default function App() {
 
       if (idMenuGuardado && !String(idMenuGuardado).startsWith("local-")) {
         await conTiempoMaximo(
-          supabase
-            .from("menu_diario")
-            .update({ activo: false })
-            .eq("activo", true)
-            .neq("id", idMenuGuardado),
+          supabase.from("menu_diario").update({ activo: false }).eq("activo", true).neq("id", idMenuGuardado),
           7000,
           "La desactivación de menús anteriores"
         ).catch(() => ({ error: null }));
@@ -1366,7 +1410,7 @@ export default function App() {
         ...menu,
         ...menuActualizado,
         ...payloadUsado,
-        id: idMenuGuardado,
+        id: idMenuGuardado
       });
 
       const nuevoHash = JSON.stringify({
@@ -1375,7 +1419,7 @@ export default function App() {
         titulo: nuevoMenu.titulo,
         descripcion: nuevoMenu.descripcion,
         platos_detalle: nuevoMenu.platos_detalle,
-        acompanantes: nuevoMenu.acompanantes,
+        acompanantes: nuevoMenu.acompanantes
       });
 
       menuHashRef.current = nuevoHash;
@@ -1388,9 +1432,7 @@ export default function App() {
       borrarBorradorEditorMenuDiario();
 
       mostrarMensajeMenu(
-        eraEdicion
-          ? "✅ Menú diario actualizado correctamente."
-          : "✅ Menú diario creado correctamente.",
+        eraEdicion ? "✅ Menú diario actualizado correctamente." : "✅ Menú diario creado correctamente.",
         "success",
         { persistente: true }
       );
@@ -1420,7 +1462,7 @@ export default function App() {
     eliminarPedidoAdministrador,
     editarPedidoAdministrador,
     editarPedidoMesaAdministrador,
-    editandoPedidoId,
+    editandoPedidoId
   } = usePedidos({
     itemsPedido,
     cliente,
@@ -1444,29 +1486,37 @@ export default function App() {
     setVista,
     setPedidoFinalizado,
     setPedidos,
-    pedidoCoincideConFiltroActual,
+    pedidoCoincideConFiltroActual
   });
 
+  const abrirEditorPedidoEnMesas = useCallback(
+    (pedido) => {
+      if (!puedeEditarPedido) {
+        mostrarMensaje("Tu rol no tiene permiso para editar pedidos.", "error");
+        return;
+      }
 
-  const abrirEditorPedidoEnMesas = useCallback((pedido) => {
-    if (!puedeEditarPedido) {
-      mostrarMensaje("Tu rol no tiene permiso para editar pedidos.", "error");
-      return;
-    }
+      setPedidoEditandoEnMesas(pedido || null);
+      navegar("/mesas", "mesas");
+      mostrarMensaje(
+        `Modo edición activado para el pedido #${pedido?.numero_pedido || pedido?.id || ""}.`,
+        "warning"
+      );
+    },
+    [mostrarMensaje, navegar, puedeEditarPedido]
+  );
 
-    setPedidoEditandoEnMesas(pedido || null);
-    navegar("/mesas", "mesas");
-    mostrarMensaje(`Modo edición activado para el pedido #${pedido?.numero_pedido || pedido?.id || ""}.`, "warning");
-  }, [mostrarMensaje, navegar, puedeEditarPedido]);
-
-  const cancelarEdicionPedidoEnMesas = useCallback((opciones = {}) => {
-    setPedidoEditandoEnMesas(null);
-    if (opciones?.volverAdmin) {
-      guardarAdminTabActiva("pedidos");
-      setAdminTab("pedidos");
-      navegar("/admin", "admin");
-    }
-  }, [navegar]);
+  const cancelarEdicionPedidoEnMesas = useCallback(
+    (opciones = {}) => {
+      setPedidoEditandoEnMesas(null);
+      if (opciones?.volverAdmin) {
+        guardarAdminTabActiva("pedidos");
+        setAdminTab("pedidos");
+        navegar("/admin", "admin");
+      }
+    },
+    [navegar]
+  );
 
   async function validarClaveAdmin(e) {
     e.preventDefault();
@@ -1489,7 +1539,7 @@ export default function App() {
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password,
+      password
     });
 
     if (error) {
@@ -1522,7 +1572,10 @@ export default function App() {
     setAdminEmail("");
     setAdminPassword("");
     setErrorClaveAdmin("");
-    navegar(rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : "/admin", "adminLogin");
+    navegar(
+      rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : "/admin",
+      "adminLogin"
+    );
   }
 
   function nuevoPedidoCliente() {
@@ -1589,10 +1642,7 @@ export default function App() {
                   >
                     Admin
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/mesas", "mesas")}
-                  >
+                  <button type="button" onClick={() => navegar("/mesas", "mesas")}>
                     Mesas
                   </button>
                   <button
@@ -1614,10 +1664,7 @@ export default function App() {
 
               {vista === "pedidos" && (
                 <div className="nav nav-wrap">
-                  <button
-                    type="button"
-                    onClick={() => navegar("/mesas", "mesas")}
-                  >
+                  <button type="button" onClick={() => navegar("/mesas", "mesas")}>
                     Mesas
                   </button>
                   <button
@@ -1644,71 +1691,82 @@ export default function App() {
 
           {!cargando && vista === "inicio" && <InicioRafiki navegar={navegar} />}
 
-
           {!cargando && vista === "inventario" && adminAutenticado && puedeVerInventario && (
-            <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
-              <InventarioAdmin />
-            </Suspense>
+            <ErrorBoundary
+              nombreModulo="Inventario"
+              onReset={() => setRecargaPedidos((actual) => actual + 1)}
+            >
+              <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
+                <InventarioAdmin />
+              </Suspense>
+            </ErrorBoundary>
           )}
 
           {!cargando && vista === "inventario" && adminAutenticado && !puedeVerInventario && (
             <section className="card card-pad">
               <h2>Acceso restringido</h2>
               <p className="muted">El módulo de inventario solo está disponible para el rol administrador.</p>
-              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>Volver a Admin</button>
+              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>
+                Volver a Admin
+              </button>
             </section>
           )}
 
           {!cargando && vista === "pedidos" && adminAutenticado && (
             <main className="admin-layout admin-layout-liviano">
-              <AdminPedidosSection
-                tituloPedidos={tituloPedidos}
-                setRecargaPedidos={setRecargaPedidos}
-                alertaPedidoNuevo={alertaPedidoNuevo}
-                setAlertaPedidoNuevo={setAlertaPedidoNuevo}
-                estadoRealtimePedidos={estadoRealtimePedidos}
-                realtimeAdminActivo={realtimeAdminActivo}
-                cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
-                filtroPedidos={filtroPedidos}
-                setFiltroPedidos={setFiltroPedidos}
-                fechaSeleccionada={fechaSeleccionada}
-                setFechaSeleccionada={setFechaSeleccionada}
-                fechaInicioRangoPedidos={fechaInicioRangoPedidos}
-                setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
-                fechaFinRangoPedidos={fechaFinRangoPedidos}
-                setFechaFinRangoPedidos={setFechaFinRangoPedidos}
-                hayBusquedaPedidos={hayBusquedaPedidos}
-                setBusqueda={setBusqueda}
-                busqueda={busqueda}
-                busquedaNumeroPedido={busquedaNumeroPedido}
-                setBusquedaNumeroPedido={setBusquedaNumeroPedido}
-                buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
-                limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
-                resultadoNumeroPedido={resultadoNumeroPedido}
-                cargandoNumeroPedido={cargandoNumeroPedido}
-                errorNumeroPedido={errorNumeroPedido}
-                cargandoPedidos={cargandoPedidos}
-                errorCargaPedidos={errorCargaPedidos}
-                pedidosFiltrados={pedidosFiltrados}
-                pedidos={pedidos}
-                pedidosBorrados={pedidosBorrados}
-                pedidosPendientes={pedidosPendientes}
-                puedeFinalizarPendientes={puedeFinalizarPendientes}
-                finalizarTodosPendientes={finalizarTodosPendientes}
-                finalizandoPendientes={finalizandoPendientes}
-                cambiarEstadoPedido={cambiarEstadoPedido}
-                guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-                puedeEliminarPedido={puedeEliminarPedido}
-                eliminarPedidoAdministrador={eliminarPedidoAdministrador}
-                eliminandoPedidoId={eliminandoPedidoId}
-                puedeEditarPedido={puedeEditarPedido}
-                editarPedidoAdministrador={editarPedidoAdministrador}
-                onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
-                editandoPedidoId={editandoPedidoId}
-                pedidosFinalizados={pedidosFinalizados}
-                consolidado={consolidado}
-                pedidosActivos={pedidosActivos}
-              />
+              <ErrorBoundary
+                nombreModulo="Pedidos Hoy"
+                onReset={() => setRecargaPedidos((actual) => actual + 1)}
+              >
+                <AdminPedidosSection
+                  tituloPedidos={tituloPedidos}
+                  setRecargaPedidos={setRecargaPedidos}
+                  alertaPedidoNuevo={alertaPedidoNuevo}
+                  setAlertaPedidoNuevo={setAlertaPedidoNuevo}
+                  estadoRealtimePedidos={estadoRealtimePedidos}
+                  realtimeAdminActivo={realtimeAdminActivo}
+                  cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
+                  filtroPedidos={filtroPedidos}
+                  setFiltroPedidos={setFiltroPedidos}
+                  fechaSeleccionada={fechaSeleccionada}
+                  setFechaSeleccionada={setFechaSeleccionada}
+                  fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+                  setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+                  fechaFinRangoPedidos={fechaFinRangoPedidos}
+                  setFechaFinRangoPedidos={setFechaFinRangoPedidos}
+                  hayBusquedaPedidos={hayBusquedaPedidos}
+                  setBusqueda={setBusqueda}
+                  busqueda={busqueda}
+                  busquedaNumeroPedido={busquedaNumeroPedido}
+                  setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+                  buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+                  limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+                  resultadoNumeroPedido={resultadoNumeroPedido}
+                  cargandoNumeroPedido={cargandoNumeroPedido}
+                  errorNumeroPedido={errorNumeroPedido}
+                  cargandoPedidos={cargandoPedidos}
+                  errorCargaPedidos={errorCargaPedidos}
+                  pedidosFiltrados={pedidosFiltrados}
+                  pedidos={pedidos}
+                  pedidosBorrados={pedidosBorrados}
+                  pedidosPendientes={pedidosPendientes}
+                  puedeFinalizarPendientes={puedeFinalizarPendientes}
+                  finalizarTodosPendientes={finalizarTodosPendientes}
+                  finalizandoPendientes={finalizandoPendientes}
+                  cambiarEstadoPedido={cambiarEstadoPedido}
+                  guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                  puedeEliminarPedido={puedeEliminarPedido}
+                  eliminarPedidoAdministrador={eliminarPedidoAdministrador}
+                  eliminandoPedidoId={eliminandoPedidoId}
+                  puedeEditarPedido={puedeEditarPedido}
+                  editarPedidoAdministrador={editarPedidoAdministrador}
+                  onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
+                  editandoPedidoId={editandoPedidoId}
+                  pedidosFinalizados={pedidosFinalizados}
+                  consolidado={consolidado}
+                  pedidosActivos={pedidosActivos}
+                />
+              </ErrorBoundary>
             </main>
           )}
 
@@ -1768,7 +1826,7 @@ export default function App() {
           )}
 
           {!cargando && vista === "mesas" && (
-            <>
+            <ErrorBoundary nombreModulo="Panel Mesas" onReset={() => setRecargaMenu((actual) => actual + 1)}>
               <Suspense fallback={<CargandoModulo texto="Cargando panel mesas..." />}>
                 <PanelMesasPOS
                   menu={menu}
@@ -1782,31 +1840,35 @@ export default function App() {
                   onCancelarEdicion={cancelarEdicionPedidoEnMesas}
                 />
               </Suspense>
-            </>
+            </ErrorBoundary>
           )}
 
           {!cargando && vista === "gerencia" && adminAutenticado && puedeVerRafa && (
-            <Suspense fallback={<CargandoModulo texto="Cargando gerencia..." />}>
-              <GerenciaPanel
-                adminUsuario={adminUsuario}
-                adminNombreRol={adminNombreRol}
-                puedeVerInformes={puedeVerRafa}
-                puedeVerCaja={puedeVerCaja}
-                puedeVerGastos={puedeVerGastos}
-                puedeVerInformeGastos={puedeVerInformeGastos}
-                puedeVerInventario={puedeVerInventario}
-                puedeVerCatalogo={puedeVerCatalogo}
-                cerrarPanelAdmin={cerrarPanelAdmin}
-                navegar={navegar}
-              />
-            </Suspense>
+            <ErrorBoundary nombreModulo="Gerencia" onReset={() => setRecargaPedidos((actual) => actual + 1)}>
+              <Suspense fallback={<CargandoModulo texto="Cargando gerencia..." />}>
+                <GerenciaPanel
+                  adminUsuario={adminUsuario}
+                  adminNombreRol={adminNombreRol}
+                  puedeVerInformes={puedeVerRafa}
+                  puedeVerCaja={puedeVerCaja}
+                  puedeVerGastos={puedeVerGastos}
+                  puedeVerInformeGastos={puedeVerInformeGastos}
+                  puedeVerInventario={puedeVerInventario}
+                  puedeVerCatalogo={puedeVerCatalogo}
+                  cerrarPanelAdmin={cerrarPanelAdmin}
+                  navegar={navegar}
+                />
+              </Suspense>
+            </ErrorBoundary>
           )}
 
           {!cargando && vista === "gerencia" && adminAutenticado && !puedeVerRafa && (
             <section className="card card-pad">
               <h2>Acceso restringido</h2>
               <p className="muted">Gerencia solo está disponible para el rol administrador.</p>
-              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>Volver a Admin</button>
+              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>
+                Volver a Admin
+              </button>
             </section>
           )}
 
@@ -1833,7 +1895,8 @@ export default function App() {
                   <div>
                     <strong>🔔 Hay cambios en pedidos</strong>
                     <p className="muted small">
-                      {mensajeCambiosPedidos || "Realtime detectó cambios, pero no interrumpió tu pestaña actual."}
+                      {mensajeCambiosPedidos ||
+                        "Realtime detectó cambios, pero no interrumpió tu pestaña actual."}
                     </p>
                   </div>
                   <div className="admin-actions-stack horizontal">
@@ -1848,108 +1911,134 @@ export default function App() {
               )}
 
               {adminTab === "pedidos" && (
-                <AdminPedidosSection
-                  tituloPedidos={tituloPedidos}
-                  setRecargaPedidos={setRecargaPedidos}
-                  alertaPedidoNuevo={alertaPedidoNuevo}
-                  setAlertaPedidoNuevo={setAlertaPedidoNuevo}
-                  estadoRealtimePedidos={estadoRealtimePedidos}
-                  realtimeAdminActivo={realtimeAdminActivo}
-                  cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
-                  filtroPedidos={filtroPedidos}
-                  setFiltroPedidos={setFiltroPedidos}
-                  fechaSeleccionada={fechaSeleccionada}
-                  setFechaSeleccionada={setFechaSeleccionada}
-                  fechaInicioRangoPedidos={fechaInicioRangoPedidos}
-                  setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
-                  fechaFinRangoPedidos={fechaFinRangoPedidos}
-                  setFechaFinRangoPedidos={setFechaFinRangoPedidos}
-                  hayBusquedaPedidos={hayBusquedaPedidos}
-                  setBusqueda={setBusqueda}
-                  busqueda={busqueda}
-                  busquedaNumeroPedido={busquedaNumeroPedido}
-                  setBusquedaNumeroPedido={setBusquedaNumeroPedido}
-                  buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
-                  limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
-                  resultadoNumeroPedido={resultadoNumeroPedido}
-                  cargandoNumeroPedido={cargandoNumeroPedido}
-                  errorNumeroPedido={errorNumeroPedido}
-                  cargandoPedidos={cargandoPedidos}
-                  errorCargaPedidos={errorCargaPedidos}
-                  pedidosFiltrados={pedidosFiltrados}
-                  pedidos={pedidos}
-                  pedidosBorrados={pedidosBorrados}
-                  pedidosPendientes={pedidosPendientes}
-                  puedeFinalizarPendientes={puedeFinalizarPendientes}
-                  finalizarTodosPendientes={finalizarTodosPendientes}
-                  finalizandoPendientes={finalizandoPendientes}
-                  cambiarEstadoPedido={cambiarEstadoPedido}
-                  guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-                  puedeEliminarPedido={puedeEliminarPedido}
-                  eliminarPedidoAdministrador={eliminarPedidoAdministrador}
-                  eliminandoPedidoId={eliminandoPedidoId}
-                  puedeEditarPedido={puedeEditarPedido}
-                  editarPedidoAdministrador={editarPedidoAdministrador}
-                  onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
-                  editandoPedidoId={editandoPedidoId}
-                  pedidosFinalizados={pedidosFinalizados}
-                  consolidado={consolidado}
-                  pedidosActivos={pedidosActivos}
-                />
+                <ErrorBoundary
+                  nombreModulo="Pedidos Hoy"
+                  onReset={() => setRecargaPedidos((actual) => actual + 1)}
+                >
+                  <AdminPedidosSection
+                    tituloPedidos={tituloPedidos}
+                    setRecargaPedidos={setRecargaPedidos}
+                    alertaPedidoNuevo={alertaPedidoNuevo}
+                    setAlertaPedidoNuevo={setAlertaPedidoNuevo}
+                    estadoRealtimePedidos={estadoRealtimePedidos}
+                    realtimeAdminActivo={realtimeAdminActivo}
+                    cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
+                    filtroPedidos={filtroPedidos}
+                    setFiltroPedidos={setFiltroPedidos}
+                    fechaSeleccionada={fechaSeleccionada}
+                    setFechaSeleccionada={setFechaSeleccionada}
+                    fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+                    setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+                    fechaFinRangoPedidos={fechaFinRangoPedidos}
+                    setFechaFinRangoPedidos={setFechaFinRangoPedidos}
+                    hayBusquedaPedidos={hayBusquedaPedidos}
+                    setBusqueda={setBusqueda}
+                    busqueda={busqueda}
+                    busquedaNumeroPedido={busquedaNumeroPedido}
+                    setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+                    buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+                    limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+                    resultadoNumeroPedido={resultadoNumeroPedido}
+                    cargandoNumeroPedido={cargandoNumeroPedido}
+                    errorNumeroPedido={errorNumeroPedido}
+                    cargandoPedidos={cargandoPedidos}
+                    errorCargaPedidos={errorCargaPedidos}
+                    pedidosFiltrados={pedidosFiltrados}
+                    pedidos={pedidos}
+                    pedidosBorrados={pedidosBorrados}
+                    pedidosPendientes={pedidosPendientes}
+                    puedeFinalizarPendientes={puedeFinalizarPendientes}
+                    finalizarTodosPendientes={finalizarTodosPendientes}
+                    finalizandoPendientes={finalizandoPendientes}
+                    cambiarEstadoPedido={cambiarEstadoPedido}
+                    guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                    puedeEliminarPedido={puedeEliminarPedido}
+                    eliminarPedidoAdministrador={eliminarPedidoAdministrador}
+                    eliminandoPedidoId={eliminandoPedidoId}
+                    puedeEditarPedido={puedeEditarPedido}
+                    editarPedidoAdministrador={editarPedidoAdministrador}
+                    onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
+                    editandoPedidoId={editandoPedidoId}
+                    pedidosFinalizados={pedidosFinalizados}
+                    consolidado={consolidado}
+                    pedidosActivos={pedidosActivos}
+                  />
+                </ErrorBoundary>
               )}
 
               {adminTab === "productos" && puedeVerProductos && (
-                <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
-                  <SolicitudProductos />
-                </Suspense>
+                <ErrorBoundary nombreModulo="Solicitud de insumos">
+                  <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
+                    <SolicitudProductos />
+                  </Suspense>
+                </ErrorBoundary>
               )}
 
               {adminTab === "generador" && puedeVerGenerador && (
-                <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
-                  <GeneradorMenu />
-                </Suspense>
+                <ErrorBoundary nombreModulo="Generador de menú">
+                  <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
+                    <GeneradorMenu />
+                  </Suspense>
+                </ErrorBoundary>
               )}
-
 
               {adminTab === "catalogo" && puedeVerCatalogo && (
-                <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
-                  <CatalogoRafa />
-                </Suspense>
+                <ErrorBoundary nombreModulo="Catálogo">
+                  <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
+                    <CatalogoRafa />
+                  </Suspense>
+                </ErrorBoundary>
               )}
               {adminTab === "inventario" && puedeVerInventario && (
-                <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
-                  <InventarioAdmin />
-                </Suspense>
+                <ErrorBoundary
+                  nombreModulo="Inventario"
+                  onReset={() => setRecargaPedidos((actual) => actual + 1)}
+                >
+                  <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
+                    <InventarioAdmin />
+                  </Suspense>
+                </ErrorBoundary>
               )}
 
               {adminTab === "caja" && puedeVerCaja && (
-                <Suspense fallback={<CargandoModulo texto="Cargando caja..." />}>
-                  <CajaAdmin />
-                </Suspense>
+                <ErrorBoundary nombreModulo="Caja" onReset={() => setRecargaPedidos((actual) => actual + 1)}>
+                  <Suspense fallback={<CargandoModulo texto="Cargando caja..." />}>
+                    <CajaAdmin />
+                  </Suspense>
+                </ErrorBoundary>
               )}
 
               {adminTab === "rafa" && puedeVerRafa && (
-                <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
-                  <PanelRafaPrivado />
-                </Suspense>
+                <ErrorBoundary
+                  nombreModulo="Informes Rafa"
+                  onReset={() => setRecargaPedidos((actual) => actual + 1)}
+                >
+                  <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
+                    <PanelRafaPrivado />
+                  </Suspense>
+                </ErrorBoundary>
               )}
 
               {adminTab === "menu" && puedeVerMenu && (
-                <MenuDiarioTab
-                  menu={menu}
-                  setMenu={setMenu}
-                  platosTexto={platosTexto}
-                  setPlatosTexto={setPlatosTexto}
-                  acompanantesTexto={acompanantesTexto}
-                  setAcompanantesTexto={setAcompanantesTexto}
-                  traerTextoDesdeGeneradorMenu={traerTextoDesdeGeneradorMenu}
-                  imprimirMenuDiarioTicket={imprimirMenuDiarioTicket}
-                  guardarMenu={guardarMenu}
-                  guardandoMenu={guardandoMenu}
-                  mensajeMenu={mensajeMenu}
-                />
+                <ErrorBoundary
+                  nombreModulo="Editor de menú diario"
+                  onReset={() => setRecargaMenu((actual) => actual + 1)}
+                >
+                  <MenuDiarioTab
+                    menu={menu}
+                    setMenu={setMenu}
+                    platosTexto={platosTexto}
+                    setPlatosTexto={setPlatosTexto}
+                    acompanantesTexto={acompanantesTexto}
+                    setAcompanantesTexto={setAcompanantesTexto}
+                    traerTextoDesdeGeneradorMenu={traerTextoDesdeGeneradorMenu}
+                    imprimirMenuDiarioTicket={imprimirMenuDiarioTicket}
+                    guardarMenu={guardarMenu}
+                    guardandoMenu={guardandoMenu}
+                    mensajeMenu={mensajeMenu}
+                  />
+                </ErrorBoundary>
               )}
-
             </main>
           )}
         </div>

@@ -572,6 +572,72 @@ export const appStyles = `
   font-weight: 700;
 }
 
+
+.module-error-card {
+  border-color: #fecaca;
+  background: linear-gradient(135deg, #ffffff, #fff7ed);
+}
+
+.module-error-card-compact {
+  padding: 18px;
+}
+
+.module-error-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.module-error-icon {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 24px;
+  flex: 0 0 auto;
+}
+
+.module-error-header h2 {
+  margin-bottom: 6px;
+  color: #9a3412;
+  font-family: 'Fraunces', serif;
+}
+
+.module-error-details {
+  margin: 16px 0;
+  border: 1px dashed #fed7aa;
+  background: #fff7ed;
+  border-radius: 18px;
+  padding: 12px 14px;
+}
+
+.module-error-details summary {
+  font-weight: 900;
+  color: #9a3412;
+  cursor: pointer;
+}
+
+.module-error-details pre {
+  margin: 12px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #fef2f2;
+  color: #7f1d1d;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.module-error-actions {
+  justify-content: flex-start;
+}
+
 @media (max-width: 900px) {
           .topbar, .layout, .grid-2, .pedido-top, .pedido-actions, .bottom-summary, .admin-top-row, .admin-actions-stack, .contador-sin-revisar, .alerta-pedido-nuevo, .admin-stats, .rafiki-modal-actions { grid-template-columns: 1fr; display: grid; }
           .topbar { display: block; }
