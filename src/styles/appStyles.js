@@ -1530,6 +1530,38 @@ export const appStyles = `
 }
 
 
+/* Fase 31E - Pedidos Hoy más limpio */
+.pedidos-hoy-tabs { margin-top: 8px; margin-bottom: 18px; }
+.pedidos-filtros-card { margin-bottom: 10px; }
+.pedidos-filtros-resumen-colapsado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 1px dashed #fdba74;
+  border-radius: 16px;
+  background: #fffaf0;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 900;
+}
+.pedidos-filtros-resumen-colapsado .mini-btn { width: auto; margin-bottom: 0; }
+.td-codigo .rafiki-badge { margin-top: 5px; }
+.td-acciones-compactas { min-width: 124px; position: relative; }
+.td-acciones-compactas .accion-principal-pedido { margin-bottom: 6px; }
+.td-acciones-compactas .rafiki-action-menu,
+.td-acciones-compactas .rafiki-action-menu-trigger { width: 100%; }
+.td-acciones-compactas .rafiki-action-menu-trigger { margin-bottom: 0; }
+.td-acciones-compactas .rafiki-action-menu-list { min-width: 196px; }
+
+@media (max-width: 640px) {
+  .pedidos-filtros-resumen-colapsado { align-items: stretch; flex-direction: column; }
+  .pedidos-filtros-resumen-colapsado .mini-btn { width: 100%; }
+}
+
+
 /* Fase 31A - Componentes visuales reutilizables Rafiki */
 .rafiki-tabs {
   display: flex;

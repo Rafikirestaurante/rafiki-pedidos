@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import RafikiActionMenu from "../../../shared/components/RafikiActionMenu";
+import RafikiBadge from "../../../shared/components/RafikiBadge";
 import {
   calcularTotalItem,
   crearLinkWhatsApp,
@@ -267,6 +269,21 @@ function esPagoCreditoPedido(pedido) {
   return pago === "credito" || pago === "crédito";
 }
 
+function obtenerTipoBadgeEstadoPedido(estado) {
+  const valor = String(estado || "").toLowerCase();
+  if (valor === "finalizado") return "success";
+  if (valor === "borrado" || valor === "anulado" || valor === "cancelado") return "danger";
+  return "warning";
+}
+
+function obtenerTipoBadgePagoPedido(pedido) {
+  const pago = String(pedido?.tipo_pago || "").trim().toLowerCase().replace("é", "e");
+  if (!pago) return "neutral";
+  if (pago === "credito" || pago === "pendiente") return "warning";
+  if (["efectivo", "transferencia", "datafono", "nequi", "bancolombia"].includes(pago)) return "success";
+  return "info";
+}
+
 function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const tablaRef = useRef(null);
@@ -341,6 +358,7 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
               <tr key={pedido.id} className={estadoNormalizado === "Finalizado" ? "fila-finalizada" : estadoNormalizado === "Borrado" ? "fila-borrada" : ""}>
                 <td className="td-codigo">
                   <strong>#{obtenerCodigoPedido(pedido)}</strong>
+                  <RafikiBadge estado={estadoNormalizado} tipo={obtenerTipoBadgeEstadoPedido(estadoNormalizado)} />
                 </td>
                 <td>{formatearFechaHora(pedido.created_at)}</td>
                 <td>
@@ -351,18 +369,16 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                 <td className="td-pedido">{resumirItemsPedidoCompacto(pedido)}</td>
                 <td className="td-obs">{pedido.observaciones || "—"}</td>
                 <td>
-                  <span className={esPagoCreditoPedido(pedido) ? "pago-badge pago-credito" : "pago-badge"}>
-                    {pedido.tipo_pago || "—"}
-                  </span>
+                  <RafikiBadge estado={pedido.tipo_pago || "Sin pago"} tipo={obtenerTipoBadgePagoPedido(pedido)} />
                 </td>
                 <td className="td-total">{dinero(pedido.total)}</td>
-                <td className="td-acciones">
+                <td className="td-acciones td-acciones-compactas">
                   {estadoNormalizado === "Borrado" ? (
                     <span className="mini-estado-borrado">Borrado</span>
                   ) : estadoNormalizado !== "Finalizado" ? (
                     <button
                       type="button"
-                      className="mini-btn green"
+                      className="mini-btn green accion-principal-pedido"
                       onClick={() => onCambiarEstado?.(pedido.id, "Finalizado")}
                       disabled={guardandoEstadoPedidoId === pedido.id}
                     >
@@ -371,45 +387,59 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                   ) : (
                     <span className="mini-estado-finalizado">Entregado</span>
                   )}
-                  {onEditarPedido && estadoNormalizado !== "Borrado" && (
-                    <button
-                      type="button"
-                      className="mini-btn"
-                      onClick={() => onEditarPedido?.(pedido)}
-                      disabled={editandoPedidoId === pedido.id}
-                    >
-                      {editandoPedidoId === pedido.id ? "Editando..." : "Editar"}
-                    </button>
-                  )}
-                  <button type="button" className="mini-btn print" onClick={() => imprimirTicketPedido(pedido)}>
-                    Imprimir
-                  </button>
-                  {onCorregirClienteCredito && estadoNormalizado !== "Borrado" && (
-                    <button
-                      type="button"
-                      className={esPagoCreditoPedido(pedido) ? "mini-btn warning active" : "mini-btn warning"}
-                      onClick={() => onCorregirClienteCredito?.(pedido)}
-                      disabled={corrigiendoClientePedidoId === pedido.id}
-                      title="Clasificar este pedido como crédito y asociarlo a un cliente fijo"
-                    >
-                      {corrigiendoClientePedidoId === pedido.id ? "Guardando..." : "Crédito"}
-                    </button>
-                  )}
-                  {telefonoCliente && (
-                    <a href={linkCliente} target="_blank" rel="noreferrer" className="mini-btn green">
-                      WhatsApp
-                    </a>
-                  )}
-                  {estadoNormalizado !== "Borrado" && onEliminarPedido && (
-                    <button
-                      type="button"
-                      className="mini-btn danger"
-                      onClick={() => onEliminarPedido?.(pedido.id)}
-                      disabled={eliminandoPedidoId === pedido.id}
-                    >
-                      {eliminandoPedidoId === pedido.id ? "Borrando..." : "Borrar"}
-                    </button>
-                  )}
+                  <RafikiActionMenu
+                    label="Opciones"
+                    items={[
+                      onEditarPedido && estadoNormalizado !== "Borrado"
+                        ? {
+                            id: "editar",
+                            label: editandoPedidoId === pedido.id ? "Editando..." : "Editar pedido",
+                            icon: "✏️",
+                            disabled: editandoPedidoId === pedido.id,
+                            onClick: () => onEditarPedido?.(pedido),
+                          }
+                        : null,
+                      {
+                        id: "imprimir",
+                        label: "Imprimir ticket",
+                        icon: "🖨️",
+                        onClick: () => imprimirTicketPedido(pedido),
+                      },
+                      onCorregirClienteCredito && estadoNormalizado !== "Borrado"
+                        ? {
+                            id: "credito",
+                            label: corrigiendoClientePedidoId === pedido.id
+                              ? "Guardando crédito..."
+                              : esPagoCreditoPedido(pedido)
+                                ? "Gestionar crédito"
+                                : "Pasar a crédito",
+                            icon: "💳",
+                            variant: esPagoCreditoPedido(pedido) ? "info" : "success",
+                            disabled: corrigiendoClientePedidoId === pedido.id,
+                            onClick: () => onCorregirClienteCredito?.(pedido),
+                          }
+                        : null,
+                      telefonoCliente
+                        ? {
+                            id: "whatsapp",
+                            label: "Avisar por WhatsApp",
+                            icon: "📲",
+                            variant: "success",
+                            onClick: () => window.open(linkCliente, "_blank", "noopener,noreferrer"),
+                          }
+                        : null,
+                      estadoNormalizado !== "Borrado" && onEliminarPedido
+                        ? {
+                            id: "borrar",
+                            label: eliminandoPedidoId === pedido.id ? "Borrando..." : "Borrar pedido",
+                            icon: "🗑️",
+                            variant: "danger",
+                            disabled: eliminandoPedidoId === pedido.id,
+                            onClick: () => onEliminarPedido?.(pedido.id),
+                          }
+                        : null,
+                    ]}
+                  />
                 </td>
               </tr>
             );

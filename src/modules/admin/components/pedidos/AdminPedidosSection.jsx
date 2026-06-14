@@ -7,6 +7,8 @@ import { MESAS_DISPONIBLES } from "../../../../shared/utils/mesas";
 import { PedidoCocina, TablaPedidosCompacta, resumirItemsPedidoCompacto } from "../../../pedidos/components/PedidosAdmin";
 import { corregirClienteCreditoDePedido } from "../../../../services/carteraService";
 import { listarClientesCreditoActivos } from "../../../../services/clientesCreditoService";
+import RafikiEmptyState from "../../../../shared/components/RafikiEmptyState";
+import RafikiTabs from "../../../../shared/components/RafikiTabs";
 
 
 function normalizarMesaPedido(pedido) {
@@ -412,12 +414,16 @@ function AdminPedidosSectionBase({
   const [guardandoCorreccionClienteId, setGuardandoCorreccionClienteId] = useState(null);
   const [mensajeCorreccionCliente, setMensajeCorreccionCliente] = useState("");
   const [ordenPedidosHoy, setOrdenPedidosHoy] = useState("ultimos");
+  const [vistaPedidosHoy, setVistaPedidosHoy] = useState("pedidos");
+  const [mostrarFiltrosPedidos, setMostrarFiltrosPedidos] = useState(true);
   const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
   const hayMasPedidos = Boolean(paginacionPedidos?.hayMas);
   const cargandoMasPedidos = Boolean(paginacionPedidos?.cargandoMas);
   const totalCargadosServidor = Number.isFinite(paginacionPedidos?.cargados)
     ? paginacionPedidos.cargados
     : pedidos.length;
+  const cantidadPedidosActivos = Array.isArray(pedidosActivos) ? pedidosActivos.length : 0;
+  const cantidadPedidosBorrados = Array.isArray(pedidosBorrados) ? pedidosBorrados.length : 0;
 
   const pedidosUnificados = useMemo(() => {
     const lista = Array.isArray(pedidosActivos) ? pedidosActivos.slice() : [];
@@ -427,6 +433,12 @@ function AdminPedidosSectionBase({
       return ordenPedidosHoy === "primeros" ? fechaA - fechaB : fechaB - fechaA;
     });
   }, [pedidosActivos, ordenPedidosHoy]);
+
+  const tabsPedidosHoy = useMemo(() => ([
+    { id: "pedidos", label: "Pedidos", icon: "📋", count: pedidosUnificados.length },
+    { id: "mesas", label: "Mesas", icon: "🍽️", count: cantidadPedidosActivos },
+    { id: "borrados", label: "Borrados", icon: "🗑️", count: cantidadPedidosBorrados },
+  ]), [cantidadPedidosActivos, cantidadPedidosBorrados, pedidosUnificados.length]);
 
   const abrirEditorPedido = useCallback((pedido) => {
     if (onEditarPedidoEnMesas) {
@@ -531,6 +543,14 @@ function AdminPedidosSectionBase({
           <button
             type="button"
             className="button light admin-action-button"
+            onClick={() => setMostrarFiltrosPedidos((valor) => !valor)}
+          >
+            {mostrarFiltrosPedidos ? "Ocultar filtros" : "Mostrar filtros"}
+          </button>
+
+          <button
+            type="button"
+            className="button light admin-action-button"
             onClick={refrescarPedidos}
           >
             🔄 Actualizar datos
@@ -559,24 +579,33 @@ function AdminPedidosSectionBase({
         </div>
       )}
 
-      <AdminPedidosFiltros
-        filtroPedidos={filtroPedidos}
-        setFiltroPedidos={setFiltroPedidos}
-        fechaSeleccionada={fechaSeleccionada}
-        setFechaSeleccionada={setFechaSeleccionada}
-        fechaInicioRangoPedidos={fechaInicioRangoPedidos}
-        setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
-        fechaFinRangoPedidos={fechaFinRangoPedidos}
-        setFechaFinRangoPedidos={setFechaFinRangoPedidos}
-        hayBusquedaPedidos={hayBusquedaPedidos}
-        setBusqueda={setBusqueda}
-        busqueda={busqueda}
-        busquedaNumeroPedido={busquedaNumeroPedido}
-        setBusquedaNumeroPedido={setBusquedaNumeroPedido}
-        buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
-        limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
-        cargandoNumeroPedido={cargandoNumeroPedido}
-      />
+      {mostrarFiltrosPedidos ? (
+        <div className="pedidos-filtros-card">
+          <AdminPedidosFiltros
+            filtroPedidos={filtroPedidos}
+            setFiltroPedidos={setFiltroPedidos}
+            fechaSeleccionada={fechaSeleccionada}
+            setFechaSeleccionada={setFechaSeleccionada}
+            fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+            setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+            fechaFinRangoPedidos={fechaFinRangoPedidos}
+            setFechaFinRangoPedidos={setFechaFinRangoPedidos}
+            hayBusquedaPedidos={hayBusquedaPedidos}
+            setBusqueda={setBusqueda}
+            busqueda={busqueda}
+            busquedaNumeroPedido={busquedaNumeroPedido}
+            setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+            buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+            limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+            cargandoNumeroPedido={cargandoNumeroPedido}
+          />
+        </div>
+      ) : (
+        <div className="pedidos-filtros-resumen-colapsado">
+          <span>Filtros ocultos para limpiar la pantalla.</span>
+          <button type="button" className="mini-btn" onClick={() => setMostrarFiltrosPedidos(true)}>Mostrar filtros</button>
+        </div>
+      )}
 
       {(resultadoNumeroPedido.length > 0 || errorNumeroPedido) && (
         <div className="pedido-numero-global-resultados">
@@ -625,15 +654,26 @@ function AdminPedidosSectionBase({
         ) : null}
       </div>
 
-      <ResumenMesasHoy
-        pedidosActivos={pedidosActivos}
-        cambiarEstadoPedido={cambiarEstadoPedido}
-        guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-        puedeEditarPedido={puedeEditarPedido}
-        onEditarPedido={abrirEditorPedido}
-        editandoPedidoId={editandoPedidoId}
+      <RafikiTabs
+        tabs={tabsPedidosHoy}
+        activeTab={vistaPedidosHoy}
+        onChange={setVistaPedidosHoy}
+        className="pedidos-hoy-tabs"
+        ariaLabel="Secciones de Pedidos Hoy"
       />
 
+      {vistaPedidosHoy === "mesas" ? (
+        <ResumenMesasHoy
+          pedidosActivos={pedidosActivos}
+          cambiarEstadoPedido={cambiarEstadoPedido}
+          guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+          puedeEditarPedido={puedeEditarPedido}
+          onEditarPedido={abrirEditorPedido}
+          editandoPedidoId={editandoPedidoId}
+        />
+      ) : null}
+
+      {vistaPedidosHoy === "pedidos" ? (
       <div className="pedido-seccion">
         <div className="section-heading section-heading-pedidos-unificados">
           <h3>📋 Pedidos</h3>
@@ -669,7 +709,11 @@ function AdminPedidosSectionBase({
         </div>
 
         {pedidosUnificados.length === 0 ? (
-          <div className="box soft">No hay pedidos registrados para esta vista.</div>
+          <RafikiEmptyState
+            icon="📋"
+            title="No hay pedidos en esta vista"
+            description="Cuando entren pedidos activos o finalizados, aparecerán aquí con sus estados, pagos y acciones."
+          />
         ) : (
           <TablaPedidosCompacta
             pedidos={pedidosUnificados}
@@ -684,8 +728,9 @@ function AdminPedidosSectionBase({
           />
         )}
       </div>
+      ) : null}
 
-      {hayMasPedidos && (
+      {vistaPedidosHoy === "pedidos" && hayMasPedidos && (
         <div className="pedidos-cargar-mas-box">
           <div>
             <strong>Carga optimizada activa</strong>
@@ -705,19 +750,21 @@ function AdminPedidosSectionBase({
         </div>
       )}
 
-      <AdminPedidoGrupo
-        icono="🗑️"
-        titulo="Pedidos Borrados"
-        pedidos={pedidosBorrados}
-        mensajeVacio="No hay pedidos borrados."
-        danger
-        cambiarEstadoPedido={cambiarEstadoPedido}
-        guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-        eliminandoPedidoId={eliminandoPedidoId}
-        puedeEditarPedido={puedeEditarPedido}
-        onEditarPedido={abrirEditorPedido}
-        editandoPedidoId={editandoPedidoId}
-      />
+      {vistaPedidosHoy === "borrados" ? (
+        <AdminPedidoGrupo
+          icono="🗑️"
+          titulo="Pedidos Borrados"
+          pedidos={pedidosBorrados}
+          mensajeVacio="No hay pedidos borrados."
+          danger
+          cambiarEstadoPedido={cambiarEstadoPedido}
+          guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+          eliminandoPedidoId={eliminandoPedidoId}
+          puedeEditarPedido={puedeEditarPedido}
+          onEditarPedido={abrirEditorPedido}
+          editandoPedidoId={editandoPedidoId}
+        />
+      ) : null}
 
       {pedidoEditando && (
         <EditarPedidoModal
