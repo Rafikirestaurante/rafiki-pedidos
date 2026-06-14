@@ -78,6 +78,21 @@ const ADMIN_TABS_VALIDAS = new Set([
   "rafa"
 ]);
 
+const PEDIDOS_HOY_LIMITE_INICIAL = 80;
+const PEDIDOS_HOY_LIMITE_CARGAR_MAS = 80;
+
+function crearEstadoPaginacionPedidos() {
+  return {
+    total: null,
+    cargados: 0,
+    hayMas: false,
+    cargandoMas: false,
+    limite: PEDIDOS_HOY_LIMITE_INICIAL,
+    cargaLimitada: true,
+    advertencia: ""
+  };
+}
+
 function leerAdminTabGuardada() {
   try {
     const tab = window.localStorage.getItem(ADMIN_TAB_STORAGE_KEY);
@@ -176,6 +191,7 @@ export default function App() {
   const [cargandoMenu, setCargandoMenu] = useState(() => !menuCacheDisponibleRef.current);
   const [cargandoPedidos, setCargandoPedidos] = useState(true);
   const [errorCargaPedidos, setErrorCargaPedidos] = useState("");
+  const [paginacionPedidos, setPaginacionPedidos] = useState(() => crearEstadoPaginacionPedidos());
   const [guardandoMenu, setGuardandoMenu] = useState(false);
   const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [realtimeAdminActivo, setRealtimeAdminActivo] = useState(() => {
@@ -198,6 +214,7 @@ export default function App() {
   const alertaPedidoTimer = useRef(null);
   const sincronizandoOfflineRef = useRef(false);
   const pedidosCargaHashRef = useRef("");
+  const paginacionPedidosRef = useRef(crearEstadoPaginacionPedidos());
   const verificacionAdminRef = useRef({ enCurso: false, ultimoChequeo: 0 });
 
   const adminNombreRol = nombreRol(adminRol);
@@ -729,6 +746,10 @@ export default function App() {
   const hayBusquedaPedidos = busqueda.trim().length > 0;
 
   useEffect(() => {
+    paginacionPedidosRef.current = paginacionPedidos;
+  }, [paginacionPedidos]);
+
+  useEffect(() => {
     adminTabRef.current = adminTab;
   }, [adminTab]);
 
@@ -923,9 +944,15 @@ export default function App() {
 
     async function cargarPedidosSeguro() {
       setCargandoPedidos(true);
+      setPaginacionPedidos((actual) => ({
+        ...actual,
+        cargandoMas: false,
+        limite: PEDIDOS_HOY_LIMITE_INICIAL
+      }));
 
       if (!supabaseConfigOk) {
         setCargandoPedidos(false);
+        setPaginacionPedidos(crearEstadoPaginacionPedidos());
         mostrarMensaje(supabaseConfigMensaje, "error");
         return;
       }
@@ -936,27 +963,56 @@ export default function App() {
             ? obtenerRangoPedidos("rango", fechaInicioRangoPedidos, fechaFinRangoPedidos)
             : obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
 
-        const { data: pedidosData, error: pedidosError } = await conTiempoMaximo(
-          cargarPedidosRango(rango.inicio, rango.fin, { ascendente: true }),
+        const resultadoPedidos = await conTiempoMaximo(
+          cargarPedidosRango(rango.inicio, rango.fin, {
+            ascendente: false,
+            limite: PEDIDOS_HOY_LIMITE_INICIAL,
+            offset: 0,
+            contar: true
+          }),
           12000,
-          "La carga de pedidos"
+          "La carga inicial de pedidos"
         );
 
         if (cancelado) return;
 
+        const {
+          data: pedidosData,
+          error: pedidosError,
+          count,
+          hayMas,
+          limite,
+          advertencia
+        } = resultadoPedidos || {};
+
         if (pedidosError) {
           const detalle = `Error cargando pedidos: ${pedidosError.message}`;
           setErrorCargaPedidos(detalle);
+          setPaginacionPedidos(crearEstadoPaginacionPedidos());
           mostrarMensaje(detalle, "error");
           return;
         }
 
         const pedidosNuevos = pedidosData || [];
+        const totalPedidos = Number.isFinite(count) ? count : null;
         const nuevoHashPedidos = JSON.stringify(
           pedidosNuevos.map((pedido) => [pedido.id, pedido.estado, pedido.total, pedido.created_at])
         );
 
         setErrorCargaPedidos("");
+        setPaginacionPedidos({
+          total: totalPedidos,
+          cargados: pedidosNuevos.length,
+          hayMas: Boolean(hayMas),
+          cargandoMas: false,
+          limite: limite || PEDIDOS_HOY_LIMITE_INICIAL,
+          cargaLimitada: true,
+          advertencia:
+            advertencia ||
+            (hayMas
+              ? `Carga inicial optimizada: se muestran ${pedidosNuevos.length} de ${totalPedidos || "más"} pedidos. Usa Cargar más resultados para consultar más historial.`
+              : "")
+        });
         setPedidos((actual) => {
           if (pedidosCargaHashRef.current === nuevoHashPedidos) return actual;
           pedidosCargaHashRef.current = nuevoHashPedidos;
@@ -967,6 +1023,7 @@ export default function App() {
           const detalle =
             `No se pudieron cargar los pedidos. Se conserva la última información visible. ${error.message || ""}`.trim();
           setErrorCargaPedidos(detalle);
+          setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: false }));
           mostrarMensaje(detalle, "error");
         }
       } finally {
@@ -991,6 +1048,98 @@ export default function App() {
     fechaFinRangoPedidos,
     recargaPedidos,
     mostrarMensaje
+  ]);
+
+  const cargarMasPedidos = useCallback(async () => {
+    const estadoPaginacion = paginacionPedidosRef.current;
+    const debeCargarPedidos =
+      adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
+
+    if (!debeCargarPedidos || cargandoPedidos || estadoPaginacion.cargandoMas || !estadoPaginacion.hayMas) {
+      return;
+    }
+
+    if (!supabaseConfigOk) {
+      mostrarMensaje(supabaseConfigMensaje, "error");
+      return;
+    }
+
+    setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: true }));
+
+    try {
+      const rango =
+        filtroPedidos === "rango"
+          ? obtenerRangoPedidos("rango", fechaInicioRangoPedidos, fechaFinRangoPedidos)
+          : obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
+
+      const offset = Math.max(0, Number(estadoPaginacion.cargados || 0));
+      const resultadoPedidos = await conTiempoMaximo(
+        cargarPedidosRango(rango.inicio, rango.fin, {
+          ascendente: false,
+          limite: PEDIDOS_HOY_LIMITE_CARGAR_MAS,
+          offset,
+          contar: true
+        }),
+        12000,
+        "La carga de más pedidos"
+      );
+
+      const { data: pedidosData, error: pedidosError, count, hayMas, limite } = resultadoPedidos || {};
+
+      if (pedidosError) {
+        const detalle = `Error cargando más pedidos: ${pedidosError.message}`;
+        setErrorCargaPedidos(detalle);
+        mostrarMensaje(detalle, "error");
+        setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: false }));
+        return;
+      }
+
+      const lote = Array.isArray(pedidosData) ? pedidosData : [];
+
+      setPedidos((actual) => {
+        const ids = new Set(actual.map((pedido) => pedido.id));
+        const combinados = [...actual];
+
+        lote.forEach((pedido) => {
+          if (!pedido?.id || ids.has(pedido.id)) return;
+          ids.add(pedido.id);
+          combinados.push(pedido);
+        });
+
+        return combinados;
+      });
+
+      const totalPedidos = Number.isFinite(count) ? count : estadoPaginacion.total;
+      const cargadosServidor = offset + lote.length;
+
+      setPaginacionPedidos({
+        total: totalPedidos,
+        cargados: cargadosServidor,
+        hayMas: Boolean(hayMas),
+        cargandoMas: false,
+        limite: limite || PEDIDOS_HOY_LIMITE_CARGAR_MAS,
+        cargaLimitada: true,
+        advertencia: hayMas
+          ? `Carga optimizada activa: se han solicitado ${cargadosServidor} pedido${cargadosServidor === 1 ? "" : "s"}. Puedes cargar más si lo necesitas.`
+          : `Carga completa del rango visible: ${cargadosServidor} pedido${cargadosServidor === 1 ? "" : "s"}.`
+      });
+      setErrorCargaPedidos("");
+    } catch (error) {
+      const detalle = `No se pudieron cargar más pedidos. ${error.message || ""}`.trim();
+      setErrorCargaPedidos(detalle);
+      setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: false }));
+      mostrarMensaje(detalle, "error");
+    }
+  }, [
+    adminAutenticado,
+    adminTab,
+    cargandoPedidos,
+    fechaFinRangoPedidos,
+    fechaInicioRangoPedidos,
+    fechaSeleccionada,
+    filtroPedidos,
+    mostrarMensaje,
+    vista
   ]);
 
   function actualizarItem(id, cambios) {
@@ -1746,6 +1895,8 @@ export default function App() {
                   errorNumeroPedido={errorNumeroPedido}
                   cargandoPedidos={cargandoPedidos}
                   errorCargaPedidos={errorCargaPedidos}
+                  paginacionPedidos={paginacionPedidos}
+                  cargarMasPedidos={cargarMasPedidos}
                   pedidosFiltrados={pedidosFiltrados}
                   pedidos={pedidos}
                   pedidosBorrados={pedidosBorrados}
@@ -1943,6 +2094,8 @@ export default function App() {
                     errorNumeroPedido={errorNumeroPedido}
                     cargandoPedidos={cargandoPedidos}
                     errorCargaPedidos={errorCargaPedidos}
+                    paginacionPedidos={paginacionPedidos}
+                    cargarMasPedidos={cargarMasPedidos}
                     pedidosFiltrados={pedidosFiltrados}
                     pedidos={pedidos}
                     pedidosBorrados={pedidosBorrados}

@@ -385,6 +385,8 @@ function AdminPedidosSectionBase({
   errorNumeroPedido = "",
   cargandoPedidos = false,
   errorCargaPedidos = "",
+  paginacionPedidos = {},
+  cargarMasPedidos,
   pedidosFiltrados,
   pedidos,
   pedidosBorrados,
@@ -410,6 +412,12 @@ function AdminPedidosSectionBase({
   const [guardandoCorreccionClienteId, setGuardandoCorreccionClienteId] = useState(null);
   const [mensajeCorreccionCliente, setMensajeCorreccionCliente] = useState("");
   const [ordenPedidosHoy, setOrdenPedidosHoy] = useState("ultimos");
+  const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
+  const hayMasPedidos = Boolean(paginacionPedidos?.hayMas);
+  const cargandoMasPedidos = Boolean(paginacionPedidos?.cargandoMas);
+  const totalCargadosServidor = Number.isFinite(paginacionPedidos?.cargados)
+    ? paginacionPedidos.cargados
+    : pedidos.length;
 
   const pedidosUnificados = useMemo(() => {
     const lista = Array.isArray(pedidosActivos) ? pedidosActivos.slice() : [];
@@ -606,10 +614,16 @@ function AdminPedidosSectionBase({
         </div>
       )}
 
-      <p className="muted small">
-        Mostrando {pedidosFiltrados.length} de {pedidos.length} pedidos cargados.
-        {pedidosBorrados.length > 0 ? ` ${pedidosBorrados.length} en Pedidos Borrados no suman en ventas.` : ""}
-      </p>
+      <div className="pedidos-carga-resumen" role="status">
+        <p className="muted small">
+          Mostrando {pedidosFiltrados.length} filtrado{pedidosFiltrados.length === 1 ? "" : "s"} de {pedidos.length} pedido{pedidos.length === 1 ? "" : "s"} cargado{pedidos.length === 1 ? "" : "s"}
+          {totalPedidosServidor !== null ? ` · total del rango: ${totalPedidosServidor}` : ""}.
+          {pedidosBorrados.length > 0 ? ` ${pedidosBorrados.length} en Pedidos Borrados no suman en ventas.` : ""}
+        </p>
+        {paginacionPedidos?.advertencia ? (
+          <p className="muted small pedidos-carga-aviso">{paginacionPedidos.advertencia}</p>
+        ) : null}
+      </div>
 
       <ResumenMesasHoy
         pedidosActivos={pedidosActivos}
@@ -670,6 +684,26 @@ function AdminPedidosSectionBase({
           />
         )}
       </div>
+
+      {hayMasPedidos && (
+        <div className="pedidos-cargar-mas-box">
+          <div>
+            <strong>Carga optimizada activa</strong>
+            <p className="muted small">
+              Se cargaron {totalCargadosServidor} de {totalPedidosServidor || "más"} pedido{totalCargadosServidor === 1 ? "" : "s"}.
+              Puedes traer más resultados sin bloquear el celular.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="button light"
+            onClick={cargarMasPedidos}
+            disabled={cargandoMasPedidos || cargandoPedidos}
+          >
+            {cargandoMasPedidos ? "Cargando más..." : "Cargar más resultados"}
+          </button>
+        </div>
+      )}
 
       <AdminPedidoGrupo
         icono="🗑️"

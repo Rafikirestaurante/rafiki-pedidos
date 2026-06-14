@@ -66,9 +66,57 @@ export async function actualizarPedido(id, payload) {
 
 const TAMANO_PAGINA_PEDIDOS_RANGO = 1000;
 const MAXIMO_PAGINAS_PEDIDOS_RANGO = 250;
+const LIMITE_MAXIMO_PEDIDOS_PAGINA = 200;
+
+function normalizarEnteroPositivo(valor, respaldo = 0) {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero) || numero < 0) return respaldo;
+  return Math.floor(numero);
+}
 
 export async function cargarPedidosRango(inicio, fin, opciones = {}) {
-  const { ascendente = true, paginar = true } = opciones;
+  const {
+    ascendente = true,
+    paginar = true,
+    limite = null,
+    offset = 0,
+    contar = true
+  } = opciones;
+
+  const limitePagina = Number(limite);
+  const usarCargaLimitada = Number.isFinite(limitePagina) && limitePagina > 0;
+
+  if (usarCargaLimitada) {
+    const desde = normalizarEnteroPositivo(offset, 0);
+    const limiteSeguro = Math.min(Math.floor(limitePagina), LIMITE_MAXIMO_PEDIDOS_PAGINA);
+    const hasta = desde + limiteSeguro - 1;
+
+    const { data, error, count } = await supabase
+      .from("pedidos")
+      .select(SELECT_PEDIDOS_ADMIN, contar ? { count: "exact" } : undefined)
+      .gte("created_at", inicio)
+      .lt("created_at", fin)
+      .order("created_at", { ascending: ascendente })
+      .range(desde, hasta);
+
+    const lote = Array.isArray(data) ? data : [];
+    const totalEsperado = Number.isFinite(count) ? count : null;
+    const cargadosHastaAhora = desde + lote.length;
+    const hayMas = totalEsperado === null ? lote.length === limiteSeguro : cargadosHastaAhora < totalEsperado;
+
+    return {
+      data: lote,
+      error,
+      count: totalEsperado,
+      desde,
+      hasta,
+      limite: limiteSeguro,
+      cargados: cargadosHastaAhora,
+      hayMas,
+      completo: !hayMas,
+      cargaLimitada: true
+    };
+  }
 
   if (!paginar) {
     return supabase

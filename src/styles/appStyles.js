@@ -1357,4 +1357,59 @@ export const appStyles = `
   }
 }
 
+
+.pedidos-carga-resumen {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 18px;
+  background: #fffaf0;
+}
+
+.pedidos-carga-resumen p {
+  margin: 0;
+}
+
+.pedidos-carga-aviso {
+  color: #9a3412;
+  font-weight: 900;
+}
+
+.pedidos-cargar-mas-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 16px 0 20px;
+  padding: 16px;
+  border: 1px solid #fed7aa;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+}
+
+.pedidos-cargar-mas-box strong {
+  display: block;
+  color: #9a3412;
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.pedidos-cargar-mas-box p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .pedidos-cargar-mas-box {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pedidos-cargar-mas-box .button {
+    width: 100%;
+  }
+}
+
 `;
