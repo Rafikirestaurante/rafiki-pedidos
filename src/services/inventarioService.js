@@ -294,7 +294,8 @@ export async function registrarMovimientoInventario({ insumoId, tipo, cantidad, 
   if (!TIPOS_MOVIMIENTO_INVENTARIO.includes(payload.tipo)) throw new Error("Tipo de movimiento no válido.");
   if (!Number.isFinite(payload.cantidad) || payload.cantidad <= 0) throw new Error("La cantidad debe ser mayor a cero.");
 
-  const { data, error } = await supabase.rpc("registrar_movimiento_inventario", payload).select?.(SELECT_MOVIMIENTOS);
+  const consultaMovimiento = supabase.rpc("registrar_movimiento_inventario", payload);
+  const { data, error } = await consultaMovimiento.select(SELECT_MOVIMIENTOS);
   if (error) throw error;
   return data;
 }

@@ -112,7 +112,6 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
 
   useEffect(() => {
     cargar(fechaInforme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fechaInforme, esAdministrador]);
 
   function cambiarCampo(campo, valor) {

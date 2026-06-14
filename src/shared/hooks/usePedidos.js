@@ -17,7 +17,7 @@ import {
   guardarPedidoPendienteOffline,
 } from "../utils/offlinePedidos";
 import { registrarDescuentoInventarioPedido } from "../../services/inventarioService";
-import { anularCarteraPedidoCredito, registrarCarteraPedidoCredito } from "../../services/carteraService";
+import { anularCarteraPedidoCredito, registrarCarteraPedidoCredito, sincronizarCarteraPedido } from "../../services/carteraService";
 import {
   actualizarEstadoPedido,
   actualizarPedido,
@@ -600,13 +600,14 @@ export function usePedidos({
         return false;
       }
 
-      if (pagoNuevoEsCredito) {
-        try {
-          await registrarCarteraPedidoCredito(data);
-        } catch (errorCartera) {
-          console.warn("Pedido editado, pero la cartera automática no se actualizó:", errorCartera?.message || errorCartera);
-          mostrarMensaje(`Pedido #${codigoPedido} actualizado, pero revisa cartera: no se pudo ajustar la cuenta por cobrar.`, "warning");
-        }
+      try {
+        await sincronizarCarteraPedido(data, {
+          accion: "pedido_editado",
+          motivo: `Pedido #${codigoPedido} editado. Cartera sincronizada automáticamente.`,
+        });
+      } catch (errorCartera) {
+        console.warn("Pedido editado, pero la cartera automática no se actualizó:", errorCartera?.message || errorCartera);
+        mostrarMensaje(`Pedido #${codigoPedido} actualizado, pero revisa cartera: no se pudo ajustar la cuenta por cobrar.`, "warning");
       }
 
       setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
@@ -724,11 +725,34 @@ export function usePedidos({
         total,
       };
 
+      const pagoAnteriorEsCredito = String(pedidoActual?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
+      const pagoNuevoNoEsCredito = String(payload?.tipo_pago || "").trim().toLowerCase().replace("é", "e") !== "credito";
+
+      if (pagoAnteriorEsCredito && pagoNuevoNoEsCredito) {
+        try {
+          await anularCarteraPedidoCredito(pedidoActual, `Pedido #${codigoPedido} retirado de crédito desde edición en mesas. Pago corregido a ${payload?.tipo_pago || "otro método"}.`);
+        } catch (errorCartera) {
+          console.warn("No se pudo retirar de crédito antes de editar el pedido desde mesas:", errorCartera?.message || errorCartera);
+          mostrarMensaje(errorCartera?.message || `No se pudo retirar el pedido #${codigoPedido} de cartera.`, "warning");
+          return false;
+        }
+      }
+
       const { data, error } = await actualizarPedido(id, payload);
 
       if (error) {
         mostrarMensaje(`Error editando pedido: ${error.message}`, "error");
         return false;
+      }
+
+      try {
+        await sincronizarCarteraPedido(data, {
+          accion: "pedido_editado_desde_mesas",
+          motivo: `Pedido #${codigoPedido} editado desde mesas. Cartera sincronizada automáticamente.`,
+        });
+      } catch (errorCartera) {
+        console.warn("Pedido editado desde mesas, pero la cartera automática no se actualizó:", errorCartera?.message || errorCartera);
+        mostrarMensaje(`Pedido #${codigoPedido} editado, pero revisa cartera: no se pudo ajustar la cuenta por cobrar.`, "warning");
       }
 
       setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
