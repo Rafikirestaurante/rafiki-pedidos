@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '119.7-FASE29F2-SINCRONIZACION-CARTERA-BORRADOS-2026-06-13',
-  phase: 'Fase 29F.2 - Sincronización Cartera con Pedidos Borrados',
+  version: '119.8-FASE29F3-AUDITORIA-SINCRONIZACION-FINAL-CARTERA-2026-06-13',
+  phase: 'Fase 29F.3 - Auditoría y Sincronización Final de Cartera',
   date: '2026-06-13',
-  fase: '29F.2',
-  notes: 'Al borrar un pedido, cartera anula automáticamente el movimiento asociado, recalcula saldos y al abrir Cartera corrige movimientos antiguos de pedidos ya marcados como Borrado.'
+  fase: '29F.3',
+  notes: 'Auditoría completa de cartera: anula movimientos de pedidos borrados, inexistentes o que ya no son crédito, corrige saldos contra pedidos y abonos, detecta duplicados y recalcula clientes crédito.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

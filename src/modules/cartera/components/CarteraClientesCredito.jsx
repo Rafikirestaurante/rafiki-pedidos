@@ -10,7 +10,7 @@ import {
   listarAbonosCartera,
   listarMovimientosCartera,
   registrarAbonoClienteCredito,
-  sincronizarCarteraConPedidosBorrados,
+  sincronizarCarteraCompleta,
 } from "../../../services/carteraService";
 
 const FORM_INICIAL = {
@@ -143,6 +143,8 @@ export default function CarteraClientesCredito() {
   const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
   const [cargandoAbonos, setCargandoAbonos] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [auditando, setAuditando] = useState(false);
+  const [resultadoAuditoria, setResultadoAuditoria] = useState(null);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [formulario, setFormulario] = useState(FORM_INICIAL);
@@ -165,21 +167,22 @@ export default function CarteraClientesCredito() {
     try {
       let resultadoSync = null;
       if (sincronizar) {
-        resultadoSync = await sincronizarCarteraConPedidosBorrados({ limite: 1500 });
-        if (Number(resultadoSync?.anulados || 0) > 0) {
-          setMensaje(`${resultadoSync.anulados} movimiento(s) de cartera fueron anulados porque el pedido estaba borrado.`);
+        resultadoSync = await sincronizarCarteraCompleta({ limite: 2000 });
+        setResultadoAuditoria(resultadoSync);
+        if (Number(resultadoSync?.totalCorrecciones || 0) > 0) {
+          setMensaje(`Auditoría aplicada: ${resultadoSync.totalCorrecciones} corrección(es), ${resultadoSync.anulados} movimiento(s) anulados y ${resultadoSync.valoresAjustados} saldo(s) ajustados.`);
         }
       }
 
-      const data = await listarMovimientosCartera({ estado: "todos", limite: 1500 });
+      const data = await listarMovimientosCartera({ estado: "todos", limite: 2000 });
       setMovimientosCartera(data);
 
-      if (Number(resultadoSync?.anulados || 0) > 0) {
+      if (Number(resultadoSync?.totalCorrecciones || 0) > 0) {
         await cargarClientes();
       }
     } catch (err) {
       const detalle = err?.message ? ` ${err.message}` : "";
-      setError(`No se pudo sincronizar la cartera con pedidos borrados.${detalle}`);
+      setError(`No se pudo auditar y sincronizar la cartera.${detalle}`);
     } finally {
       setCargandoMovimientos(false);
     }
@@ -195,6 +198,28 @@ export default function CarteraClientesCredito() {
   const actualizarTodo = useCallback(async () => {
     await Promise.all([cargarClientes(), cargarMovimientos(), cargarAbonos()]);
   }, [cargarClientes, cargarMovimientos, cargarAbonos]);
+
+  const auditarCartera = useCallback(async () => {
+    if (auditando) return;
+    setAuditando(true);
+    setMensaje("");
+    setError("");
+    try {
+      const resultado = await sincronizarCarteraCompleta({ limite: 3000 });
+      setResultadoAuditoria(resultado);
+      await Promise.all([cargarClientes(), cargarMovimientos({ sincronizar: false }), cargarAbonos()]);
+      if (Number(resultado?.totalCorrecciones || 0) > 0) {
+        setMensaje(`Auditoría finalizada: ${resultado.totalCorrecciones} corrección(es), ${resultado.anulados} movimiento(s) anulados, ${resultado.valoresAjustados} saldo(s) ajustados y ${resultado.clientesRecalculados?.length || 0} cliente(s) recalculados.`);
+      } else {
+        setMensaje("Auditoría finalizada: no se encontraron diferencias. La cartera está sincronizada.");
+      }
+    } catch (err) {
+      const detalle = err?.message ? ` ${err.message}` : "";
+      setError(`No se pudo completar la auditoría de cartera.${detalle}`);
+    } finally {
+      setAuditando(false);
+    }
+  }, [auditando, cargarAbonos, cargarClientes, cargarMovimientos]);
 
   useEffect(() => {
     cargarClientes();
@@ -493,6 +518,9 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel .ranking-item small, .cartera-profesional-panel td small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
         .cartera-profesional-panel .td-acciones { min-width: 230px; }
         .cartera-profesional-panel .subtle-row { background: #fffaf5; }
+        .cartera-profesional-panel .auditoria-resumen { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 16px; padding: 10px 12px; margin-top: 10px; }
+        .cartera-profesional-panel .auditoria-resumen strong { display: block; margin-bottom: 4px; }
+        .cartera-profesional-panel .auditoria-resumen span { display: inline-block; margin-right: 12px; font-size: 12px; font-weight: 800; }
         @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } }
       `}</style>
@@ -503,10 +531,13 @@ export default function CarteraClientesCredito() {
           <p className="muted small">Control gerencial de clientes crédito, saldos pendientes y pedidos asociados.</p>
         </div>
         <div className="cartera-actions" style={{ marginTop: 0 }}>
-          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={actualizarTodo} disabled={cargando || cargandoMovimientos || cargandoAbonos}>
+          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={actualizarTodo} disabled={cargando || cargandoMovimientos || cargandoAbonos || auditando}>
             {cargando || cargandoMovimientos || cargandoAbonos ? "Actualizando..." : "Actualizar cartera"}
           </button>
-          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarFormulario((valor) => !valor)}>
+          <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={auditarCartera} disabled={cargando || cargandoMovimientos || cargandoAbonos || auditando}>
+            {auditando ? "Auditando..." : "Auditar cartera"}
+          </button>
+          <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarFormulario((valor) => !valor)} disabled={auditando}>
             {mostrarFormulario ? "Cerrar cliente" : "+ Nuevo cliente"}
           </button>
         </div>
@@ -574,6 +605,18 @@ export default function CarteraClientesCredito() {
 
       {mensaje && <div className="alert success" style={{ marginTop: 10 }}>{mensaje}</div>}
       {error && <div className="alert error" style={{ marginTop: 10 }}>{error}</div>}
+      {resultadoAuditoria && (
+        <div className="auditoria-resumen">
+          <strong>Última auditoría de cartera</strong>
+          <span>Revisados: {resultadoAuditoria.movimientosRevisados || 0}</span>
+          <span>Anulados: {resultadoAuditoria.anulados || 0}</span>
+          <span>Borrados: {resultadoAuditoria.anuladosBorrados || 0}</span>
+          <span>No crédito: {resultadoAuditoria.anuladosNoCredito || 0}</span>
+          <span>Huérfanos: {resultadoAuditoria.anuladosHuerfanos || 0}</span>
+          <span>Duplicados: {resultadoAuditoria.duplicadosAnulados || 0}</span>
+          <span>Saldos ajustados: {resultadoAuditoria.valoresAjustados || 0}</span>
+        </div>
+      )}
 
       {clienteAbono && (
         <form className="abono-form" onSubmit={guardarAbono}>
