@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '119.1-FASE29C-PEDIDOS-HOY-CORRECCION-CLIENTES-CREDITO-2026-06-13',
-  phase: 'Fase 29C - Pedidos Hoy y Corrección de Clientes Crédito',
+  version: '119.2-FASE29C2-PEDIDOS-HOY-RANGO-FECHAS-2026-06-13',
+  phase: 'Fase 29C.2 - Pedidos Hoy con Rango de Fechas',
   date: '2026-06-13',
-  fase: '29C',
-  notes: 'Pedidos Hoy resalta forma de pago Crédito y permite corregir el nombre del cliente crédito moviendo su movimiento de cartera al cliente correcto.'
+  fase: '29C.2',
+  notes: 'Pedidos Hoy permite seleccionar fecha inicial y fecha final para buscar pedidos entre varios días, manteniendo búsqueda por texto y número de pedido.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

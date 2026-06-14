@@ -282,6 +282,10 @@ function AdminPedidosSectionBase({
   setFiltroPedidos,
   fechaSeleccionada,
   setFechaSeleccionada,
+  fechaInicioRangoPedidos,
+  setFechaInicioRangoPedidos,
+  fechaFinRangoPedidos,
+  setFechaFinRangoPedidos,
   hayBusquedaPedidos,
   setBusqueda,
   busqueda,
@@ -431,6 +435,10 @@ function AdminPedidosSectionBase({
         setFiltroPedidos={setFiltroPedidos}
         fechaSeleccionada={fechaSeleccionada}
         setFechaSeleccionada={setFechaSeleccionada}
+        fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+        setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+        fechaFinRangoPedidos={fechaFinRangoPedidos}
+        setFechaFinRangoPedidos={setFechaFinRangoPedidos}
         hayBusquedaPedidos={hayBusquedaPedidos}
         setBusqueda={setBusqueda}
         busqueda={busqueda}

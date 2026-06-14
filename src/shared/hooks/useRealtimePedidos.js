@@ -15,6 +15,8 @@ export function useRealtimePedidos({
   activo,
   filtroPedidos,
   fechaSeleccionada,
+  fechaInicioRangoPedidos,
+  fechaFinRangoPedidos,
   setPedidos,
   setRecargaPedidos,
   mostrarAlertaPedidoNuevo,
@@ -26,6 +28,8 @@ export function useRealtimePedidos({
 
   const filtroPedidosRef = useRef(filtroPedidos);
   const fechaSeleccionadaRef = useRef(fechaSeleccionada);
+  const fechaInicioRangoPedidosRef = useRef(fechaInicioRangoPedidos);
+  const fechaFinRangoPedidosRef = useRef(fechaFinRangoPedidos);
   const activoRef = useRef(activo);
   const puedeActualizarAutomaticoRef = useRef(puedeActualizarAutomatico);
   const onCambiosPendientesRef = useRef(onCambiosPendientes);
@@ -42,6 +46,14 @@ export function useRealtimePedidos({
   useEffect(() => {
     fechaSeleccionadaRef.current = fechaSeleccionada;
   }, [fechaSeleccionada]);
+
+  useEffect(() => {
+    fechaInicioRangoPedidosRef.current = fechaInicioRangoPedidos;
+  }, [fechaInicioRangoPedidos]);
+
+  useEffect(() => {
+    fechaFinRangoPedidosRef.current = fechaFinRangoPedidos;
+  }, [fechaFinRangoPedidos]);
 
   useEffect(() => {
     activoRef.current = activo;
@@ -93,6 +105,15 @@ export function useRealtimePedidos({
     if (filtroActual === "hoy") return pedidoEsDeHoy(pedido);
     if (filtroActual === "dia") {
       return fechaISOColombia(new Date(pedido?.created_at || Date.now())) === fechaActual;
+    }
+
+    if (filtroActual === "rango") {
+      const fechaPedido = fechaISOColombia(new Date(pedido?.created_at || Date.now()));
+      const inicio = fechaInicioRangoPedidosRef.current || fechaActual || fechaISOColombia();
+      const fin = fechaFinRangoPedidosRef.current || inicio;
+      const inicioOrdenado = inicio <= fin ? inicio : fin;
+      const finOrdenado = inicio <= fin ? fin : inicio;
+      return fechaPedido >= inicioOrdenado && fechaPedido <= finOrdenado;
     }
 
     return true;

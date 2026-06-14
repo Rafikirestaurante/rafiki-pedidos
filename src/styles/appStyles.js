@@ -206,6 +206,8 @@ export const appStyles = `
         .calendario-filtro { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #fed7aa; border-radius: 999px; padding: 8px 12px; color: #c2410c; font-weight: 900; }
         .calendario-filtro span { font-size: 13px; }
         .calendario-filtro input { border: 0; outline: none; background: transparent; color: #44403c; font-weight: 800; padding: 0; }
+        .filtros-rango-fechas { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0 14px; padding: 10px; border: 1px dashed #fed7aa; border-radius: 18px; background: #fff7ed; }
+        .filtros-rango-fechas .calendario-filtro { background: #fff; }
         .pedido-seccion { margin-bottom: 26px; }
         .section-heading { display: flex; justify-content: space-between; align-items: center; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 22px; padding: 16px 18px; margin-bottom: 14px; }
         .section-heading h3 { margin: 0; color: #c2410c; font-family: 'Fraunces', serif; }

@@ -143,7 +143,25 @@ export function formatearFechaHora(fecha) {
   }).format(new Date(fecha));
 }
 
-export function obtenerRangoPedidos(filtro = "hoy", fechaManual = fechaISOColombia()) {
+export function obtenerRangoPedidos(filtro = "hoy", fechaManual = fechaISOColombia(), fechaFinalManual = null) {
+  if (filtro === "rango") {
+    const inicioTexto = fechaManual || fechaISOColombia();
+    const finTexto = fechaFinalManual || inicioTexto;
+    const inicioOrdenado = inicioTexto <= finTexto ? inicioTexto : finTexto;
+    const finOrdenado = inicioTexto <= finTexto ? finTexto : inicioTexto;
+
+    const inicio = new Date(`${inicioOrdenado}T00:00:00-05:00`);
+    const fin = new Date(`${finOrdenado}T00:00:00-05:00`);
+    fin.setDate(fin.getDate() + 1);
+
+    return {
+      inicio: inicio.toISOString(),
+      fin: fin.toISOString(),
+      inicioTexto: inicioOrdenado,
+      finTexto: finOrdenado
+    };
+  }
+
   let baseTexto;
 
   if (filtro === "dia") {
@@ -161,7 +179,9 @@ export function obtenerRangoPedidos(filtro = "hoy", fechaManual = fechaISOColomb
 
   return {
     inicio: inicio.toISOString(),
-    fin: fin.toISOString()
+    fin: fin.toISOString(),
+    inicioTexto: baseTexto,
+    finTexto: baseTexto
   };
 }
 

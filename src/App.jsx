@@ -155,6 +155,8 @@ export default function App() {
   const [errorNumeroPedido, setErrorNumeroPedido] = useState("");
   const [filtroPedidos, setFiltroPedidos] = useState("hoy");
   const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaISOColombia());
+  const [fechaInicioRangoPedidos, setFechaInicioRangoPedidos] = useState(fechaISOColombia());
+  const [fechaFinRangoPedidos, setFechaFinRangoPedidos] = useState(fechaISOColombia());
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [mensajeMenu, setMensajeMenu] = useState({ texto: "", tipo: "info" });
   const [errorDatosPedido, setErrorDatosPedido] = useState("");
@@ -576,6 +578,8 @@ export default function App() {
     activo: realtimeAdminActivo && vista === "admin" && adminAutenticado,
     filtroPedidos,
     fechaSeleccionada,
+    fechaInicioRangoPedidos,
+    fechaFinRangoPedidos,
     setPedidos,
     setRecargaPedidos,
     mostrarAlertaPedidoNuevo,
@@ -633,6 +637,8 @@ export default function App() {
     busquedaDebounced,
     filtroPedidos,
     fechaSeleccionada,
+    fechaInicioRangoPedidos,
+    fechaFinRangoPedidos,
   });
 
 
@@ -888,7 +894,9 @@ export default function App() {
       }
 
       try {
-        const rango = obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
+        const rango = filtroPedidos === "rango"
+          ? obtenerRangoPedidos("rango", fechaInicioRangoPedidos, fechaFinRangoPedidos)
+          : obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
 
         const { data: pedidosData, error: pedidosError } = await conTiempoMaximo(
           cargarPedidosRango(rango.inicio, rango.fin, { ascendente: true }),
@@ -934,7 +942,7 @@ export default function App() {
     return () => {
       cancelado = true;
     };
-  }, [vista, adminAutenticado, adminTab, filtroPedidos, fechaSeleccionada, recargaPedidos, mostrarMensaje]);
+  }, [vista, adminAutenticado, adminTab, filtroPedidos, fechaSeleccionada, fechaInicioRangoPedidos, fechaFinRangoPedidos, recargaPedidos, mostrarMensaje]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) =>
@@ -1665,6 +1673,10 @@ export default function App() {
                 setFiltroPedidos={setFiltroPedidos}
                 fechaSeleccionada={fechaSeleccionada}
                 setFechaSeleccionada={setFechaSeleccionada}
+                fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+                setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+                fechaFinRangoPedidos={fechaFinRangoPedidos}
+                setFechaFinRangoPedidos={setFechaFinRangoPedidos}
                 hayBusquedaPedidos={hayBusquedaPedidos}
                 setBusqueda={setBusqueda}
                 busqueda={busqueda}
@@ -1848,6 +1860,10 @@ export default function App() {
                   setFiltroPedidos={setFiltroPedidos}
                   fechaSeleccionada={fechaSeleccionada}
                   setFechaSeleccionada={setFechaSeleccionada}
+                  fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+                  setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+                  fechaFinRangoPedidos={fechaFinRangoPedidos}
+                  setFechaFinRangoPedidos={setFechaFinRangoPedidos}
                   hayBusquedaPedidos={hayBusquedaPedidos}
                   setBusqueda={setBusqueda}
                   busqueda={busqueda}

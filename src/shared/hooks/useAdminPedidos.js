@@ -16,6 +16,8 @@ export function useAdminPedidos({
   busquedaDebounced,
   filtroPedidos,
   fechaSeleccionada,
+  fechaInicioRangoPedidos,
+  fechaFinRangoPedidos,
 }) {
   const pedidosOrdenados = useMemo(() => {
     return [...pedidos].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
@@ -96,9 +98,18 @@ export function useAdminPedidos({
   const consolidado = useMemo(() => consolidarPedidos(pedidosActivos), [pedidosActivos]);
 
   const tituloPedidos = useMemo(() => {
+    if (filtroPedidos === "rango") {
+      const inicio = fechaInicioRangoPedidos || fechaSeleccionada;
+      const fin = fechaFinRangoPedidos || inicio;
+      const inicioOrdenado = inicio <= fin ? inicio : fin;
+      const finOrdenado = inicio <= fin ? fin : inicio;
+      return inicioOrdenado === finOrdenado
+        ? `Pedidos del ${inicioOrdenado}`
+        : `Pedidos del ${inicioOrdenado} al ${finOrdenado}`;
+    }
     if (filtroPedidos === "dia") return `Pedidos del ${fechaSeleccionada}`;
     return "Pedidos de hoy";
-  }, [filtroPedidos, fechaSeleccionada]);
+  }, [filtroPedidos, fechaSeleccionada, fechaInicioRangoPedidos, fechaFinRangoPedidos]);
 
   return {
     pedidosFiltrados,

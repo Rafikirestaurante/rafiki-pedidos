@@ -7,6 +7,10 @@ function AdminPedidosFiltrosBase({
   setFiltroPedidos,
   fechaSeleccionada,
   setFechaSeleccionada,
+  fechaInicioRangoPedidos,
+  setFechaInicioRangoPedidos,
+  fechaFinRangoPedidos,
+  setFechaFinRangoPedidos,
   hayBusquedaPedidos,
   setBusqueda,
   busqueda,
@@ -17,14 +21,39 @@ function AdminPedidosFiltrosBase({
   cargandoNumeroPedido = false,
 }) {
   const seleccionarHoy = useCallback(() => {
+    const hoy = fechaISOColombia();
     setFiltroPedidos("hoy");
-    setFechaSeleccionada(fechaISOColombia());
-  }, [setFiltroPedidos, setFechaSeleccionada]);
+    setFechaSeleccionada(hoy);
+    setFechaInicioRangoPedidos?.(hoy);
+    setFechaFinRangoPedidos?.(hoy);
+  }, [setFiltroPedidos, setFechaSeleccionada, setFechaInicioRangoPedidos, setFechaFinRangoPedidos]);
 
   const seleccionarDia = useCallback((e) => {
-    setFechaSeleccionada(e.target.value);
+    const fecha = e.target.value || fechaISOColombia();
+    setFechaSeleccionada(fecha);
+    setFechaInicioRangoPedidos?.(fecha);
+    setFechaFinRangoPedidos?.(fecha);
     setFiltroPedidos("dia");
-  }, [setFechaSeleccionada, setFiltroPedidos]);
+  }, [setFechaSeleccionada, setFiltroPedidos, setFechaInicioRangoPedidos, setFechaFinRangoPedidos]);
+
+  const seleccionarRango = useCallback(() => {
+    setFiltroPedidos("rango");
+    const base = fechaSeleccionada || fechaISOColombia();
+    setFechaInicioRangoPedidos?.(fechaInicioRangoPedidos || base);
+    setFechaFinRangoPedidos?.(fechaFinRangoPedidos || fechaInicioRangoPedidos || base);
+  }, [setFiltroPedidos, setFechaInicioRangoPedidos, setFechaFinRangoPedidos, fechaSeleccionada, fechaInicioRangoPedidos, fechaFinRangoPedidos]);
+
+  const cambiarFechaInicioRango = useCallback((event) => {
+    const fecha = event.target.value || fechaISOColombia();
+    setFechaInicioRangoPedidos?.(fecha);
+    setFiltroPedidos("rango");
+  }, [setFechaInicioRangoPedidos, setFiltroPedidos]);
+
+  const cambiarFechaFinRango = useCallback((event) => {
+    const fecha = event.target.value || fechaISOColombia();
+    setFechaFinRangoPedidos?.(fecha);
+    setFiltroPedidos("rango");
+  }, [setFechaFinRangoPedidos, setFiltroPedidos]);
 
   const limpiarBusqueda = useCallback(() => {
     setBusqueda("");
@@ -43,7 +72,7 @@ function AdminPedidosFiltrosBase({
 
   return (
     <>
-      <div className="filtros-historial">
+      <div className="filtros-historial filtros-historial-rango">
         <button
           type="button"
           onClick={seleccionarHoy}
@@ -61,12 +90,42 @@ function AdminPedidosFiltrosBase({
           />
         </label>
 
+        <button
+          type="button"
+          onClick={seleccionarRango}
+          className={filtroPedidos === "rango" ? "active" : ""}
+        >
+          Rango de fechas
+        </button>
+
         {hayBusquedaPedidos && (
           <button type="button" onClick={limpiarBusqueda}>
             Limpiar búsqueda
           </button>
         )}
       </div>
+
+      {filtroPedidos === "rango" && (
+        <div className="filtros-rango-fechas">
+          <label className="calendario-filtro">
+            <span>Desde</span>
+            <input
+              type="date"
+              value={fechaInicioRangoPedidos || fechaISOColombia()}
+              onChange={cambiarFechaInicioRango}
+            />
+          </label>
+
+          <label className="calendario-filtro">
+            <span>Hasta</span>
+            <input
+              type="date"
+              value={fechaFinRangoPedidos || fechaInicioRangoPedidos || fechaISOColombia()}
+              onChange={cambiarFechaFinRango}
+            />
+          </label>
+        </div>
+      )}
 
       <CampoTexto
         etiqueta="Buscar pedido"
