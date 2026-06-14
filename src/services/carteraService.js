@@ -63,6 +63,23 @@ function movimientoTieneSaldo(movimiento) {
   return normalizarNumero(movimiento?.saldo_movimiento ?? movimiento?.valor) > 0;
 }
 
+function movimientoActivoParaSincronizar(movimiento) {
+  const estado = String(movimiento?.estado || "").toLowerCase();
+  return estado !== "anulado" && estado !== "pagado";
+}
+
+function pedidoEstaBorrado(pedido) {
+  return String(pedido?.estado || "").trim().toLowerCase() === "borrado";
+}
+
+function partirEnLotes(lista = [], tamano = 100) {
+  const lotes = [];
+  for (let indice = 0; indice < lista.length; indice += tamano) {
+    lotes.push(lista.slice(indice, indice + tamano));
+  }
+  return lotes;
+}
+
 export async function registrarCarteraPedidoCredito(pedido = {}) {
   if (!supabaseConfigOk || !pedido?.id || !esPagoCredito(pedido.tipo_pago)) return null;
 
@@ -214,7 +231,7 @@ export async function corregirClienteCreditoDePedido(pedido = {}, nombreDestino 
 }
 
 
-export async function anularCarteraPedidoCredito(pedido = {}, motivo = "Pedido retirado de crédito") {
+export async function anularCarteraPedidoCredito(pedido = {}, motivo = "Pedido retirado de crédito", opciones = {}) {
   if (!supabaseConfigOk || !pedido?.id) return null;
 
   const { data: movimientosActuales, error: errorMovimientosActuales } = await supabase
@@ -228,10 +245,7 @@ export async function anularCarteraPedidoCredito(pedido = {}, motivo = "Pedido r
   const movimientos = Array.isArray(movimientosActuales) ? movimientosActuales : [];
   if (movimientos.length === 0) return { movimientos: [], clientesRecalculados: [] };
 
-  const movimientosActivos = movimientos.filter((movimiento) => {
-    const estado = String(movimiento.estado || "").toLowerCase();
-    return estado !== "anulado" && estado !== "pagado";
-  });
+  const movimientosActivos = movimientos.filter(movimientoActivoParaSincronizar);
 
   const idsMovimientos = movimientos.map((movimiento) => movimiento.id).filter(Boolean);
 
@@ -242,7 +256,7 @@ export async function anularCarteraPedidoCredito(pedido = {}, motivo = "Pedido r
       .in("cartera_movimiento_id", idsMovimientos)
       .limit(1);
 
-    if (!errorAbonos && Array.isArray(abonosAsociados) && abonosAsociados.length > 0) {
+    if (!opciones.forzar && !errorAbonos && Array.isArray(abonosAsociados) && abonosAsociados.length > 0) {
       throw new Error("Este pedido ya tiene abonos registrados. Revisa el historial antes de retirarlo de crédito.");
     }
   }
@@ -275,6 +289,82 @@ export async function anularCarteraPedidoCredito(pedido = {}, motivo = "Pedido r
     movimientos: movimientosActivos,
     clientesRecalculados: idsClientes,
   };
+}
+
+export async function sincronizarCarteraConPedidosBorrados({ limite = 1500 } = {}) {
+  if (!supabaseConfigOk) return { anulados: 0, clientesRecalculados: [] };
+
+  const { data: movimientos, error: errorMovimientos } = await supabase
+    .from("cartera_movimientos")
+    .select(SELECT_CARTERA_MOVIMIENTOS)
+    .eq("tipo_movimiento", "pedido_credito")
+    .neq("estado", "anulado")
+    .not("pedido_id", "is", null)
+    .limit(limite);
+
+  if (errorMovimientos) {
+    console.warn("No se pudo sincronizar cartera con pedidos borrados:", errorMovimientos.message);
+    return { anulados: 0, clientesRecalculados: [] };
+  }
+
+  const lista = Array.isArray(movimientos) ? movimientos : [];
+  const movimientosActivos = lista.filter(movimientoActivoParaSincronizar);
+  const pedidosIds = Array.from(new Set(movimientosActivos.map((movimiento) => movimiento.pedido_id).filter(Boolean)));
+
+  if (pedidosIds.length === 0) return { anulados: 0, clientesRecalculados: [] };
+
+  const pedidos = [];
+  for (const lote of partirEnLotes(pedidosIds, 100)) {
+    const loteConsulta = lote.every((id) => /^\d+$/.test(String(id)))
+      ? lote.map((id) => Number(id))
+      : lote;
+
+    const { data: pedidosLote, error: errorPedidos } = await supabase
+      .from("pedidos")
+      .select("id,estado,numero_pedido")
+      .in("id", loteConsulta);
+
+    if (errorPedidos) {
+      console.warn("No se pudieron revisar pedidos borrados para cartera:", errorPedidos.message);
+      continue;
+    }
+
+    pedidos.push(...(Array.isArray(pedidosLote) ? pedidosLote : []));
+  }
+
+  const pedidosBorrados = new Set(
+    pedidos
+      .filter(pedidoEstaBorrado)
+      .map((pedido) => String(pedido.id))
+  );
+
+  if (pedidosBorrados.size === 0) return { anulados: 0, clientesRecalculados: [] };
+
+  const movimientosPorAnular = movimientosActivos.filter((movimiento) => pedidosBorrados.has(String(movimiento.pedido_id)));
+  const idsMovimientos = movimientosPorAnular.map((movimiento) => movimiento.id).filter(Boolean);
+
+  if (idsMovimientos.length === 0) return { anulados: 0, clientesRecalculados: [] };
+
+  const { error: errorUpdate } = await supabase
+    .from("cartera_movimientos")
+    .update({
+      saldo_movimiento: 0,
+      estado: "anulado",
+      observaciones: "Movimiento anulado automáticamente porque el pedido fue borrado.",
+    })
+    .in("id", idsMovimientos);
+
+  if (errorUpdate) throw errorUpdate;
+
+  const idsClientes = Array.from(new Set(
+    movimientosPorAnular
+      .map((movimiento) => movimiento.cliente_credito_id)
+      .filter(Boolean)
+  ));
+
+  await Promise.all(idsClientes.map((clienteId) => recalcularResumenClienteCredito(clienteId)));
+
+  return { anulados: idsMovimientos.length, clientesRecalculados: idsClientes };
 }
 
 export async function recalcularResumenClienteCredito(clienteId) {

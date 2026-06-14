@@ -500,13 +500,24 @@ export function usePedidos({
         return;
       }
 
+      try {
+        await anularCarteraPedidoCredito(
+          data || pedidoActual || { id },
+          `Pedido #${codigoPedido} borrado. Cartera anulada automáticamente.`,
+          { forzar: true }
+        );
+      } catch (errorCartera) {
+        console.warn("Pedido borrado, pero la cartera no se pudo sincronizar:", errorCartera?.message || errorCartera);
+        mostrarMensaje(`Pedido #${codigoPedido} borrado, pero revisa cartera: no se pudo anular automáticamente.`, "warning");
+      }
+
       setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
       registrarAuditoria({
         accion: "pedido_borrado",
         pedido: data,
-        detalle: { estadoAnterior: obtenerEstadoPedido(pedidoActual || {}), requiereClaveLocal: false },
+        detalle: { estadoAnterior: obtenerEstadoPedido(pedidoActual || {}), requiereClaveLocal: false, carteraSincronizada: true },
       });
-      mostrarMensaje(`Pedido #${codigoPedido} movido a Pedidos Borrados.`, "success");
+      mostrarMensaje(`Pedido #${codigoPedido} movido a Pedidos Borrados y cartera sincronizada.`, "success");
     } finally {
       setEliminandoPedidoId(null);
     }

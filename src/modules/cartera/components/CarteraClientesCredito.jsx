@@ -10,6 +10,7 @@ import {
   listarAbonosCartera,
   listarMovimientosCartera,
   registrarAbonoClienteCredito,
+  sincronizarCarteraConPedidosBorrados,
 } from "../../../services/carteraService";
 
 const FORM_INICIAL = {
@@ -159,12 +160,30 @@ export default function CarteraClientesCredito() {
     setCargando(false);
   }, [busquedaClientes, mostrarInactivos]);
 
-  const cargarMovimientos = useCallback(async () => {
+  const cargarMovimientos = useCallback(async ({ sincronizar = true } = {}) => {
     setCargandoMovimientos(true);
-    const data = await listarMovimientosCartera({ estado: "todos", limite: 1500 });
-    setMovimientosCartera(data);
-    setCargandoMovimientos(false);
-  }, []);
+    try {
+      let resultadoSync = null;
+      if (sincronizar) {
+        resultadoSync = await sincronizarCarteraConPedidosBorrados({ limite: 1500 });
+        if (Number(resultadoSync?.anulados || 0) > 0) {
+          setMensaje(`${resultadoSync.anulados} movimiento(s) de cartera fueron anulados porque el pedido estaba borrado.`);
+        }
+      }
+
+      const data = await listarMovimientosCartera({ estado: "todos", limite: 1500 });
+      setMovimientosCartera(data);
+
+      if (Number(resultadoSync?.anulados || 0) > 0) {
+        await cargarClientes();
+      }
+    } catch (err) {
+      const detalle = err?.message ? ` ${err.message}` : "";
+      setError(`No se pudo sincronizar la cartera con pedidos borrados.${detalle}`);
+    } finally {
+      setCargandoMovimientos(false);
+    }
+  }, [cargarClientes]);
 
   const cargarAbonos = useCallback(async () => {
     setCargandoAbonos(true);
