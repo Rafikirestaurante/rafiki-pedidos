@@ -1,9 +1,9 @@
 {
-  "version": "120.0-FASE30A-PROTECCION-PANTALLA-BLANCA",
-  "fase": "30A",
-  "mensaje": "Protección contra pantalla blanca: ErrorBoundary reutilizable y módulos pesados protegidos con botón Reintentar cargar módulo.",
-  "build": "120.0",
-  "base_estable": "119.8",
-  "phase": "Fase 30A - Protección contra pantalla blanca",
-  "date": "2026-06-13"
+  "version": "120.4-FASE30E-ERRORES-SUPABASE",
+  "fase": "30E",
+  "mensaje": "Manejo profesional de errores Supabase: mensajes claros para usuario, registro técnico en consola y detección centralizada por códigos.",
+  "build": "120.4",
+  "base_estable": "120.3",
+  "phase": "Fase 30E - Manejo profesional de errores Supabase",
+  "date": "2026-06-14"
 }

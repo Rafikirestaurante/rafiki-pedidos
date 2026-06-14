@@ -1,24 +1,47 @@
-# Rafiki Pedidos — 119.8
+# Rafiki Pedidos — 120.4
 
-Fase 29F.3 — Auditoría y Sincronización Final de Cartera.
+Fase 30E — Manejo profesional de errores Supabase.
+
+## Objetivo
+
+Reducir los mensajes técnicos visibles para el usuario y centralizar la forma en que Rafiki interpreta errores de Supabase, sin cambiar rutas, permisos, diseño ni lógica de negocio.
 
 ## Cambios principales
 
-- Nuevo botón **Auditar cartera** en `Gerencia > Cartera`.
-- Auditoría completa de movimientos de cartera contra la tabla `pedidos`.
-- Anula automáticamente movimientos activos cuando el pedido:
-  - está en estado `Borrado`,
-  - ya no existe,
-  - ya no tiene forma de pago `Crédito`.
-- Detecta movimientos duplicados para un mismo pedido crédito y anula los duplicados conservando un movimiento principal.
-- Ajusta valores y saldos de movimientos contra el total real del pedido y los abonos registrados.
-- Recalcula automáticamente `saldo_pendiente`, `total_pedidos` y `fecha_ultimo_pedido` en `clientes_credito`.
-- Muestra resumen de la última auditoría: revisados, anulados, borrados, no crédito, huérfanos, duplicados y saldos ajustados.
-- No requiere SQL nuevo.
+- Nuevo utilitario `src/shared/utils/supabaseErrors.js`:
+  - traduce errores por códigos de Supabase/Postgres cuando existen,
+  - detecta permisos/RLS, duplicados, relaciones, campos obligatorios, formato inválido, estructura pendiente y conexión,
+  - separa el mensaje amigable para el usuario del detalle técnico para consola,
+  - evita depender directamente de textos como `column` o `schema cache` en pantallas críticas.
+
+- Pedidos y Mesas:
+  - errores al guardar, editar, borrar, finalizar o cambiar estado ahora muestran mensajes más claros,
+  - los detalles técnicos se registran en consola con contexto.
+
+- Pedidos Hoy:
+  - búsqueda por número, carga inicial y botón “Cargar más resultados” usan mensajes centralizados.
+
+- Menú diario:
+  - guardado con fallback de columnas ahora usa detección centralizada de estructura Supabase,
+  - errores de carga/guardado son más entendibles.
+
+- Cartera:
+  - auditoría, sincronización, abonos, clientes crédito y cambios de estado muestran mensajes seguros.
+
+- Caja, Inventario, Gastos, Catálogo, Generador de menú y Solicitud de insumos:
+  - reemplazo de errores técnicos directos por mensajes operativos.
 
 ## Recomendación de prueba
 
-1. Abrir `Gerencia > Cartera`.
-2. Presionar **Auditar cartera**.
-3. Revisar que pedidos borrados o pedidos que ya no son crédito no aparezcan como cartera pendiente.
-4. Revisar saldos de clientes crédito.
+1. Entrar a `/admin` e iniciar sesión.
+2. Crear un pedido desde `/cliente` y otro desde `/mesas`.
+3. En Pedidos Hoy, probar búsqueda por número, rango de fechas y “Cargar más resultados”.
+4. Editar un pedido y cambiar forma de pago Crédito / Efectivo.
+5. Abrir Gerencia → Cartera, registrar un abono y ejecutar auditoría.
+6. Abrir Caja, guardar Inicio, Arqueo y Ajustes.
+7. Abrir Catálogo, Inventario, Generador y Solicitud de insumos.
+8. Validar que, ante un error de permisos o SQL pendiente, el usuario vea un mensaje claro y no un texto técnico largo de Supabase.
+
+## Nota técnica
+
+No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experiencia operativa.

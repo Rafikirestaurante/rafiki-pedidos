@@ -61,7 +61,7 @@ assert(indexHtml.includes('apple-mobile-web-app-capable'), 'index.html: falta ap
 assert(indexHtml.includes('apple-touch-icon'), 'index.html: falta apple-touch-icon.');
 assert(viteConfig.includes('NetworkOnly') && viteConfig.includes('supabase.co'), 'vite.config.js: Supabase debe permanecer NetworkOnly.');
 assert(viteConfig.includes("registerType: 'prompt'"), 'vite.config.js: las actualizaciones deben seguir con prompt, no autoUpdate.');
-assert(/^(1[89]|20|21|22|23)[A-Z0-9-]*-2026-05-[0-9]{2}$/.test(version.version), 'rafiki-version.json: versión debe corresponder a Fase 18, 19, 20, 21, 22 o 23.');
+assert(/^\d+(?:\.\d+)?-[A-Z0-9-]+$/.test(version.version), 'rafiki-version.json: versión debe tener formato Rafiki vigente, por ejemplo 120.1-FASE30B-OPTIMIZACION-PEDIDOS-HOY.');
 assert(viteConfig.includes('skipWaiting: false') && viteConfig.includes('clientsClaim: false'), 'vite.config.js: Workbox debe conservar actualizaciones con confirmación para evitar cambios de versión en mitad de un pedido.');
 assert(viteConfig.includes('NetworkFirst') && viteConfig.includes('rafiki-pwa-metadata-network-first'), 'vite.config.js: metadata PWA debe usar NetworkFirst.');
 assert(viteConfig.includes('globIgnores') && viteConfig.includes('rafiki-version.json'), 'vite.config.js: rafiki-version.json no debe quedar precacheado.');
