@@ -6,7 +6,11 @@ import {
   editarClienteCredito,
   listarClientesCredito,
 } from "../../../services/clientesCreditoService";
-import { listarMovimientosCartera } from "../../../services/carteraService";
+import {
+  listarAbonosCartera,
+  listarMovimientosCartera,
+  registrarAbonoClienteCredito,
+} from "../../../services/carteraService";
 
 const FORM_INICIAL = {
   nombre: "",
@@ -20,6 +24,23 @@ const FILTROS_INICIALES = {
   fechaInicio: "",
   fechaFin: "",
   soloConSaldo: true,
+};
+
+const METODOS_ABONO = ["Efectivo", "Transferencia", "Datafono", "Nequi", "Bancolombia", "Otro"];
+
+function fechaHoyInput() {
+  const fecha = new Date();
+  const yyyy = fecha.getFullYear();
+  const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dd = String(fecha.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+const ABONO_INICIAL = {
+  valorAbono: "",
+  metodoPago: "Efectivo",
+  observacion: "",
+  fechaAbono: fechaHoyInput(),
 };
 
 function dinero(valor) {
@@ -113,18 +134,22 @@ function textoBusquedaMovimiento(movimiento) {
 export default function CarteraClientesCredito() {
   const [clientes, setClientes] = useState([]);
   const [movimientosCartera, setMovimientosCartera] = useState([]);
+  const [abonosCartera, setAbonosCartera] = useState([]);
   const [busquedaClientes, setBusquedaClientes] = useState("");
   const [mostrarInactivos, setMostrarInactivos] = useState(true);
   const [filtros, setFiltros] = useState(FILTROS_INICIALES);
   const [cargando, setCargando] = useState(false);
   const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
+  const [cargandoAbonos, setCargandoAbonos] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [formulario, setFormulario] = useState(FORM_INICIAL);
   const [clienteEditandoId, setClienteEditandoId] = useState(null);
   const [clienteDetalleId, setClienteDetalleId] = useState(null);
+  const [clienteAbonoId, setClienteAbonoId] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [formularioAbono, setFormularioAbono] = useState(ABONO_INICIAL);
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -141,9 +166,16 @@ export default function CarteraClientesCredito() {
     setCargandoMovimientos(false);
   }, []);
 
+  const cargarAbonos = useCallback(async () => {
+    setCargandoAbonos(true);
+    const data = await listarAbonosCartera({ limite: 1500 });
+    setAbonosCartera(data);
+    setCargandoAbonos(false);
+  }, []);
+
   const actualizarTodo = useCallback(async () => {
-    await Promise.all([cargarClientes(), cargarMovimientos()]);
-  }, [cargarClientes, cargarMovimientos]);
+    await Promise.all([cargarClientes(), cargarMovimientos(), cargarAbonos()]);
+  }, [cargarClientes, cargarMovimientos, cargarAbonos]);
 
   useEffect(() => {
     cargarClientes();
@@ -153,6 +185,10 @@ export default function CarteraClientesCredito() {
     cargarMovimientos();
   }, [cargarMovimientos]);
 
+  useEffect(() => {
+    cargarAbonos();
+  }, [cargarAbonos]);
+
   const clienteEditando = useMemo(
     () => clientes.find((cliente) => cliente.id === clienteEditandoId) || null,
     [clientes, clienteEditandoId]
@@ -161,6 +197,11 @@ export default function CarteraClientesCredito() {
   const clienteDetalle = useMemo(
     () => clientes.find((cliente) => cliente.id === clienteDetalleId) || null,
     [clientes, clienteDetalleId]
+  );
+
+  const clienteAbono = useMemo(
+    () => clientes.find((cliente) => cliente.id === clienteAbonoId) || null,
+    [clientes, clienteAbonoId]
   );
 
   const movimientosFiltrados = useMemo(() => {
@@ -195,9 +236,7 @@ export default function CarteraClientesCredito() {
     const clientesConSaldo = clientes.filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0);
     const saldoTotal = clientes.reduce((total, cliente) => total + Number(cliente.saldo_pendiente || 0), 0);
     const pedidosPendientes = movimientosCartera.filter(movimientoPendiente).length;
-    const carteraPagada = movimientosCartera
-      .filter((movimiento) => estadoCartera(movimiento) === "pagado")
-      .reduce((total, movimiento) => total + Number(movimiento.valor || 0), 0);
+    const carteraPagada = abonosCartera.reduce((total, abono) => total + Number(abono.valor_abono || 0), 0);
     const saldoFiltrado = movimientosFiltrados.reduce((total, movimiento) => {
       if (!movimientoPendiente(movimiento)) return total;
       return total + saldoMovimiento(movimiento);
@@ -209,10 +248,11 @@ export default function CarteraClientesCredito() {
       saldoTotal,
       pedidosPendientes,
       carteraPagada,
+      abonosRecibidos: abonosCartera.length,
       saldoFiltrado,
       movimientosFiltrados: movimientosFiltrados.length,
     };
-  }, [clientes, movimientosCartera, movimientosFiltrados]);
+  }, [abonosCartera, clientes, movimientosCartera, movimientosFiltrados]);
 
   const rankingClientes = useMemo(() => {
     const activos = clientes.filter((cliente) => cliente.activo !== false);
@@ -236,6 +276,11 @@ export default function CarteraClientesCredito() {
     return movimientosFiltrados.filter((movimiento) => movimiento.cliente_credito_id === clienteDetalleId);
   }, [clienteDetalleId, movimientosFiltrados]);
 
+  const abonosClienteDetalle = useMemo(() => {
+    if (!clienteDetalleId) return [];
+    return abonosCartera.filter((abono) => abono.cliente_credito_id === clienteDetalleId);
+  }, [abonosCartera, clienteDetalleId]);
+
   const resumenDetalle = useMemo(() => {
     const total = movimientosClienteDetalle.reduce((acum, movimiento) => acum + Number(movimiento.valor || 0), 0);
     const saldo = movimientosClienteDetalle.reduce((acum, movimiento) => {
@@ -243,8 +288,9 @@ export default function CarteraClientesCredito() {
       return acum + saldoMovimiento(movimiento);
     }, 0);
     const pendientes = movimientosClienteDetalle.filter(movimientoPendiente).length;
-    return { total, saldo, pendientes };
-  }, [movimientosClienteDetalle]);
+    const abonado = abonosClienteDetalle.reduce((acum, abono) => acum + Number(abono.valor_abono || 0), 0);
+    return { total, saldo, pendientes, abonado };
+  }, [abonosClienteDetalle, movimientosClienteDetalle]);
 
   function limpiarFormulario() {
     setFormulario(FORM_INICIAL);
@@ -258,6 +304,65 @@ export default function CarteraClientesCredito() {
 
   function cambiarFiltro(campo, valor) {
     setFiltros((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function cambiarCampoAbono(campo, valor) {
+    setFormularioAbono((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function abrirAbono(cliente) {
+    if (!cliente?.id || Number(cliente.saldo_pendiente || 0) <= 0) return;
+    setClienteDetalleId(cliente.id);
+    setClienteAbonoId(cliente.id);
+    setFormularioAbono(ABONO_INICIAL);
+    setMensaje("");
+    setError("");
+  }
+
+  function cerrarAbono() {
+    setClienteAbonoId(null);
+    setFormularioAbono(ABONO_INICIAL);
+  }
+
+  async function guardarAbono(evento) {
+    evento.preventDefault();
+    if (!clienteAbono?.id) return;
+
+    const valor = Number(formularioAbono.valorAbono || 0);
+    if (!Number.isFinite(valor) || valor <= 0) {
+      setError("El valor del abono debe ser mayor a cero.");
+      return;
+    }
+
+    if (valor > Number(clienteAbono.saldo_pendiente || 0)) {
+      setError("El abono no puede ser mayor al saldo pendiente del cliente.");
+      return;
+    }
+
+    const confirmado = window.confirm(`¿Confirmas registrar este abono por ${dinero(valor)} para ${clienteAbono.nombre}?`);
+    if (!confirmado) return;
+
+    setGuardando(true);
+    setMensaje("");
+    setError("");
+
+    try {
+      await registrarAbonoClienteCredito({
+        clienteId: clienteAbono.id,
+        valorAbono: valor,
+        metodoPago: formularioAbono.metodoPago,
+        observacion: formularioAbono.observacion,
+        fechaAbono: formularioAbono.fechaAbono,
+      });
+      setMensaje("Abono registrado correctamente. La cartera fue actualizada.");
+      cerrarAbono();
+      await actualizarTodo();
+    } catch (err) {
+      const detalle = err?.message ? ` ${err.message}` : "";
+      setError(`No se pudo registrar el abono.${detalle}`);
+    } finally {
+      setGuardando(false);
+    }
   }
 
   function editar(cliente) {
@@ -334,7 +439,7 @@ export default function CarteraClientesCredito() {
   return (
     <section className="cartera-clientes-panel cartera-profesional-panel">
       <style>{`
-        .cartera-profesional-panel .cartera-indicadores { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+        .cartera-profesional-panel .cartera-indicadores { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
         .cartera-profesional-panel .cartera-indicador { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 12px; }
         .cartera-profesional-panel .cartera-indicador small { display: block; color: #9a3412; font-weight: 800; margin-bottom: 4px; }
         .cartera-profesional-panel .cartera-indicador strong { display: block; font-size: 18px; color: #431407; line-height: 1.15; }
@@ -342,6 +447,8 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel .cartera-indicador.neutral small { color: #475569; }
         .cartera-profesional-panel .cartera-indicador.neutral strong { color: #0f172a; }
         .cartera-profesional-panel .cartera-form { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; align-items: end; margin-top: 10px; }
+        .cartera-profesional-panel .abono-form { border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 12px; margin-top: 12px; }
+        .cartera-profesional-panel .abono-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: end; }
         .cartera-profesional-panel .cartera-form textarea { grid-column: 1 / -1; }
         .cartera-profesional-panel input, .cartera-profesional-panel textarea, .cartera-profesional-panel select { width: 100%; min-height: 44px; border: 1px solid #e7e5e4; border-radius: 14px; padding: 10px 12px; font: inherit; background: #fff; }
         .cartera-profesional-panel textarea { min-height: 76px; resize: vertical; }
@@ -367,8 +474,8 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel .ranking-item small, .cartera-profesional-panel td small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
         .cartera-profesional-panel .td-acciones { min-width: 230px; }
         .cartera-profesional-panel .subtle-row { background: #fffaf5; }
-        @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } }
+        @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } }
       `}</style>
 
       <div className="section-heading section-heading-pedidos-unificados">
@@ -377,8 +484,8 @@ export default function CarteraClientesCredito() {
           <p className="muted small">Control gerencial de clientes crédito, saldos pendientes y pedidos asociados.</p>
         </div>
         <div className="cartera-actions" style={{ marginTop: 0 }}>
-          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={actualizarTodo} disabled={cargando || cargandoMovimientos}>
-            {cargando || cargandoMovimientos ? "Actualizando..." : "Actualizar cartera"}
+          <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={actualizarTodo} disabled={cargando || cargandoMovimientos || cargandoAbonos}>
+            {cargando || cargandoMovimientos || cargandoAbonos ? "Actualizando..." : "Actualizar cartera"}
           </button>
           <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarFormulario((valor) => !valor)}>
             {mostrarFormulario ? "Cerrar cliente" : "+ Nuevo cliente"}
@@ -390,7 +497,8 @@ export default function CarteraClientesCredito() {
         <div className="cartera-indicador"><small>Cartera pendiente total</small><strong>{dinero(indicadores.saldoTotal)}</strong></div>
         <div className="cartera-indicador"><small>Clientes con saldo</small><strong>{indicadores.clientesConSaldo}</strong></div>
         <div className="cartera-indicador"><small>Pedidos pendientes</small><strong>{indicadores.pedidosPendientes}</strong></div>
-        <div className="cartera-indicador neutral"><small>Cartera pagada</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
+        <div className="cartera-indicador neutral"><small>Abonos recibidos</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
+        <div className="cartera-indicador neutral"><small>Cantidad de abonos</small><strong>{indicadores.abonosRecibidos}</strong></div>
         <div className="cartera-indicador neutral"><small>Saldo según filtros</small><strong>{dinero(indicadores.saldoFiltrado)}</strong></div>
       </div>
 
@@ -448,6 +556,42 @@ export default function CarteraClientesCredito() {
       {mensaje && <div className="alert success" style={{ marginTop: 10 }}>{mensaje}</div>}
       {error && <div className="alert error" style={{ marginTop: 10 }}>{error}</div>}
 
+      {clienteAbono && (
+        <form className="abono-form" onSubmit={guardarAbono}>
+          <div className="section-heading section-heading-pedidos-unificados">
+            <div>
+              <h3>Registrar abono</h3>
+              <p className="muted small">{clienteAbono.nombre} debe actualmente {dinero(clienteAbono.saldo_pendiente)}. El abono se aplica automáticamente a los pedidos más antiguos.</p>
+            </div>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAbono} disabled={guardando}>Cerrar</button>
+          </div>
+          <div className="abono-form-grid">
+            <label>
+              Valor del abono
+              <input type="number" min="0" step="100" value={formularioAbono.valorAbono} onChange={(e) => cambiarCampoAbono("valorAbono", e.target.value)} placeholder="Ej. 50000" required />
+            </label>
+            <label>
+              Método de pago
+              <select value={formularioAbono.metodoPago} onChange={(e) => cambiarCampoAbono("metodoPago", e.target.value)}>
+                {METODOS_ABONO.map((metodo) => <option key={metodo} value={metodo}>{metodo}</option>)}
+              </select>
+            </label>
+            <label>
+              Fecha
+              <input type="date" value={formularioAbono.fechaAbono} onChange={(e) => cambiarCampoAbono("fechaAbono", e.target.value)} />
+            </label>
+            <label>
+              Observación
+              <input value={formularioAbono.observacion} onChange={(e) => cambiarCampoAbono("observacion", e.target.value)} placeholder="Opcional" />
+            </label>
+          </div>
+          <div className="cartera-actions">
+            <button type="submit" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} disabled={guardando}>{guardando ? "Guardando..." : "Guardar abono"}</button>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAbono} disabled={guardando}>Cancelar</button>
+          </div>
+        </form>
+      )}
+
       <section className="card card-pad" style={{ marginTop: 12 }}>
         <div className="section-heading section-heading-pedidos-unificados">
           <div>
@@ -499,6 +643,7 @@ export default function CarteraClientesCredito() {
                     <td className="td-obs">{cliente.observaciones || "—"}</td>
                     <td className="td-acciones">
                       <button type="button" className="mini-btn print" onClick={() => setClienteDetalleId(cliente.id)} disabled={guardando}>Ver cartera</button>
+                      <button type="button" className="mini-btn green" onClick={() => abrirAbono(cliente)} disabled={guardando || Number(cliente.saldo_pendiente || 0) <= 0}>Abono</button>
                       <button type="button" className="mini-btn" onClick={() => editar(cliente)} disabled={guardando}>Editar</button>
                       {whatsapp && <button type="button" className="mini-btn green" onClick={() => abrirWhatsApp(cliente)} disabled={Number(cliente.saldo_pendiente || 0) <= 0}>WhatsApp</button>}
                       <button type="button" className={`mini-btn ${cliente.activo === false ? "green" : "danger"}`} onClick={() => cambiarEstado(cliente)} disabled={guardando}>
@@ -517,7 +662,7 @@ export default function CarteraClientesCredito() {
         <div className="section-heading section-heading-pedidos-unificados">
           <div>
             <h3>Movimientos de cartera</h3>
-            <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Los abonos se habilitarán en la Fase 29F.</p>
+            <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Incluye pedidos crédito, saldos actualizados y estados según abonos registrados.</p>
           </div>
           <strong className="muted small">{indicadores.movimientosFiltrados} movimiento(s)</strong>
         </div>
@@ -586,13 +731,17 @@ export default function CarteraClientesCredito() {
               <h3>Cartera de {clienteDetalle.nombre}</h3>
               <p className="muted small">Detalle del cliente según los filtros activos de movimientos.</p>
             </div>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
+            <div className="cartera-actions" style={{ marginTop: 0 }}>
+              <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={() => abrirAbono(clienteDetalle)} disabled={Number(clienteDetalle.saldo_pendiente || 0) <= 0}>Registrar abono</button>
+              <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
+            </div>
           </div>
 
-          <div className="cartera-indicadores" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+          <div className="cartera-indicadores" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
             <div className="cartera-indicador"><small>Saldo actual cliente</small><strong>{dinero(clienteDetalle.saldo_pendiente)}</strong></div>
             <div className="cartera-indicador"><small>Saldo filtrado</small><strong>{dinero(resumenDetalle.saldo)}</strong></div>
             <div className="cartera-indicador neutral"><small>Total filtrado</small><strong>{dinero(resumenDetalle.total)}</strong></div>
+            <div className="cartera-indicador neutral"><small>Abonado</small><strong>{dinero(resumenDetalle.abonado)}</strong></div>
             <div className="cartera-indicador neutral"><small>Pedidos pendientes</small><strong>{resumenDetalle.pendientes}</strong></div>
           </div>
 
@@ -626,6 +775,43 @@ export default function CarteraClientesCredito() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="section-heading section-heading-pedidos-unificados" style={{ marginTop: 14 }}>
+            <div>
+              <h3>Historial de abonos</h3>
+              <p className="muted small">Pagos registrados y aplicados a los pedidos de este cliente.</p>
+            </div>
+          </div>
+          <div className="pedidos-tabla-wrap">
+            <table className="pedidos-tabla-compacta">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Pedido aplicado</th>
+                  <th>Valor abonado</th>
+                  <th>Método</th>
+                  <th>Saldo antes</th>
+                  <th>Saldo después</th>
+                  <th>Observación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {abonosClienteDetalle.length === 0 ? (
+                  <tr><td colSpan="7">Sin abonos registrados para este cliente.</td></tr>
+                ) : abonosClienteDetalle.map((abono) => (
+                  <tr key={abono.id} className="subtle-row">
+                    <td>{formatearFechaHora(abono.fecha_abono || abono.created_at)}</td>
+                    <td>#{abono.numero_pedido || "—"}</td>
+                    <td className="td-total">{dinero(abono.valor_abono)}</td>
+                    <td>{abono.metodo_pago || "—"}</td>
+                    <td className="td-total">{dinero(abono.saldo_anterior)}</td>
+                    <td className="td-total">{dinero(abono.saldo_nuevo)}</td>
+                    <td className="td-obs">{abono.observacion || "—"}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
