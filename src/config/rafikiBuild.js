@@ -1,9 +1,9 @@
 export const RAFIKI_BUILD = {
-  version: '118.18-FASE29A-DIRECTORIO-CLIENTES-CREDITO-2026-06-13',
-  phase: 'Fase 29A - Directorio de Clientes Crédito',
+  version: '119.0-FASE29B-CARTERA-AUTOMATICA-2026-06-13',
+  phase: 'Fase 29B - Cartera Automática',
   date: '2026-06-13',
-  fase: '29A',
-  notes: 'Gerencia > Cartera ahora administra clientes crédito: crear, editar, buscar, activar/desactivar e indicadores iniciales de cartera.'
+  fase: '29B',
+  notes: 'Los pedidos de /mesas pagados con Crédito generan automáticamente movimientos de cartera y actualizan saldo pendiente del cliente crédito.'
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

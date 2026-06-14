@@ -6,6 +6,7 @@ import {
   editarClienteCredito,
   listarClientesCredito,
 } from "../../../services/clientesCreditoService";
+import { listarMovimientosCartera } from "../../../services/carteraService";
 
 const FORM_INICIAL = {
   nombre: "",
@@ -38,6 +39,9 @@ export default function CarteraClientesCredito() {
   const [error, setError] = useState("");
   const [formulario, setFormulario] = useState(FORM_INICIAL);
   const [clienteEditandoId, setClienteEditandoId] = useState(null);
+  const [clienteDetalleId, setClienteDetalleId] = useState(null);
+  const [movimientos, setMovimientos] = useState([]);
+  const [cargandoMovimientos, setCargandoMovimientos] = useState(false);
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -62,6 +66,26 @@ export default function CarteraClientesCredito() {
     () => clientes.find((cliente) => cliente.id === clienteEditandoId) || null,
     [clientes, clienteEditandoId]
   );
+
+  const clienteDetalle = useMemo(
+    () => clientes.find((cliente) => cliente.id === clienteDetalleId) || null,
+    [clientes, clienteDetalleId]
+  );
+
+  const cargarMovimientosCliente = useCallback(async (clienteId) => {
+    if (!clienteId) {
+      setMovimientos([]);
+      return;
+    }
+    setCargandoMovimientos(true);
+    const data = await listarMovimientosCartera({ clienteId, estado: "pendiente" });
+    setMovimientos(data);
+    setCargandoMovimientos(false);
+  }, []);
+
+  useEffect(() => {
+    cargarMovimientosCliente(clienteDetalleId);
+  }, [clienteDetalleId, cargarMovimientosCliente]);
 
   function limpiarFormulario() {
     setFormulario(FORM_INICIAL);
@@ -150,13 +174,16 @@ export default function CarteraClientesCredito() {
         .cartera-clientes-panel .estado-cliente { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 900; background: #dcfce7; color: #166534; }
         .cartera-clientes-panel .estado-cliente.inactivo { background: #fee2e2; color: #991b1b; }
         .cartera-clientes-panel .pedidos-tabla-compacta { min-width: 900px; }
+        .cartera-clientes-panel .detalle-cartera { margin-top: 14px; border: 1px solid #fed7aa; border-radius: 18px; background: #fffaf5; padding: 12px; }
+        .cartera-clientes-panel .detalle-cartera h3 { margin: 0 0 8px; }
+        .cartera-clientes-panel .detalle-cartera table { min-width: 680px; }
         @media (max-width: 760px) { .cartera-clientes-panel .cartera-indicadores, .cartera-clientes-panel .cartera-form { grid-template-columns: 1fr; } .cartera-clientes-panel .cartera-form textarea { grid-column: auto; } }
       `}</style>
 
       <div className="section-heading section-heading-pedidos-unificados">
         <div>
           <h2>Clientes Crédito</h2>
-          <p className="muted small">Directorio para administrar clientes autorizados antes de activar la cartera automática.</p>
+          <p className="muted small">Directorio y saldos generados automáticamente desde pedidos pagados con Crédito.</p>
         </div>
       </div>
 
@@ -219,6 +246,7 @@ export default function CarteraClientesCredito() {
                 <td><span className={`estado-cliente ${cliente.activo === false ? "inactivo" : ""}`}>{cliente.activo === false ? "Inactivo" : "Activo"}</span></td>
                 <td className="td-obs">{cliente.observaciones || "—"}</td>
                 <td className="td-acciones">
+                  <button type="button" className="mini-btn print" onClick={() => setClienteDetalleId(cliente.id)} disabled={guardando}>Ver cartera</button>
                   <button type="button" className="mini-btn" onClick={() => editar(cliente)} disabled={guardando}>Editar</button>
                   <button type="button" className={`mini-btn ${cliente.activo === false ? "green" : "danger"}`} onClick={() => cambiarEstado(cliente)} disabled={guardando}>
                     {cliente.activo === false ? "Activar" : "Desactivar"}
@@ -229,6 +257,46 @@ export default function CarteraClientesCredito() {
           </tbody>
         </table>
       </div>
+
+      {clienteDetalle && (
+        <div className="detalle-cartera">
+          <div className="section-heading section-heading-pedidos-unificados">
+            <div>
+              <h3>Cartera de {clienteDetalle.nombre}</h3>
+              <p className="muted small">Pedidos pendientes registrados automáticamente con forma de pago Crédito.</p>
+            </div>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
+          </div>
+          <div className="pedidos-tabla-wrap">
+            <table className="pedidos-tabla-compacta">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Pedido</th>
+                  <th>Concepto</th>
+                  <th>Valor</th>
+                  <th>Saldo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movimientos.length === 0 ? (
+                  <tr><td colSpan="6">{cargandoMovimientos ? "Cargando cartera..." : "Sin pedidos pendientes para este cliente."}</td></tr>
+                ) : movimientos.map((movimiento) => (
+                  <tr key={movimiento.id}>
+                    <td>{formatearFecha(movimiento.fecha_movimiento || movimiento.created_at)}</td>
+                    <td>#{movimiento.numero_pedido || "—"}</td>
+                    <td>{movimiento.concepto || "Pedido crédito"}</td>
+                    <td className="td-total">{dinero(movimiento.valor)}</td>
+                    <td className="td-total">{dinero(movimiento.saldo_movimiento)}</td>
+                    <td>{movimiento.estado || "pendiente"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

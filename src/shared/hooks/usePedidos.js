@@ -17,6 +17,7 @@ import {
   guardarPedidoPendienteOffline,
 } from "../utils/offlinePedidos";
 import { registrarDescuentoInventarioPedido } from "../../services/inventarioService";
+import { registrarCarteraPedidoCredito } from "../../services/carteraService";
 import {
   actualizarEstadoPedido,
   actualizarPedido,
@@ -309,6 +310,17 @@ export function usePedidos({
 
         mostrarMensaje(`Error guardando pedido de mesa: ${error.message}`, "error");
         return false;
+      }
+
+      if (String(tipoPagoLimpio || "").trim().toLowerCase().replace("é", "e") === "credito") {
+        try {
+          await registrarCarteraPedidoCredito(data);
+        } catch (errorCartera) {
+          console.warn("Pedido guardado, pero la cartera automática no se registró:", errorCartera?.message || errorCartera);
+          mostrarMensaje(`Pedido #${obtenerCodigoPedido(data)} guardado, pero revisa cartera: no se pudo registrar la cuenta por cobrar.`, "warning");
+          agregarPedidoAlListadoSiAplica(data);
+          return data;
+        }
       }
 
       agregarPedidoAlListadoSiAplica(data);
