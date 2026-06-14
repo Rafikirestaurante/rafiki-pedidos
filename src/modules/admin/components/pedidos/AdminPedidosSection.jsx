@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { dinero, formatearFechaHora, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido } from "../../../../shared/utils/pedidos";
 import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
@@ -6,6 +6,7 @@ import AdminPedidoGrupo from "./AdminPedidoGrupo";
 import { MESAS_DISPONIBLES } from "../../../../shared/utils/mesas";
 import { PedidoCocina, TablaPedidosCompacta, resumirItemsPedidoCompacto } from "../../../pedidos/components/PedidosAdmin";
 import { corregirClienteCreditoDePedido } from "../../../../services/carteraService";
+import { listarClientesCreditoActivos } from "../../../../services/clientesCreditoService";
 
 
 function normalizarMesaPedido(pedido) {
@@ -231,6 +232,37 @@ function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
 
 function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, guardando = false, mensaje = "" }) {
   const [nombre, setNombre] = useState(() => pedido?.cliente_nombre || pedido?.cliente || "");
+  const [clientesCredito, setClientesCredito] = useState([]);
+  const [cargandoClientes, setCargandoClientes] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarClientesCredito() {
+      setCargandoClientes(true);
+      try {
+        const lista = await listarClientesCreditoActivos();
+        if (!activo) return;
+        setClientesCredito(Array.isArray(lista) ? lista : []);
+      } catch (error) {
+        console.warn("No se pudieron cargar clientes crédito para Pedidos Hoy:", error?.message || error);
+      } finally {
+        if (activo) setCargandoClientes(false);
+      }
+    }
+
+    cargarClientesCredito();
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  const clientesOrdenados = useMemo(() => {
+    return clientesCredito
+      .map((cliente) => cliente?.nombre)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  }, [clientesCredito]);
 
   const guardar = async (event) => {
     event.preventDefault();
@@ -239,31 +271,57 @@ function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, guardando = 
   };
 
   return (
-    <div className="admin-mesa-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Corregir cliente crédito ${obtenerCodigoPedido(pedido)}`}>
+    <div className="admin-mesa-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Clasificar pedido ${obtenerCodigoPedido(pedido)} como crédito`}>
       <form className="admin-mesa-modal editar-pedido-modal" onSubmit={guardar}>
         <div className="admin-mesa-modal-head">
           <div>
-            <span>Corregir cliente crédito</span>
+            <span>Clasificar como crédito</span>
             <h3>Pedido #{obtenerCodigoPedido(pedido)}</h3>
-            <p>Esta corrección actualiza Pedidos Hoy y mueve la cartera del pedido al cliente correcto.</p>
+            <p>Esta acción cambia el pedido a Crédito, ajusta el nombre del cliente y registra la cuenta por cobrar.</p>
           </div>
           <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cerrar</button>
         </div>
 
         <div className="admin-mesa-modal-body editar-pedido-form">
           <label className="editar-pedido-form-full">
-            Nombre correcto del cliente
-            <input value={nombre} onChange={(event) => setNombre(event.target.value)} required autoFocus />
+            Cliente crédito existente
+            <select
+              value={clientesOrdenados.includes(nombre) ? nombre : ""}
+              onChange={(event) => event.target.value && setNombre(event.target.value)}
+              disabled={guardando || cargandoClientes}
+            >
+              <option value="">{cargandoClientes ? "Cargando clientes..." : "Seleccionar de la lista"}</option>
+              {clientesOrdenados.map((cliente) => (
+                <option key={cliente} value={cliente}>{cliente}</option>
+              ))}
+            </select>
+          </label>
+          <label className="editar-pedido-form-full">
+            Nombre del cliente
+            <input
+              value={nombre}
+              onChange={(event) => setNombre(event.target.value)}
+              placeholder="Escribe o corrige el nombre del cliente"
+              list="clientes-credito-pedidos-hoy"
+              required
+              autoFocus
+            />
+            <datalist id="clientes-credito-pedidos-hoy">
+              {clientesOrdenados.map((cliente) => (
+                <option key={cliente} value={cliente} />
+              ))}
+            </datalist>
+            <small className="muted">Puedes escoger un cliente fijo o escribir un nuevo nombre para crearlo en Clientes Crédito.</small>
           </label>
           <div className="editar-pedido-form-full cartera-correccion-resumen">
-            <strong>Valor crédito:</strong> {dinero(pedido?.total || 0)} · <strong>Pago:</strong> {pedido?.tipo_pago || "—"}
+            <strong>Valor a cartera:</strong> {dinero(pedido?.total || 0)} · <strong>Pago actual:</strong> {pedido?.tipo_pago || "—"}
           </div>
           {mensaje ? <div className="alert alert-warning editar-pedido-form-full">{mensaje}</div> : null}
         </div>
 
         <div className="editar-pedido-actions">
           <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cancelar</button>
-          <button type="submit" className="button green" disabled={guardando}>{guardando ? "Corrigiendo..." : "Guardar corrección"}</button>
+          <button type="submit" className="button green" disabled={guardando}>{guardando ? "Guardando..." : "Pasar a crédito"}</button>
         </div>
       </form>
     </div>
@@ -363,7 +421,7 @@ function AdminPedidosSectionBase({
         ...pedido,
         cliente: nombreLimpio,
         cliente_nombre: nombreLimpio,
-        tipo_pago: pedido.tipo_pago || "Crédito",
+        tipo_pago: "Crédito",
       };
 
       const okPedido = await editarPedidoAdministrador?.(pedido.id, pedidoActualizado);
@@ -373,7 +431,7 @@ function AdminPedidosSectionBase({
       setRecargaPedidos((actual) => actual + 1);
       return true;
     } catch (error) {
-      setMensajeCorreccionCliente(error?.message || "No se pudo corregir el cliente crédito.");
+      setMensajeCorreccionCliente(error?.message || "No se pudo clasificar el pedido como crédito.");
       return false;
     } finally {
       setGuardandoCorreccionClienteId(null);

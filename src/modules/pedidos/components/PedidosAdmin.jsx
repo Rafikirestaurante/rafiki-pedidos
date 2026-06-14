@@ -381,26 +381,24 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                       {editandoPedidoId === pedido.id ? "Editando..." : "Editar"}
                     </button>
                   )}
-                  {onCorregirClienteCredito && esPagoCreditoPedido(pedido) && estadoNormalizado !== "Borrado" && (
-                    <button
-                      type="button"
-                      className="mini-btn warning"
-                      onClick={() => onCorregirClienteCredito?.(pedido)}
-                      disabled={corrigiendoClientePedidoId === pedido.id}
-                      title="Corregir nombre del cliente crédito y mover su cartera"
-                    >
-                      {corrigiendoClientePedidoId === pedido.id ? "Corrigiendo..." : "Cliente crédito"}
-                    </button>
-                  )}
                   <button type="button" className="mini-btn print" onClick={() => imprimirTicketPedido(pedido)}>
                     Imprimir
                   </button>
-                  {telefonoCliente ? (
+                  {onCorregirClienteCredito && estadoNormalizado !== "Borrado" && (
+                    <button
+                      type="button"
+                      className={esPagoCreditoPedido(pedido) ? "mini-btn warning active" : "mini-btn warning"}
+                      onClick={() => onCorregirClienteCredito?.(pedido)}
+                      disabled={corrigiendoClientePedidoId === pedido.id}
+                      title="Clasificar este pedido como crédito y asociarlo a un cliente fijo"
+                    >
+                      {corrigiendoClientePedidoId === pedido.id ? "Guardando..." : "Crédito"}
+                    </button>
+                  )}
+                  {telefonoCliente && (
                     <a href={linkCliente} target="_blank" rel="noreferrer" className="mini-btn green">
                       WhatsApp
                     </a>
-                  ) : (
-                    <button type="button" className="mini-btn" disabled>Sin tel.</button>
                   )}
                   {estadoNormalizado !== "Borrado" && onEliminarPedido && (
                     <button
