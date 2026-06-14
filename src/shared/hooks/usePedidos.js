@@ -576,6 +576,15 @@ export function usePedidos({
         return false;
       }
 
+      if (String(data?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito") {
+        try {
+          await registrarCarteraPedidoCredito(data);
+        } catch (errorCartera) {
+          console.warn("Pedido editado, pero la cartera automática no se actualizó:", errorCartera?.message || errorCartera);
+          mostrarMensaje(`Pedido #${codigoPedido} actualizado, pero revisa cartera: no se pudo ajustar la cuenta por cobrar.`, "warning");
+        }
+      }
+
       setPedidos((actual) => actual.map((pedido) => (pedido.id === id ? data : pedido)));
       registrarAuditoria({
         accion: "pedido_editado",

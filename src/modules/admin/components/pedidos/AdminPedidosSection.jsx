@@ -5,6 +5,7 @@ import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
 import { MESAS_DISPONIBLES } from "../../../../shared/utils/mesas";
 import { PedidoCocina, TablaPedidosCompacta, resumirItemsPedidoCompacto } from "../../../pedidos/components/PedidosAdmin";
+import { corregirClienteCreditoDePedido } from "../../../../services/carteraService";
 
 
 function normalizarMesaPedido(pedido) {
@@ -200,8 +201,9 @@ function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
             <select value={form.tipo_pago} onChange={cambiarCampo("tipo_pago")}>
               <option value="Efectivo">Efectivo</option>
               <option value="Transferencia">Transferencia</option>
-              <option value="Tarjeta">Tarjeta</option>
+              <option value="Datafono">Datafono</option>
               <option value="Pendiente">Pendiente</option>
+              <option value="Crédito">Crédito</option>
             </select>
           </label>
           <label>
@@ -221,6 +223,47 @@ function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
         <div className="editar-pedido-actions">
           <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cancelar</button>
           <button type="submit" className="button green" disabled={guardando}>{guardando ? "Guardando..." : "Guardar cambios"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, guardando = false, mensaje = "" }) {
+  const [nombre, setNombre] = useState(() => pedido?.cliente_nombre || pedido?.cliente || "");
+
+  const guardar = async (event) => {
+    event.preventDefault();
+    const ok = await onGuardar?.(pedido, nombre);
+    if (ok) onCerrar?.();
+  };
+
+  return (
+    <div className="admin-mesa-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Corregir cliente crédito ${obtenerCodigoPedido(pedido)}`}>
+      <form className="admin-mesa-modal editar-pedido-modal" onSubmit={guardar}>
+        <div className="admin-mesa-modal-head">
+          <div>
+            <span>Corregir cliente crédito</span>
+            <h3>Pedido #{obtenerCodigoPedido(pedido)}</h3>
+            <p>Esta corrección actualiza Pedidos Hoy y mueve la cartera del pedido al cliente correcto.</p>
+          </div>
+          <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cerrar</button>
+        </div>
+
+        <div className="admin-mesa-modal-body editar-pedido-form">
+          <label className="editar-pedido-form-full">
+            Nombre correcto del cliente
+            <input value={nombre} onChange={(event) => setNombre(event.target.value)} required autoFocus />
+          </label>
+          <div className="editar-pedido-form-full cartera-correccion-resumen">
+            <strong>Valor crédito:</strong> {dinero(pedido?.total || 0)} · <strong>Pago:</strong> {pedido?.tipo_pago || "—"}
+          </div>
+          {mensaje ? <div className="alert alert-warning editar-pedido-form-full">{mensaje}</div> : null}
+        </div>
+
+        <div className="editar-pedido-actions">
+          <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cancelar</button>
+          <button type="submit" className="button green" disabled={guardando}>{guardando ? "Corrigiendo..." : "Guardar corrección"}</button>
         </div>
       </form>
     </div>
@@ -272,6 +315,9 @@ function AdminPedidosSectionBase({
   pedidosActivos,
 }) {
   const [pedidoEditando, setPedidoEditando] = useState(null);
+  const [pedidoCorrigiendoCliente, setPedidoCorrigiendoCliente] = useState(null);
+  const [guardandoCorreccionClienteId, setGuardandoCorreccionClienteId] = useState(null);
+  const [mensajeCorreccionCliente, setMensajeCorreccionCliente] = useState("");
   const [ordenPedidosHoy, setOrdenPedidosHoy] = useState("ultimos");
 
   const pedidosUnificados = useMemo(() => {
@@ -291,6 +337,44 @@ function AdminPedidosSectionBase({
 
     setPedidoEditando(pedido);
   }, [onEditarPedidoEnMesas]);
+
+
+  const abrirCorreccionClienteCredito = useCallback((pedido) => {
+    setMensajeCorreccionCliente("");
+    setPedidoCorrigiendoCliente(pedido);
+  }, []);
+
+  const guardarCorreccionClienteCredito = useCallback(async (pedido, nombreDestino) => {
+    const nombreLimpio = String(nombreDestino || "").trim().replace(/\s+/g, " ");
+    if (!pedido?.id || !nombreLimpio) {
+      setMensajeCorreccionCliente("Escribe el nombre correcto del cliente crédito.");
+      return false;
+    }
+
+    setGuardandoCorreccionClienteId(pedido.id);
+    setMensajeCorreccionCliente("");
+
+    try {
+      const pedidoActualizado = {
+        ...pedido,
+        cliente: nombreLimpio,
+        cliente_nombre: nombreLimpio,
+        tipo_pago: pedido.tipo_pago || "Crédito",
+      };
+
+      const okPedido = await editarPedidoAdministrador?.(pedido.id, pedidoActualizado);
+      if (!okPedido) return false;
+
+      await corregirClienteCreditoDePedido(pedidoActualizado, nombreLimpio);
+      setRecargaPedidos((actual) => actual + 1);
+      return true;
+    } catch (error) {
+      setMensajeCorreccionCliente(error?.message || "No se pudo corregir el cliente crédito.");
+      return false;
+    } finally {
+      setGuardandoCorreccionClienteId(null);
+    }
+  }, [editarPedidoAdministrador, setRecargaPedidos]);
 
   const refrescarPedidos = useCallback(() => {
     setRecargaPedidos((actual) => actual + 1);
@@ -374,6 +458,8 @@ function AdminPedidosSectionBase({
               eliminandoPedidoId={eliminandoPedidoId}
               onEditarPedido={puedeEditarPedido ? abrirEditorPedido : undefined}
               editandoPedidoId={editandoPedidoId}
+              onCorregirClienteCredito={puedeEditarPedido ? abrirCorreccionClienteCredito : undefined}
+              corrigiendoClientePedidoId={guardandoCorreccionClienteId}
             />
           )}
         </div>
@@ -450,6 +536,8 @@ function AdminPedidosSectionBase({
             eliminandoPedidoId={eliminandoPedidoId}
             onEditarPedido={puedeEditarPedido ? abrirEditorPedido : undefined}
             editandoPedidoId={editandoPedidoId}
+            onCorregirClienteCredito={puedeEditarPedido ? abrirCorreccionClienteCredito : undefined}
+            corrigiendoClientePedidoId={guardandoCorreccionClienteId}
           />
         )}
       </div>
@@ -474,6 +562,19 @@ function AdminPedidosSectionBase({
           onCerrar={() => setPedidoEditando(null)}
           onGuardar={editarPedidoAdministrador}
           guardando={editandoPedidoId === pedidoEditando.id}
+        />
+      )}
+
+      {pedidoCorrigiendoCliente && (
+        <CorregirClienteCreditoModal
+          pedido={pedidoCorrigiendoCliente}
+          onCerrar={() => {
+            setPedidoCorrigiendoCliente(null);
+            setMensajeCorreccionCliente("");
+          }}
+          onGuardar={guardarCorreccionClienteCredito}
+          guardando={guardandoCorreccionClienteId === pedidoCorrigiendoCliente.id}
+          mensaje={mensajeCorreccionCliente}
         />
       )}
 

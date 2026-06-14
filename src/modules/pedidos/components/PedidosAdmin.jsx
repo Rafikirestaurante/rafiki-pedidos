@@ -262,7 +262,12 @@ export function resumirItemsPedidoCompacto(pedido) {
   }).join(" + ");
 }
 
-function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, pedidosPorPagina = 15 }) {
+function esPagoCreditoPedido(pedido) {
+  const pago = String(pedido?.tipo_pago || "").trim().toLowerCase();
+  return pago === "credito" || pago === "crédito";
+}
+
+function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const tablaRef = useRef(null);
   const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
@@ -345,7 +350,11 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                 </td>
                 <td className="td-pedido">{resumirItemsPedidoCompacto(pedido)}</td>
                 <td className="td-obs">{pedido.observaciones || "—"}</td>
-                <td>{pedido.tipo_pago || "—"}</td>
+                <td>
+                  <span className={esPagoCreditoPedido(pedido) ? "pago-badge pago-credito" : "pago-badge"}>
+                    {pedido.tipo_pago || "—"}
+                  </span>
+                </td>
                 <td className="td-total">{dinero(pedido.total)}</td>
                 <td className="td-acciones">
                   {estadoNormalizado === "Borrado" ? (
@@ -370,6 +379,17 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                       disabled={editandoPedidoId === pedido.id}
                     >
                       {editandoPedidoId === pedido.id ? "Editando..." : "Editar"}
+                    </button>
+                  )}
+                  {onCorregirClienteCredito && esPagoCreditoPedido(pedido) && estadoNormalizado !== "Borrado" && (
+                    <button
+                      type="button"
+                      className="mini-btn warning"
+                      onClick={() => onCorregirClienteCredito?.(pedido)}
+                      disabled={corrigiendoClientePedidoId === pedido.id}
+                      title="Corregir nombre del cliente crédito y mover su cartera"
+                    >
+                      {corrigiendoClientePedidoId === pedido.id ? "Corrigiendo..." : "Cliente crédito"}
                     </button>
                   )}
                   <button type="button" className="mini-btn print" onClick={() => imprimirTicketPedido(pedido)}>

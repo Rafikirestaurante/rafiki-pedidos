@@ -102,6 +102,125 @@ export async function registrarCarteraPedidoCredito(pedido = {}) {
   return data;
 }
 
+export async function corregirClienteCreditoDePedido(pedido = {}, nombreDestino = "") {
+  if (!supabaseConfigOk || !pedido?.id) return null;
+
+  const nombreLimpio = normalizarNombreClienteCredito(nombreDestino);
+  if (!nombreLimpio) throw new Error("Escribe el nombre correcto del cliente crédito.");
+
+  const total = normalizarNumero(pedido.total);
+  const fechaPedido = pedido.created_at || new Date().toISOString();
+  const clienteDestino = await asegurarClienteCredito(nombreLimpio);
+  if (!clienteDestino?.id) throw new Error("No se pudo crear o encontrar el cliente crédito.");
+
+  const { data: movimientosActuales, error: errorMovimientosActuales } = await supabase
+    .from("cartera_movimientos")
+    .select(SELECT_CARTERA_MOVIMIENTOS)
+    .eq("pedido_id", String(pedido.id))
+    .eq("tipo_movimiento", "pedido_credito");
+
+  if (errorMovimientosActuales) throw errorMovimientosActuales;
+
+  const movimientos = Array.isArray(movimientosActuales) ? movimientosActuales : [];
+  const idsClientesAnteriores = Array.from(new Set(
+    movimientos
+      .map((movimiento) => movimiento.cliente_credito_id)
+      .filter((id) => id && id !== clienteDestino.id)
+  ));
+
+  if (movimientos.length === 0 && total > 0) {
+    const { error: errorInsert } = await supabase
+      .from("cartera_movimientos")
+      .insert({
+        cliente_credito_id: clienteDestino.id,
+        pedido_id: String(pedido.id),
+        numero_pedido: pedido.numero_pedido || null,
+        cliente_nombre: nombreLimpio,
+        tipo_movimiento: "pedido_credito",
+        concepto: `Pedido #${pedido.numero_pedido || pedido.id}`,
+        valor: total,
+        saldo_movimiento: total,
+        estado: "pendiente",
+        fecha_movimiento: fechaPedido,
+        observaciones: pedido.observaciones || "Corrección desde Pedidos Hoy",
+      });
+
+    if (errorInsert) throw errorInsert;
+  } else if (movimientos.length > 0) {
+    const { error: errorUpdateMovimientos } = await supabase
+      .from("cartera_movimientos")
+      .update({
+        cliente_credito_id: clienteDestino.id,
+        cliente_nombre: nombreLimpio,
+      })
+      .eq("pedido_id", String(pedido.id))
+      .eq("tipo_movimiento", "pedido_credito");
+
+    if (errorUpdateMovimientos) throw errorUpdateMovimientos;
+  }
+
+  const idsParaRecalcular = Array.from(new Set([...idsClientesAnteriores, clienteDestino.id].filter(Boolean)));
+  await Promise.all(idsParaRecalcular.map((clienteId) => recalcularResumenClienteCredito(clienteId)));
+
+  const { data: movimientosCorregidos, error: errorMovimientosCorregidos } = await supabase
+    .from("cartera_movimientos")
+    .select(SELECT_CARTERA_MOVIMIENTOS)
+    .eq("pedido_id", String(pedido.id))
+    .eq("tipo_movimiento", "pedido_credito");
+
+  if (errorMovimientosCorregidos) throw errorMovimientosCorregidos;
+
+  return {
+    cliente: clienteDestino,
+    movimientos: Array.isArray(movimientosCorregidos) ? movimientosCorregidos : [],
+  };
+}
+
+export async function recalcularResumenClienteCredito(clienteId) {
+  if (!supabaseConfigOk || !clienteId) return null;
+
+  const { data: movimientos, error } = await supabase
+    .from("cartera_movimientos")
+    .select("id,valor,saldo_movimiento,estado,fecha_movimiento,tipo_movimiento")
+    .eq("cliente_credito_id", clienteId)
+    .eq("tipo_movimiento", "pedido_credito");
+
+  if (error) {
+    console.warn("No se pudo recalcular cliente crédito:", error.message);
+    return null;
+  }
+
+  const lista = Array.isArray(movimientos) ? movimientos : [];
+  const pedidos = lista.length;
+  const saldo = lista.reduce((total, movimiento) => {
+    if (String(movimiento.estado || "").toLowerCase() === "pagado") return total;
+    return total + normalizarNumero(movimiento.saldo_movimiento ?? movimiento.valor);
+  }, 0);
+  const ultimaFecha = lista
+    .map((movimiento) => movimiento.fecha_movimiento)
+    .filter(Boolean)
+    .sort()
+    .pop() || null;
+
+  const { data, error: errorUpdate } = await supabase
+    .from("clientes_credito")
+    .update({
+      total_pedidos: pedidos,
+      saldo_pendiente: saldo,
+      fecha_ultimo_pedido: ultimaFecha,
+    })
+    .eq("id", clienteId)
+    .select("id,nombre,total_pedidos,saldo_pendiente,fecha_ultimo_pedido")
+    .maybeSingle();
+
+  if (errorUpdate) {
+    console.warn("No se pudo actualizar resumen del cliente crédito:", errorUpdate.message);
+    return null;
+  }
+
+  return data || null;
+}
+
 export async function listarMovimientosCartera({ clienteId = null, estado = "pendiente", limite = 300 } = {}) {
   if (!supabaseConfigOk) return [];
 

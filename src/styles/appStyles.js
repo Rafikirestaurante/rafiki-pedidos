@@ -262,6 +262,9 @@ export const appStyles = `
         .td-obs { max-width: 190px; color: #7c2d12; }
         .td-total { color: #16a34a; font-weight: 900; white-space: nowrap; }
         .pedidos-tabla-compacta select { width: 118px; border: 1px solid #e7e5e4; border-radius: 10px; padding: 7px 8px; background: #fafaf9; font-size: 12px; font-weight: 800; }
+        .pago-badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 8px; background: #f5f5f4; color: #57534e; font-size: 11px; font-weight: 900; white-space: nowrap; }
+        .pago-badge.pago-credito { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+        .cartera-correccion-resumen { border: 1px dashed #fdba74; border-radius: 14px; padding: 12px; background: #fff7ed; color: #7c2d12; font-size: 13px; }
         .td-acciones { min-width: 94px; }
         .mini-btn { display: block; width: 100%; margin-bottom: 5px; border: 1px solid #e7e5e4; border-radius: 10px; padding: 6px 8px; background: #fff; color: #44403c; font-size: 11px; font-weight: 900; text-align: center; text-decoration: none; box-shadow: none; }
         .mini-btn.warning { background: #f79e1c; border-color: #f79e1c; color: #fff; }
