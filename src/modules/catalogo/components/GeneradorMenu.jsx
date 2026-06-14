@@ -16,6 +16,7 @@ import {
   guardarUltimoTextoEditorGenerador
 } from "../../../shared/utils/generadorMenu";
 import { useAlertaRafiki } from "../../../shared/components/common";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador21J5";
 
@@ -599,7 +600,8 @@ export default function GeneradorMenu() {
       .limit(60);
 
     if (error) {
-      setMensaje(`No se pudo cargar el historial: ${error.message}`);
+      registrarErrorSupabase("cargar historial del generador", error);
+      setMensaje(describirErrorSupabase(error, "cargar el historial del generador"));
     } else {
       const registros = [];
       const fechasVistas = new Set();
@@ -653,7 +655,8 @@ export default function GeneradorMenu() {
       .maybeSingle();
 
     if (errorBuscar) {
-      setMensaje(`No se pudo validar el historial del día: ${errorBuscar.message}`);
+      registrarErrorSupabase("validar historial del generador", errorBuscar);
+      setMensaje(describirErrorSupabase(errorBuscar, "validar el historial del día"));
       setGuardandoHistorial(false);
       return false;
     }
@@ -678,7 +681,8 @@ export default function GeneradorMenu() {
     }
 
     if (error) {
-      setMensaje(`No se pudo guardar el historial: ${error.message}`);
+      registrarErrorSupabase("guardar historial del generador", error);
+      setMensaje(describirErrorSupabase(error, "guardar el historial del generador"));
       setGuardandoHistorial(false);
       return false;
     }

@@ -16,6 +16,7 @@ import {
   formatearFechaHora,
   obtenerEstadoPedido
 } from "../../../shared/utils/pedidos";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 
 function escaparHtmlExcel(valor) {
@@ -128,7 +129,8 @@ export default function PanelRafaPrivado() {
         if (cancelado) return;
 
         if (error) {
-          setErrorRafa(`Error cargando informe: ${error.message}`);
+          registrarErrorSupabase("cargar informe Rafa", error);
+          setErrorRafa(describirErrorSupabase(error, "cargar el informe"));
           setPedidosRafa([]);
           setMetaPedidosRafa({ count: null, completo: false, advertencia: "" });
           return;
@@ -138,7 +140,8 @@ export default function PanelRafaPrivado() {
         setMetaPedidosRafa({ count: count ?? null, completo, advertencia });
       } catch (error) {
         if (!cancelado) {
-          setErrorRafa(`No se pudo cargar el informe. ${error.message || ""}`.trim());
+          registrarErrorSupabase("cargar informe Rafa", error);
+          setErrorRafa(describirErrorSupabase(error, "cargar el informe"));
           setPedidosRafa([]);
           setMetaPedidosRafa({ count: null, completo: false, advertencia: "" });
         }
@@ -164,7 +167,8 @@ export default function PanelRafaPrivado() {
       } catch (error) {
         if (!cancelado) {
           setGastosRafa([]);
-          setErrorRafa((prev) => prev || `No se pudieron cargar los gastos del periodo. ${error.message || ""}`.trim());
+          registrarErrorSupabase("cargar gastos del informe", error);
+          setErrorRafa((prev) => prev || describirErrorSupabase(error, "cargar los gastos del periodo"));
         }
       }
     }
@@ -349,7 +353,8 @@ export default function PanelRafaPrivado() {
       await guardarCierreDiario(resumenCierreDiario);
       setMensajeCierre("Cierre diario guardado correctamente.");
     } catch (error) {
-      setErrorRafa(error?.message || "No se pudo guardar el cierre diario. Verifica que hayas ejecutado el SQL de Fase 23A.");
+      registrarErrorSupabase("guardar cierre diario", error);
+      setErrorRafa(describirErrorSupabase(error, "guardar el cierre diario"));
     } finally {
       setGuardandoCierre(false);
     }

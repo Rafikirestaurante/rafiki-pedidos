@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { dinero } from "../../../shared/utils/pedidos";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, cargarUltimoArqueoDiaAnterior, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
@@ -350,7 +351,10 @@ export default function CajaAdmin() {
         if (registro?.finData) setFinDia(normalizarEstadoArqueo(registro.finData));
         if (registro?.ajustesData) setAjustesCaja(normalizarAjustesCaja(registro.ajustesData));
       } catch (err) {
-        if (activo) setError(err?.message || "No se pudo cargar la caja de la fecha seleccionada.");
+        if (activo) {
+          registrarErrorSupabase("cargar caja por fecha", err);
+          setError(describirErrorSupabase(err, "cargar la caja de la fecha seleccionada"));
+        }
       } finally {
         if (activo) setCargando(false);
       }
@@ -373,7 +377,10 @@ export default function CajaAdmin() {
           setHistorialArqueos(historial);
         }
       } catch (err) {
-        if (activo) setError((prev) => prev || err?.message || "No se pudieron cargar ventas, gastos o arqueos del día.");
+        if (activo) {
+          registrarErrorSupabase("cargar cuadre real de caja", err);
+          setError((prev) => prev || describirErrorSupabase(err, "cargar ventas, gastos o arqueos del día"));
+        }
       } finally {
         if (activo) setCargandoCuadre(false);
       }
@@ -385,7 +392,7 @@ export default function CajaAdmin() {
   async function guardarInicio() {
     setGuardandoInicio(true); setMensaje(""); setError("");
     try { await guardarInicioCaja({ fecha: fechaCaja, estado: inicioDia, total: totalInicio }); setMensaje("Inicio del día guardado correctamente."); }
-    catch (err) { setError(err?.message || "No se pudo guardar el inicio del día."); }
+    catch (err) { registrarErrorSupabase("guardar inicio de caja", err); setError(describirErrorSupabase(err, "guardar el inicio del día")); }
     finally { setGuardandoInicio(false); }
   }
 
@@ -400,7 +407,8 @@ export default function CajaAdmin() {
       setInicioDia(normalizarEstadoArqueo(anterior.estado));
       setMensaje(`Información del último arqueo anterior cargada desde ${anterior.fecha}. Verifica los valores y luego guarda manualmente el inicio del día.`);
     } catch (err) {
-      setError(err?.message || "No se pudo traer el último arqueo del día anterior.");
+      registrarErrorSupabase("traer último arqueo anterior", err);
+      setError(describirErrorSupabase(err, "traer el último arqueo del día anterior"));
     } finally {
       setGuardandoInicio(false);
     }
@@ -412,7 +420,7 @@ export default function CajaAdmin() {
       await guardarFinCaja({ fecha: fechaCaja, estado: finDia, total: totalFin });
       setMensaje("Arqueo guardado correctamente como último conteo.");
     }
-    catch (err) { setError(err?.message || "No se pudo guardar el arqueo."); }
+    catch (err) { registrarErrorSupabase("guardar arqueo de caja", err); setError(describirErrorSupabase(err, "guardar el arqueo")); }
     finally { setGuardandoFin(false); }
   }
 
@@ -428,7 +436,8 @@ export default function CajaAdmin() {
       setHistorialArqueos(historial);
       setMensaje(totalFin > 0 ? "Último arqueo archivado. Ya puedes iniciar un arqueo nuevo." : "Arqueo limpiado. Ya puedes iniciar un arqueo nuevo.");
     } catch (err) {
-      setError(err?.message || "No se pudo iniciar un arqueo nuevo.");
+      registrarErrorSupabase("iniciar arqueo nuevo", err);
+      setError(describirErrorSupabase(err, "iniciar un arqueo nuevo"));
     } finally {
       setGuardandoFin(false);
     }
@@ -445,7 +454,8 @@ export default function CajaAdmin() {
       setAjustesCaja(normalizarAjustesCaja(registro?.ajustesData));
       setMensaje("Ajustes de caja guardados correctamente.");
     } catch (err) {
-      setError(err?.message || "No se pudieron guardar los ajustes de caja.");
+      registrarErrorSupabase("guardar ajustes de caja", err);
+      setError(describirErrorSupabase(err, "guardar los ajustes de caja"));
     } finally {
       setGuardandoAjustes(false);
     }

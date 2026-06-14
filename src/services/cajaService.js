@@ -2,6 +2,7 @@ import { supabase } from "../supabaseClient";
 import { cargarGastosDiarios } from "./gastosDiariosService";
 import { cargarPedidosRango } from "./pedidosService";
 import { obtenerEstadoPedido, obtenerRangoPedidos } from "../shared/utils/pedidos";
+import { crearErrorSupabaseUsuario, esErrorEsquemaSupabase } from "../shared/utils/supabaseErrors";
 
 const SELECT_CAJA_ARQUEOS = "id, fecha, inicio_data, fin_data, ajustes_data, inicio_total, fin_total, creado_en, actualizado_en";
 const SELECT_CAJA_ARQUEOS_HISTORIAL = "id, fecha, arqueo_data, arqueo_total, creado_en";
@@ -51,7 +52,7 @@ function sumarTotal(lista = [], obtenerValor) {
 async function exigirSesionSupabaseCaja() {
   const { data, error } = await supabase.auth.getSession();
   if (error) {
-    throw new Error(`No se pudo validar la sesión de Supabase: ${error.message}`);
+    throw crearErrorSupabaseUsuario(error, "validar la sesión de Supabase");
   }
 
   if (!data?.session?.user) {
@@ -209,7 +210,7 @@ export async function cargarHistorialArqueosCaja(fecha = hoyISOColombia()) {
 
   if (error) {
     // Permite que la app siga funcionando si el SQL de historial aún no se ha ejecutado.
-    if (error.code === "42P01" || String(error.message || "").includes("caja_arqueos_historial")) return [];
+    if (esErrorEsquemaSupabase(error, ["caja_arqueos_historial"])) return [];
     throw error;
   }
 
@@ -227,7 +228,7 @@ export async function cargarUltimoArqueoDiaAnterior(fecha = hoyISOColombia()) {
     .limit(1);
 
   if (historialError) {
-    if (!(historialError.code === "42P01" || String(historialError.message || "").includes("caja_arqueos_historial"))) {
+    if (!esErrorEsquemaSupabase(historialError, ["caja_arqueos_historial"])) {
       throw historialError;
     }
   }

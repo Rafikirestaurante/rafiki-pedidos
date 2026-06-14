@@ -1,4 +1,5 @@
 import { supabase } from "../supabaseClient";
+import { describirErrorSupabase } from "../shared/utils/supabaseErrors";
 
 export const CATEGORIAS_GASTOS_FALLBACK = ["Carnes", "Verduras", "Trabajadores", "Batidos", "Aseo y Desechables", "Mercado", "Servicios", "Otros"];
 export const PROVEEDORES_GASTOS_FALLBACK = [
@@ -51,22 +52,22 @@ export function fallbackProveedoresGasto() {
 export async function cargarCategoriasGastoAdmin() {
   try {
     const { data, error } = await supabase.from("categorias_gasto").select(SELECT_CATEGORIAS).order("orden", { ascending: true }).order("nombre", { ascending: true });
-    if (error) return { ok: false, categorias: fallbackCategoriasGasto(), mensaje: error.message };
+    if (error) return { ok: false, categorias: fallbackCategoriasGasto(), mensaje: describirErrorSupabase(error, "cargar el catálogo de gastos") };
     const categorias = (data || []).map(normalizarCategoriaGasto).filter(Boolean);
     return { ok: true, categorias: categorias.length ? categorias : fallbackCategoriasGasto(), mensaje: "Categorías de gasto cargadas." };
   } catch (error) {
-    return { ok: false, categorias: fallbackCategoriasGasto(), mensaje: error?.message || "No se pudieron cargar categorías." };
+    return { ok: false, categorias: fallbackCategoriasGasto(), mensaje: describirErrorSupabase(error, "cargar las categorías de gasto") };
   }
 }
 
 export async function cargarProveedoresGastoAdmin() {
   try {
     const { data, error } = await supabase.from("proveedores_gasto").select(SELECT_PROVEEDORES).order("orden", { ascending: true }).order("nombre", { ascending: true });
-    if (error) return { ok: false, proveedores: fallbackProveedoresGasto(), mensaje: error.message };
+    if (error) return { ok: false, proveedores: fallbackProveedoresGasto(), mensaje: describirErrorSupabase(error, "cargar el catálogo de gastos") };
     const proveedores = (data || []).map(normalizarProveedorGasto).filter(Boolean);
     return { ok: true, proveedores: proveedores.length ? proveedores : fallbackProveedoresGasto(), mensaje: "Proveedores de gasto cargados." };
   } catch (error) {
-    return { ok: false, proveedores: fallbackProveedoresGasto(), mensaje: error?.message || "No se pudieron cargar proveedores." };
+    return { ok: false, proveedores: fallbackProveedoresGasto(), mensaje: describirErrorSupabase(error, "cargar los proveedores de gasto") };
   }
 }
 

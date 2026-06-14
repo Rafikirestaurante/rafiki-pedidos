@@ -2,6 +2,7 @@ import { supabase } from "../supabaseClient";
 import { generarId } from "../shared/utils/pedidos";
 import { ordenarProductosPorNombre } from "../shared/utils/solicitudProductos";
 import { productosRestauranteBase } from "../data/solicitudProductosData";
+import { describirErrorSupabase } from "../shared/utils/supabaseErrors";
 
 const FALLBACK_MOTIVO = "fallback_local";
 
@@ -85,7 +86,7 @@ export async function cargarCatalogoInsumosSolicitud() {
         productos: crearProductosSolicitudFallback(),
         fuente: "local",
         motivo: FALLBACK_MOTIVO,
-        mensaje: error.message
+        mensaje: describirErrorSupabase(error, "cargar el catálogo de insumos")
       };
     }
 
@@ -116,7 +117,7 @@ export async function cargarCatalogoInsumosSolicitud() {
       productos: crearProductosSolicitudFallback(),
       fuente: "local",
       motivo: FALLBACK_MOTIVO,
-      mensaje: error?.message || "No se pudo consultar el catálogo en Supabase."
+      mensaje: describirErrorSupabase(error, "consultar el catálogo de insumos")
     };
   }
 }
@@ -147,7 +148,7 @@ export async function cargarCatalogoInsumosAdmin() {
       .order("nombre", { ascending: true });
 
     if (error) {
-      return { ok: false, insumos: [], mensaje: error.message };
+      return { ok: false, insumos: [], mensaje: describirErrorSupabase(error, "cargar el catálogo de insumos") };
     }
 
     return {
@@ -156,7 +157,7 @@ export async function cargarCatalogoInsumosAdmin() {
       mensaje: `Catálogo de insumos cargado desde Supabase (${(data || []).length} registros).`
     };
   } catch (error) {
-    return { ok: false, insumos: [], mensaje: error?.message || "No se pudo cargar el catálogo de insumos." };
+    return { ok: false, insumos: [], mensaje: describirErrorSupabase(error, "cargar el catálogo de insumos") };
   }
 }
 

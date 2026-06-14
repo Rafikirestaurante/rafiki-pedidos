@@ -15,6 +15,7 @@ import {
   cargarInventarioInsumos,
   registrarEntradaInventarioDesdeGasto
 } from "../../../services/inventarioService";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 const FORMULARIO_INICIAL = {
   numeroFactura: "",
@@ -89,7 +90,10 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         const data = await cargarInventarioInsumos();
         if (activo) setInsumosInventario(data || []);
       } catch (err) {
-        if (activo) setError(err?.message || "No se pudo cargar el listado de inventario.");
+        if (activo) {
+          registrarErrorSupabase("cargar inventario desde gastos", err);
+          setError(describirErrorSupabase(err, "cargar el listado de inventario"));
+        }
       }
     }
     cargarInventarioBase();
@@ -104,7 +108,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       const data = await cargarGastosDiarios(fecha);
       setGastos(data);
     } catch (err) {
-      setError(err?.message || "No se pudieron cargar los gastos diarios.");
+      registrarErrorSupabase("cargar gastos diarios", err);
+      setError(describirErrorSupabase(err, "cargar los gastos diarios"));
     } finally {
       setCargando(false);
     }
@@ -204,7 +209,12 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         await cargar(fechaGuardada);
       }
     } catch (err) {
-      setError(err?.message || "No se pudo guardar el gasto.");
+      if (String(err?.message || "").startsWith("Activa inventario")) {
+        setError(err.message);
+      } else {
+        registrarErrorSupabase("guardar gasto diario", err);
+        setError(describirErrorSupabase(err, "guardar el gasto"));
+      }
     } finally {
       setGuardando(false);
     }
@@ -237,7 +247,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       setMensaje("Gasto eliminado correctamente.");
       await cargar(fechaInforme);
     } catch (err) {
-      setError(err?.message || "No se pudo eliminar el gasto.");
+      registrarErrorSupabase("eliminar gasto diario", err);
+      setError(describirErrorSupabase(err, "eliminar el gasto"));
     }
   }
 

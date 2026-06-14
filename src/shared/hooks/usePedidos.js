@@ -17,6 +17,7 @@ import {
   guardarPedidoPendienteOffline,
 } from "../utils/offlinePedidos";
 import { registrarDescuentoInventarioPedido } from "../../services/inventarioService";
+import { describirErrorSupabase, registrarErrorSupabase } from "../utils/supabaseErrors";
 import { anularCarteraPedidoCredito, registrarCarteraPedidoCredito, sincronizarCarteraPedido } from "../../services/carteraService";
 import {
   actualizarEstadoPedido,
@@ -81,10 +82,10 @@ export function usePedidos({
       });
 
       if (error) {
-        console.warn("Auditoría no registrada:", error.message);
+        registrarErrorSupabase("registrar auditoría de pedido", error);
       }
     } catch (error) {
-      console.warn("Auditoría no registrada:", error?.message || error);
+      registrarErrorSupabase("registrar auditoría de pedido", error);
     }
   }, [adminActor, adminRol, adminUsuario]);
 
@@ -191,7 +192,8 @@ export function usePedidos({
           return;
         }
 
-        mostrarMensaje(`Error guardando pedido: ${error.message}`, "error");
+        registrarErrorSupabase("guardar pedido cliente", error);
+        mostrarMensaje(describirErrorSupabase(error, "guardar el pedido"), "error");
         return;
       }
 
@@ -205,7 +207,8 @@ export function usePedidos({
         return;
       }
 
-      mostrarMensaje(`Error guardando pedido: ${error?.message || "No se pudo guardar el pedido."}`, "error");
+      registrarErrorSupabase("guardar pedido cliente", error);
+      mostrarMensaje(describirErrorSupabase(error, "guardar el pedido"), "error");
     } finally {
       setGuardandoPedido(false);
     }
@@ -308,7 +311,8 @@ export function usePedidos({
           return guardarOfflineMesa(`Problema de conexión: el pedido de ${mesaLimpia} quedó guardado pendiente por enviar.`);
         }
 
-        mostrarMensaje(`Error guardando pedido de mesa: ${error.message}`, "error");
+        registrarErrorSupabase("guardar pedido de mesa", error);
+        mostrarMensaje(describirErrorSupabase(error, "guardar el pedido de mesa"), "error");
         return false;
       }
 
@@ -331,7 +335,8 @@ export function usePedidos({
         return guardarOfflineMesa(`Problema de conexión: el pedido de ${mesaLimpia} quedó guardado pendiente por enviar.`);
       }
 
-      mostrarMensaje(`Error guardando pedido de mesa: ${error?.message || "No se pudo guardar el pedido."}`, "error");
+      registrarErrorSupabase("guardar pedido de mesa", error);
+      mostrarMensaje(describirErrorSupabase(error, "guardar el pedido de mesa"), "error");
       return false;
     } finally {
       setGuardandoPedido(false);
@@ -370,7 +375,8 @@ export function usePedidos({
       const { data, error } = await actualizarEstadoPedido(id, estadoNuevo);
 
       if (error) {
-        mostrarMensaje(`Error cambiando estado: ${error.message}`, "error");
+        registrarErrorSupabase("cambiar estado de pedido", error);
+        mostrarMensaje(describirErrorSupabase(error, "cambiar el estado del pedido"), "error");
         return;
       }
 
@@ -432,7 +438,8 @@ export function usePedidos({
       const { data, error } = await finalizarPedidosPorIds(ids);
 
       if (error) {
-        mostrarMensaje(`Error finalizando pedidos: ${error.message}`, "error");
+        registrarErrorSupabase("finalizar pedidos", error);
+        mostrarMensaje(describirErrorSupabase(error, "finalizar los pedidos"), "error");
         return;
       }
 
@@ -496,7 +503,8 @@ export function usePedidos({
       const { data, error } = await marcarPedidoBorrado(id);
 
       if (error) {
-        mostrarMensaje(`Error borrando pedido: ${error.message}`, "error");
+        registrarErrorSupabase("borrar pedido", error);
+        mostrarMensaje(describirErrorSupabase(error, "borrar el pedido"), "error");
         return;
       }
 
@@ -588,7 +596,8 @@ export function usePedidos({
           await anularCarteraPedidoCredito(pedidoActual, `Pedido #${codigoPedido} retirado de crédito. Pago corregido a ${payload?.tipo_pago || "otro método"}.`);
         } catch (errorCartera) {
           console.warn("No se pudo retirar de crédito antes de editar el pedido:", errorCartera?.message || errorCartera);
-          mostrarMensaje(errorCartera?.message || `No se pudo retirar el pedido #${codigoPedido} de cartera.`, "warning");
+          registrarErrorSupabase("retirar pedido de cartera", errorCartera);
+          mostrarMensaje(describirErrorSupabase(errorCartera, `retirar el pedido #${codigoPedido} de cartera`), "warning");
           return false;
         }
       }
@@ -596,7 +605,8 @@ export function usePedidos({
       const { data, error } = await actualizarPedido(id, payload);
 
       if (error) {
-        mostrarMensaje(`Error editando pedido: ${error.message}`, "error");
+        registrarErrorSupabase("editar pedido", error);
+        mostrarMensaje(describirErrorSupabase(error, "editar el pedido"), "error");
         return false;
       }
 
@@ -733,7 +743,8 @@ export function usePedidos({
           await anularCarteraPedidoCredito(pedidoActual, `Pedido #${codigoPedido} retirado de crédito desde edición en mesas. Pago corregido a ${payload?.tipo_pago || "otro método"}.`);
         } catch (errorCartera) {
           console.warn("No se pudo retirar de crédito antes de editar el pedido desde mesas:", errorCartera?.message || errorCartera);
-          mostrarMensaje(errorCartera?.message || `No se pudo retirar el pedido #${codigoPedido} de cartera.`, "warning");
+          registrarErrorSupabase("retirar pedido de cartera", errorCartera);
+          mostrarMensaje(describirErrorSupabase(errorCartera, `retirar el pedido #${codigoPedido} de cartera`), "warning");
           return false;
         }
       }
@@ -741,7 +752,8 @@ export function usePedidos({
       const { data, error } = await actualizarPedido(id, payload);
 
       if (error) {
-        mostrarMensaje(`Error editando pedido: ${error.message}`, "error");
+        registrarErrorSupabase("editar pedido", error);
+        mostrarMensaje(describirErrorSupabase(error, "editar el pedido"), "error");
         return false;
       }
 

@@ -12,6 +12,7 @@ import {
   registrarAbonoClienteCredito,
   sincronizarCarteraCompleta,
 } from "../../../services/carteraService";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 const FORM_INICIAL = {
   nombre: "",
@@ -181,8 +182,8 @@ export default function CarteraClientesCredito() {
         await cargarClientes();
       }
     } catch (err) {
-      const detalle = err?.message ? ` ${err.message}` : "";
-      setError(`No se pudo auditar y sincronizar la cartera.${detalle}`);
+      registrarErrorSupabase("auditar y sincronizar cartera", err);
+      setError(describirErrorSupabase(err, "auditar y sincronizar la cartera"));
     } finally {
       setCargandoMovimientos(false);
     }
@@ -214,8 +215,8 @@ export default function CarteraClientesCredito() {
         setMensaje("Auditoría finalizada: no se encontraron diferencias. La cartera está sincronizada.");
       }
     } catch (err) {
-      const detalle = err?.message ? ` ${err.message}` : "";
-      setError(`No se pudo completar la auditoría de cartera.${detalle}`);
+      registrarErrorSupabase("completar auditoría de cartera", err);
+      setError(describirErrorSupabase(err, "completar la auditoría de cartera"));
     } finally {
       setAuditando(false);
     }
@@ -402,8 +403,8 @@ export default function CarteraClientesCredito() {
       cerrarAbono();
       await actualizarTodo();
     } catch (err) {
-      const detalle = err?.message ? ` ${err.message}` : "";
-      setError(`No se pudo registrar el abono.${detalle}`);
+      registrarErrorSupabase("registrar abono de cartera", err);
+      setError(describirErrorSupabase(err, "registrar el abono"));
     } finally {
       setGuardando(false);
     }
@@ -443,8 +444,8 @@ export default function CarteraClientesCredito() {
       limpiarFormulario();
       await cargarClientes();
     } catch (err) {
-      const detalle = err?.message ? ` ${err.message}` : "";
-      setError(`No se pudo guardar el cliente.${detalle}`);
+      registrarErrorSupabase("guardar cliente crédito", err);
+      setError(describirErrorSupabase(err, "guardar el cliente crédito"));
     } finally {
       setGuardando(false);
     }
@@ -464,8 +465,8 @@ export default function CarteraClientesCredito() {
       }
       await cargarClientes();
     } catch (err) {
-      const detalle = err?.message ? ` ${err.message}` : "";
-      setError(`No se pudo cambiar el estado del cliente.${detalle}`);
+      registrarErrorSupabase("cambiar estado cliente crédito", err);
+      setError(describirErrorSupabase(err, "cambiar el estado del cliente"));
     } finally {
       setGuardando(false);
     }

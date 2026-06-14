@@ -11,6 +11,7 @@ import {
 import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
 import { dinero } from "../../../shared/utils/pedidos";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 const FORM_STOCK_INICIAL = { stockActual: "", stockMinimo: "", costoPromedio: "", activo: true };
 
@@ -93,13 +94,14 @@ export default function InventarioAdmin() {
       const [listaInsumos, listaRelaciones, resultadoCatalogo] = await Promise.all([
         cargarInventarioInsumos(),
         cargarRelacionesInventarioProductos(),
-        cargarCatalogoProductosAdmin().catch((error) => ({ ok: false, productos: [], mensaje: error?.message }))
+        cargarCatalogoProductosAdmin().catch((error) => ({ ok: false, productos: [], mensaje: describirErrorSupabase(error, "cargar el catálogo de productos") }))
       ]);
       setInsumos(listaInsumos);
       setRelaciones(listaRelaciones);
       setProductos(resultadoCatalogo?.ok && resultadoCatalogo.productos?.length ? resultadoCatalogo.productos : PRODUCTOS_CATALOGO_FALLBACK);
     } catch (error) {
-      setMensaje({ texto: `No se pudo cargar inventario: ${error.message || error}`, tipo: "error" });
+      registrarErrorSupabase("cargar inventario", error);
+      setMensaje({ texto: describirErrorSupabase(error, "cargar inventario"), tipo: "error" });
     } finally {
       setCargando(false);
     }
@@ -120,7 +122,8 @@ export default function InventarioAdmin() {
         tipo: "success"
       });
     } catch (error) {
-      setMensaje({ texto: `No se pudo traer la base del catálogo: ${error.message || error}`, tipo: "error" });
+      registrarErrorSupabase("traer base del catálogo a inventario", error);
+      setMensaje({ texto: describirErrorSupabase(error, "traer la base del catálogo"), tipo: "error" });
     } finally {
       setGuardando(false);
     }
@@ -212,7 +215,8 @@ export default function InventarioAdmin() {
       cerrarEditorInsumo();
       setMensaje({ texto: "Insumo actualizado y productos asociados guardados.", tipo: "success" });
     } catch (error) {
-      setMensaje({ texto: error.message || "No se pudo guardar la configuración del insumo.", tipo: "error" });
+      registrarErrorSupabase("guardar configuración de insumo", error);
+      setMensaje({ texto: describirErrorSupabase(error, "guardar la configuración del insumo"), tipo: "error" });
     } finally {
       setGuardando(false);
     }

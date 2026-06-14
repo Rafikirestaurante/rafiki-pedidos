@@ -1,45 +1,24 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase, supabaseConfigOk, supabaseConfigMensaje } from "./supabaseClient";
+import { supabase, supabaseConfigOk } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./shared/utils/navigation";
 import { InicioRafiki, AdminLogin } from "./modules/admin/components/auth/InicioAdmin";
 import { useConfirmacion } from "./shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
-  acompanantesATexto,
   agruparPlatosPorCategoria,
   calcularTotalItems,
   crearItemNuevo,
   crearLinkWhatsApp,
   crearMensajeWhatsAppPedido,
-  dinero,
-  fechaISOColombia,
-  guardarSesionTemporal,
-  limpiarAcompanantesMenu,
   limpiarTelefonoWhatsApp,
   esCategoriaSopa,
-  listaPorLineas,
-  normalizarMenu,
   obtenerCliente,
-  obtenerEstadoPedido,
-  obtenerRangoPedidos,
-  obtenerSesionActiva,
-  platosATexto,
-  textoAPlatosDetalle
+  obtenerEstadoPedido
 } from "./shared/utils/pedidos";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
-import {
-  describirActor,
-  nombreRol,
-  obtenerRolCacheadoRapido,
-  obtenerRolUsuarioDesdeTabla,
-  primeraPestanaPermitida,
-  usuarioPuede
-} from "./shared/utils/authAdmin";
 import CargandoModulo from "./shared/components/CargandoModulo";
 import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
-import { conTiempoMaximo } from "./shared/utils/async";
-import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "./shared/utils/menuCache";
 import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
@@ -50,10 +29,10 @@ import MenuDiarioTab from "./modules/admin/tabs/MenuDiarioTab";
 import PedidoCliente from "./modules/cliente/components/PedidoCliente";
 import ConfirmacionPedidoCliente from "./modules/cliente/components/ConfirmacionPedidoCliente";
 import { useRealtimePedidos } from "./shared/hooks/useRealtimePedidos";
+import { ADMIN_TABS_VALIDAS, guardarAdminTabActiva, useAuthAdmin } from "./shared/hooks/useAuthAdmin";
+import { usePedidosHoy } from "./shared/hooks/usePedidosHoy";
+import { useMenuDiario } from "./shared/hooks/useMenuDiario";
 import { usePedidos } from "./shared/hooks/usePedidos";
-import { useAdminPedidos } from "./shared/hooks/useAdminPedidos";
-import { leerUltimoTextoEditorGenerador } from "./shared/utils/generadorMenu";
-import { buscarPedidosPorNumeroGlobal, cargarPedidosRango } from "./services/pedidosService";
 
 const SolicitudProductos = lazy(() => import("./modules/catalogo/components/SolicitudProductos"));
 const GeneradorMenu = lazy(() => import("./modules/catalogo/components/GeneradorMenu"));
@@ -64,136 +43,21 @@ const InventarioAdmin = lazy(() => import("./modules/inventario/components/Inven
 const CajaAdmin = lazy(() => import("./modules/caja/components/CajaAdmin"));
 const GerenciaPanel = lazy(() => import("./modules/gerencia/components/GerenciaPanel"));
 
-const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
-const MENU_EDITOR_DRAFT_KEY = "rafikiMenuDiarioEditorBorrador";
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
-const ADMIN_TABS_VALIDAS = new Set([
-  "pedidos",
-  "menu",
-  "productos",
-  "generador",
-  "catalogo",
-  "inventario",
-  "caja",
-  "rafa"
-]);
-
-const PEDIDOS_HOY_LIMITE_INICIAL = 80;
-const PEDIDOS_HOY_LIMITE_CARGAR_MAS = 80;
-
-function crearEstadoPaginacionPedidos() {
-  return {
-    total: null,
-    cargados: 0,
-    hayMas: false,
-    cargandoMas: false,
-    limite: PEDIDOS_HOY_LIMITE_INICIAL,
-    cargaLimitada: true,
-    advertencia: ""
-  };
-}
-
-function leerAdminTabGuardada() {
-  try {
-    const tab = window.localStorage.getItem(ADMIN_TAB_STORAGE_KEY);
-    return ADMIN_TABS_VALIDAS.has(tab) ? tab : "pedidos";
-  } catch {
-    return "pedidos";
-  }
-}
-
-function guardarAdminTabActiva(tab) {
-  try {
-    if (ADMIN_TABS_VALIDAS.has(tab)) {
-      window.localStorage.setItem(ADMIN_TAB_STORAGE_KEY, tab);
-    }
-  } catch {
-    // No bloquea el panel si localStorage no está disponible.
-  }
-}
-
-function leerBorradorEditorMenuDiario() {
-  try {
-    const raw = window.localStorage.getItem(MENU_EDITOR_DRAFT_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    return data && typeof data === "object" ? data : null;
-  } catch {
-    return null;
-  }
-}
-
-function guardarBorradorEditorMenuDiario(payload) {
-  try {
-    window.localStorage.setItem(
-      MENU_EDITOR_DRAFT_KEY,
-      JSON.stringify({
-        ...payload,
-        actualizadoEn: new Date().toISOString()
-      })
-    );
-  } catch {
-    // El borrador es una ayuda operativa; no debe bloquear la app.
-  }
-}
-
-function menuConFechaActual(menuBase) {
-  return {
-    ...menuBase,
-    fecha: fechaISOColombia()
-  };
-}
-
-function borrarBorradorEditorMenuDiario() {
-  try {
-    window.localStorage.removeItem(MENU_EDITOR_DRAFT_KEY);
-  } catch {
-    // No bloquear si el navegador no permite limpiar localStorage.
-  }
-}
 
 export default function App() {
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
-  const menuCacheDisponibleRef = useRef(hayMenuCacheValido());
-  const borradorEditorMenuRestauradoRef = useRef(false);
   const [vista, setVista] = useState(() => obtenerVistaInicial());
-  const [adminTab, setAdminTab] = useState(() => leerAdminTabGuardada());
-  const adminTabRef = useRef(adminTab);
-  const [adminAutenticado, setAdminAutenticado] = useState(() => obtenerSesionActiva("rafikiAdminActivo"));
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-  const [adminUsuario, setAdminUsuario] = useState(null);
-  const [adminRol, setAdminRol] = useState("usuario");
-  const [adminAuthCargando, setAdminAuthCargando] = useState(false);
-  const [errorClaveAdmin, setErrorClaveAdmin] = useState("");
-  const [menu, setMenu] = useState(() => leerMenuCache());
-  const [pedidos, setPedidos] = useState([]);
   const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
   const [tipoPago, setTipoPago] = useState("");
   const [observaciones, setObservaciones] = useState("");
-  const [busqueda, setBusqueda] = useState("");
-  const [busquedaDebounced, setBusquedaDebounced] = useState("");
-  const [busquedaNumeroPedido, setBusquedaNumeroPedido] = useState("");
-  const [resultadoNumeroPedido, setResultadoNumeroPedido] = useState([]);
-  const [cargandoNumeroPedido, setCargandoNumeroPedido] = useState(false);
-  const [errorNumeroPedido, setErrorNumeroPedido] = useState("");
-  const [filtroPedidos, setFiltroPedidos] = useState("hoy");
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaISOColombia());
-  const [fechaInicioRangoPedidos, setFechaInicioRangoPedidos] = useState(fechaISOColombia());
-  const [fechaFinRangoPedidos, setFechaFinRangoPedidos] = useState(fechaISOColombia());
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
   const [mensajeMenu, setMensajeMenu] = useState({ texto: "", tipo: "info" });
   const [errorDatosPedido, setErrorDatosPedido] = useState("");
   const [pedidoFinalizado, setPedidoFinalizado] = useState(null);
-  const [cargandoMenu, setCargandoMenu] = useState(() => !menuCacheDisponibleRef.current);
-  const [cargandoPedidos, setCargandoPedidos] = useState(true);
-  const [errorCargaPedidos, setErrorCargaPedidos] = useState("");
-  const [paginacionPedidos, setPaginacionPedidos] = useState(() => crearEstadoPaginacionPedidos());
-  const [guardandoMenu, setGuardandoMenu] = useState(false);
-  const [recargaPedidos, setRecargaPedidos] = useState(0);
   const [realtimeAdminActivo, setRealtimeAdminActivo] = useState(() => {
     try {
       return window.localStorage.getItem(REALTIME_ADMIN_STORAGE_KEY) === "true";
@@ -203,63 +67,50 @@ export default function App() {
   });
   const [cambiosPedidosPendientes, setCambiosPedidosPendientes] = useState(false);
   const [mensajeCambiosPedidos, setMensajeCambiosPedidos] = useState("");
-  const [recargaMenu, setRecargaMenu] = useState(0);
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
   const [pedidoEditandoEnMesas, setPedidoEditandoEnMesas] = useState(null);
-  const [platosTexto, setPlatosTexto] = useState("");
-  const [acompanantesTexto, setAcompanantesTexto] = useState("");
   const mensajeTimer = useRef(null);
   const mensajeMenuTimer = useRef(null);
-  const menuHashRef = useRef("");
   const alertaPedidoTimer = useRef(null);
   const sincronizandoOfflineRef = useRef(false);
-  const pedidosCargaHashRef = useRef("");
-  const paginacionPedidosRef = useRef(crearEstadoPaginacionPedidos());
-  const verificacionAdminRef = useRef({ enCurso: false, ultimoChequeo: 0 });
-
-  const adminNombreRol = nombreRol(adminRol);
-  const adminActor = describirActor(
-    adminUsuario,
-    adminAutenticado ? "Clave administrativa local" : "Sin sesión"
-  );
-  const puedeVerMenu = usuarioPuede(adminRol, "menu");
-  const puedeVerProductos = usuarioPuede(adminRol, "productos");
-  const puedeVerGenerador = usuarioPuede(adminRol, "generador");
-  const puedeVerRafa = usuarioPuede(adminRol, "rafa");
-  const puedeVerCatalogo = usuarioPuede(adminRol, "catalogo");
-  const puedeVerGastos = usuarioPuede(adminRol, "gastos");
-  const puedeVerInventario = usuarioPuede(adminRol, "inventario");
-  const puedeVerCaja = usuarioPuede(adminRol, "caja");
-  const puedeVerInformeGastos = usuarioPuede(adminRol, "gastos_informe");
-  const puedeEliminarPedido = usuarioPuede(adminRol, "eliminar_pedido");
-  const puedeEditarPedido = usuarioPuede(adminRol, "editar_pedido");
-  const puedeCambiarEstado = usuarioPuede(adminRol, "cambiar_estado");
-  const puedeFinalizarPendientes = usuarioPuede(adminRol, "finalizar_pendientes");
 
   const navegar = useCallback((ruta, nuevaVista) => {
     actualizarRuta(ruta);
     setVista(nuevaVista);
   }, []);
 
-  const cargarRolAdmin = useCallback(async (usuario) => {
-    const rol = await obtenerRolUsuarioDesdeTabla(supabase, usuario);
-    setAdminRol(rol);
-    return rol;
-  }, []);
 
-  const activarSesionAdmin = useCallback((usuario, rol, opciones = {}) => {
-    const { preservarPestana = false } = opciones;
-    guardarSesionTemporal("rafikiAdminActivo");
-    setAdminUsuario(usuario || null);
-    setAdminRol(rol || "usuario");
-    setAdminAutenticado(true);
-
-    if (!preservarPestana) {
-      const pestanaInicial = primeraPestanaPermitida(rol || "usuario");
-      guardarAdminTabActiva(pestanaInicial);
-      setAdminTab(pestanaInicial);
-    }
-  }, []);
+  const {
+    adminTab,
+    setAdminTab,
+    adminAutenticado,
+    adminEmail,
+    adminPassword,
+    adminUsuario,
+    adminRol,
+    adminAuthCargando,
+    errorClaveAdmin,
+    setAdminEmail,
+    setAdminPassword,
+    setErrorClaveAdmin,
+    adminNombreRol,
+    adminActor,
+    puedeVerMenu,
+    puedeVerProductos,
+    puedeVerGenerador,
+    puedeVerRafa,
+    puedeVerCatalogo,
+    puedeVerGastos,
+    puedeVerInventario,
+    puedeVerCaja,
+    puedeVerInformeGastos,
+    puedeEliminarPedido,
+    puedeEditarPedido,
+    puedeCambiarEstado,
+    puedeFinalizarPendientes,
+    validarClaveAdmin,
+    cerrarPanelAdmin
+  } = useAuthAdmin({ vista, setVista, navegar });
 
   useEffect(() => {
     actualizarBadgePedidosPendientes();
@@ -307,171 +158,6 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    let activo = true;
-    const rutaAdmin =
-      vista === "admin" ||
-      vista === "adminLogin" ||
-      vista === "pedidos" ||
-      vista === "inventario" ||
-      vista === "gerencia";
-
-    const enviarALoginAdmin = () => {
-      localStorage.removeItem("rafikiAdminActivo");
-      setAdminRol("usuario");
-      setAdminUsuario(null);
-      setAdminAutenticado(false);
-      if (rutaAdmin) {
-        setVista("adminLogin");
-      }
-    };
-
-    if (!supabaseConfigOk || !rutaAdmin) {
-      setAdminAuthCargando(false);
-      return () => {
-        activo = false;
-      };
-    }
-
-    const ahora = Date.now();
-    const verificacionReciente = ahora - verificacionAdminRef.current.ultimoChequeo < 120000;
-
-    // En celular/PWA no bloqueamos el panel si ya hay una sesión local reciente.
-    // La verificación completa sigue corriendo, pero en segundo plano para evitar
-    // que la pantalla quede pegada en "Verificando sesión administrativa...".
-    if (adminAutenticado && adminUsuario && verificacionReciente) {
-      setAdminAuthCargando(false);
-      return () => {
-        activo = false;
-      };
-    }
-
-    if (verificacionAdminRef.current.enCurso) {
-      setAdminAuthCargando(false);
-      return () => {
-        activo = false;
-      };
-    }
-
-    setAdminAuthCargando(!adminAutenticado);
-
-    async function revisarSesionAdmin() {
-      verificacionAdminRef.current.enCurso = true;
-      try {
-        const { data } = await conTiempoMaximo(
-          supabase.auth.getSession(),
-          adminAutenticado ? 3000 : 4500,
-          "La revisión de sesión administrativa"
-        );
-        if (!activo) return;
-
-        const usuario = data?.session?.user || null;
-        verificacionAdminRef.current.ultimoChequeo = Date.now();
-
-        if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
-          const rolRapido = obtenerRolCacheadoRapido(usuario);
-          activarSesionAdmin(usuario, rolRapido, { preservarPestana: true });
-          setAdminAuthCargando(false);
-
-          // Validamos el rol real en segundo plano. Si la red móvil está lenta,
-          // el panel no queda bloqueado; se mantiene el último rol cacheado.
-          cargarRolAdmin(usuario).catch((error) => {
-            console.warn("No se pudo refrescar el rol administrativo:", error?.message || error);
-          });
-
-          const rutaActualAdmin = window.location.pathname.replace(/\/$/, "");
-          if (rutaActualAdmin === "/admin") {
-            setVista("admin");
-          }
-          if (rutaActualAdmin === "/gerencia" || rutaActualAdmin === "/rafa") {
-            setVista("gerencia");
-          }
-          return;
-        }
-
-        if (usuario && !obtenerSesionActiva("rafikiAdminActivo")) {
-          // No cerramos la sesión global de Supabase aquí. En móvil/PWA, forzar
-          // signOut durante verificaciones lentas puede dejar módulos como Caja
-          // intentando operar como anon y disparar errores RLS. La autorización
-          // del panel sigue dependiendo de rafikiAdminActivo y del rol.
-          enviarALoginAdmin();
-          return;
-        }
-
-        enviarALoginAdmin();
-      } catch (error) {
-        console.warn("No se pudo revisar la sesión administrativa:", error?.message || error);
-        if (!activo) return;
-
-        if (adminAutenticado && obtenerSesionActiva("rafikiAdminActivo")) {
-          setAdminAuthCargando(false);
-          return;
-        }
-
-        if (rutaAdmin) {
-          enviarALoginAdmin();
-        }
-      } finally {
-        verificacionAdminRef.current.enCurso = false;
-        if (activo) setAdminAuthCargando(false);
-      }
-    }
-
-    revisarSesionAdmin();
-
-    return () => {
-      activo = false;
-    };
-  }, [vista, adminAutenticado, adminUsuario, cargarRolAdmin, activarSesionAdmin]);
-
-  useEffect(() => {
-    if (!supabaseConfigOk) return undefined;
-
-    let activo = true;
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!activo) return;
-
-      const usuario = session?.user || null;
-      setAdminUsuario(usuario);
-
-      if (usuario && obtenerSesionActiva("rafikiAdminActivo")) {
-        const rolRapido = obtenerRolCacheadoRapido(usuario);
-        activarSesionAdmin(usuario, rolRapido, { preservarPestana: true });
-        setErrorClaveAdmin("");
-
-        window.setTimeout(() => {
-          if (!activo) return;
-          cargarRolAdmin(usuario).catch((error) => {
-            console.warn("No se pudo refrescar el rol administrativo:", error?.message || error);
-          });
-        }, 0);
-        return;
-      }
-
-      if (!usuario) {
-        setAdminRol("usuario");
-        if (!obtenerSesionActiva("rafikiAdminActivo")) {
-          setAdminAutenticado(false);
-        }
-      }
-    });
-
-    return () => {
-      activo = false;
-      authListener?.subscription?.unsubscribe?.();
-    };
-  }, [cargarRolAdmin, activarSesionAdmin]);
-
-  useEffect(() => {
-    if (!adminAutenticado || adminAuthCargando) return;
-    const pestanaPermitida = primeraPestanaPermitida(adminRol);
-
-    if (!usuarioPuede(adminRol, adminTab)) {
-      guardarAdminTabActiva(pestanaPermitida);
-      setAdminTab(pestanaPermitida);
-    }
-  }, [adminAutenticado, adminAuthCargando, adminRol, adminTab]);
-
   const mostrarMensaje = useCallback((texto, tipo = "info") => {
     if (mensajeTimer.current) {
       clearTimeout(mensajeTimer.current);
@@ -483,6 +169,42 @@ export default function App() {
       setMensaje({ texto: "", tipo: "info" });
     }, 5000);
   }, []);
+
+
+  const {
+    pedidos,
+    setPedidos,
+    busqueda,
+    setBusqueda,
+    busquedaNumeroPedido,
+    setBusquedaNumeroPedido,
+    resultadoNumeroPedido,
+    cargandoNumeroPedido,
+    errorNumeroPedido,
+    filtroPedidos,
+    setFiltroPedidos,
+    fechaSeleccionada,
+    setFechaSeleccionada,
+    fechaInicioRangoPedidos,
+    setFechaInicioRangoPedidos,
+    fechaFinRangoPedidos,
+    setFechaFinRangoPedidos,
+    cargandoPedidos,
+    errorCargaPedidos,
+    paginacionPedidos,
+    setRecargaPedidos,
+    pedidosFiltrados,
+    pedidosPendientes,
+    pedidosFinalizados,
+    pedidosBorrados,
+    pedidosActivos,
+    consolidado,
+    tituloPedidos,
+    hayBusquedaPedidos,
+    buscarPedidoPorNumeroGlobal,
+    limpiarBusquedaNumeroPedido,
+    cargarMasPedidos
+  } = usePedidosHoy({ adminAutenticado, vista, adminTab, mostrarMensaje });
 
   const mostrarMensajeMenu = useCallback((texto, tipo = "info", opciones = {}) => {
     if (mensajeMenuTimer.current) {
@@ -582,35 +304,6 @@ export default function App() {
     cambiarAdminTabSeguro("pedidos");
   }, [cambiarAdminTabSeguro]);
 
-  useEffect(() => {
-    if (adminTab !== "menu" || borradorEditorMenuRestauradoRef.current) return;
-
-    // El Editor de menú diario debe usar Supabase como fuente principal.
-    // Evitamos restaurar borradores viejos del navegador porque en computadores
-    // compartidos pueden mostrar menús antiguos mientras el celular ya ve el menú actual.
-    borrarBorradorEditorMenuDiario();
-    borradorEditorMenuRestauradoRef.current = true;
-    setRecargaMenu((actual) => actual + 1);
-  }, [adminTab]);
-
-  useEffect(() => {
-    if (vista !== "admin" || !adminAutenticado || adminTab !== "menu") return;
-
-    setMenu((actual) => {
-      const fechaActual = fechaISOColombia();
-      return actual.fecha === fechaActual ? actual : { ...actual, fecha: fechaActual };
-    });
-  }, [vista, adminAutenticado, adminTab]);
-
-  useEffect(() => {
-    if (adminTab !== "menu") return undefined;
-
-    // No persistimos borrador local del editor para evitar que otro navegador
-    // muestre menús viejos. Lo guardado en Supabase siempre manda.
-    borrarBorradorEditorMenuDiario();
-    return undefined;
-  }, [adminTab, menu.fecha, menu.titulo, menu.descripcion, platosTexto, acompanantesTexto]);
-
   const descartarAvisoCambiosPedidos = useCallback(() => {
     setCambiosPedidosPendientes(false);
     setMensajeCambiosPedidos("");
@@ -629,6 +322,37 @@ export default function App() {
     onCambiosPendientes: marcarCambiosPedidosPendientes
   });
 
+
+  const {
+    menu,
+    setMenu,
+    cargandoMenu,
+    guardandoMenu,
+    setRecargaMenu,
+    platosTexto,
+    setPlatosTexto,
+    acompanantesTexto,
+    setAcompanantesTexto,
+    sincronizarFechaMenuActual,
+    traerTextoDesdeGeneradorMenu,
+    imprimirMenuDiarioTicket,
+    guardarMenu
+  } = useMenuDiario({
+    adminTab,
+    instanciaRealtimeRef,
+    irAElemento,
+    mostrarMensaje,
+    mostrarMensajeMenu,
+    setItemsPedido,
+    setMensajeMenu
+  });
+
+
+  useEffect(() => {
+    if (vista !== "admin" || !adminAutenticado || adminTab !== "menu") return;
+    sincronizarFechaMenuActual();
+  }, [vista, adminAutenticado, adminTab, sincronizarFechaMenuActual]);
+
   useEffect(() => {
     function manejarCambioRuta() {
       const vistaRuta = obtenerVistaInicial();
@@ -644,14 +368,6 @@ export default function App() {
     window.addEventListener("popstate", manejarCambioRuta);
     return () => window.removeEventListener("popstate", manejarCambioRuta);
   }, [adminAutenticado]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setBusquedaDebounced(busqueda);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [busqueda]);
 
   const vistaProtegidaAdmin =
     vista === "admin" ||
@@ -671,87 +387,11 @@ export default function App() {
     return itemsPedido.some((item) => item.plato || item.proteina);
   }, [itemsPedido]);
 
-  const {
-    pedidosFiltrados,
-    pedidosPendientes,
-    pedidosFinalizados,
-    pedidosBorrados,
-    pedidosActivos,
-    consolidado,
-    tituloPedidos
-  } = useAdminPedidos({
-    pedidos,
-    busquedaDebounced,
-    filtroPedidos,
-    fechaSeleccionada,
-    fechaInicioRangoPedidos,
-    fechaFinRangoPedidos
-  });
-
-  const buscarPedidoPorNumeroGlobal = useCallback(async () => {
-    const numeroLimpio = String(busquedaNumeroPedido || "").replace(/\D+/g, "");
-
-    if (!numeroLimpio) {
-      setResultadoNumeroPedido([]);
-      setErrorNumeroPedido("Escribe el número del pedido que quieres buscar.");
-      return;
-    }
-
-    if (!supabaseConfigOk) {
-      setResultadoNumeroPedido([]);
-      setErrorNumeroPedido(supabaseConfigMensaje);
-      return;
-    }
-
-    setCargandoNumeroPedido(true);
-    setErrorNumeroPedido("");
-
-    try {
-      const { data, error } = await conTiempoMaximo(
-        buscarPedidosPorNumeroGlobal(numeroLimpio),
-        10000,
-        "La búsqueda por número de pedido"
-      );
-
-      if (error) {
-        setResultadoNumeroPedido([]);
-        setErrorNumeroPedido(`Error buscando pedido #${numeroLimpio}: ${error.message}`);
-        return;
-      }
-
-      const encontrados = Array.isArray(data) ? data : [];
-      setResultadoNumeroPedido(encontrados);
-      if (!encontrados.length) {
-        setErrorNumeroPedido(`No encontré pedidos con número ${numeroLimpio}.`);
-      }
-    } catch (error) {
-      setResultadoNumeroPedido([]);
-      setErrorNumeroPedido(`No se pudo buscar el pedido. ${error.message || ""}`.trim());
-    } finally {
-      setCargandoNumeroPedido(false);
-    }
-  }, [busquedaNumeroPedido, mostrarMensaje]);
-
-  const limpiarBusquedaNumeroPedido = useCallback(() => {
-    setBusquedaNumeroPedido("");
-    setResultadoNumeroPedido([]);
-    setErrorNumeroPedido("");
-  }, []);
-
   const platosAgrupados = useMemo(
     () => agruparPlatosPorCategoria(menu.platos_detalle),
     [menu.platos_detalle]
   );
 
-  const hayBusquedaPedidos = busqueda.trim().length > 0;
-
-  useEffect(() => {
-    paginacionPedidosRef.current = paginacionPedidos;
-  }, [paginacionPedidos]);
-
-  useEffect(() => {
-    adminTabRef.current = adminTab;
-  }, [adminTab]);
 
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
   const whatsappRafikiDisponible = Boolean(limpiarTelefonoWhatsApp(WHATSAPP_RAFIKI));
@@ -760,387 +400,6 @@ export default function App() {
     pedidoFinalizado && whatsappRafikiDisponible
       ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
       : "#";
-
-  useEffect(() => {
-    let cancelado = false;
-
-    async function cargarMenuSeguro() {
-      const hayCache = menuCacheDisponibleRef.current;
-      setCargandoMenu(!hayCache);
-
-      if (!supabaseConfigOk) {
-        setCargandoMenu(false);
-        mostrarMensaje(supabaseConfigMensaje, "error");
-        return;
-      }
-
-      try {
-        const fechaActualMenu = fechaISOColombia();
-        let { data: menuData, error: menuError } = await conTiempoMaximo(
-          supabase
-            .from("menu_diario")
-            .select("id, fecha, titulo, descripcion, platos_detalle, acompanantes, activo")
-            .eq("activo", true)
-            .eq("fecha", fechaActualMenu)
-            .order("id", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          7000,
-          "La carga del menú actual"
-        );
-
-        if (cancelado) return;
-
-        if (menuError) {
-          mostrarMensaje(`Error cargando menú: ${menuError.message}`, "error");
-          return;
-        }
-
-        if (menuData) {
-          const menuNormalizado = normalizarMenu(menuData);
-          const nuevoHash = JSON.stringify({
-            id: menuNormalizado.id,
-            fecha: menuNormalizado.fecha,
-            titulo: menuNormalizado.titulo,
-            descripcion: menuNormalizado.descripcion,
-            platos_detalle: menuNormalizado.platos_detalle,
-            acompanantes: menuNormalizado.acompanantes
-          });
-
-          if (menuHashRef.current !== nuevoHash) {
-            menuHashRef.current = nuevoHash;
-            setMenu(adminTabRef.current === "menu" ? menuConFechaActual(menuNormalizado) : menuNormalizado);
-            guardarMenuCache(menuNormalizado);
-            menuCacheDisponibleRef.current = true;
-            setPlatosTexto(platosATexto(menuNormalizado.platos_detalle));
-            setAcompanantesTexto(acompanantesATexto(menuNormalizado.acompanantes));
-
-            setItemsPedido((actual) => {
-              const nombresMenuActual = new Set(
-                menuNormalizado.platos_detalle
-                  .map((plato) => String(plato.nombre || "").trim())
-                  .filter(Boolean)
-              );
-
-              const itemsValidosMenuActual = actual
-                .map((item) => {
-                  const nombreItem = String(item.plato || item.proteina || "").trim();
-                  if (!nombreItem) return item;
-                  return nombresMenuActual.has(nombreItem) ? item : crearItemNuevo();
-                })
-                .filter((item, index, lista) => {
-                  const tieneProducto = Boolean(item.plato || item.proteina);
-                  if (tieneProducto) return true;
-                  return lista.every((otro) => !(otro.plato || otro.proteina)) && index === 0;
-                });
-
-              return itemsValidosMenuActual.length ? itemsValidosMenuActual : [crearItemNuevo()];
-            });
-          }
-        } else {
-          const menuVacioHoy = normalizarMenu({
-            fecha: fechaActualMenu,
-            platos_detalle: [],
-            acompanantes: []
-          });
-          menuHashRef.current = JSON.stringify({
-            fecha: fechaActualMenu,
-            platos_detalle: [],
-            acompanantes: []
-          });
-          setMenu(menuVacioHoy);
-          guardarMenuCache(menuVacioHoy);
-          menuCacheDisponibleRef.current = false;
-          setPlatosTexto("");
-          setAcompanantesTexto("");
-        }
-      } catch (error) {
-        if (!cancelado && !menuCacheDisponibleRef.current) {
-          mostrarMensaje(
-            `No se pudo cargar el menú. Revisa la conexión e intenta recargar la página. ${error.message || ""}`.trim(),
-            "error"
-          );
-        }
-      } finally {
-        if (!cancelado) {
-          setCargandoMenu(false);
-        }
-      }
-    }
-
-    cargarMenuSeguro();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [mostrarMensaje, recargaMenu]);
-
-  useEffect(() => {
-    if (!supabaseConfigOk) return undefined;
-
-    let ultimaRecargaMenu = 0;
-    let recargaMenuPendiente = null;
-
-    const pedirRecargaMenu = () => {
-      if (adminTabRef.current === "menu") return;
-
-      const ahora = Date.now();
-      const tiempoDesdeUltima = ahora - ultimaRecargaMenu;
-
-      if (tiempoDesdeUltima >= 2000) {
-        ultimaRecargaMenu = ahora;
-        setRecargaMenu((actual) => actual + 1);
-        return;
-      }
-
-      if (recargaMenuPendiente) return;
-
-      recargaMenuPendiente = window.setTimeout(() => {
-        recargaMenuPendiente = null;
-        if (adminTabRef.current === "menu") return;
-        ultimaRecargaMenu = Date.now();
-        setRecargaMenu((actual) => actual + 1);
-      }, 2000 - tiempoDesdeUltima);
-    };
-
-    const canalMenu = supabase
-      .channel(`${instanciaRealtimeRef.current}-menu`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "menu_diario" }, pedirRecargaMenu)
-      .subscribe();
-
-    return () => {
-      if (recargaMenuPendiente) window.clearTimeout(recargaMenuPendiente);
-      supabase.removeChannel(canalMenu);
-    };
-  }, []);
-
-  useEffect(() => {
-    const recargarMenuAlVolver = () => {
-      if (document.visibilityState === "visible") {
-        setRecargaMenu((actual) => actual + 1);
-      }
-    };
-
-    window.addEventListener("focus", recargarMenuAlVolver);
-    document.addEventListener("visibilitychange", recargarMenuAlVolver);
-
-    return () => {
-      window.removeEventListener("focus", recargarMenuAlVolver);
-      document.removeEventListener("visibilitychange", recargarMenuAlVolver);
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelado = false;
-    const debeCargarPedidos =
-      adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
-
-    if (!debeCargarPedidos) {
-      setCargandoPedidos(false);
-      return () => {
-        cancelado = true;
-      };
-    }
-
-    async function cargarPedidosSeguro() {
-      setCargandoPedidos(true);
-      setPaginacionPedidos((actual) => ({
-        ...actual,
-        cargandoMas: false,
-        limite: PEDIDOS_HOY_LIMITE_INICIAL
-      }));
-
-      if (!supabaseConfigOk) {
-        setCargandoPedidos(false);
-        setPaginacionPedidos(crearEstadoPaginacionPedidos());
-        mostrarMensaje(supabaseConfigMensaje, "error");
-        return;
-      }
-
-      try {
-        const rango =
-          filtroPedidos === "rango"
-            ? obtenerRangoPedidos("rango", fechaInicioRangoPedidos, fechaFinRangoPedidos)
-            : obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
-
-        const resultadoPedidos = await conTiempoMaximo(
-          cargarPedidosRango(rango.inicio, rango.fin, {
-            ascendente: false,
-            limite: PEDIDOS_HOY_LIMITE_INICIAL,
-            offset: 0,
-            contar: true
-          }),
-          12000,
-          "La carga inicial de pedidos"
-        );
-
-        if (cancelado) return;
-
-        const {
-          data: pedidosData,
-          error: pedidosError,
-          count,
-          hayMas,
-          limite,
-          advertencia
-        } = resultadoPedidos || {};
-
-        if (pedidosError) {
-          const detalle = `Error cargando pedidos: ${pedidosError.message}`;
-          setErrorCargaPedidos(detalle);
-          setPaginacionPedidos(crearEstadoPaginacionPedidos());
-          mostrarMensaje(detalle, "error");
-          return;
-        }
-
-        const pedidosNuevos = pedidosData || [];
-        const totalPedidos = Number.isFinite(count) ? count : null;
-        const nuevoHashPedidos = JSON.stringify(
-          pedidosNuevos.map((pedido) => [pedido.id, pedido.estado, pedido.total, pedido.created_at])
-        );
-
-        setErrorCargaPedidos("");
-        setPaginacionPedidos({
-          total: totalPedidos,
-          cargados: pedidosNuevos.length,
-          hayMas: Boolean(hayMas),
-          cargandoMas: false,
-          limite: limite || PEDIDOS_HOY_LIMITE_INICIAL,
-          cargaLimitada: true,
-          advertencia:
-            advertencia ||
-            (hayMas
-              ? `Carga inicial optimizada: se muestran ${pedidosNuevos.length} de ${totalPedidos || "más"} pedidos. Usa Cargar más resultados para consultar más historial.`
-              : "")
-        });
-        setPedidos((actual) => {
-          if (pedidosCargaHashRef.current === nuevoHashPedidos) return actual;
-          pedidosCargaHashRef.current = nuevoHashPedidos;
-          return pedidosNuevos;
-        });
-      } catch (error) {
-        if (!cancelado) {
-          const detalle =
-            `No se pudieron cargar los pedidos. Se conserva la última información visible. ${error.message || ""}`.trim();
-          setErrorCargaPedidos(detalle);
-          setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: false }));
-          mostrarMensaje(detalle, "error");
-        }
-      } finally {
-        if (!cancelado) {
-          setCargandoPedidos(false);
-        }
-      }
-    }
-
-    cargarPedidosSeguro();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [
-    vista,
-    adminAutenticado,
-    adminTab,
-    filtroPedidos,
-    fechaSeleccionada,
-    fechaInicioRangoPedidos,
-    fechaFinRangoPedidos,
-    recargaPedidos,
-    mostrarMensaje
-  ]);
-
-  const cargarMasPedidos = useCallback(async () => {
-    const estadoPaginacion = paginacionPedidosRef.current;
-    const debeCargarPedidos =
-      adminAutenticado && ((vista === "admin" && adminTab === "pedidos") || vista === "pedidos");
-
-    if (!debeCargarPedidos || cargandoPedidos || estadoPaginacion.cargandoMas || !estadoPaginacion.hayMas) {
-      return;
-    }
-
-    if (!supabaseConfigOk) {
-      mostrarMensaje(supabaseConfigMensaje, "error");
-      return;
-    }
-
-    setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: true }));
-
-    try {
-      const rango =
-        filtroPedidos === "rango"
-          ? obtenerRangoPedidos("rango", fechaInicioRangoPedidos, fechaFinRangoPedidos)
-          : obtenerRangoPedidos(filtroPedidos, fechaSeleccionada);
-
-      const offset = Math.max(0, Number(estadoPaginacion.cargados || 0));
-      const resultadoPedidos = await conTiempoMaximo(
-        cargarPedidosRango(rango.inicio, rango.fin, {
-          ascendente: false,
-          limite: PEDIDOS_HOY_LIMITE_CARGAR_MAS,
-          offset,
-          contar: true
-        }),
-        12000,
-        "La carga de más pedidos"
-      );
-
-      const { data: pedidosData, error: pedidosError, count, hayMas, limite } = resultadoPedidos || {};
-
-      if (pedidosError) {
-        const detalle = `Error cargando más pedidos: ${pedidosError.message}`;
-        setErrorCargaPedidos(detalle);
-        mostrarMensaje(detalle, "error");
-        setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: false }));
-        return;
-      }
-
-      const lote = Array.isArray(pedidosData) ? pedidosData : [];
-
-      setPedidos((actual) => {
-        const ids = new Set(actual.map((pedido) => pedido.id));
-        const combinados = [...actual];
-
-        lote.forEach((pedido) => {
-          if (!pedido?.id || ids.has(pedido.id)) return;
-          ids.add(pedido.id);
-          combinados.push(pedido);
-        });
-
-        return combinados;
-      });
-
-      const totalPedidos = Number.isFinite(count) ? count : estadoPaginacion.total;
-      const cargadosServidor = offset + lote.length;
-
-      setPaginacionPedidos({
-        total: totalPedidos,
-        cargados: cargadosServidor,
-        hayMas: Boolean(hayMas),
-        cargandoMas: false,
-        limite: limite || PEDIDOS_HOY_LIMITE_CARGAR_MAS,
-        cargaLimitada: true,
-        advertencia: hayMas
-          ? `Carga optimizada activa: se han solicitado ${cargadosServidor} pedido${cargadosServidor === 1 ? "" : "s"}. Puedes cargar más si lo necesitas.`
-          : `Carga completa del rango visible: ${cargadosServidor} pedido${cargadosServidor === 1 ? "" : "s"}.`
-      });
-      setErrorCargaPedidos("");
-    } catch (error) {
-      const detalle = `No se pudieron cargar más pedidos. ${error.message || ""}`.trim();
-      setErrorCargaPedidos(detalle);
-      setPaginacionPedidos((actual) => ({ ...actual, cargandoMas: false }));
-      mostrarMensaje(detalle, "error");
-    }
-  }, [
-    adminAutenticado,
-    adminTab,
-    cargandoPedidos,
-    fechaFinRangoPedidos,
-    fechaInicioRangoPedidos,
-    fechaSeleccionada,
-    filtroPedidos,
-    mostrarMensaje,
-    vista
-  ]);
 
   function actualizarItem(id, cambios) {
     setItemsPedido((actual) => actual.map((item) => (item.id === id ? { ...item, ...cambios } : item)));
@@ -1252,353 +511,6 @@ export default function App() {
     irAElemento("inicio-pedido-cliente");
   }
 
-  function crearPayloadsMenuDiario(menuActualizado) {
-    const payloadCompleto = {
-      ...menuActualizado,
-      proteinas_detalle: menuActualizado.proteinas_detalle,
-      platos_detalle: menuActualizado.platos_detalle
-    };
-
-    const payloadCompatible = {
-      fecha: menuActualizado.fecha,
-      titulo: menuActualizado.titulo,
-      descripcion: menuActualizado.descripcion,
-      precio: menuActualizado.precio,
-      proteinas: menuActualizado.proteinas,
-      acompanantes: menuActualizado.acompanantes,
-      activo: menuActualizado.activo
-    };
-
-    const payloadMinimo = {
-      fecha: menuActualizado.fecha,
-      precio: menuActualizado.precio,
-      proteinas: menuActualizado.proteinas,
-      acompanantes: menuActualizado.acompanantes,
-      activo: menuActualizado.activo
-    };
-
-    return [payloadCompleto, payloadCompatible, payloadMinimo];
-  }
-
-  function esErrorColumnasSupabase(error) {
-    const texto = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`.toLowerCase();
-    return (
-      texto.includes("column") ||
-      texto.includes("schema cache") ||
-      texto.includes("could not find") ||
-      texto.includes("platos_detalle") ||
-      texto.includes("proteinas_detalle") ||
-      texto.includes("titulo") ||
-      texto.includes("descripcion")
-    );
-  }
-
-  async function ejecutarGuardadoMenuConFallback({ eraEdicion, id, payloads }) {
-    const errores = [];
-
-    for (const payload of payloads) {
-      try {
-        const consulta = eraEdicion
-          ? supabase.from("menu_diario").update(payload).eq("id", id)
-          : supabase.from("menu_diario").insert(payload);
-
-        const respuesta = await conTiempoMaximo(
-          consulta,
-          12000,
-          eraEdicion ? "La actualización del menú diario" : "La creación del menú diario"
-        );
-
-        if (!respuesta.error) {
-          return { payloadUsado: payload };
-        }
-
-        errores.push(respuesta.error);
-
-        if (!esErrorColumnasSupabase(respuesta.error)) {
-          break;
-        }
-      } catch (error) {
-        errores.push(error);
-
-        if (!esErrorColumnasSupabase(error)) {
-          break;
-        }
-      }
-    }
-
-    const ultimoError = errores[errores.length - 1];
-    throw new Error(ultimoError?.message || "Supabase no aceptó el guardado del menú diario.");
-  }
-
-  function traerTextoDesdeGeneradorMenu() {
-    const ultimoTexto = leerUltimoTextoEditorGenerador();
-
-    if (!ultimoTexto) {
-      mostrarMensajeMenu(
-        "No encontré texto reciente del Generador de menú. Abre el generador, ajusta los platos y acompañantes, y vuelve a intentar.",
-        "warning",
-        { persistente: true }
-      );
-      return;
-    }
-
-    if (ultimoTexto.platosTexto) {
-      setPlatosTexto(ultimoTexto.platosTexto);
-    }
-
-    if (ultimoTexto.acompanantesTexto) {
-      setAcompanantesTexto(ultimoTexto.acompanantesTexto);
-    }
-
-    mostrarMensajeMenu(
-      "✅ Texto del Generador de menú cargado. Revisa y presiona Guardar menú del día para publicarlo.",
-      "success",
-      { persistente: true }
-    );
-  }
-
-  function imprimirMenuDiarioTicket() {
-    const resultadoPlatos = textoAPlatosDetalle(platosTexto, { estricto: false });
-    const acompanantes = limpiarAcompanantesMenu(listaPorLineas(acompanantesTexto));
-
-    if (resultadoPlatos.platos.length === 0 && acompanantes.length === 0) {
-      mostrarMensajeMenu(
-        "No hay platos ni acompañantes para imprimir. Primero carga o escribe el menú del día.",
-        "warning",
-        { persistente: true }
-      );
-      return;
-    }
-
-    const escaparHtml = (valor) =>
-      String(valor || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-    const platosHtml = resultadoPlatos.platos
-      .map(
-        (plato) => `
-          <div class="item">
-            <div class="nombre">${escaparHtml(plato.nombre)}</div>
-            <div class="precio">$ ${dinero(plato.precio).replace("$", "").trim()}</div>
-          </div>
-        `
-      )
-      .join("");
-
-    const acompanantesHtml = acompanantes.map((item) => `<li>${escaparHtml(item)}</li>`).join("");
-
-    const fechaTexto = menu.fecha || fechaISOColombia();
-    const tituloTexto = menu.titulo || "Menú del día";
-    const descripcionTexto = menu.descripcion || "";
-
-    const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Menú Rafiki</title>
-  <style>
-    @page { size: 58mm auto; margin: 4mm; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #111;
-      background: #fff;
-      font-size: 11px;
-      line-height: 1.18;
-    }
-    .ticket { width: 50mm; max-width: 50mm; margin: 0 auto; }
-    .center { text-align: center; }
-    .brand { font-size: 17px; font-weight: 900; letter-spacing: 1px; }
-    .titulo { font-size: 13px; font-weight: 800; margin-top: 3px; }
-    .fecha { font-size: 10px; margin-top: 3px; }
-    .linea { border-top: 1px dashed #111; margin: 6px 0; }
-    .descripcion { font-size: 10px; text-align: center; margin: 6px 0; }
-    .seccion { font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px; }
-    .item { display: flex; justify-content: space-between; gap: 5px; margin: 3px 0; }
-    .nombre { font-size: 11px; font-weight: 800; flex: 1; }
-    .precio { font-size: 11px; font-weight: 900; white-space: nowrap; }
-    .categoria { font-size: 9px; color: #333; margin-bottom: 4px; text-transform: uppercase; }
-    ul { margin: 0; padding-left: 14px; }
-    li { font-size: 11px; margin: 2px 0; font-weight: 700; }
-    .nota { font-size: 9px; margin-top: 8px; text-align: center; }
-    @media screen {
-      body { background: #f5f5f5; padding: 12px; }
-      .ticket { background: #fff; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
-    }
-  </style>
-</head>
-<body>
-  <div class="ticket">
-    <div class="center">
-      <div class="brand">RAFIKI</div>
-      <div class="titulo">${escaparHtml(tituloTexto)}</div>
-      <div class="fecha">${escaparHtml(fechaTexto)}</div>
-    </div>
-    ${descripcionTexto ? `<div class="descripcion">${escaparHtml(descripcionTexto)}</div>` : ""}
-    <div class="linea"></div>
-    ${resultadoPlatos.platos.length ? `${platosHtml}<div class="linea"></div>` : ""}
-    ${acompanantes.length ? `<div class="seccion">Acompañantes</div><ul>${acompanantesHtml}</ul><div class="linea"></div>` : ""}
-    <div class="nota">Menú sujeto a disponibilidad.</div>
-  </div>
-  <script>
-    window.addEventListener('load', () => {
-      setTimeout(() => window.print(), 250);
-    });
-  </script>
-</body>
-</html>`;
-
-    const ventana = window.open("", "_blank", "width=360,height=640");
-    if (!ventana) {
-      mostrarMensajeMenu(
-        "El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para Rafiki e intenta de nuevo.",
-        "warning",
-        { persistente: true }
-      );
-      return;
-    }
-
-    ventana.document.open();
-    ventana.document.write(html);
-    ventana.document.close();
-  }
-
-  async function guardarMenu() {
-    if (guardandoMenu) return;
-
-    if (!supabaseConfigOk) {
-      mostrarMensajeMenu(supabaseConfigMensaje, "error", { persistente: true });
-      return;
-    }
-
-    setMensajeMenu({ texto: "Guardando menú diario...", tipo: "info" });
-
-    const resultadoPlatos = textoAPlatosDetalle(platosTexto, { estricto: true });
-    const acompanantes = limpiarAcompanantesMenu(listaPorLineas(acompanantesTexto));
-
-    if (resultadoPlatos.errores.length > 0) {
-      mostrarMensajeMenu(
-        `No se puede guardar el menú. Corrige:\n${resultadoPlatos.errores.slice(0, 5).join("\n")}`,
-        "error",
-        { persistente: true }
-      );
-      irAElemento("confirmacion-menu-diario");
-      return;
-    }
-
-    if (resultadoPlatos.platos.length === 0) {
-      mostrarMensajeMenu(
-        "Debes agregar al menos un plato del día con el formato Categoría | Plato:Precio.",
-        "warning",
-        { persistente: true }
-      );
-      irAElemento("confirmacion-menu-diario");
-      return;
-    }
-
-    const menuActualizado = {
-      fecha: menu.fecha || fechaISOColombia(),
-      titulo: menu.titulo || "Almuerzo ejecutivo Rafiki",
-      descripcion:
-        menu.descripcion || "Escoge tu plato del día y máximo 3 acompañantes. Incluye sopa y bebida.",
-      precio: Number(resultadoPlatos.platos[0]?.precio) || 0,
-      proteinas: resultadoPlatos.platos.map((item) => item.nombre),
-      proteinas_detalle: resultadoPlatos.platos.map((item) => ({
-        nombre: item.nombre,
-        precio: item.precio
-      })),
-      platos_detalle: resultadoPlatos.platos,
-      acompanantes,
-      activo: true
-    };
-
-    setGuardandoMenu(true);
-
-    try {
-      const eraEdicion = Boolean(menu.id);
-      const payloads = crearPayloadsMenuDiario(menuActualizado);
-
-      const { payloadUsado } = await ejecutarGuardadoMenuConFallback({
-        eraEdicion,
-        id: menu.id,
-        payloads
-      });
-
-      let idMenuGuardado = menu.id || null;
-
-      if (!eraEdicion) {
-        const { data: menuActivoReciente } = await conTiempoMaximo(
-          supabase
-            .from("menu_diario")
-            .select("id")
-            .eq("activo", true)
-            .order("id", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          7000,
-          "La verificación del menú guardado"
-        ).catch(() => ({ data: null }));
-
-        idMenuGuardado = menuActivoReciente?.id || `local-${Date.now()}`;
-      }
-
-      if (idMenuGuardado && !String(idMenuGuardado).startsWith("local-")) {
-        await conTiempoMaximo(
-          supabase.from("menu_diario").update({ activo: false }).eq("activo", true).neq("id", idMenuGuardado),
-          7000,
-          "La desactivación de menús anteriores"
-        ).catch(() => ({ error: null }));
-      }
-
-      const nuevoMenu = normalizarMenu({
-        ...menu,
-        ...menuActualizado,
-        ...payloadUsado,
-        id: idMenuGuardado
-      });
-
-      const nuevoHash = JSON.stringify({
-        id: nuevoMenu.id,
-        fecha: nuevoMenu.fecha,
-        titulo: nuevoMenu.titulo,
-        descripcion: nuevoMenu.descripcion,
-        platos_detalle: nuevoMenu.platos_detalle,
-        acompanantes: nuevoMenu.acompanantes
-      });
-
-      menuHashRef.current = nuevoHash;
-      guardarMenuCache(nuevoMenu);
-      menuCacheDisponibleRef.current = true;
-      setMenu(nuevoMenu);
-      setItemsPedido([crearItemNuevo()]);
-      setPlatosTexto(platosATexto(nuevoMenu.platos_detalle));
-      setAcompanantesTexto(acompanantesATexto(nuevoMenu.acompanantes));
-      borrarBorradorEditorMenuDiario();
-
-      mostrarMensajeMenu(
-        eraEdicion ? "✅ Menú diario actualizado correctamente." : "✅ Menú diario creado correctamente.",
-        "success",
-        { persistente: true }
-      );
-      irAElemento("confirmacion-menu-diario");
-      setRecargaMenu((actual) => actual + 1);
-    } catch (error) {
-      mostrarMensajeMenu(
-        `No se pudo guardar el menú diario. Detalle: ${error.message || "error desconocido"}`,
-        "error",
-        { persistente: true }
-      );
-      irAElemento("confirmacion-menu-diario");
-    } finally {
-      setGuardandoMenu(false);
-    }
-  }
-
   const {
     guardandoPedido,
     guardandoEstadoPedidoId,
@@ -1666,66 +578,6 @@ export default function App() {
     },
     [navegar]
   );
-
-  async function validarClaveAdmin(e) {
-    e.preventDefault();
-    setErrorClaveAdmin("");
-
-    const email = adminEmail.trim();
-    const password = adminPassword.trim();
-
-    if (!email) {
-      setErrorClaveAdmin("Ingresa el email del usuario administrativo.");
-      return;
-    }
-
-    if (!password) {
-      setErrorClaveAdmin("Ingresa la contraseña del usuario administrativo.");
-      return;
-    }
-
-    localStorage.removeItem("rafikiAdminActivo");
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      setErrorClaveAdmin(`No se pudo iniciar sesión: ${error.message}`);
-      return;
-    }
-
-    const usuarioAutenticado = data?.user || null;
-    const rol = await cargarRolAdmin(usuarioAutenticado);
-    activarSesionAdmin(usuarioAutenticado, rol);
-    setAdminPassword("");
-    setErrorClaveAdmin("");
-    const rutaActual = window.location.pathname.replace(/\/$/, "") || "/";
-    if (rutaActual === "/pedidos") {
-      navegar("/pedidos", "pedidos");
-    } else if (rutaActual === "/inventario") {
-      navegar("/inventario", "inventario");
-    } else {
-      navegar("/admin", "admin");
-    }
-  }
-
-  async function cerrarPanelAdmin() {
-    const rutaActual = window.location.pathname.replace(/\/$/, "") || "/";
-    localStorage.removeItem("rafikiAdminActivo");
-    await supabase.auth.signOut();
-    setAdminAutenticado(false);
-    setAdminUsuario(null);
-    setAdminRol("usuario");
-    setAdminEmail("");
-    setAdminPassword("");
-    setErrorClaveAdmin("");
-    navegar(
-      rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : "/admin",
-      "adminLogin"
-    );
-  }
 
   function nuevoPedidoCliente() {
     reiniciarPedido();

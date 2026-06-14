@@ -8,6 +8,7 @@ import {
   cargarCatalogoInsumosAdmin,
   crearInsumoCatalogoAdmin
 } from "../../../services/catalogoService";
+import { registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import {
   actualizarProductoCatalogoAdmin,
   cargarCatalogoProductosAdmin,
@@ -271,7 +272,7 @@ export default function CatalogoRafa() {
       } else {
         setFuenteProductos("local");
         if (resultado.mensaje) {
-          setMensaje(`No se pudo cargar productos desde Supabase. Se mantiene respaldo local. Detalle: ${resultado.mensaje}`);
+          setMensaje(`No se pudo cargar productos desde Supabase. Se mantiene respaldo local. ${resultado.mensaje || ""}`.trim());
         }
       }
 
@@ -296,7 +297,7 @@ export default function CatalogoRafa() {
       } else {
         setFuenteInsumos("local");
         if (resultado.mensaje) {
-          setMensaje(`No se pudo cargar insumos desde Supabase. Se mantiene respaldo local. Detalle: ${resultado.mensaje}`);
+          setMensaje(`No se pudo cargar insumos desde Supabase. Se mantiene respaldo local. ${resultado.mensaje || ""}`.trim());
         }
       }
 
@@ -396,7 +397,8 @@ export default function CatalogoRafa() {
         setProductos(actualizados);
         guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
         setFuenteProductos("local");
-        setMensaje(`No se pudo guardar producto en Supabase. Cambio guardado como respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+        registrarErrorSupabase("guardar producto de catálogo", error);
+        setMensaje("No se pudo guardar en Supabase. Cambio guardado como respaldo local. Revisa conexión, permisos o SQL pendiente.");
         reiniciarFormulario();
       } finally {
         setGuardando(false);
@@ -458,7 +460,8 @@ export default function CatalogoRafa() {
       setInsumos(actualizados);
       guardarStorage(STORAGE_CATALOGO_INSUMOS, actualizados);
       setFuenteInsumos("local");
-      setMensaje(`No se pudo guardar en Supabase. Cambio guardado como respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("guardar insumo de catálogo", error);
+      setMensaje("No se pudo guardar en Supabase. Cambio guardado como respaldo local. Revisa conexión, permisos o SQL pendiente.");
       reiniciarFormulario();
     } finally {
       setGuardando(false);
@@ -489,7 +492,8 @@ export default function CatalogoRafa() {
         setProductos(actualizados);
         guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
         setFuenteProductos("local");
-        setMensaje(`No se pudo actualizar Supabase. Se eliminó solo del respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+        registrarErrorSupabase("ocultar registro de catálogo", error);
+        setMensaje("No se pudo actualizar Supabase. El cambio quedó solo en respaldo local. Revisa conexión, permisos o SQL pendiente.");
       }
       return;
     }
@@ -508,7 +512,8 @@ export default function CatalogoRafa() {
       setInsumos(actualizados);
       guardarStorage(STORAGE_CATALOGO_INSUMOS, actualizados);
       setFuenteInsumos("local");
-      setMensaje(`No se pudo actualizar Supabase. Se eliminó solo del respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("ocultar registro de catálogo", error);
+        setMensaje("No se pudo actualizar Supabase. El cambio quedó solo en respaldo local. Revisa conexión, permisos o SQL pendiente.");
     }
   }
 
@@ -529,7 +534,8 @@ export default function CatalogoRafa() {
         setProductos(actualizados);
         guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
         setFuenteProductos("local");
-        setMensaje(`Cambio aplicado solo en respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+        registrarErrorSupabase("cambiar estado de catálogo", error);
+        setMensaje("Cambio aplicado solo en respaldo local. Revisa conexión, permisos o SQL pendiente para dejarlo fijo.");
       }
       return;
     }
@@ -549,7 +555,8 @@ export default function CatalogoRafa() {
       setInsumos(actualizados);
       guardarStorage(STORAGE_CATALOGO_INSUMOS, actualizados);
       setFuenteInsumos("local");
-      setMensaje(`Cambio aplicado solo en respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("cambiar estado de catálogo", error);
+        setMensaje("Cambio aplicado solo en respaldo local. Revisa conexión, permisos o SQL pendiente para dejarlo fijo.");
     }
   }
 
@@ -571,7 +578,8 @@ export default function CatalogoRafa() {
       setProductos(actualizados);
       guardarStorage(STORAGE_CATALOGO_PRODUCTOS, actualizados);
       setFuenteProductos("local");
-      setMensaje(`Cambio aplicado solo en respaldo local. Para guardar agotados en Supabase agrega la columna agotado. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("cambiar agotado de producto", error);
+      setMensaje("Cambio aplicado solo en respaldo local. Para dejar agotados fijo en Supabase, ejecuta el SQL pendiente y refresca la estructura de la API.");
     }
   }
 
@@ -593,7 +601,8 @@ export default function CatalogoRafa() {
       setMensaje("Precio actualizado.");
     } catch (error) {
       setFuenteProductos("local");
-      setMensaje(`Precio cambiado solo en respaldo local. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("cambiar precio de producto", error);
+      setMensaje("Precio cambiado solo en respaldo local. Revisa conexión, permisos o SQL pendiente para dejarlo fijo.");
     }
   }
 

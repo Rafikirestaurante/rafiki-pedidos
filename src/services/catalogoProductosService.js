@@ -1,5 +1,6 @@
 import { supabase } from "../supabaseClient";
 import { generarId } from "../shared/utils/pedidos";
+import { describirErrorSupabase, esErrorEsquemaSupabase } from "../shared/utils/supabaseErrors";
 
 export function normalizarProductoAdmin(producto, index = 0) {
   const nombre = String(producto?.nombre || "").trim();
@@ -25,8 +26,7 @@ const SELECT_PRODUCTOS_BASE = "id, linea, categoria, nombre, precio, activo, ord
 const SELECT_PRODUCTOS_COMPLETO = "id, linea, categoria, nombre, precio, activo, agotado, orden";
 
 function errorColumnaAgotado(error) {
-  const mensaje = String(error?.message || "").toLowerCase();
-  return mensaje.includes("agotado") || mensaje.includes("column") || mensaje.includes("schema cache");
+  return esErrorEsquemaSupabase(error, ["agotado"]);
 }
 
 function aplicarOrdenCatalogo(query) {
@@ -58,7 +58,7 @@ export async function cargarCatalogoProductosAdmin() {
     }
 
     if (productosError) {
-      return { ok: false, productos: [], mensaje: productosError.message };
+      return { ok: false, productos: [], mensaje: describirErrorSupabase(productosError, "cargar el catálogo de productos") };
     }
 
     return {
@@ -67,7 +67,7 @@ export async function cargarCatalogoProductosAdmin() {
       mensaje: `Catálogo de productos cargado desde Supabase (${(productosData || []).length} registros).`
     };
   } catch (error) {
-    return { ok: false, productos: [], mensaje: error?.message || "No se pudo cargar el catálogo de productos." };
+    return { ok: false, productos: [], mensaje: describirErrorSupabase(error, "cargar el catálogo de productos") };
   }
 }
 

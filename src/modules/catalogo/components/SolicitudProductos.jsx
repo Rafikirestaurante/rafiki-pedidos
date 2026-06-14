@@ -21,6 +21,7 @@ import {
   obtenerProductosSolicitudSeleccionados,
   ordenarProductosPorNombre
 } from "../../../shared/utils/solicitudProductos";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 const WHATSAPP_SOLICITUD_INSUMOS = import.meta.env.VITE_WHATSAPP_SOLICITUD_INSUMOS || "";
 const SOLICITUD_INSUMOS_DRAFT_KEY = "rafikiSolicitudInsumosBorrador";
@@ -260,7 +261,8 @@ export default function SolicitudProductos() {
         .limit(80);
 
       if (error) {
-        setMensajePendientes({ texto: `Error cargando solicitudes: ${error.message}`, tipo: "error" });
+        registrarErrorSupabase("cargar solicitudes de insumos", error);
+        setMensajePendientes({ texto: describirErrorSupabase(error, "cargar las solicitudes"), tipo: "error" });
         return;
       }
 
@@ -270,8 +272,9 @@ export default function SolicitudProductos() {
         setMensajePendientes({ texto: `No hay solicitudes guardadas para el día ${fecha}.`, tipo: "info" });
       }
     } catch (error) {
+      registrarErrorSupabase("cargar pendientes de compra", error);
       setMensajePendientes({
-        texto: `Error inesperado cargando pendientes: ${error.message || "revisa la conexión."}`,
+        texto: describirErrorSupabase(error, "cargar pendientes de compra"),
         tipo: "error"
       });
     } finally {
@@ -335,7 +338,8 @@ export default function SolicitudProductos() {
         .eq("fecha_solicitud", fecha);
 
       if (error) {
-        setMensajePendientes({ texto: `Error borrando solicitudes: ${error.message}`, tipo: "error" });
+        registrarErrorSupabase("borrar solicitudes de insumos", error);
+        setMensajePendientes({ texto: describirErrorSupabase(error, "borrar las solicitudes"), tipo: "error" });
         return;
       }
 
@@ -357,8 +361,9 @@ export default function SolicitudProductos() {
 
       setMensajePendientes({ texto: `Solicitudes del día ${fecha} borradas correctamente.`, tipo: "success" });
     } catch (error) {
+      registrarErrorSupabase("borrar solicitudes de insumos", error);
       setMensajePendientes({
-        texto: `Error inesperado borrando solicitudes: ${error.message || "revisa la conexión."}`,
+        texto: describirErrorSupabase(error, "borrar las solicitudes"),
         tipo: "error"
       });
     } finally {
@@ -502,7 +507,8 @@ export default function SolicitudProductos() {
         .limit(200);
 
       if (errorConsultaHoy) {
-        setMensajeSolicitud({ texto: `No se pudo validar si hay insumos repetidos hoy: ${errorConsultaHoy.message}`, tipo: "error" });
+        registrarErrorSupabase("validar insumos repetidos", errorConsultaHoy);
+        setMensajeSolicitud({ texto: describirErrorSupabase(errorConsultaHoy, "validar los insumos repetidos de hoy"), tipo: "error" });
         return;
       }
 
@@ -524,7 +530,8 @@ export default function SolicitudProductos() {
         .single();
 
       if (error) {
-        setMensajeSolicitud({ texto: `Error guardando solicitud: ${error.message}`, tipo: "error" });
+        registrarErrorSupabase("guardar solicitud de insumos", error);
+        setMensajeSolicitud({ texto: describirErrorSupabase(error, "guardar la solicitud"), tipo: "error" });
         return;
       }
 
@@ -555,8 +562,9 @@ export default function SolicitudProductos() {
         });
       }
     } catch (error) {
+      registrarErrorSupabase("guardar solicitud de insumos", error);
       setMensajeSolicitud({
-        texto: `Error inesperado guardando solicitud: ${error.message || "revisa la conexión e intenta nuevamente."}`,
+        texto: describirErrorSupabase(error, "guardar la solicitud"),
         tipo: "error"
       });
     } finally {

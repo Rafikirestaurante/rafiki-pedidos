@@ -9,6 +9,7 @@ import {
   fallbackCategoriasGasto,
   fallbackProveedoresGasto
 } from "../../../services/catalogoGastosService";
+import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 const FORM_CATEGORIA = { nombre: "", orden: "" };
 const FORM_PROVEEDOR = { nombre: "", categoria: "Trabajadores", descripcionSugerida: "", orden: "" };
@@ -33,7 +34,7 @@ export default function CatalogoGastos() {
     const resultado = await cargarCatalogoGastos();
     setCategorias(resultado.categorias);
     setProveedores(resultado.proveedores);
-    setMensaje(resultado.ok ? "" : `Usando respaldo local. Ejecuta el SQL de Fase 23A3. Detalle: ${resultado.mensaje}`);
+    setMensaje(resultado.ok ? "" : `Usando respaldo local. ${resultado.mensaje || "Ejecuta el SQL pendiente de catálogo de gastos."}`);
     setCargando(false);
   }
 
@@ -66,7 +67,8 @@ export default function CatalogoGastos() {
       setMensaje(editandoCategoriaId ? "Categoría actualizada." : "Categoría creada.");
       limpiarCategoria();
     } catch (error) {
-      setMensaje(`No se pudo guardar la categoría en Supabase. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("guardar categoría de gasto", error);
+      setMensaje(describirErrorSupabase(error, "guardar la categoría de gasto"));
     } finally {
       setGuardando(false);
     }
@@ -88,7 +90,8 @@ export default function CatalogoGastos() {
       setMensaje(editandoProveedorId ? "Proveedor actualizado." : "Proveedor creado.");
       limpiarProveedor();
     } catch (error) {
-      setMensaje(`No se pudo guardar el proveedor en Supabase. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("guardar proveedor de gasto", error);
+      setMensaje(describirErrorSupabase(error, "guardar el proveedor"));
     } finally {
       setGuardando(false);
     }
@@ -101,7 +104,8 @@ export default function CatalogoGastos() {
       setCategorias((prev) => prev.map((cat) => cat.id === item.id ? { ...cat, ...actualizado } : cat));
     } catch (error) {
       setCategorias((prev) => prev.map((cat) => cat.id === item.id ? { ...cat, activo: cat.activo === false } : cat));
-      setMensaje(`Cambio aplicado visualmente. Para dejarlo fijo ejecuta SQL/Supabase. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("cambiar estado categoría de gasto", error);
+      setMensaje("Cambio aplicado visualmente. Para dejarlo fijo, revisa permisos o ejecuta el SQL pendiente de Supabase.");
     }
   }
 
@@ -112,7 +116,8 @@ export default function CatalogoGastos() {
       setProveedores((prev) => prev.map((prov) => prov.id === item.id ? { ...prov, ...actualizado } : prov));
     } catch (error) {
       setProveedores((prev) => prev.map((prov) => prov.id === item.id ? { ...prov, activo: prov.activo === false } : prov));
-      setMensaje(`Cambio aplicado visualmente. Para dejarlo fijo ejecuta SQL/Supabase. Detalle: ${error?.message || "error desconocido"}`);
+      registrarErrorSupabase("cambiar estado proveedor de gasto", error);
+      setMensaje("Cambio aplicado visualmente. Para dejarlo fijo, revisa permisos o ejecuta el SQL pendiente de Supabase.");
     }
   }
 
