@@ -1,4 +1,4 @@
-# Rafiki Pedidos — 120.4
+# Rafiki Pedidos — 121.5
 
 Fase 30E — Manejo profesional de errores Supabase.
 
@@ -45,3 +45,83 @@ Reducir los mensajes técnicos visibles para el usuario y centralizar la forma e
 ## Nota técnica
 
 No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experiencia operativa.
+
+## 121.0 — Fase 31A/31B: Sistema visual base y limpieza de Cartera
+
+- Se agregan componentes reutilizables en `src/shared/components`: `RafikiTabs`, `RafikiModal`, `RafikiBadge`, `RafikiActionMenu` y `RafikiEmptyState`.
+- Se agregan estilos globales reutilizables para tabs, modales, badges, menús contextuales y estados vacíos.
+- El panel de Cartera se organiza por pestañas internas: Resumen, Clientes, Movimientos y Detalle cliente.
+- Los formularios de nuevo/editar cliente y registrar abono ahora se abren en ventanas modales para no empujar el contenido.
+- La tabla de clientes deja visible solo la acción principal `Abono` y agrupa acciones secundarias en `Opciones ⋮`.
+- Los estados de clientes y movimientos usan badges reutilizables.
+- Los rankings quedan ocultos por defecto y se abren bajo demanda desde el resumen.
+- Se agregan estados vacíos amigables y encabezados de tabla pegajosos en Cartera.
+- No se modifica la lógica financiera, servicios de cartera, abonos, saldos ni auditoría.
+
+## 121.1 — Fase 31C: Limpieza visual del panel Caja
+
+- Se aplica el sistema visual Rafiki al panel `CajaAdmin.jsx` sin modificar cálculos, servicios ni SQL.
+- Se reemplazan las tabs locales por `RafikiTabs` para mantener uniformidad con Cartera.
+- Se agrega una pestaña independiente `Historial` para separar los arqueos realizados del formulario de arqueo actual.
+- Se agrega un resumen visual superior con Inicio, Ventas, Gastos, Esperado, Resultado y Último arqueo.
+- El Informe Caja queda más limpio: el detalle de gastos se abre en modal y los ajustes de caja se editan en modal.
+- Se usan `RafikiBadge` para el resultado del cuadre: Cuadrado, Sobra dinero o Falta dinero.
+- Se agregan `RafikiEmptyState` para fechas sin gastos o sin arqueos.
+- Se aplica color semántico: ingresos en verde, egresos en rojo y diferencias con estado visual.
+- No se agrega SQL nuevo.
+
+## 121.2 — Fase 31D: Limpieza visual de Gastos e Inventario
+
+- Se aplica el sistema visual Rafiki al registro e informe de `GastosDiarios.jsx` sin cambiar servicios ni cálculos.
+- En Gastos, el formulario principal pasa a modal en la vista administrativa para no empujar el informe ni la tabla.
+- En la ruta rápida de gastos se conserva el formulario visible para mantener velocidad operativa.
+- Se agregan estados vacíos amigables cuando una fecha no tiene gastos.
+- Se agregan badges para categoría y método de pago, además de color semántico para valores de egreso.
+- La tabla de gastos queda más limpia con encabezados pegajosos y acción destructiva agrupada en `Opciones ⋮`.
+- Se aplica el sistema visual a `InventarioAdmin.jsx` con pestañas internas para `Insumos` y `Resumen`.
+- El editor de insumos usa `RafikiModal` en lugar de un modal manual, manteniendo la edición de stock y productos asociados.
+- Inventario ahora muestra badges para estado de stock: OK, Stock bajo, Agotado o Inactivo.
+- Se agregan estados vacíos y encabezados pegajosos en el listado de inventario.
+- No se agrega SQL nuevo y no se modifica lógica de inventario, descuentos, catálogo, gastos ni Supabase.
+
+
+
+## 121.3 — Fase 31E: Limpieza visual de Pedidos Hoy
+
+- Se aplica el sistema visual Rafiki al módulo `Pedidos Hoy` sin modificar consultas, paginación ni lógica de cambio de estado.
+- Se agregan pestañas internas para organizar la vista en `Pedidos`, `Mesas` y `Borrados`.
+- La vista principal queda más limpia: el resumen de mesas y los pedidos borrados ya no quedan apilados debajo de la tabla principal.
+- Los filtros de Pedidos Hoy ahora se pueden ocultar y volver a mostrar para reducir ruido visual en celular.
+- La tabla compacta usa `RafikiBadge` para mostrar estado del pedido y forma de pago con colores semánticos.
+- Las acciones secundarias de cada pedido se agrupan en `Opciones ⋮`: editar, imprimir, pasar/gestionar crédito, WhatsApp y borrar.
+- Se deja visible la acción principal `Entregado` para mantener velocidad operativa durante el servicio.
+- Se agrega estado vacío amigable cuando no hay pedidos en la vista seleccionada.
+- Se agregan estilos específicos para tabs, filtros colapsados, badges y menú de acciones en Pedidos Hoy.
+- No se agrega SQL nuevo y no se modifican servicios, auditoría, cartera, pagos, edición administrativa ni carga optimizada.
+
+
+## 121.4 — Fase 31F: Uniformidad visual final
+
+- Se agrega una capa global de consistencia visual sobre el sistema Rafiki sin modificar lógica de negocio, servicios ni SQL.
+- Se unifican radios, sombras, bordes y superficies para tarjetas, cajas suaves, resumenes, tablas y módulos administrativos.
+- Se mejora la consistencia de botones principales, botones pequeños, tabs, chips, opciones y menús contextuales.
+- Se agrega un foco accesible uniforme para teclado en botones, enlaces, inputs, selects, textareas, tabs y opciones de menú.
+- Inputs, selects y textareas quedan con bordes, fondos y estados de foco más uniformes en formularios de pedidos, caja, gastos, inventario y catálogo.
+- Tablas principales reciben una presentación más uniforme: encabezados, hover, bordes, sombras y lectura más consistente.
+- Se pulen badges, modales y estados vacíos para mantener el mismo lenguaje visual en Cartera, Caja, Gastos, Inventario y Pedidos Hoy.
+- Se agregan reglas responsive generales para celular: menos padding, tarjetas más compactas, botones más tocables y tablas con mejor contenedor horizontal.
+- Se respeta `prefers-reduced-motion` para reducir animaciones en usuarios que lo tengan configurado.
+- No se agrega SQL nuevo y no se modifica lógica financiera, carga de pedidos, inventario, caja, cartera ni Supabase.
+
+## 121.5 — Fase 31G: Revisión móvil y experiencia en celular
+
+- Se refuerza la experiencia móvil general sin modificar lógica de negocio, servicios ni SQL.
+- Los modales `RafikiModal` ahora bloquean el scroll del fondo mientras están abiertos y usan identificadores accesibles únicos.
+- En celular, los modales se comportan como hoja inferior para facilitar el uso con el pulgar y mantener el botón de cierre y el footer visibles.
+- El menú `Opciones ⋮` ahora responde a Escape y, en celular, se muestra como una hoja inferior con fondo de cierre para evitar menús pequeños o cortados dentro de tablas.
+- Se agregan mejoras de safe area para PWA instalada en celulares, respetando notch, barra inferior y modo standalone.
+- Se refuerzan tamaños táctiles mínimos en botones, mini botones, tabs, chips, inputs, selects y textareas.
+- Las tablas largas muestran una guía visual “Desliza la tabla →” en móvil y mantienen desplazamiento horizontal suave.
+- Se compactan y ordenan acciones en móvil para Pedidos Hoy, Cartera, Caja, Gastos, Inventario, Catálogo, Mesas y formularios de filtros.
+- Se ajustan grids y formularios a una sola columna en pantallas pequeñas para reducir cortes, overflow y botones incómodos.
+- Se mantiene intacta la lógica de pedidos, cartera, caja, inventario, gastos, Supabase, auditoría y PWA.

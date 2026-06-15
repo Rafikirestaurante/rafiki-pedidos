@@ -1,9 +1,9 @@
 {
-  "version": "120.4-FASE30E-ERRORES-SUPABASE",
-  "fase": "30E",
-  "mensaje": "Manejo profesional de errores Supabase: mensajes claros para usuario, registro técnico en consola y detección centralizada por códigos.",
-  "build": "120.4",
-  "base_estable": "120.3",
-  "phase": "Fase 30E - Manejo profesional de errores Supabase",
-  "date": "2026-06-14"
+  "version": "121.5-FASE31G-REVISION-MOVIL-CELULAR",
+  "fase": "31G",
+  "mensaje": "Revisión móvil: modales más cómodos, opciones en hoja inferior, botones táctiles, tablas con desplazamiento claro y mejor experiencia celular.",
+  "build": "121.5",
+  "base_estable": "121.4",
+  "phase": "Fase 31G - Revisión móvil y experiencia en celular",
+  "date": "2026-06-15"
 }
