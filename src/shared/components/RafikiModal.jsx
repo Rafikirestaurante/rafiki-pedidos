@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useId } from "react";
 
 export default function RafikiModal({
   open,
@@ -9,15 +9,21 @@ export default function RafikiModal({
   onClose,
   closeLabel = "Cerrar",
   size = "md",
-  className = "",
+  className = ""
 }) {
+  const titleId = useId();
+
   useEffect(() => {
     if (!open) return undefined;
     const manejarEscape = (event) => {
       if (event.key === "Escape") onClose?.();
     };
     document.addEventListener("keydown", manejarEscape);
-    return () => document.removeEventListener("keydown", manejarEscape);
+    document.body.classList.add("rafiki-modal-open");
+    return () => {
+      document.removeEventListener("keydown", manejarEscape);
+      document.body.classList.remove("rafiki-modal-open");
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -28,12 +34,12 @@ export default function RafikiModal({
         className={["rafiki-ui-modal-card", `rafiki-ui-modal-${size}`, className].filter(Boolean).join(" ")}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="rafiki-ui-modal-title"
+        aria-labelledby={titleId}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="rafiki-ui-modal-header">
           <div>
-            <h3 id="rafiki-ui-modal-title">{title}</h3>
+            <h3 id={titleId}>{title}</h3>
             {description ? <p>{description}</p> : null}
           </div>
           <button type="button" className="rafiki-ui-modal-close" onClick={onClose} aria-label={closeLabel}>

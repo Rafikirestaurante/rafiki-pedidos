@@ -87,3 +87,26 @@ textarea {
   background: #fffdf5;
   border: 1px solid rgba(180, 83, 9, 0.18);
 }
+
+/* Fase 31G - soporte móvil PWA */
+body.rafiki-modal-open {
+  overflow: hidden;
+}
+
+@media (display-mode: standalone) {
+  body {
+    padding-bottom: var(--rafiki-safe-bottom);
+  }
+}
+
+@media (max-width: 760px) {
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
+
+  table {
+    max-width: none;
+  }
+}

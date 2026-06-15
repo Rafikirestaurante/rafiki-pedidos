@@ -2087,4 +2087,503 @@ select.box:focus,
 }
 
 
+/* Fase 31G - Revisión móvil y experiencia en celular */
+.rafiki-action-menu-mobile-backdrop {
+  display: none;
+}
+
+body.rafiki-modal-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.pedidos-tabla-wrap,
+.cartera-tabla-wrap,
+.caja-tabla-wrap,
+.gastos-tabla-wrap,
+.inventario-tabla-wrap,
+.tabla-scroll,
+.informe-menu-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+@media (max-width: 760px) {
+  html { scroll-padding-top: calc(var(--rafiki-safe-top, 0px) + 78px); }
+
+  .app {
+    padding-top: max(10px, calc(var(--rafiki-safe-top, 0px) + 10px));
+    padding-right: max(10px, var(--rafiki-safe-right, 0px));
+    padding-bottom: max(22px, calc(var(--rafiki-safe-bottom, 0px) + 22px));
+    padding-left: max(10px, var(--rafiki-safe-left, 0px));
+  }
+
+  .container,
+  .card,
+  .card-pad,
+  .section,
+  .soft-box,
+  .box,
+  .rafiki-empty-state,
+  .pedidos-carga-resumen,
+  .pedidos-cargar-mas-box,
+  .caja-admin,
+  .cartera-profesional-panel,
+  .inventario-admin-panel,
+  .catalogo-rafa {
+    min-width: 0;
+  }
+
+  .topbar {
+    position: sticky;
+    top: max(0px, var(--rafiki-safe-top, 0px));
+    z-index: 50;
+    margin: -2px -2px 14px;
+    padding: 10px;
+    border: 1px solid rgba(253, 186, 116, 0.74);
+    border-radius: 22px;
+    background: rgba(255, 247, 237, 0.92);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 28px rgba(28, 25, 23, 0.08);
+  }
+
+  .brand {
+    margin-bottom: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  .topbar h1,
+  .hero h2,
+  .admin-title-compact h2,
+  .caja-header h2,
+  .cartera-resumen-header h2,
+  .inventario-lista-header h2 {
+    letter-spacing: -0.5px;
+  }
+
+  .nav,
+  .admin-tabs,
+  .rafiki-tabs,
+  .filtros-historial,
+  .productos-chips,
+  .selector-catalogo-chips {
+    scroll-snap-type: x proximity;
+    padding-bottom: 7px;
+  }
+
+  .nav button,
+  .admin-tabs button,
+  .rafiki-tab,
+  .filtros-historial button,
+  .producto-chip {
+    scroll-snap-align: start;
+    min-height: 44px;
+  }
+
+  .button,
+  .mini-btn,
+  .admin-action-button,
+  .rafiki-action-menu-trigger,
+  .caja-informe-actions .btn,
+  .gastos-top-actions .button {
+    min-height: 46px;
+    touch-action: manipulation;
+  }
+
+  .button,
+  .admin-action-button {
+    border-radius: 16px;
+  }
+
+  .mini-btn,
+  .rafiki-action-menu-trigger {
+    border-radius: 14px;
+  }
+
+  .field input,
+  .field textarea,
+  .field select,
+  select.box,
+  .catalogo-busqueda-field,
+  .producto-controls input,
+  .producto-controls select,
+  .producto-solicitud textarea,
+  .caja-denominacion-row input,
+  .caja-cuentas-grid input,
+  .caja-fecha-field input,
+  .editar-pedido-form input,
+  .editar-pedido-form textarea {
+    min-height: 46px;
+    font-size: 16px;
+  }
+
+  .field textarea,
+  .producto-solicitud textarea,
+  .editar-pedido-form textarea {
+    min-height: 88px;
+  }
+
+  .admin-top-row,
+  .admin-top-row-compact,
+  .section-heading,
+  .caja-header,
+  .caja-informe-title-row,
+  .cartera-resumen-header,
+  .inventario-lista-header,
+  .gastos-informe-header,
+  .catalogo-card-head,
+  .pedido-top,
+  .summary-item-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .admin-actions-stack,
+  .admin-actions-line,
+  .section-heading-actions,
+  .pedidos-orden-actions,
+  .caja-actions,
+  .caja-arqueo-actions,
+  .gastos-acciones,
+  .cartera-actions,
+  .mesa-clean-actions,
+  .mesa-resumen-actions,
+  .confirmacion-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .admin-actions-stack.horizontal,
+  .admin-actions-line {
+    align-items: stretch;
+  }
+
+  .admin-actions-stack .button,
+  .admin-actions-stack .mini-btn,
+  .admin-actions-line .admin-action-button,
+  .section-heading-actions .mini-btn,
+  .pedidos-orden-actions .mini-btn,
+  .caja-actions .button,
+  .caja-arqueo-actions .button,
+  .gastos-acciones .button,
+  .cartera-actions .button,
+  .mesa-clean-actions .mini-btn,
+  .mesa-resumen-actions .button,
+  .confirmacion-actions .button {
+    width: 100%;
+  }
+
+  .pedidos-tabla-wrap,
+  .cartera-tabla-wrap,
+  .caja-tabla-wrap,
+  .gastos-tabla-wrap,
+  .inventario-tabla-wrap,
+  .tabla-scroll,
+  .informe-menu-scroll {
+    position: relative;
+    margin-right: -4px;
+    margin-left: -4px;
+    padding-top: 26px;
+    border-radius: 18px;
+  }
+
+  .pedidos-tabla-wrap::before,
+  .cartera-tabla-wrap::before,
+  .caja-tabla-wrap::before,
+  .gastos-tabla-wrap::before,
+  .inventario-tabla-wrap::before,
+  .tabla-scroll::before,
+  .informe-menu-scroll::before {
+    content: "Desliza la tabla →";
+    position: absolute;
+    top: 6px;
+    left: 12px;
+    z-index: 2;
+    color: #9a3412;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .02em;
+  }
+
+  .pedidos-tabla-compacta,
+  .cartera-tabla,
+  .caja-tabla,
+  .gastos-tabla,
+  .inventario-tabla,
+  .admin-table,
+  .informe-menu-tabla {
+    font-size: 12px;
+  }
+
+  .pedidos-tabla-compacta th,
+  .cartera-tabla th,
+  .caja-tabla th,
+  .gastos-tabla th,
+  .inventario-tabla th,
+  .admin-table th,
+  .informe-menu-tabla th {
+    top: 0;
+    padding: 9px 8px;
+  }
+
+  .pedidos-tabla-compacta td,
+  .cartera-tabla td,
+  .caja-tabla td,
+  .gastos-tabla td,
+  .inventario-tabla td,
+  .admin-table td,
+  .informe-menu-tabla td {
+    padding: 9px 8px;
+  }
+
+  .td-acciones-compactas,
+  .td-acciones {
+    min-width: 150px;
+  }
+
+  .rafiki-badge {
+    min-height: 26px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .rafiki-empty-state {
+    min-height: 118px;
+    padding: 18px 14px;
+    border-radius: 18px;
+  }
+
+  .rafiki-empty-state-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 18px;
+    font-size: 24px;
+  }
+
+  .rafiki-empty-state strong {
+    font-size: 18px;
+  }
+
+  .rafiki-ui-modal-backdrop {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 8px max(8px, var(--rafiki-safe-right, 0px)) max(8px, calc(var(--rafiki-safe-bottom, 0px) + 8px)) max(8px, var(--rafiki-safe-left, 0px));
+    backdrop-filter: blur(5px);
+  }
+
+  .rafiki-ui-modal-card {
+    width: 100%;
+    max-height: min(90vh, 720px);
+    border-radius: 24px 24px 18px 18px;
+  }
+
+  .rafiki-ui-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding-top: 16px;
+    padding-bottom: 12px;
+  }
+
+  .rafiki-ui-modal-header h3 {
+    font-size: 21px;
+  }
+
+  .rafiki-ui-modal-header p {
+    font-size: 13px;
+  }
+
+  .rafiki-ui-modal-close {
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+  }
+
+  .rafiki-ui-modal-body {
+    max-height: calc(90vh - 142px);
+    padding-top: 14px;
+    overscroll-behavior: contain;
+  }
+
+  .rafiki-ui-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding-bottom: max(16px, calc(var(--rafiki-safe-bottom, 0px) + 12px));
+    box-shadow: 0 -10px 24px rgba(28, 25, 23, 0.06);
+  }
+
+  .rafiki-action-menu {
+    position: static;
+  }
+
+  .rafiki-action-menu-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 10030;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(28, 25, 23, 0.2);
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .rafiki-action-menu-list,
+  .rafiki-action-menu-list.align-left {
+    position: fixed;
+    top: auto;
+    right: max(10px, var(--rafiki-safe-right, 0px));
+    bottom: max(10px, calc(var(--rafiki-safe-bottom, 0px) + 10px));
+    left: max(10px, var(--rafiki-safe-left, 0px));
+    z-index: 10040;
+    max-height: min(56vh, 420px);
+    min-width: 0;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 22px;
+    box-shadow: 0 24px 70px rgba(28, 25, 23, 0.32);
+  }
+
+  .rafiki-action-menu-list::before {
+    content: "Opciones";
+    display: block;
+    padding: 4px 6px 8px;
+    color: #78716c;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .rafiki-action-menu-item {
+    min-height: 48px;
+    padding: 12px 13px;
+    border-radius: 15px;
+    font-size: 14px;
+  }
+
+  .caja-denominacion-row {
+    grid-template-columns: minmax(68px, .8fr) minmax(70px, .8fr) 18px minmax(90px, 1fr);
+  }
+
+  .caja-moneditas-row {
+    grid-template-columns: 1fr;
+  }
+
+  .caja-resumen-visual,
+  .cartera-indicadores,
+  .gastos-diarios-grid,
+  .gastos-resumen-mini,
+  .dashboard-grid,
+  .stats-grid,
+  .ranking-grid,
+  .confirmacion-info,
+  .datos-llevar-grid,
+  .mesa-datos-grid,
+  .inventario-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .producto-add-row,
+  .producto-delete-row,
+  .producto-seleccionado-row,
+  .catalogo-filtros-avanzados,
+  .abono-form-grid,
+  .cartera-filtros,
+  .filtros-rango-fechas {
+    grid-template-columns: 1fr !important;
+    display: grid;
+  }
+
+  .filtros-rango-fechas,
+  .calendario-filtro {
+    align-items: stretch;
+    border-radius: 16px;
+  }
+
+  .calendario-filtro {
+    width: 100%;
+  }
+
+  .calendario-filtro input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pedido-numero-global-actions,
+  .cafeteria-actions,
+  .compact-cafeteria-actions,
+  .acciones-generador,
+  .acciones-impresion-menu,
+  .gastos-top-actions,
+  .caja-informe-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .pedido-numero-global-actions .button,
+  .cafeteria-actions .button,
+  .compact-cafeteria-actions .button,
+  .acciones-generador .button,
+  .acciones-impresion-menu .button,
+  .gastos-top-actions .button,
+  .caja-informe-actions .btn {
+    width: 100%;
+  }
+
+  .welcome-card {
+    min-height: auto;
+  }
+
+  .hero {
+    padding: 26px 18px;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .alert,
+  .admin-realtime-pending,
+  .alerta-pedido-nuevo,
+  .contador-sin-revisar {
+    border-radius: 18px;
+  }
+
+  .alerta-pedido-nuevo,
+  .contador-sin-revisar,
+  .admin-realtime-pending {
+    align-items: stretch;
+  }
+
+  .alerta-pedido-nuevo button,
+  .contador-sin-revisar button,
+  .admin-realtime-pending .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .app { padding-right: 8px; padding-left: 8px; }
+  .card { border-radius: 22px; }
+  .card-pad, .section { padding: 14px; }
+  .soft-box, .box, .summary-card, .caja-resumen-card, .cartera-resumen-card, .gasto-resumen-card, .inventario-resumen-card { padding: 12px; }
+  .topbar { border-radius: 18px; }
+  .nav button, .admin-tabs button, .rafiki-tab { font-size: 12px; }
+  .rafiki-tab strong { font-size: 12px; }
+  .rafiki-tab small { min-width: 20px; height: 20px; padding: 0 6px; }
+  .section-heading h3, .caja-section-title, .category-title { font-size: 18px; }
+  .caja-denominacion-row { grid-template-columns: 1fr 1fr; }
+  .caja-denominacion-row > span:nth-child(3) { display: none; }
+  .caja-denominacion-row strong { text-align: right; }
+  .quantity button { width: 42px; height: 42px; }
+}
+
+
 `;
