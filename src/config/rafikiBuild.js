@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "121.3-FASE31E-INTERFAZ-PEDIDOS-HOY-2026-06-14",
-  phase: "Fase 31E - Limpieza visual de Pedidos Hoy",
+  version: "121.4-FASE31F-UNIFORMIDAD-VISUAL-FINAL-2026-06-14",
+  phase: "Fase 31F - Uniformidad visual final",
   date: "2026-06-14",
-  fase: "31E",
+  fase: "31F",
   notes:
-    "Aplica el sistema visual Rafiki a Pedidos Hoy con pestañas internas, filtros colapsables, badges de estado/pago, acciones agrupadas en Opciones y estados vacíos sin alterar carga optimizada, consultas ni lógica operativa."
+    "Pulido visual global para unificar botones, tarjetas, tablas, inputs, foco accesible, sombras, bordes, estados vacíos y comportamiento responsive sin modificar lógica de negocio ni servicios."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

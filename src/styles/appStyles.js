@@ -1800,4 +1800,291 @@ export const appStyles = `
   .rafiki-ui-modal-footer .button, .rafiki-ui-modal-footer .mini-btn { width: 100% !important; }
 }
 
+/* Fase 31F - Uniformidad visual final Rafiki */
+:root {
+  --rafiki-bg: #fff7ed;
+  --rafiki-surface: #ffffff;
+  --rafiki-surface-soft: #fffaf0;
+  --rafiki-border: #fed7aa;
+  --rafiki-border-soft: #ffedd5;
+  --rafiki-text: #292524;
+  --rafiki-muted: #78716c;
+  --rafiki-brand: #f97316;
+  --rafiki-brand-dark: #c2410c;
+  --rafiki-brand-soft: #fff7ed;
+  --rafiki-success: #16a34a;
+  --rafiki-danger: #dc2626;
+  --rafiki-info: #2563eb;
+  --rafiki-radius-sm: 12px;
+  --rafiki-radius-md: 16px;
+  --rafiki-radius-lg: 22px;
+  --rafiki-radius-xl: 28px;
+  --rafiki-shadow-soft: 0 8px 24px rgba(28, 25, 23, 0.06);
+  --rafiki-shadow-card: 0 16px 36px rgba(28, 25, 23, 0.08);
+  --rafiki-focus: 0 0 0 3px rgba(249, 115, 22, 0.18);
+}
+
+.app { color: var(--rafiki-text); }
+
+.card,
+.soft-box,
+.summary-card,
+.box,
+.producto-solicitud,
+.admin-mesa-card,
+.caja-resumen-card,
+.caja-arqueo-card,
+.cartera-resumen-card,
+.gasto-resumen-card,
+.inventario-resumen-card {
+  border-color: var(--rafiki-border) !important;
+  border-radius: var(--rafiki-radius-lg);
+  box-shadow: var(--rafiki-shadow-soft);
+}
+
+.card { border-radius: 30px; }
+.card-pad { padding: clamp(16px, 3vw, 24px); }
+.soft-box { background: linear-gradient(135deg, #fffaf0, #ffffff); }
+.summary-card:hover,
+.soft-box:hover,
+.admin-mesa-card:hover,
+.producto-solicitud:hover {
+  box-shadow: var(--rafiki-shadow-card);
+}
+
+.section-heading,
+.admin-top-row,
+.caja-section-heading,
+.cartera-section-heading,
+.inventario-section-heading,
+.gastos-section-heading {
+  gap: 12px;
+}
+
+.button,
+.mini-btn,
+.nav button,
+.admin-tabs button,
+.rafiki-tab,
+.rafiki-action-menu-trigger,
+.rafiki-ui-modal-close,
+.chip,
+.option,
+.producto-chip,
+.filtros-historial button {
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+
+.button,
+.mini-btn,
+.rafiki-action-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.button { min-height: 46px; }
+.mini-btn { min-height: 34px; }
+.button.light,
+.mini-btn:not(.warning):not(.green):not(.print):not(.danger) {
+  background: #ffffff;
+  border-color: #e7e5e4;
+}
+
+.button:hover:not(:disabled),
+.mini-btn:hover:not(:disabled),
+.nav button:hover:not(:disabled),
+.admin-tabs button:hover:not(:disabled),
+.rafiki-tab:hover:not(:disabled),
+.rafiki-ui-modal-close:hover:not(:disabled),
+.chip:hover:not(:disabled),
+.option:hover:not(:disabled),
+.producto-chip:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+.rafiki-tab:focus-visible,
+.rafiki-action-menu-item:focus-visible {
+  outline: none;
+  box-shadow: var(--rafiki-focus) !important;
+}
+
+input,
+textarea,
+select {
+  accent-color: var(--rafiki-brand);
+}
+
+.field input,
+.field textarea,
+.field select,
+select.box,
+.producto-controls input,
+.producto-controls select,
+.producto-solicitud textarea,
+.producto-add-row input,
+.producto-add-row select,
+.producto-delete-row select,
+.producto-seleccionado-row input,
+.producto-seleccionado-row select,
+.editar-pedido-form input,
+.editar-pedido-form textarea,
+.caja-denominacion-row input,
+.caja-cuentas-grid input,
+.caja-fecha-field input {
+  border-radius: var(--rafiki-radius-md);
+  border-color: #e7e5e4;
+  background: #fffdf8;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus,
+select.box:focus,
+.producto-controls input:focus,
+.producto-controls select:focus,
+.producto-solicitud textarea:focus,
+.producto-add-row input:focus,
+.producto-add-row select:focus,
+.producto-delete-row select:focus,
+.producto-seleccionado-row input:focus,
+.producto-seleccionado-row select:focus,
+.editar-pedido-form input:focus,
+.editar-pedido-form textarea:focus,
+.caja-denominacion-row input:focus,
+.caja-cuentas-grid input:focus,
+.caja-fecha-field input:focus {
+  border-color: var(--rafiki-brand);
+  background: #ffffff;
+  box-shadow: var(--rafiki-focus);
+}
+
+.rafiki-tabs,
+.admin-tabs,
+.nav {
+  scrollbar-width: thin;
+  scrollbar-color: #fdba74 transparent;
+}
+
+.rafiki-tabs::-webkit-scrollbar,
+.admin-tabs::-webkit-scrollbar,
+.nav::-webkit-scrollbar { height: 5px; }
+.rafiki-tabs::-webkit-scrollbar-thumb,
+.admin-tabs::-webkit-scrollbar-thumb,
+.nav::-webkit-scrollbar-thumb { background: #fdba74; border-radius: 999px; }
+
+.rafiki-tabs { background: rgba(255, 255, 255, .74); box-shadow: inset 0 0 0 1px rgba(255,255,255,.45); }
+.rafiki-tab { color: var(--rafiki-brand-dark); }
+.rafiki-tab.active { background: linear-gradient(135deg, var(--rafiki-brand), #f59e0b); }
+
+.rafiki-badge {
+  letter-spacing: .01em;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.5);
+}
+
+.pedidos-tabla-wrap,
+.cartera-tabla-wrap,
+.caja-tabla-wrap,
+.gastos-tabla-wrap,
+.inventario-tabla-wrap,
+.catalogo-tabla-desktop {
+  border-radius: var(--rafiki-radius-lg);
+  border-color: var(--rafiki-border) !important;
+  box-shadow: var(--rafiki-shadow-soft);
+  background: #fff;
+}
+
+.pedidos-tabla-compacta th,
+.cartera-tabla th,
+.caja-tabla th,
+.gastos-tabla th,
+.inventario-tabla th,
+.catalogo-tabla-desktop th {
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.pedidos-tabla-compacta td,
+.cartera-tabla td,
+.caja-tabla td,
+.gastos-tabla td,
+.inventario-tabla td,
+.catalogo-tabla-desktop td {
+  line-height: 1.35;
+}
+
+.pedidos-tabla-compacta tbody tr:hover,
+.cartera-tabla tbody tr:hover,
+.caja-tabla tbody tr:hover,
+.gastos-tabla tbody tr:hover,
+.inventario-tabla tbody tr:hover,
+.catalogo-tabla-desktop tbody tr:hover {
+  background: #fffaf0;
+}
+
+.rafiki-action-menu-list {
+  border-color: var(--rafiki-border);
+  box-shadow: 0 18px 42px rgba(28, 25, 23, 0.2);
+}
+
+.rafiki-action-menu-item.is-danger:hover:not(:disabled) { background: #fef2f2; color: #991b1b; }
+.rafiki-action-menu-item.is-success:hover:not(:disabled) { background: #f0fdf4; color: #166534; }
+.rafiki-action-menu-item.is-info:hover:not(:disabled) { background: #eff6ff; color: #1d4ed8; }
+
+.rafiki-ui-modal-card { background: #ffffff; }
+.rafiki-ui-modal-body { background: linear-gradient(180deg, #ffffff 0%, #fffaf0 100%); }
+.rafiki-ui-modal-footer { background: #ffffff; }
+
+.rafiki-empty-state {
+  min-height: 132px;
+  background: linear-gradient(135deg, #fffaf0, #ffffff);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.6);
+}
+
+.valor-positivo,
+.texto-ingreso,
+.dinero-ingreso { color: #166534 !important; font-weight: 900; }
+.valor-negativo,
+.texto-egreso,
+.dinero-egreso { color: #b91c1c !important; font-weight: 900; }
+.valor-alerta,
+.saldo-pendiente { color: #9a3412 !important; font-weight: 900; }
+
+@media (max-width: 760px) {
+  .app { padding: 14px; }
+  .topbar { gap: 12px; margin-bottom: 16px; }
+  .card { border-radius: 24px; }
+  .card-pad { padding: 15px; }
+  .soft-box { padding: 14px; }
+  .section-heading { align-items: flex-start; }
+  .button { width: 100%; min-height: 48px; }
+  .mini-btn { min-height: 38px; }
+  .nav, .admin-tabs, .rafiki-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pedidos-tabla-wrap,
+  .cartera-tabla-wrap,
+  .caja-tabla-wrap,
+  .gastos-tabla-wrap,
+  .inventario-tabla-wrap,
+  .catalogo-tabla-desktop { margin-left: -2px; margin-right: -2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
 `;
