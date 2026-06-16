@@ -15,8 +15,8 @@ export const appStyles = `
         .muted { color: #78716c; }
         .small { font-size: 13px; }
         .nav { display: flex; gap: 6px; background: #ffffff; border: 1px solid #fed7aa; padding: 6px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
-        .nav-wrap { flex-wrap: wrap; justify-content: flex-end; }
-        .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; white-space: nowrap; }
+        .nav-wrap { flex-wrap: nowrap; justify-content: flex-end; min-width: 0; }
+        .nav button { border: 0; padding: 12px 18px; border-radius: 14px; font-weight: 900; background: transparent; color: #57534e; white-space: nowrap; flex: 0 0 auto; }
         .nav button.active { background: #f97316; color: #fff; box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
         .nav .rafiki-clear-cache-button, .rafiki-clear-cache-button { border: 1px solid #fdba74; background: #fff7ed; color: #9a3412; font-weight: 900; border-radius: 14px; white-space: nowrap; box-shadow: none; }
         .nav .rafiki-clear-cache-button:hover, .rafiki-clear-cache-button:hover { background: #ffedd5; }
@@ -516,21 +516,6 @@ export const appStyles = `
         }
 
         
-.caja-gasto-detalle-sub {
-  padding: 6px 0 6px 14px;
-  margin-left: 8px;
-  font-size: 12px;
-  border-bottom: 1px dashed #f1f5f9;
-}
-
-.caja-gasto-detalle-sub > div > strong,
-.caja-gasto-detalle-sub > strong {
-  font-size: 12px;
-}
-
-.caja-gasto-detalle-sub span {
-  font-size: 11px;
-}
 
 .caja-informe-title-row {
   align-items: flex-start;
@@ -596,34 +581,6 @@ export const appStyles = `
 .caja-resultado-final .caja-informe-row {
   flex: 1;
   border: 0;
-}
-
-.caja-arqueo-historial-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: center;
-  border-bottom: 1px dashed #f1f5f9;
-  padding: 8px 0 8px 14px;
-  margin-left: 8px;
-  font-size: 12px;
-}
-
-.caja-arqueo-historial-row > div {
-  display: grid;
-  gap: 2px;
-}
-
-.caja-arqueo-historial-row > div > strong,
-.caja-arqueo-historial-row > strong {
-  color: #111827;
-  font-size: 12px;
-}
-
-.caja-arqueo-historial-row span {
-  color: #57534e;
-  font-size: 11px;
-  font-weight: 700;
 }
 
 
@@ -2066,9 +2023,13 @@ select.box:focus,
   .card-pad { padding: 15px; }
   .soft-box { padding: 14px; }
   .section-heading { align-items: flex-start; }
-  .button { width: 100%; min-height: 48px; }
+  .button { min-height: 48px; }
+  .button.full-width,
+  .button.add-meal,
+  .continue-button,
+  .summary-continue { width: 100%; }
   .mini-btn { min-height: 38px; }
-  .nav, .admin-tabs, .rafiki-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav, .admin-tabs, .rafiki-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
   .pedidos-tabla-wrap,
   .cartera-tabla-wrap,
   .caja-tabla-wrap,
@@ -2179,6 +2140,8 @@ body.rafiki-modal-open {
   .producto-chip {
     scroll-snap-align: start;
     min-height: 44px;
+    width: auto;
+    flex: 0 0 auto;
   }
 
   .button,
