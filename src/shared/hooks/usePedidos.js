@@ -33,6 +33,7 @@ export function usePedidos({
   cliente,
   telefono,
   ubicacion,
+  comerRestauranteCliente = false,
   tipoPago,
   observaciones,
   pedidos,
@@ -113,7 +114,7 @@ export function usePedidos({
 
     if (!cliente.trim()) camposFaltantes.push("nombre");
     if (!telefono.trim()) camposFaltantes.push("teléfono");
-    if (!ubicacion.trim()) camposFaltantes.push("ubicación");
+    if (!comerRestauranteCliente && !ubicacion.trim()) camposFaltantes.push("ubicación");
     if (!tipoPago) camposFaltantes.push("forma de pago");
 
     if (camposFaltantes.length > 0) {
@@ -133,7 +134,7 @@ export function usePedidos({
 
     const clienteNombre = limpiarTexto(cliente, 120);
     const telefonoLimpio = limpiarTelefono(telefono);
-    const ubicacionLimpia = limpiarTexto(ubicacion, 200);
+    const ubicacionLimpia = comerRestauranteCliente ? "Mesa 5A" : limpiarTexto(ubicacion, 200);
     const observacionesLimpias = limpiarTexto(observaciones, 500);
 
     if (!clienteNombre || !telefonoLimpio || !ubicacionLimpia) {
@@ -150,6 +151,8 @@ export function usePedidos({
       telefono: telefonoLimpio,
       ubicacion: ubicacionLimpia,
       tipo_pago: tipoPago,
+      tipo_pedido: comerRestauranteCliente ? "mesa" : "cliente",
+      mesa: comerRestauranteCliente ? "5A" : null,
       observaciones: observacionesLimpias,
       items: itemsValidos,
       pedido_texto: pedidoTexto,
@@ -226,6 +229,7 @@ export function usePedidos({
     telefono,
     tipoPago,
     ubicacion,
+    comerRestauranteCliente,
   ]);
 
   const registrarPedidoMesa = useCallback(async ({ items, acompanantes, modoLlevar = false, mesa, cliente, telefono, ubicacion, mesero, tipoPago, observaciones: obsMesa }) => {

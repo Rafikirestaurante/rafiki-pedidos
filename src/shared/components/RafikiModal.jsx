@@ -25,12 +25,17 @@ export default function RafikiModal({
 }) {
   const titleId = useId();
   const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return undefined;
 
     const manejarEscape = (event) => {
-      if (event.key === "Escape") onClose?.();
+      if (event.key === "Escape") onCloseRef.current?.();
     };
 
     const manejarTab = (event) => {
@@ -73,12 +78,12 @@ export default function RafikiModal({
       liberarScrollBody();
       elementoActivoPrevio?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
   return (
-    <div className="rafiki-ui-modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="rafiki-ui-modal-backdrop" role="presentation" onMouseDown={() => onCloseRef.current?.()}>
       <section
         ref={dialogRef}
         className={["rafiki-ui-modal-card", `rafiki-ui-modal-${size}`, className].filter(Boolean).join(" ")}
@@ -92,7 +97,7 @@ export default function RafikiModal({
             <h3 id={titleId}>{title}</h3>
             {description ? <p>{description}</p> : null}
           </div>
-          <button type="button" className="rafiki-ui-modal-close" onClick={onClose} aria-label={closeLabel}>
+          <button type="button" className="rafiki-ui-modal-close" onClick={() => onCloseRef.current?.()} aria-label={closeLabel}>
             ×
           </button>
         </header>

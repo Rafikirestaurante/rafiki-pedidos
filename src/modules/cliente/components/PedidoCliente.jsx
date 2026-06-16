@@ -19,6 +19,7 @@ export default function PedidoCliente({
   cliente,
   telefono,
   ubicacion,
+  comerRestauranteCliente = false,
   tipoPago,
   observaciones,
   errorDatosPedido,
@@ -26,6 +27,7 @@ export default function PedidoCliente({
   setCliente,
   setTelefono,
   setUbicacion,
+  setComerRestauranteCliente,
   setTipoPago,
   setObservaciones,
   setErrorDatosPedido,
@@ -412,11 +414,32 @@ export default function PedidoCliente({
                       placeholder="Ej: 300 123 4567"
                     />
 
+                    <label className="field cliente-restaurante-toggle">
+                      <span>🍽️ Comer en el restaurante</span>
+                      <label className="inline-check cliente-restaurante-check">
+                        <input
+                          type="checkbox"
+                          checked={comerRestauranteCliente}
+                          onChange={(e) => {
+                            const marcado = e.target.checked;
+                            setComerRestauranteCliente?.(marcado);
+                            setUbicacion(marcado ? "Mesa 5A" : "");
+                            if (errorDatosPedido) setErrorDatosPedido("");
+                          }}
+                        />
+                        <span>Registrar este pedido para comer en el restaurante</span>
+                      </label>
+                      {comerRestauranteCliente ? (
+                        <small className="muted">Se guardará automáticamente como Mesa 5A.</small>
+                      ) : null}
+                    </label>
+
                     <CampoTexto
                       etiqueta="📍 Ubicación"
-                      value={ubicacion}
+                      value={comerRestauranteCliente ? "Mesa 5A" : ubicacion}
                       onChange={(valor) => {
                         setUbicacion(valor);
+                        if (comerRestauranteCliente) setComerRestauranteCliente?.(false);
                         if (errorDatosPedido) setErrorDatosPedido("");
                       }}
                       placeholder="Ej: Edificio, oficina o barrio"

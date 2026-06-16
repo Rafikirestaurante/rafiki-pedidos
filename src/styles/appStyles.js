@@ -120,9 +120,12 @@ export const appStyles = `
         .mesa-step-strip span.active { background: var(--rafiki-border-soft); color: var(--rafiki-brand-strong); }
         .mesa-step-strip strong { grid-column: 1 / -1; background: var(--rafiki-success); color: #fff; font-size: 13px; }
         .mesas-panel-layout { padding-top: 0; }
-        .mesa-step-nav { position: sticky; top: 8px; left: auto; transform: none; width: 100%; z-index: 30; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 16px; padding: 7px; background: rgba(255,255,255,0.98); border: 1px solid var(--rafiki-border); border-radius: 18px; box-shadow: 0 8px 22px rgba(15,23,42,0.14); backdrop-filter: blur(8px); }
+        .mesa-step-nav { position: sticky; top: max(6px, var(--rafiki-safe-top, 0px)); left: auto; transform: none; width: 100%; z-index: 120; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 16px; padding: 7px; background: rgba(255,255,255,0.98); border: 1px solid var(--rafiki-border); border-radius: 18px; box-shadow: 0 8px 22px rgba(15,23,42,0.14); backdrop-filter: blur(8px); }
         .mesa-step-nav button { border: 0; min-height: 34px; border-radius: 999px; background: var(--rafiki-bg); color: var(--rafiki-brand-strong); font-size: 13px; font-weight: 900; box-shadow: none; }
         .mesa-step-nav button:hover { background: var(--rafiki-border-soft); }
+        .mesa-admin-nav { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: -8px 0 14px; padding: 7px; border: 1px solid rgba(253, 186, 116, 0.74); border-radius: 18px; background: rgba(255, 247, 237, 0.96); box-shadow: 0 8px 22px rgba(28, 25, 23, 0.08); }
+        .mesa-admin-nav button { border: 0; border-radius: 999px; background: #fff; color: var(--rafiki-brand-strong); min-height: 36px; padding: 8px 12px; font-size: 13px; font-weight: 900; white-space: nowrap; box-shadow: inset 0 0 0 1px rgba(253, 186, 116, 0.45); }
+        .mesa-admin-nav button:hover { background: var(--rafiki-border-soft); }
         .pos-selected-dish { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .pos-next-hint { margin-top: 10px; padding: 10px 12px; border-radius: 16px; background: #ecfdf5; color: #166534; font-weight: 900; text-align: center; }
         .pos-primary-action { font-size: 17px; padding: 16px 18px; border-radius: 20px; box-shadow: 0 10px 22px rgba(22,163,74,0.22); }
@@ -667,7 +670,8 @@ export const appStyles = `
           .mesa-pos-header { align-items: flex-start; flex-direction: column; }
           .mesa-step-strip { top: 4px; grid-template-columns: 1fr; }
           .mesas-panel-layout { padding-top: 0; }
-          .mesa-step-nav { top: 6px; width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px; border-radius: 16px; }
+          .mesa-step-nav { top: max(6px, var(--rafiki-safe-top, 0px)); width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px; border-radius: 16px; }
+          .mesa-admin-nav { margin-top: -6px; margin-bottom: 12px; padding: 6px; }
           .option-grid, .productos-grid, .producto-controls, .producto-add-row, .producto-delete-row, .producto-seleccionado-row, .mesas-products-grid, .mesas-final-grid { grid-template-columns: 1fr; }
           .mesa-send-bar { display: grid; grid-template-columns: 1fr; }
           .mesa-send-bar .button { width: 100%; min-width: 0; }
@@ -2062,6 +2066,22 @@ select.box:focus,
 
 .cliente-topbar .nav {
   display: none !important;
+}
+
+.cliente-restaurante-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(253, 186, 116, 0.65);
+  background: #fff7ed;
+  border-radius: 16px;
+  padding: 10px 12px;
+  font-weight: 900;
+  color: #7c2d12;
+}
+.cliente-restaurante-check input {
+  width: 20px;
+  min-height: 20px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -9,7 +9,7 @@ import {
   precioPorNombre
 } from "../../../shared/utils/pedidos";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
-import { CampoTexto } from "../../../shared/components/common";
+import { CampoTexto, useAlertaRafiki } from "../../../shared/components/common";
 import {
   CAFETERIA_ACOMPANANTES_DESAYUNO,
   CAFETERIA_BEBIDAS_DESAYUNO,
@@ -102,7 +102,8 @@ function saboresCatalogoPorCategoria(productos, categoria, fallback = []) {
   return filtrados.length ? filtrados : fallback;
 }
 
-export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion }) {
+export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion, navegacionAdminVisible = false, puedeVerRafa = false, onIrAdmin, onIrPedidos, onIrGerencia }) {
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("");
   const [modoLlevar, setModoLlevar] = useState(false);
@@ -403,6 +404,19 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     quitarItemPedidoMesa(id);
   }
 
+  function mostrarErrorMesa(mensaje, opciones = {}) {
+    setErrorMesa(mensaje);
+    mostrarAlertaRafiki({
+      tipo: opciones.tipo || "advertencia",
+      titulo: opciones.titulo || "Falta un paso",
+      mensaje,
+      textoCerrar: "Entendido"
+    });
+    if (opciones.elementoId) {
+      irAElementoMesas(opciones.elementoId, opciones.offset ?? 90, opciones.block || "center");
+    }
+  }
+
   function quitarItemPedidoMesa(id) {
     setItemsMesa((actual) => {
       const filtrados = actual.filter((item) => item.id !== id);
@@ -512,12 +526,12 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
   function agregarParfaitMesa(destino = "categorias") {
     if (!tamanoParfait) {
-      setErrorMesa("Selecciona el tamaño del parfait.");
+      mostrarErrorMesa("Selecciona el tamaño del parfait.");
       return;
     }
 
     if (frutasParfait.length === 0) {
-      setErrorMesa("Selecciona al menos una fruta para el parfait.");
+      mostrarErrorMesa("Selecciona al menos una fruta para el parfait.");
       return;
     }
 
@@ -550,22 +564,22 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
   function agregarBatidoMesa(destino = "categorias") {
     if (!tipoBatido) {
-      setErrorMesa("Selecciona el tipo de bebida.");
+      mostrarErrorMesa("Selecciona el tipo de bebida.");
       return;
     }
 
     if (!saborBatido) {
-      setErrorMesa("Selecciona el sabor.");
+      mostrarErrorMesa("Selecciona el sabor.");
       return;
     }
 
     if (!tamanoBatido) {
-      setErrorMesa("Selecciona el tamaño.");
+      mostrarErrorMesa("Selecciona el tamaño.");
       return;
     }
 
     if ((tipoBatido === "cremoso" || tipoBatido === "jugo") && !baseBatido) {
-      setErrorMesa("Selecciona la base.");
+      mostrarErrorMesa("Selecciona la base.");
       return;
     }
 
@@ -591,18 +605,18 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
   function agregarDesayunoMesa(destino = "categorias") {
     if (!desayunoSeleccionado) {
-      setErrorMesa("Selecciona un desayuno.");
+      mostrarErrorMesa("Selecciona un desayuno.");
       return;
     }
 
     const desayunoPrincipal = cafeteriaDesayunos.some((item) => item.nombre === desayunoSeleccionado);
     if (desayunoPrincipal && !acompananteDesayuno) {
-      setErrorMesa("Selecciona el acompañante del desayuno.");
+      mostrarErrorMesa("Selecciona el acompañante del desayuno.");
       return;
     }
 
     if (desayunoPrincipal && !bebidaDesayuno) {
-      setErrorMesa("Selecciona la bebida del desayuno.");
+      mostrarErrorMesa("Selecciona la bebida del desayuno.");
       return;
     }
 
@@ -625,7 +639,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
   function agregarProductoSimpleCafeteria(tipo, producto, precio, destino = "categorias") {
     if (!producto) {
-      setErrorMesa(`Selecciona un producto de ${tipo}.`);
+      mostrarErrorMesa(`Selecciona un producto de ${tipo}.`);
       return;
     }
 
@@ -659,23 +673,22 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
   async function enviarPedidoMesa() {
     if (itemsConProducto.length === 0) {
-      setErrorMesa("Agrega al menos un producto.");
+      mostrarErrorMesa("Agrega al menos un producto.", { elementoId: "mesa-categorias-top" });
       return;
     }
 
     if (!modoLlevar && !mesaLocal.trim()) {
-      setErrorMesa("Selecciona la mesa.");
+      mostrarErrorMesa("Selecciona la mesa.", { elementoId: "mesa-datos-final" });
       return;
     }
 
     if (!meseroLocal.trim()) {
-      setErrorMesa("Selecciona el mesero.");
+      mostrarErrorMesa("Selecciona el mesero.", { elementoId: "mesa-datos-final" });
       return;
     }
 
     if (tipoPagoMesa === FORMA_PAGO_CREDITO && !clientePedido.trim()) {
-      setErrorMesa("Para pago a crédito debes escribir o seleccionar el nombre del cliente.");
-      irAElementoMesas("mesa-cliente-credito", 80, "center");
+      mostrarErrorMesa("Para pago a crédito debes escribir o seleccionar el nombre del cliente.", { elementoId: "mesa-cliente-credito" });
       return;
     }
 
@@ -728,6 +741,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   return (
+    <>
     <main className="order-layout mesas-cliente-layout mesas-panel-layout">
       <section className="card card-pad" id="mesa-categorias-top">
         <div className="mesa-panel-title">
@@ -750,6 +764,14 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           <button type="button" onClick={() => irPasoMesas("resumen")} title="Resumen del pedido">R</button>
           <button type="button" onClick={() => irPasoMesas("datos")} title="Datos de la mesa">3</button>
         </div>
+
+        {navegacionAdminVisible && (
+          <div className="mesa-admin-nav" aria-label="Navegación administrativa">
+            <button type="button" onClick={onIrAdmin}>Admin</button>
+            <button type="button" onClick={onIrPedidos}>Pedidos hoy</button>
+            {puedeVerRafa && <button type="button" onClick={onIrGerencia}>Gerencia</button>}
+          </div>
+        )}
 
         <MesaTabs
           categoriaActiva={categoriaActivaMesa}
@@ -1344,6 +1366,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
         )}
       </aside>
     </main>
+    {modalAlertaRafiki}
+    </>
   );
 }
 

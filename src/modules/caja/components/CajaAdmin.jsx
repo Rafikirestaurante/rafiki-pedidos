@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useAlertaRafiki } from "../../../shared/components/common";
 import RafikiBadge from "../../../shared/components/RafikiBadge";
 import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
 import RafikiModal from "../../../shared/components/RafikiModal";
@@ -385,6 +386,7 @@ export default function CajaAdmin() {
   const [error, setError] = useState("");
   const [modalAjustesAbierto, setModalAjustesAbierto] = useState(false);
   const [modalGastosAbierto, setModalGastosAbierto] = useState(false);
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
 
   const totalInicio = useMemo(() => totalArqueo(inicioDia), [inicioDia]);
   const totalFin = useMemo(() => totalArqueo(finDia), [finDia]);
@@ -405,6 +407,21 @@ export default function CajaAdmin() {
     { id: "informe", label: "Informe", icon: "📊" },
     { id: "historial", label: "Historial", icon: "🕒", count: historialArqueos.length },
   ]), [historialArqueos.length]);
+
+  function mostrarMensajeCaja(texto, tipo = "success", titulo = "Caja") {
+    setMensaje(tipo === "success" ? texto : "");
+    setError(tipo === "error" ? texto : "");
+    mostrarAlertaRafiki({
+      tipo: tipo === "error" ? "error" : tipo === "warning" ? "advertencia" : "exito",
+      titulo,
+      mensaje: texto,
+      textoCerrar: "Entendido"
+    });
+  }
+
+  function mostrarErrorCaja(texto, titulo = "Error en caja") {
+    mostrarMensajeCaja(texto, "error", titulo);
+  }
 
   useEffect(() => {
     let activo = true;
@@ -458,8 +475,8 @@ export default function CajaAdmin() {
 
   async function guardarInicio() {
     setGuardandoInicio(true); setMensaje(""); setError("");
-    try { await guardarInicioCaja({ fecha: fechaCaja, estado: inicioDia, total: totalInicio }); setMensaje("Inicio del día guardado correctamente."); }
-    catch (err) { registrarErrorSupabase("guardar inicio de caja", err); setError(describirErrorSupabase(err, "guardar el inicio del día")); }
+    try { await guardarInicioCaja({ fecha: fechaCaja, estado: inicioDia, total: totalInicio }); mostrarMensajeCaja("Inicio del día guardado correctamente.", "success", "Inicio guardado"); }
+    catch (err) { registrarErrorSupabase("guardar inicio de caja", err); mostrarErrorCaja(describirErrorSupabase(err, "guardar el inicio del día")); }
     finally { setGuardandoInicio(false); }
   }
 
@@ -468,14 +485,14 @@ export default function CajaAdmin() {
     try {
       const anterior = await cargarUltimoArqueoDiaAnterior(fechaCaja);
       if (!anterior?.estado) {
-        setMensaje("No se encontró arqueo del día anterior para traer.");
+        mostrarMensajeCaja("No se encontró arqueo del día anterior para traer.", "warning", "Sin arqueo anterior");
         return;
       }
       setInicioDia(normalizarEstadoArqueo(anterior.estado));
-      setMensaje(`Información del último arqueo anterior cargada desde ${anterior.fecha}. Verifica los valores y luego guarda manualmente el inicio del día.`);
+      mostrarMensajeCaja(`Información del último arqueo anterior cargada desde ${anterior.fecha}. Verifica los valores y luego guarda manualmente el inicio del día.`, "success", "Arqueo anterior cargado");
     } catch (err) {
       registrarErrorSupabase("traer último arqueo anterior", err);
-      setError(describirErrorSupabase(err, "traer el último arqueo del día anterior"));
+      mostrarErrorCaja(describirErrorSupabase(err, "traer el último arqueo del día anterior"));
     } finally {
       setGuardandoInicio(false);
     }
@@ -485,9 +502,9 @@ export default function CajaAdmin() {
     setGuardandoFin(true); setMensaje(""); setError("");
     try {
       await guardarFinCaja({ fecha: fechaCaja, estado: finDia, total: totalFin });
-      setMensaje("Arqueo guardado correctamente como último conteo.");
+      mostrarMensajeCaja("Arqueo guardado correctamente como último conteo.", "success", "Arqueo guardado");
     }
-    catch (err) { registrarErrorSupabase("guardar arqueo de caja", err); setError(describirErrorSupabase(err, "guardar el arqueo")); }
+    catch (err) { registrarErrorSupabase("guardar arqueo de caja", err); mostrarErrorCaja(describirErrorSupabase(err, "guardar el arqueo")); }
     finally { setGuardandoFin(false); }
   }
 
@@ -501,10 +518,10 @@ export default function CajaAdmin() {
       setFinDia(crearEstadoArqueo());
       const historial = await cargarHistorialArqueosCaja(fechaCaja);
       setHistorialArqueos(historial);
-      setMensaje(totalFin > 0 ? "Último arqueo archivado. Ya puedes iniciar un arqueo nuevo." : "Arqueo limpiado. Ya puedes iniciar un arqueo nuevo.");
+      mostrarMensajeCaja(totalFin > 0 ? "Último arqueo archivado. Ya puedes iniciar un arqueo nuevo." : "Arqueo limpiado. Ya puedes iniciar un arqueo nuevo.", "success", "Arqueo nuevo");
     } catch (err) {
       registrarErrorSupabase("iniciar arqueo nuevo", err);
-      setError(describirErrorSupabase(err, "iniciar un arqueo nuevo"));
+      mostrarErrorCaja(describirErrorSupabase(err, "iniciar un arqueo nuevo"));
     } finally {
       setGuardandoFin(false);
     }
@@ -519,10 +536,10 @@ export default function CajaAdmin() {
     try {
       const registro = await guardarAjustesCaja({ fecha: fechaCaja, ajustes: ajustesCaja });
       setAjustesCaja(normalizarAjustesCaja(registro?.ajustesData));
-      setMensaje("Ajustes de caja guardados correctamente.");
+      mostrarMensajeCaja("Ajustes de caja guardados correctamente.", "success", "Ajustes guardados");
     } catch (err) {
       registrarErrorSupabase("guardar ajustes de caja", err);
-      setError(describirErrorSupabase(err, "guardar los ajustes de caja"));
+      mostrarErrorCaja(describirErrorSupabase(err, "guardar los ajustes de caja"));
     } finally {
       setGuardandoAjustes(false);
     }
@@ -634,6 +651,7 @@ export default function CajaAdmin() {
 
       {mensaje && <div className="alert alert-success caja-alert">{mensaje}</div>}
       {error && <div className="alert alert-error caja-alert">{error}</div>}
+      {modalAlertaRafiki}
       {cargando && <div className="card card-pad muted small">Cargando caja guardada...</div>}
 
       <RafikiTabs tabs={tabsCaja} activeTab={tabCaja} onChange={setTabCaja} className="caja-tabs" ariaLabel="Secciones de caja" />

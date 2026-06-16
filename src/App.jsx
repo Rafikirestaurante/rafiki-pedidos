@@ -53,6 +53,7 @@ export default function App() {
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
+  const [comerRestauranteCliente, setComerRestauranteCliente] = useState(false);
   const [tipoPago, setTipoPago] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
@@ -504,6 +505,7 @@ export default function App() {
     setCliente("");
     setTelefono("");
     setUbicacion("");
+    setComerRestauranteCliente(false);
     setTipoPago("");
     setObservaciones("");
     setPedidoFinalizado(null);
@@ -530,6 +532,7 @@ export default function App() {
     cliente,
     telefono,
     ubicacion,
+    comerRestauranteCliente,
     tipoPago,
     observaciones,
     pedidos,
@@ -593,7 +596,7 @@ export default function App() {
 
       <div className={`app ${vista === "mesas" ? "mesas-pos-activo" : ""}`}>
         <div className="container">
-          {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && (
+          {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && vista !== "mesas" && (
             <header className={`topbar ${vista === "cliente" || vista === "confirmacion" ? "cliente-topbar" : ""}`}>
               <div>
                 <div className="brand">{vista === "cliente" || vista === "confirmacion" ? "Rafiki Pedidos" : "🍽️ Rafiki Pedidos"}</div>
@@ -787,6 +790,7 @@ export default function App() {
               cliente={cliente}
               telefono={telefono}
               ubicacion={ubicacion}
+              comerRestauranteCliente={comerRestauranteCliente}
               tipoPago={tipoPago}
               observaciones={observaciones}
               errorDatosPedido={errorDatosPedido}
@@ -794,6 +798,7 @@ export default function App() {
               setCliente={setCliente}
               setTelefono={setTelefono}
               setUbicacion={setUbicacion}
+              setComerRestauranteCliente={setComerRestauranteCliente}
               setTipoPago={setTipoPago}
               setObservaciones={setObservaciones}
               setErrorDatosPedido={setErrorDatosPedido}
@@ -830,6 +835,11 @@ export default function App() {
                   modoEdicionAdmin={Boolean(pedidoEditandoEnMesas)}
                   onGuardarEdicion={editarPedidoMesaAdministrador}
                   onCancelarEdicion={cancelarEdicionPedidoEnMesas}
+                  navegacionAdminVisible={adminAutenticado}
+                  puedeVerRafa={puedeVerRafa}
+                  onIrAdmin={() => navegar("/admin", "admin")}
+                  onIrPedidos={() => navegar("/pedidos", "pedidos")}
+                  onIrGerencia={() => navegar("/gerencia", "gerencia")}
                 />
               </Suspense>
             </ErrorBoundary>
