@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAlertaRafiki } from "../../../shared/components/common";
 import { supabaseConfigMensaje, supabaseConfigOk } from "../../../supabaseClient";
 import {
@@ -73,6 +73,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   const [lineasInventario, setLineasInventario] = useState([{ insumoId: "", cantidad: "" }]);
   const [modalFormularioAbierto, setModalFormularioAbierto] = useState(false);
   const [mostrarResumenDetallado, setMostrarResumenDetallado] = useState(false);
+  const formularioGastoRef = useRef(null);
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
 
   const totalGastos = useMemo(() => gastos.reduce((total, gasto) => total + Number(gasto.valor || 0), 0), [gastos]);
@@ -113,7 +114,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     return () => { activo = false; };
   }, []);
 
-  async function cargar(fecha = fechaInforme) {
+  const cargar = useCallback(async (fecha = fechaInforme) => {
     if (!supabaseConfigOk || !esAdministrador) return;
     setCargando(true);
     setError("");
@@ -126,11 +127,11 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     } finally {
       setCargando(false);
     }
-  }
+  }, [esAdministrador, fechaInforme]);
 
   useEffect(() => {
     cargar(fechaInforme);
-  }, [fechaInforme, esAdministrador]);
+  }, [cargar, fechaInforme]);
 
   function cambiarCampo(campo, valor) {
     setFormulario((prev) => ({ ...prev, [campo]: valor }));
@@ -263,7 +264,15 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     setError("");
     setMensaje("");
     if (!modoRapido) setModalFormularioAbierto(true);
-    if (modoRapido) window.scrollTo({ top: 0, behavior: "auto" });
+    if (modoRapido) {
+      window.requestAnimationFrame(() => {
+        if (formularioGastoRef.current) {
+          formularioGastoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
   }
 
   async function eliminarGasto(gasto) {
@@ -289,7 +298,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   ];
 
   const formularioGasto = (
-    <form onSubmit={guardarGasto} className="box soft gastos-formulario-box">
+    <form ref={formularioGastoRef} onSubmit={guardarGasto} className="box soft gastos-formulario-box">
       <h3>{editandoId ? "Editar gasto" : "Registrar gasto"}</h3>
       <div className="gastos-recurrentes-rapidos">
         <span className="muted small">Proveedores rápidos</span>

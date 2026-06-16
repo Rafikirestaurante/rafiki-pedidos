@@ -2114,6 +2114,15 @@ body.rafiki-modal-open {
     font-size: 13px;
   }
 
+
+  .app.mesas-pos-activo .topbar {
+    display: none;
+  }
+
+  .app.mesas-pos-activo .container {
+    padding-top: max(48px, calc(42px + var(--rafiki-safe-top, 0px)));
+  }
+
   .topbar h1,
   .hero h2,
   .admin-title-compact h2,

@@ -590,7 +590,7 @@ export default function App() {
       <style>{appStyles}</style>
       {modalConfirmacionRafiki}
 
-      <div className="app">
+      <div className={`app ${vista === "mesas" ? "mesas-pos-activo" : ""}`}>
         <div className="container">
           {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && (
             <header className="topbar">
