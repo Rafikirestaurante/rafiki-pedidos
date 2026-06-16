@@ -105,7 +105,7 @@ export default function PedidoCliente({
                     </div>
                   ) : (
                   <>
-                      <div style={{ marginBottom: 18 }}>
+                      <div className="u-mb-18">
                         <h3>🛍️ Arma tu pedido paso a paso</h3>
                         <p className="muted">Primero selecciona tu proteína. Luego aparecerán los siguientes pasos.</p>
                       </div>
@@ -152,7 +152,7 @@ export default function PedidoCliente({
                               <span className="step-number">1</span>
                               <div>
                                 <h4>Primero selecciona tu proteína</h4>
-                                <p className="muted" style={{ marginBottom: 0 }}>
+                                <p className="muted u-mb-0">
                                   Toca una opción para continuar.
                                 </p>
                               </div>
@@ -186,12 +186,12 @@ export default function PedidoCliente({
                             ))}
 
                             {tienePlato && !itemEsSopa && (
-                              <div id={`paso-acompanantes-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
+                              <div id={`paso-acompanantes-${item.id}`} className="fade-step u-mt-18">
                                 <div className="step-title">
                                   <span className="step-number">2</span>
                                   <div>
                                     <h4>Escoge tus acompañantes</h4>
-                                    <p className="muted" style={{ marginBottom: 0 }}>
+                                    <p className="muted u-mb-0">
                                       Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones para completar tu almuerzo.
                                     </p>
                                   </div>
@@ -225,23 +225,23 @@ export default function PedidoCliente({
                                   )}
                                 </div>
 
-                                <div className="box compact-info" style={{ marginTop: 12 }}>
+                                <div className="box compact-info u-mt-12">
                                   <strong>🥣 Sopa y bebida incluida</strong>
                                 </div>
                               </div>
                             )}
 
                             {tienePlato && itemEsSopa && (
-                              <div className="box soft fade-step" style={{ marginTop: 18 }}>
+                              <div className="box soft fade-step u-mt-18">
                                 <strong>🥣 Producto de sopas</strong>
-                                <p className="muted" style={{ marginBottom: 0 }}>
+                                <p className="muted u-mb-0">
                                   Este producto no incluye acompañantes, sopa adicional ni bebida.
                                 </p>
                               </div>
                             )}
 
                             {tienePlato && (
-                              <div id={`paso-cantidad-${item.id}`} className="fade-step pedido-paso-compacto" style={{ marginTop: 12 }}>
+                              <div id={`paso-cantidad-${item.id}`} className="fade-step pedido-paso-compacto u-mt-12">
                                 <div className="box compact-box quantity-box">
                                   <strong>Cantidad de {item.plato || item.proteina || "proteína escogida"}</strong>
                                   <SelectorCantidad
@@ -265,7 +265,7 @@ export default function PedidoCliente({
                                 <label className="box row compact-box takeout-box">
                                   <div>
                                     <strong>🥡 Para llevar</strong>
-                                    <p className="muted" style={{ marginBottom: 0 }}>
+                                    <p className="muted u-mb-0">
                                       {valorParaLlevarItem(item) === 0 && item.paraLlevar
                                         ? "Sin costo adicional"
                                         : `Suma ${dinero(valorParaLlevarItem(item))}`}
@@ -278,7 +278,7 @@ export default function PedidoCliente({
                                     onChange={(e) =>
                                       actualizarItem(item.id, { paraLlevar: e.target.checked })
                                     }
-                                    style={{ width: 20, height: 20 }}
+                                    className="u-icon-sm"
                                   />
                                 </label>
 
@@ -314,7 +314,7 @@ export default function PedidoCliente({
                 {!hayProductoSeleccionado ? (
                   <div className="box soft">
                     <strong>👈 Empieza seleccionando una proteína</strong>
-                    <p className="muted" style={{ marginBottom: 0 }}>
+                    <p className="muted u-mb-0">
                       Cuando selecciones un producto, aquí aparecerá el resumen y los datos de entrega.
                     </p>
                   </div>
@@ -322,7 +322,7 @@ export default function PedidoCliente({
                   <>
                     <p className="muted">Revisa tu pedido antes de finalizar.</p>
 
-                    <div className="box soft" style={{ marginBottom: 12 }}>
+                    <div className="box soft u-mb-12">
                       <h3>Resumen del pedido</h3>
 
                       {itemsPedido
@@ -382,11 +382,11 @@ export default function PedidoCliente({
                       Borrar y volver a empezar
                     </button>
 
-                    <div id="paso-datos-entrega" className="step-title" style={{ marginTop: 18 }}>
+                    <div id="paso-datos-entrega" className="step-title u-mt-18">
                       <span className="step-number">3</span>
                       <div>
                         <h4>Datos de entrega</h4>
-                        <p className="muted" style={{ marginBottom: 0 }}>
+                        <p className="muted u-mb-0">
                           Así sabremos a dónde llevar tu pedido.
                         </p>
                       </div>
@@ -459,8 +459,7 @@ export default function PedidoCliente({
                             type="button"
                             onClick={registrarPedidoSiCumpleAcompanantes}
                             disabled={guardandoPedido || itemsConProducto.length === 0}
-                            className="button"
-                            style={{ margin: 0, padding: "12px 20px", fontSize: 15 }}
+                            className="button pedido-cliente-submit"
                           >
                             {guardandoPedido ? "Guardando..." : "Enviar a cocina →"}
                           </button>
