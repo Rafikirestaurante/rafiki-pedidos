@@ -593,22 +593,10 @@ export default function App() {
       <div className={`app ${vista === "mesas" ? "mesas-pos-activo" : ""}`}>
         <div className="container">
           {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && (
-            <header className="topbar">
+            <header className={`topbar ${vista === "cliente" || vista === "confirmacion" ? "cliente-topbar" : ""}`}>
               <div>
-                <div className="brand">🍽️ Rafiki Pedidos</div>
+                <div className="brand">{vista === "cliente" || vista === "confirmacion" ? "Rafiki Pedidos" : "🍽️ Rafiki Pedidos"}</div>
               </div>
-
-              {(vista === "cliente" || vista === "confirmacion") && (
-                <div className="nav">
-                  <button
-                    type="button"
-                    onClick={() => navegar("/cliente", "cliente")}
-                    className={vista === "cliente" ? "active" : ""}
-                  >
-                    Vista cliente
-                  </button>
-                </div>
-              )}
 
               {vista === "mesas" && (
                 <div className="nav nav-wrap">

@@ -2051,6 +2051,19 @@ select.box:focus,
   .catalogo-tabla-desktop { margin-left: -2px; margin-right: -2px; }
 }
 
+/* Hotfix 121.12 - Encabezado cliente simple y no fijo */
+.cliente-topbar {
+  position: static !important;
+}
+
+.cliente-topbar .brand {
+  margin-bottom: 0;
+}
+
+.cliente-topbar .nav {
+  display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
