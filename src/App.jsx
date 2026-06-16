@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase, supabaseConfigOk } from "./supabaseClient";
 import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./shared/utils/navigation";
@@ -19,6 +19,7 @@ import {
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import CargandoModulo from "./shared/components/CargandoModulo";
 import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
+import { lazyConReintento } from "./shared/utils/lazyConReintento.js";
 import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
@@ -34,14 +35,14 @@ import { usePedidosHoy } from "./shared/hooks/usePedidosHoy";
 import { useMenuDiario } from "./shared/hooks/useMenuDiario";
 import { usePedidos } from "./shared/hooks/usePedidos";
 
-const SolicitudProductos = lazy(() => import("./modules/catalogo/components/SolicitudProductos"));
-const GeneradorMenu = lazy(() => import("./modules/catalogo/components/GeneradorMenu"));
-const PanelMesasPOS = lazy(() => import("./modules/mesas/components/PanelMesas"));
-const PanelRafaPrivado = lazy(() => import("./modules/dashboard/components/PanelRafaPrivado"));
-const CatalogoRafa = lazy(() => import("./modules/catalogo/components/CatalogoRafa"));
-const InventarioAdmin = lazy(() => import("./modules/inventario/components/InventarioAdmin"));
-const CajaAdmin = lazy(() => import("./modules/caja/components/CajaAdmin"));
-const GerenciaPanel = lazy(() => import("./modules/gerencia/components/GerenciaPanel"));
+const SolicitudProductos = lazyConReintento(() => import("./modules/catalogo/components/SolicitudProductos"), "SolicitudProductos");
+const GeneradorMenu = lazyConReintento(() => import("./modules/catalogo/components/GeneradorMenu"), "GeneradorMenu");
+const PanelMesasPOS = lazyConReintento(() => import("./modules/mesas/components/PanelMesas"), "PanelMesas");
+const PanelRafaPrivado = lazyConReintento(() => import("./modules/dashboard/components/PanelRafaPrivado"), "PanelRafaPrivado");
+const CatalogoRafa = lazyConReintento(() => import("./modules/catalogo/components/CatalogoRafa"), "CatalogoRafa");
+const InventarioAdmin = lazyConReintento(() => import("./modules/inventario/components/InventarioAdmin"), "InventarioAdmin");
+const CajaAdmin = lazyConReintento(() => import("./modules/caja/components/CajaAdmin"), "CajaAdmin");
+const GerenciaPanel = lazyConReintento(() => import("./modules/gerencia/components/GerenciaPanel"), "GerenciaPanel");
 
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
 
@@ -817,7 +818,7 @@ export default function App() {
           )}
 
           {!cargando && vista === "mesas" && (
-            <ErrorBoundary nombreModulo="Panel Mesas" onReset={() => setRecargaMenu((actual) => actual + 1)}>
+            <ErrorBoundary nombreModulo="Panel Mesas" usarRecuperacionPWA onReset={() => setRecargaMenu((actual) => actual + 1)}>
               <Suspense fallback={<CargandoModulo texto="Cargando panel mesas..." />}>
                 <PanelMesasPOS
                   menu={menu}
@@ -835,7 +836,7 @@ export default function App() {
           )}
 
           {!cargando && vista === "gerencia" && adminAutenticado && puedeVerRafa && (
-            <ErrorBoundary nombreModulo="Gerencia" onReset={() => setRecargaPedidos((actual) => actual + 1)}>
+            <ErrorBoundary nombreModulo="Gerencia" usarRecuperacionPWA onReset={() => setRecargaPedidos((actual) => actual + 1)}>
               <Suspense fallback={<CargandoModulo texto="Cargando gerencia..." />}>
                 <GerenciaPanel
                   adminUsuario={adminUsuario}
@@ -960,7 +961,7 @@ export default function App() {
               )}
 
               {adminTab === "productos" && puedeVerProductos && (
-                <ErrorBoundary nombreModulo="Solicitud de insumos">
+                <ErrorBoundary nombreModulo="Solicitud de insumos" usarRecuperacionPWA>
                   <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
                     <SolicitudProductos />
                   </Suspense>
@@ -968,7 +969,7 @@ export default function App() {
               )}
 
               {adminTab === "generador" && puedeVerGenerador && (
-                <ErrorBoundary nombreModulo="Generador de menú">
+                <ErrorBoundary nombreModulo="Generador de menú" usarRecuperacionPWA>
                   <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
                     <GeneradorMenu />
                   </Suspense>
@@ -976,7 +977,7 @@ export default function App() {
               )}
 
               {adminTab === "catalogo" && puedeVerCatalogo && (
-                <ErrorBoundary nombreModulo="Catálogo">
+                <ErrorBoundary nombreModulo="Catálogo" usarRecuperacionPWA>
                   <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
                     <CatalogoRafa />
                   </Suspense>
@@ -994,7 +995,7 @@ export default function App() {
               )}
 
               {adminTab === "caja" && puedeVerCaja && (
-                <ErrorBoundary nombreModulo="Caja" onReset={() => setRecargaPedidos((actual) => actual + 1)}>
+                <ErrorBoundary nombreModulo="Caja" usarRecuperacionPWA onReset={() => setRecargaPedidos((actual) => actual + 1)}>
                   <Suspense fallback={<CargandoModulo texto="Cargando caja..." />}>
                     <CajaAdmin />
                   </Suspense>

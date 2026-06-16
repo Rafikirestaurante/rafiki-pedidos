@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "121.13-HOTFIX-PASOS-MESAS-SIN-TAPAR-NAVEGACION-2026-06-16",
-  phase: "Hotfix pasos mesas sin tapar navegación",
+  version: "121.14-HOTFIX-PWA-MODULOS-DINAMICOS-GERENCIA-2026-06-16",
+  phase: "Hotfix PWA módulos dinámicos Gerencia",
   date: "2026-06-16",
   fase: "32.0",
   notes:
-    "Hotfix visual: el panel de pasos 1-2-R-3 de Mesas deja de ser fixed y pasa a sticky dentro del flujo para no tapar la navegación principal."
+    "Hotfix técnico: agrega lazyConReintento para módulos dinámicos, limpia caché PWA ante chunks viejos y acelera activación del Service Worker para evitar errores tipo Failed to fetch dynamically imported module."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

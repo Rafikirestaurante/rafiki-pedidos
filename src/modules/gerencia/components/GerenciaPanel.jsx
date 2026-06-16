@@ -1,13 +1,14 @@
-import React, { Suspense, lazy, useMemo, useState } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import CargandoModulo from "../../../shared/components/CargandoModulo.jsx";
 import ErrorBoundary from "../../../shared/components/ErrorBoundary.jsx";
+import { lazyConReintento } from "../../../shared/utils/lazyConReintento.js";
 
-const PanelRafaPrivado = lazy(() => import("../../dashboard/components/PanelRafaPrivado.jsx"));
-const CajaAdmin = lazy(() => import("../../caja/components/CajaAdmin.jsx"));
-const InventarioAdmin = lazy(() => import("../../inventario/components/InventarioAdmin.jsx"));
-const CatalogoRafa = lazy(() => import("../../catalogo/components/CatalogoRafa.jsx"));
-const GastosDiarios = lazy(() => import("../../gastos/components/GastosDiarios.jsx"));
-const CarteraClientesCredito = lazy(() => import("../../cartera/components/CarteraClientesCredito.jsx"));
+const PanelRafaPrivado = lazyConReintento(() => import("../../dashboard/components/PanelRafaPrivado.jsx"), "GerenciaInformes");
+const CajaAdmin = lazyConReintento(() => import("../../caja/components/CajaAdmin.jsx"), "GerenciaCaja");
+const InventarioAdmin = lazyConReintento(() => import("../../inventario/components/InventarioAdmin.jsx"), "GerenciaInventario");
+const CatalogoRafa = lazyConReintento(() => import("../../catalogo/components/CatalogoRafa.jsx"), "GerenciaCatalogo");
+const GastosDiarios = lazyConReintento(() => import("../../gastos/components/GastosDiarios.jsx"), "GerenciaGastos");
+const CarteraClientesCredito = lazyConReintento(() => import("../../cartera/components/CarteraClientesCredito.jsx"), "GerenciaCartera");
 
 const TABS_GERENCIA = [
   { id: "inicio", label: "Inicio" },
@@ -130,7 +131,7 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "informes" && puedeVerInformes && (
-        <ErrorBoundary nombreModulo="Informes gerenciales">
+        <ErrorBoundary nombreModulo="Informes gerenciales" usarRecuperacionPWA>
           <Suspense fallback={<CargandoModulo texto="Cargando informes gerenciales..." />}>
             <PanelRafaPrivado />
           </Suspense>
@@ -138,7 +139,7 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "caja" && puedeVerCaja && (
-        <ErrorBoundary nombreModulo="Caja gerencial">
+        <ErrorBoundary nombreModulo="Caja gerencial" usarRecuperacionPWA>
           <Suspense fallback={<CargandoModulo texto="Cargando caja gerencial..." />}>
             <CajaAdmin />
           </Suspense>
@@ -146,7 +147,7 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "gastos" && puedeVerGastos && (
-        <ErrorBoundary nombreModulo="Gastos gerenciales">
+        <ErrorBoundary nombreModulo="Gastos gerenciales" usarRecuperacionPWA>
           <Suspense fallback={<CargandoModulo texto="Cargando gastos gerenciales..." />}>
             <GastosDiarios esAdministrador={puedeVerInformeGastos} />
           </Suspense>
@@ -154,7 +155,7 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "inventario" && puedeVerInventario && (
-        <ErrorBoundary nombreModulo="Inventario gerencial">
+        <ErrorBoundary nombreModulo="Inventario gerencial" usarRecuperacionPWA>
           <Suspense fallback={<CargandoModulo texto="Cargando inventario gerencial..." />}>
             <InventarioAdmin />
           </Suspense>
@@ -162,7 +163,7 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "catalogo" && puedeVerCatalogo && (
-        <ErrorBoundary nombreModulo="Catálogo gerencial">
+        <ErrorBoundary nombreModulo="Catálogo gerencial" usarRecuperacionPWA>
           <Suspense fallback={<CargandoModulo texto="Cargando catálogo gerencial..." />}>
             <CatalogoRafa />
           </Suspense>
@@ -170,7 +171,7 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "cartera" && (
-        <ErrorBoundary nombreModulo="Cartera">
+        <ErrorBoundary nombreModulo="Cartera" usarRecuperacionPWA>
           <Suspense fallback={<CargandoModulo texto="Cargando clientes crédito..." />}>
             <CarteraClientesCredito />
           </Suspense>
