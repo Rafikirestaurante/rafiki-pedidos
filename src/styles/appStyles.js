@@ -2109,8 +2109,7 @@ body.rafiki-modal-open {
   }
 
   .topbar {
-    position: sticky;
-    top: max(0px, var(--rafiki-safe-top, 0px));
+    position: static;
     z-index: 50;
     margin: -2px -2px 14px;
     padding: 10px;
@@ -2119,6 +2118,10 @@ body.rafiki-modal-open {
     background: rgba(255, 247, 237, 0.92);
     backdrop-filter: blur(12px);
     box-shadow: 0 10px 28px rgba(28, 25, 23, 0.08);
+  }
+
+  .admin-panel-header {
+    position: static;
   }
 
   .brand {
@@ -2130,8 +2133,7 @@ body.rafiki-modal-open {
 
   .app.mesas-pos-activo .topbar {
     display: block;
-    position: sticky;
-    top: max(54px, calc(50px + var(--rafiki-safe-top, 0px)));
+    position: static;
     z-index: 80;
     margin: 0 -2px 12px;
     padding: 8px;
@@ -2153,7 +2155,7 @@ body.rafiki-modal-open {
   }
 
   .app.mesas-pos-activo .container {
-    padding-top: max(58px, calc(52px + var(--rafiki-safe-top, 0px)));
+    padding-top: 0;
   }
 
   .topbar h1,
