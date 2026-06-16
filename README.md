@@ -1,4 +1,4 @@
-# Rafiki Pedidos — 121.5
+# Rafiki Pedidos — 121.6
 
 Fase 30E — Manejo profesional de errores Supabase.
 
@@ -125,3 +125,16 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se compactan y ordenan acciones en móvil para Pedidos Hoy, Cartera, Caja, Gastos, Inventario, Catálogo, Mesas y formularios de filtros.
 - Se ajustan grids y formularios a una sola columna en pantallas pequeñas para reducir cortes, overflow y botones incómodos.
 - Se mantiene intacta la lógica de pedidos, cartera, caja, inventario, gastos, Supabase, auditoría y PWA.
+
+
+## 121.6 — Fase 31H.1: Correcciones críticas de componentes reutilizables
+
+- Se corrige `RafikiActionMenu` para renderizar el menú desplegable mediante React Portal directamente en `document.body`, evitando que `overflow: auto` de tablas o contenedores corte las opciones.
+- El menú `Opciones ⋮` ahora calcula su posición con `getBoundingClientRect()` en escritorio y conserva la hoja inferior en celular.
+- Se agregan listeners de reposicionamiento en scroll y resize para mantener el menú alineado con su botón mientras está abierto.
+- Se refuerza el cierre por clic externo, fondo móvil y tecla Escape sin depender de que el menú esté dentro del mismo contenedor visual.
+- Se mejora `RafikiModal` con un contador global de modales abiertos para que el bloqueo de scroll del body solo se retire cuando no quede ningún modal activo.
+- Se agrega un trap básico de foco en modales para que Tab y Shift+Tab no saquen el foco accidentalmente del diálogo abierto.
+- Se mejora `RafikiTabs` con navegación por teclado usando flechas, Home y End, manteniendo `tabIndex` accesible según la pestaña activa.
+- Se agrega navegación por teclado en `RafikiActionMenu` con flechas, Home, End, Escape y Tab.
+- No se modifica lógica de negocio, servicios, SQL, pedidos, cartera, caja, gastos, inventario ni cálculos financieros.
