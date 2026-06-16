@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "121.15-FASE32-0-AJUSTES-OPERATIVOS-2026-06-16",
-  phase: "Fase 32.0 - Ajustes operativos iniciales",
+  version: "121.16-FASE32-0-SEGUNDA-ENTREGA-LIMPIA-2026-06-16",
+  phase: "Fase 32.0 - Segunda entrega limpia",
   date: "2026-06-16",
   fase: "32.0",
   notes:
-    "Ajusta navegación de /mesas con pasos 1-2-R-3 fijos arriba, mueve navegación admin debajo y solo para administradores, conecta alertas modales en Caja y Mesas, agrega Comer en restaurante en /cliente como Mesa 5A y corrige estabilidad del teclado en modales de gastos."
+    "Segunda entrega optimizada: mantiene los ajustes operativos de 121.15, valida build/PWA y entrega paquete limpio sin node_modules para despliegue en GitHub/Vercel."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
