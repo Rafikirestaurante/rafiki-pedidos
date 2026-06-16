@@ -1,9 +1,9 @@
 {
-  "version": "121.6-FASE31H1-COMPONENTES-REUTILIZABLES",
-  "fase": "31H.1",
-  "mensaje": "Correcciones críticas de componentes reutilizables: menús por portal, modales con bloqueo de scroll seguro y tabs/menús con mejor teclado.",
-  "build": "121.6",
-  "base_estable": "121.5",
-  "phase": "Fase 31H.1 - Correcciones críticas de componentes reutilizables",
+  "version": "121.9-FASE31H4-LIMPIEZA-VISUAL-GRADUAL",
+  "fase": "31H.4",
+  "mensaje": "Limpieza visual gradual y deuda técnica: variables CSS, utilidades de espaciado y reducción segura de estilos inline en PedidoCliente.",
+  "build": "121.9",
+  "base_estable": "121.8",
+  "phase": "Fase 31H.4 - Limpieza visual gradual y deuda técnica",
   "date": "2026-06-15"
 }

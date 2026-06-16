@@ -1,4 +1,4 @@
-# Rafiki Pedidos — 121.6
+# Rafiki Pedidos — 121.9
 
 Fase 30E — Manejo profesional de errores Supabase.
 
@@ -138,3 +138,35 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se mejora `RafikiTabs` con navegación por teclado usando flechas, Home y End, manteniendo `tabIndex` accesible según la pestaña activa.
 - Se agrega navegación por teclado en `RafikiActionMenu` con flechas, Home, End, Escape y Tab.
 - No se modifica lógica de negocio, servicios, SQL, pedidos, cartera, caja, gastos, inventario ni cálculos financieros.
+
+
+
+## 121.8 — Fase 31H.3: Ajustes específicos en pantallas operativas
+
+- Se ajustó la experiencia móvil del Panel Mesas evitando que el topbar general compita con la navegación fija de pasos.
+- Se agregó clase contextual `mesas-pos-activo` en la app cuando la vista activa es `/mesas`.
+- En móvil, el topbar se oculta solo en Panel Mesas y se conserva espacio seguro superior para el `mesa-step-nav`.
+- `GastosDiarios` ahora memoriza la carga principal con `useCallback` para evitar recrear la función en cada render.
+- La edición de gastos en modo rápido ahora usa `scrollIntoView` suave hacia el formulario en vez de saltar al inicio absoluto de la app.
+- No se modificaron cálculos, servicios, SQL, pedidos, cartera, caja, inventario ni Supabase.
+
+## 121.7 — Fase 31H.2: Correcciones CSS móvil críticas
+
+- Se corrigió la regla móvil global que forzaba todos los `.button` a `width: 100%`.
+- El ancho completo queda limitado a botones marcados como `full-width`, `add-meal`, `continue-button` o `summary-continue`, además de contextos específicos ya definidos.
+- Se ajustó `.nav-wrap` para trabajar siempre con `flex-wrap: nowrap`, evitando saltos visuales inesperados.
+- Se reforzó el scroll horizontal de navegación, tabs y chips en celular.
+- Se evitó que botones de navegación, tabs y chips hereden ancho completo en móvil.
+- Se eliminaron bloques CSS duplicados de Caja para reducir riesgo de divergencia futura.
+- No se modificó lógica de negocio, servicios, SQL, pedidos, cartera, caja, inventario ni Supabase.
+
+## 121.9 — Fase 31H.4: Limpieza visual gradual y deuda técnica
+
+- Se inició la migración gradual de colores repetidos en `appStyles.js` hacia variables CSS reutilizables.
+- Se agregaron variables complementarias para tonos frecuentes de marca, borde y texto.
+- Se redujeron colores hardcodeados principales como naranja Rafiki, fondo crema, borde naranja claro, texto principal y texto secundario.
+- Se agregaron utilidades visuales pequeñas para espaciado y tamaño de íconos: `u-mt-12`, `u-mt-18`, `u-mb-0`, `u-mb-12`, `u-mb-18`, `u-icon-sm`.
+- Se limpió de forma segura `PedidoCliente.jsx`, reemplazando estilos inline simples por clases reutilizables.
+- Se agregó clase específica `pedido-cliente-submit` para el botón final de envío a cocina, evitando estilos inline.
+- No se hizo una limpieza masiva de todo `/cliente` para evitar cambios visuales bruscos en la pantalla del usuario final.
+- No se modificó lógica de pedidos, servicios, SQL, Supabase, cartera, caja, gastos, inventario ni cálculos financieros.
