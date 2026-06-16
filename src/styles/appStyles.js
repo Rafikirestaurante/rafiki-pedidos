@@ -2129,11 +2129,31 @@ body.rafiki-modal-open {
 
 
   .app.mesas-pos-activo .topbar {
+    display: block;
+    position: sticky;
+    top: max(54px, calc(50px + var(--rafiki-safe-top, 0px)));
+    z-index: 80;
+    margin: 0 -2px 12px;
+    padding: 8px;
+  }
+
+  .app.mesas-pos-activo .topbar .brand {
     display: none;
   }
 
+  .app.mesas-pos-activo .topbar .nav {
+    margin-top: 0;
+    padding-bottom: 2px;
+  }
+
+  .app.mesas-pos-activo .topbar .nav button {
+    min-height: 38px;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
   .app.mesas-pos-activo .container {
-    padding-top: max(48px, calc(42px + var(--rafiki-safe-top, 0px)));
+    padding-top: max(58px, calc(52px + var(--rafiki-safe-top, 0px)));
   }
 
   .topbar h1,
