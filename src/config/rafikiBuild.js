@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "122.1-HISTORIAL-MENU-VISIBLE-2026-06-17",
-  phase: "Fase 32 - Historial de menú visible en pestaña propia y rotación inteligente",
+  version: "122.2-HISTORIAL-MENU-SUGERENCIAS-VISUALES-2026-06-17",
+  phase: "Fase 32 - Historial de menú con sugerencias visuales",
   date: "2026-06-17",
   fase: "32",
   notes:
-    "Generador de menú incorpora subpestaña Historial de menú con informe de últimos 12 menús, análisis de productos usados y no usados por categoría, y sugerencias de rotación."
+    "Generador de menú mantiene Historial de menú y mejora Sugerencias para próximo menú con el mismo formato visual de las tarjetas de rotación por categoría."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

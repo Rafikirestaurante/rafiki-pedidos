@@ -402,8 +402,18 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   }, [catalogoRestaurante, historial]);
 
   const sugerenciasRotacionMenu = useMemo(() => (
-    rotacionInteligenteMenu.flatMap((grupo) => grupo.noUsados.slice(0, 4).map((nombre) => ({ categoria: grupo.titulo, nombre })))
+    rotacionInteligenteMenu.map((grupo) => ({
+      key: grupo.key,
+      titulo: grupo.titulo,
+      icono: grupo.icono,
+      dias: grupo.dias,
+      sugeridos: grupo.noUsados.slice(0, 4)
+    }))
   ), [rotacionInteligenteMenu]);
+
+  const totalSugerenciasRotacionMenu = useMemo(() => (
+    sugerenciasRotacionMenu.reduce((total, grupo) => total + grupo.sugeridos.length, 0)
+  ), [sugerenciasRotacionMenu]);
 
   useEffect(() => {
     setPestanaGenerador(pestanaInicial === "historial" ? "historial" : "generador");
@@ -938,12 +948,31 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
             ))}
           </div>
 
-          <div className="box soft sugerencias-rotacion-menu" style={{ marginTop: 14 }}>
-            <strong>💡 Sugerencias para próximo menú</strong>
-            {sugerenciasRotacionMenu.length ? (
-              <div className="sugerencias-rotacion-lista">
-                {sugerenciasRotacionMenu.map((item) => (
-                  <span key={`${item.categoria}-${item.nombre}`} className="producto-chip">{item.categoria}: {item.nombre}</span>
+          <div className="box soft rotacion-menu-card sugerencias-rotacion-menu" style={{ marginTop: 14 }}>
+            <div className="rotacion-menu-title">
+              <strong>💡 Sugerencias para próximo menú</strong>
+              <span className="badge">Rotación inteligente</span>
+            </div>
+            <p className="muted small">
+              Basado en productos no usados recientemente · Sugerencias: {totalSugerenciasRotacionMenu}
+            </p>
+
+            {totalSugerenciasRotacionMenu > 0 ? (
+              <div className="sugerencias-rotacion-grid">
+                {sugerenciasRotacionMenu.map((grupo) => (
+                  <div key={`sugerencia-${grupo.key}`} className="sugerencia-rotacion-categoria">
+                    <h4>{grupo.icono} {grupo.titulo}</h4>
+                    <p className="muted small" style={{ marginTop: 0 }}>Últimos {grupo.dias} días</p>
+                    {grupo.sugeridos.length ? (
+                      <ul>
+                        {grupo.sugeridos.map((nombre) => (
+                          <li key={`${grupo.key}-sugerido-${nombre}`}>{nombre}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="muted small">Sin sugerencias pendientes.</p>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -1356,7 +1385,11 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
         .rotacion-menu-columns h4 { margin: 0 0 8px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
         .rotacion-menu-columns ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
         .rotacion-menu-columns li { color: #3f2a1d; font-size: 13px; font-weight: 800; line-height: 1.25; }
-        .sugerencias-rotacion-lista { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .sugerencias-rotacion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+        .sugerencia-rotacion-categoria { border: 1px dashed #fdba74; border-radius: 16px; background: #fff; padding: 12px; }
+        .sugerencia-rotacion-categoria h4 { margin: 0 0 6px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .sugerencia-rotacion-categoria ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+        .sugerencia-rotacion-categoria li { color: #3f2a1d; font-size: 13px; font-weight: 800; line-height: 1.25; }
         .plato-menu-row { display: grid; grid-template-columns: minmax(0, 1fr) 120px 38px; gap: 8px; margin-top: 10px; align-items: center; }
         .field { display: grid; gap: 7px; margin-bottom: 12px; }
         .field span { font-weight: 900; color: #3f2a1d; }
@@ -1411,7 +1444,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
         .acompanantes-manual-field textarea { min-height: 92px; }
         @media (max-width: 860px) {
           .generador-menu-grid { grid-template-columns: 1fr !important; gap: 16px; }
-          .rotacion-menu-grid, .rotacion-menu-columns { grid-template-columns: 1fr; }
+          .rotacion-menu-grid, .rotacion-menu-columns, .sugerencias-rotacion-grid { grid-template-columns: 1fr; }
           .selector-catalogo-section-head { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
