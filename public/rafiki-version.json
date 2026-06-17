@@ -1,9 +1,9 @@
 {
-  "version": "121.9-FASE31H4-LIMPIEZA-VISUAL-GRADUAL",
-  "fase": "31H.4",
-  "mensaje": "Limpieza visual gradual y deuda técnica: variables CSS, utilidades de espaciado y reducción segura de estilos inline en PedidoCliente.",
-  "build": "121.9",
-  "base_estable": "121.8",
-  "phase": "Fase 31H.4 - Limpieza visual gradual y deuda técnica",
-  "date": "2026-06-15"
+  "version": "122.1-HISTORIAL-MENU-VISIBLE-2026-06-17",
+  "fase": "32",
+  "mensaje": "122.1: Historial de menú visible como pestaña propia y dentro del Generador, con rotación inteligente por categoría.",
+  "build": "122.1",
+  "base_estable": "121.21",
+  "phase": "Fase 32 - Historial y rotación inteligente de menú",
+  "date": "2026-06-17"
 }

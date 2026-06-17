@@ -35,7 +35,7 @@ const viteConfig = fs.readFileSync(path.join(root, 'vite.config.js'), 'utf8');
 const buildConfig = fs.readFileSync(path.join(root, 'src/config/rafikiBuild.js'), 'utf8');
 
 assert(manifest.name === 'Rafiki Pedidos', 'Manifest: nombre inesperado.');
-assert(manifest.start_url?.startsWith('/mesas'), 'Manifest: start_url debe iniciar en /mesas.');
+assert(manifest.start_url?.startsWith('/admin'), 'Manifest: start_url debe iniciar en /admin.');
 assert(!JSON.stringify(manifest).includes('/cliente'), 'Manifest: no debe promover /cliente como PWA interna.');
 assert(Array.isArray(manifest.shortcuts) && manifest.shortcuts.length >= 2, 'Manifest: faltan shortcuts internos.');
 assert(manifest.shortcuts.every((shortcut) => !shortcut.url?.startsWith('/cliente')), 'Manifest: hay shortcut hacia /cliente.');
