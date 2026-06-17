@@ -138,6 +138,84 @@ function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEs
   );
 }
 
+
+function formatearFechaInputPedido(valor) {
+  const fecha = valor ? new Date(valor) : new Date();
+  if (Number.isNaN(fecha.getTime())) return new Date().toISOString().slice(0, 10);
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, "0");
+  const day = String(fecha.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatearHoraInputPedido(valor) {
+  const fecha = valor ? new Date(valor) : new Date();
+  if (Number.isNaN(fecha.getTime())) return "12:00";
+  return `${String(fecha.getHours()).padStart(2, "0")}:${String(fecha.getMinutes()).padStart(2, "0")}`;
+}
+
+function CambiarFechaPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
+  const [fecha, setFecha] = useState(() => formatearFechaInputPedido(pedido?.created_at));
+  const [hora, setHora] = useState(() => formatearHoraInputPedido(pedido?.created_at));
+  const [error, setError] = useState("");
+
+  const guardar = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!fecha || !hora) {
+      setError("Selecciona la fecha y la hora del pedido.");
+      return;
+    }
+
+    const fechaCompleta = new Date(`${fecha}T${hora}:00`);
+    if (Number.isNaN(fechaCompleta.getTime())) {
+      setError("La fecha seleccionada no es válida.");
+      return;
+    }
+
+    const ok = await onGuardar?.(pedido, fechaCompleta.toISOString());
+    if (ok) onCerrar?.();
+  };
+
+  return (
+    <div className="admin-mesa-modal-backdrop" role="dialog" aria-modal="true" aria-label={`Cambiar fecha pedido ${obtenerCodigoPedido(pedido)}`}>
+      <form className="admin-mesa-modal editar-pedido-modal" onSubmit={guardar}>
+        <div className="admin-mesa-modal-head">
+          <div>
+            <span>Cambiar fecha</span>
+            <h3>Pedido #{obtenerCodigoPedido(pedido)}</h3>
+            <p>Solo administrador. El pedido se moverá al informe y caja de la fecha seleccionada.</p>
+          </div>
+          <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cerrar</button>
+        </div>
+
+        <div className="admin-mesa-modal-body editar-pedido-form">
+          <label>
+            Fecha real del pedido
+            <input type="date" value={fecha} onChange={(event) => setFecha(event.target.value)} required />
+          </label>
+          <label>
+            Hora aproximada
+            <input type="time" value={hora} onChange={(event) => setHora(event.target.value)} required />
+          </label>
+          <div className="editar-pedido-form-full box soft">
+            <strong>Resumen</strong>
+            <p className="muted small">#{obtenerCodigoPedido(pedido)} · {obtenerCliente(pedido)} · {dinero(pedido?.total || 0)}</p>
+            <p className="muted small">Fecha actual: {formatearFechaHora(pedido?.created_at)}</p>
+          </div>
+          {error ? <div className="alert alert-warning editar-pedido-form-full">{error}</div> : null}
+        </div>
+
+        <div className="editar-pedido-actions">
+          <button type="button" className="button light" onClick={onCerrar} disabled={guardando}>Cancelar</button>
+          <button type="submit" className="button green" disabled={guardando}>{guardando ? "Guardando..." : "Cambiar fecha"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
   const [form, setForm] = useState(() => ({
     cliente: pedido?.cliente || pedido?.cliente_nombre || "",
@@ -403,6 +481,7 @@ function AdminPedidosSectionBase({
   eliminandoPedidoId,
   puedeEditarPedido = false,
   editarPedidoAdministrador,
+  cambiarFechaPedidoAdministrador,
   onEditarPedidoEnMesas,
   editandoPedidoId,
   pedidosFinalizados,
@@ -410,6 +489,7 @@ function AdminPedidosSectionBase({
   pedidosActivos,
 }) {
   const [pedidoEditando, setPedidoEditando] = useState(null);
+  const [pedidoCambiandoFecha, setPedidoCambiandoFecha] = useState(null);
   const [pedidoCorrigiendoCliente, setPedidoCorrigiendoCliente] = useState(null);
   const [guardandoCorreccionClienteId, setGuardandoCorreccionClienteId] = useState(null);
   const [mensajeCorreccionCliente, setMensajeCorreccionCliente] = useState("");
@@ -448,6 +528,11 @@ function AdminPedidosSectionBase({
 
     setPedidoEditando(pedido);
   }, [onEditarPedidoEnMesas]);
+
+
+  const abrirCambioFechaPedido = useCallback((pedido) => {
+    setPedidoCambiandoFecha(pedido);
+  }, []);
 
 
   const abrirCorreccionClienteCredito = useCallback((pedido) => {
@@ -624,6 +709,8 @@ function AdminPedidosSectionBase({
               eliminandoPedidoId={eliminandoPedidoId}
               onEditarPedido={puedeEditarPedido ? abrirEditorPedido : undefined}
               editandoPedidoId={editandoPedidoId}
+              onCambiarFechaPedido={puedeEditarPedido ? abrirCambioFechaPedido : undefined}
+              cambiandoFechaPedidoId={editandoPedidoId}
               onCorregirClienteCredito={puedeEditarPedido ? abrirCorreccionClienteCredito : undefined}
               corrigiendoClientePedidoId={guardandoCorreccionClienteId}
             />
@@ -723,6 +810,8 @@ function AdminPedidosSectionBase({
             eliminandoPedidoId={eliminandoPedidoId}
             onEditarPedido={puedeEditarPedido ? abrirEditorPedido : undefined}
             editandoPedidoId={editandoPedidoId}
+            onCambiarFechaPedido={puedeEditarPedido ? abrirCambioFechaPedido : undefined}
+            cambiandoFechaPedidoId={editandoPedidoId}
             onCorregirClienteCredito={puedeEditarPedido ? abrirCorreccionClienteCredito : undefined}
             corrigiendoClientePedidoId={guardandoCorreccionClienteId}
           />
@@ -772,6 +861,17 @@ function AdminPedidosSectionBase({
           onCerrar={() => setPedidoEditando(null)}
           onGuardar={editarPedidoAdministrador}
           guardando={editandoPedidoId === pedidoEditando.id}
+        />
+      )}
+
+
+
+      {pedidoCambiandoFecha && (
+        <CambiarFechaPedidoModal
+          pedido={pedidoCambiandoFecha}
+          onCerrar={() => setPedidoCambiandoFecha(null)}
+          onGuardar={cambiarFechaPedidoAdministrador}
+          guardando={editandoPedidoId === pedidoCambiandoFecha.id}
         />
       )}
 

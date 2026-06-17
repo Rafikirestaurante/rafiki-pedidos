@@ -18,6 +18,7 @@ import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
 import RafikiModal from "../../../shared/components/RafikiModal";
 import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
+import { listarPedidosPorCliente } from "../../../services/pedidosService";
 
 const FORM_INICIAL = {
   nombre: "",
@@ -163,6 +164,9 @@ export default function CarteraClientesCredito() {
   const [formularioAbono, setFormularioAbono] = useState(ABONO_INICIAL);
   const [vistaCartera, setVistaCartera] = useState(VISTA_CARTERA_INICIAL);
   const [mostrarRankings, setMostrarRankings] = useState(false);
+  const [pedidosClienteDetalle, setPedidosClienteDetalle] = useState([]);
+  const [cargandoPedidosCliente, setCargandoPedidosCliente] = useState(false);
+  const [errorPedidosCliente, setErrorPedidosCliente] = useState("");
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -257,6 +261,43 @@ export default function CarteraClientesCredito() {
     () => clientes.find((cliente) => cliente.id === clienteAbonoId) || null,
     [clientes, clienteAbonoId]
   );
+
+  const cargarPedidosClienteDetalle = useCallback(async (clienteSeleccionado) => {
+    if (!clienteSeleccionado?.nombre) {
+      setPedidosClienteDetalle([]);
+      setErrorPedidosCliente("");
+      return;
+    }
+
+    setCargandoPedidosCliente(true);
+    setErrorPedidosCliente("");
+
+    try {
+      const { data, error: errorConsulta } = await listarPedidosPorCliente(clienteSeleccionado.nombre, { limite: 120 });
+      if (errorConsulta) {
+        registrarErrorSupabase("listar pedidos por cliente cartera", errorConsulta);
+        setErrorPedidosCliente(describirErrorSupabase(errorConsulta, "consultar los pedidos del cliente"));
+        setPedidosClienteDetalle([]);
+        return;
+      }
+      setPedidosClienteDetalle(Array.isArray(data) ? data : []);
+    } catch (err) {
+      registrarErrorSupabase("listar pedidos por cliente cartera", err);
+      setErrorPedidosCliente(describirErrorSupabase(err, "consultar los pedidos del cliente"));
+      setPedidosClienteDetalle([]);
+    } finally {
+      setCargandoPedidosCliente(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (clienteDetalle) {
+      cargarPedidosClienteDetalle(clienteDetalle);
+    } else {
+      setPedidosClienteDetalle([]);
+      setErrorPedidosCliente("");
+    }
+  }, [cargarPedidosClienteDetalle, clienteDetalle]);
 
   const movimientosFiltrados = useMemo(() => {
     const texto = normalizarTexto(filtros.texto);
@@ -542,6 +583,7 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel .auditoria-resumen span { display: inline-block; margin-right: 12px; font-size: 12px; font-weight: 800; }
         .cartera-profesional-panel .saldo-pendiente { color: #991b1b; font-weight: 900; }
         .cartera-profesional-panel .saldo-cero { color: #78716c; font-weight: 900; }
+        .cartera-profesional-panel .pedidos-cliente-bloque { margin-top: 14px; border: 1px solid #dbeafe; background: #f8fbff; border-radius: 18px; padding: 12px; }
         .cartera-profesional-panel .abono-valor { color: #166534; font-weight: 900; }
         .cartera-ui-limpia .cartera-resumen-card { margin-top: 12px; }
         .cartera-ui-limpia .cartera-resumen-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
@@ -761,7 +803,7 @@ export default function CarteraClientesCredito() {
                         <RafikiActionMenu
                           disabled={guardando}
                           items={[
-                            { id: "ver", label: "Ver cartera", icon: "🔎", variant: "info", onClick: () => { setClienteDetalleId(cliente.id); setVistaCartera("detalle"); } },
+                            { id: "ver", label: "Ver cartera y pedidos", icon: "🔎", variant: "info", onClick: () => { setClienteDetalleId(cliente.id); setVistaCartera("detalle"); } },
                             { id: "editar", label: "Editar cliente", icon: "✏️", onClick: () => editar(cliente) },
                             whatsapp ? { id: "whatsapp", label: "Enviar WhatsApp", icon: "💬", variant: "success", disabled: saldoPendiente <= 0, onClick: () => abrirWhatsApp(cliente) } : null,
                             { id: "estado", label: cliente.activo === false ? "Activar cliente" : "Desactivar cliente", icon: cliente.activo === false ? "✅" : "🚫", variant: cliente.activo === false ? "success" : "danger", onClick: () => cambiarEstado(cliente) },
@@ -909,6 +951,51 @@ export default function CarteraClientesCredito() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+
+              <div className="pedidos-cliente-bloque">
+                <div className="section-heading section-heading-pedidos-unificados">
+                  <div>
+                    <h3>Pedidos realizados por el cliente</h3>
+                    <p className="muted small">Consulta rápida de los últimos pedidos registrados con este nombre, incluyendo pedidos crédito, mesa, cliente y correcciones.</p>
+                  </div>
+                  <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={() => cargarPedidosClienteDetalle(clienteDetalle)} disabled={cargandoPedidosCliente}>
+                    {cargandoPedidosCliente ? "Cargando..." : "Actualizar pedidos"}
+                  </button>
+                </div>
+                {errorPedidosCliente && <div className="alert error" style={{ marginTop: 8 }}>{errorPedidosCliente}</div>}
+                <div className="pedidos-tabla-wrap">
+                  <table className="pedidos-tabla-compacta">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Pedido</th>
+                        <th>Ubicación</th>
+                        <th>Mesero</th>
+                        <th>Pago</th>
+                        <th>Estado</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pedidosClienteDetalle.length === 0 ? (
+                        <tr><td colSpan="7"><RafikiEmptyState icon="🍽️" title={cargandoPedidosCliente ? "Cargando pedidos..." : "Sin pedidos encontrados"} description={cargandoPedidosCliente ? "Estamos buscando los pedidos de este cliente." : "No se encontraron pedidos registrados con este nombre. Si el cliente aparece escrito diferente, búscalo desde Pedidos Hoy."} /></td></tr>
+                      ) : pedidosClienteDetalle.map((pedido) => (
+                        <tr key={pedido.id}>
+                          <td>{formatearFechaHora(pedido.created_at)}</td>
+                          <td>#{pedido.numero_pedido || "—"}</td>
+                          <td>{pedido.ubicacion || pedido.mesa || "—"}</td>
+                          <td>{pedido.mesero || "—"}</td>
+                          <td>{pedido.tipo_pago || "—"}</td>
+                          <td><RafikiBadge estado={pedido.estado || "—"} /></td>
+                          <td className="td-total">{dinero(pedido.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {pedidosClienteDetalle.length >= 120 && <p className="muted small">Se muestran los últimos 120 pedidos encontrados para este cliente.</p>}
               </div>
 
               <div className="section-heading section-heading-pedidos-unificados" style={{ marginTop: 14 }}>

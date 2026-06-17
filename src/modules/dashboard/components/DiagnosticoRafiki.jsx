@@ -79,7 +79,7 @@ async function conTimeout(promesa, msTimeout = 5000) {
     return await Promise.race([
       promesa,
       new Promise((_, reject) => {
-        timer = window.setTimeout(() => reject(new Error(`Tiempo agotado después de ${msTimeout / 1000}s`)), msTimeout);
+        timer = window.setTimeout(() => reject(new Error(`Supabase tardó más de ${msTimeout / 1000}s en responder. Revisa conexión y vuelve a intentar.`)), msTimeout);
       })
     ]);
   } finally {
@@ -115,9 +115,10 @@ export default function DiagnosticoRafiki() {
     const inicio = Date.now();
     try {
       if (!supabaseConfigOk) throw new Error("Variables de Supabase incompletas.");
+      // Prueba liviana: evita count exact porque en tablas grandes puede superar 5s.
       const { error } = await conTimeout(
-        supabase.from("pedidos").select("id", { count: "exact", head: true }).limit(1),
-        5000
+        supabase.from("pedidos").select("id").limit(1),
+        10000
       );
       if (error) throw error;
       setResultado({ ok: true, texto: `Supabase respondió en ${Date.now() - inicio} ms.` });

@@ -64,9 +64,18 @@ export async function actualizarPedido(id, payload) {
     .single();
 }
 
+export async function actualizarFechaPedido(id, createdAt) {
+  return supabase
+    .from("pedidos")
+    .update({ created_at: createdAt })
+    .eq("id", id)
+    .select(SELECT_PEDIDOS_ADMIN)
+    .single();
+}
+
 const TAMANO_PAGINA_PEDIDOS_RANGO = 1000;
 const MAXIMO_PAGINAS_PEDIDOS_RANGO = 250;
-const LIMITE_MAXIMO_PEDIDOS_PAGINA = 200;
+const LIMITE_MAXIMO_PEDIDOS_PAGINA = 1000;
 
 function normalizarEnteroPositivo(valor, respaldo = 0) {
   const numero = Number(valor);
@@ -180,6 +189,46 @@ export async function buscarPedidosPorNumeroGlobal(numeroPedido, opciones = {}) 
     .order("created_at", { ascending: false })
     .limit(limite);
 }
+
+
+
+export async function listarPedidosPorCliente(nombreCliente, opciones = {}) {
+  const nombre = String(nombreCliente || "").trim().replace(/\s+/g, " ");
+  const limite = Number(opciones.limite) || 100;
+
+  if (!nombre) {
+    return { data: [], error: null };
+  }
+
+  const filtroNombre = nombre.replace(/[%_]/g, "");
+
+  const consultaPorCampo = async (campo) => supabase
+    .from("pedidos")
+    .select(SELECT_PEDIDOS_ADMIN)
+    .ilike(campo, `%${filtroNombre}%`)
+    .order("created_at", { ascending: false })
+    .limit(limite);
+
+  const [porClienteNombre, porCliente] = await Promise.all([
+    consultaPorCampo("cliente_nombre"),
+    consultaPorCampo("cliente")
+  ]);
+
+  const error = porClienteNombre.error || porCliente.error || null;
+  if (error) return { data: [], error };
+
+  const mapa = new Map();
+  [...(porClienteNombre.data || []), ...(porCliente.data || [])].forEach((pedido) => {
+    if (pedido?.id) mapa.set(pedido.id, pedido);
+  });
+
+  const data = [...mapa.values()]
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+    .slice(0, limite);
+
+  return { data, error: null };
+}
+
 
 export function crearCanalPedidosRealtime(nombreCanal, onCambio, onEstado) {
   return supabase

@@ -551,6 +551,7 @@ export default function App() {
     eliminarPedidoAdministrador,
     editarPedidoAdministrador,
     editarPedidoMesaAdministrador,
+    cambiarFechaPedidoAdministrador,
     editandoPedidoId
   } = usePedidos({
     itemsPedido,
@@ -780,6 +781,7 @@ export default function App() {
                   eliminandoPedidoId={eliminandoPedidoId}
                   puedeEditarPedido={puedeEditarPedido}
                   editarPedidoAdministrador={editarPedidoAdministrador}
+                  cambiarFechaPedidoAdministrador={cambiarFechaPedidoAdministrador}
                   onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
                   editandoPedidoId={editandoPedidoId}
                   pedidosFinalizados={pedidosFinalizados}
@@ -986,6 +988,7 @@ export default function App() {
                     eliminandoPedidoId={eliminandoPedidoId}
                     puedeEditarPedido={puedeEditarPedido}
                     editarPedidoAdministrador={editarPedidoAdministrador}
+                    cambiarFechaPedidoAdministrador={cambiarFechaPedidoAdministrador}
                     onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
                     editandoPedidoId={editandoPedidoId}
                     pedidosFinalizados={pedidosFinalizados}

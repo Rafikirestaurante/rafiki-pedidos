@@ -284,7 +284,7 @@ function obtenerTipoBadgePagoPedido(pedido) {
   return "info";
 }
 
-function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
+function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCambiarFechaPedido, cambiandoFechaPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const tablaRef = useRef(null);
   const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
@@ -405,6 +405,17 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                         icon: "🖨️",
                         onClick: () => imprimirTicketPedido(pedido),
                       },
+                      onCambiarFechaPedido && estadoNormalizado !== "Borrado"
+                        ? {
+                            id: "cambiar-fecha",
+                            label: cambiandoFechaPedidoId === pedido.id ? "Cambiando fecha..." : "Cambiar fecha",
+                            icon: "📅",
+                            variant: "info",
+                            disabled: cambiandoFechaPedidoId === pedido.id,
+                            onClick: () => onCambiarFechaPedido?.(pedido),
+                          }
+                        : null,
+
                       onCorregirClienteCredito && estadoNormalizado !== "Borrado"
                         ? {
                             id: "credito",

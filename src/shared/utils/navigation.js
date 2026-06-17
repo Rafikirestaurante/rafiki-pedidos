@@ -10,7 +10,7 @@ function estaEnModoPWAInstalada() {
 
 function rutaSeguraPWA(ruta) {
   if (!estaEnModoPWAInstalada()) return ruta;
-  if (ruta === "/cliente" || ruta === "/pedido" || ruta === "/") return "/mesas";
+  if (ruta === "/cliente" || ruta === "/pedido" || ruta === "/") return "/admin";
   return ruta;
 }
 
@@ -52,6 +52,11 @@ export function obtenerVistaInicial() {
     return "mesas";
   }
 
+
+  if (estaEnModoPWAInstalada()) {
+    window.history.replaceState({}, "", "/admin");
+    return adminActivo ? "admin" : "adminLogin";
+  }
 
   return "inicio";
 }

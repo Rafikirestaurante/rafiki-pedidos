@@ -6,8 +6,8 @@ import { fechaISOColombia, obtenerRangoPedidos } from "../utils/pedidos";
 import { useAdminPedidos } from "./useAdminPedidos";
 import { describirErrorSupabase, registrarErrorSupabase } from "../utils/supabaseErrors";
 
-export const PEDIDOS_HOY_LIMITE_INICIAL = 80;
-export const PEDIDOS_HOY_LIMITE_CARGAR_MAS = 80;
+export const PEDIDOS_HOY_LIMITE_INICIAL = 500;
+export const PEDIDOS_HOY_LIMITE_CARGAR_MAS = 500;
 
 export function crearEstadoPaginacionPedidos() {
   return {
@@ -205,7 +205,7 @@ export function usePedidosHoy({ adminAutenticado, vista, adminTab, mostrarMensaj
           advertencia:
             advertencia ||
             (hayMas
-              ? `Carga inicial optimizada: se muestran ${pedidosNuevos.length} de ${totalPedidos || "más"} pedidos. Usa Cargar más resultados para consultar más historial.`
+              ? `Se muestran ${pedidosNuevos.length} de ${totalPedidos || "más"} pedidos del rango seleccionado. Usa Cargar más resultados si necesitas completar el historial.`
               : "")
         });
         setPedidos((actual) => {
@@ -317,7 +317,7 @@ export function usePedidosHoy({ adminAutenticado, vista, adminTab, mostrarMensaj
         limite: limite || PEDIDOS_HOY_LIMITE_CARGAR_MAS,
         cargaLimitada: true,
         advertencia: hayMas
-          ? `Carga optimizada activa: se han solicitado ${cargadosServidor} pedido${cargadosServidor === 1 ? "" : "s"}. Puedes cargar más si lo necesitas.`
+          ? `Se han cargado ${cargadosServidor} pedido${cargadosServidor === 1 ? "" : "s"} del rango seleccionado. Puedes cargar más si lo necesitas.`
           : `Carga completa del rango visible: ${cargadosServidor} pedido${cargadosServidor === 1 ? "" : "s"}.`
       });
       setErrorCargaPedidos("");

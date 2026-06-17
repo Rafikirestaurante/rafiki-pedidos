@@ -21,6 +21,7 @@ import { describirErrorSupabase, registrarErrorSupabase } from "../utils/supabas
 import { anularCarteraPedidoCredito, registrarCarteraPedidoCredito, sincronizarCarteraPedido } from "../../services/carteraService";
 import {
   actualizarEstadoPedido,
+  actualizarFechaPedido,
   actualizarPedido,
   crearPedido,
   finalizarPedidosPorIds,
@@ -537,6 +538,80 @@ export function usePedidos({
   }, [confirmarRafiki, eliminandoPedidoId, mostrarMensaje, pedidos, puedeEliminarPedido, registrarAuditoria, setPedidos]);
 
 
+  const cambiarFechaPedidoAdministrador = useCallback(async (pedido, nuevaFechaISO) => {
+    if (editandoPedidoId) return false;
+
+    if (!puedeEditarPedido) {
+      mostrarMensaje("Tu rol no tiene permiso para cambiar fechas de pedidos.", "error");
+      return false;
+    }
+
+    if (!pedido?.id) {
+      mostrarMensaje("No se pudo identificar el pedido.", "error");
+      return false;
+    }
+
+    const fechaNueva = new Date(nuevaFechaISO);
+    if (Number.isNaN(fechaNueva.getTime())) {
+      mostrarMensaje("Selecciona una fecha y hora válidas.", "warning");
+      return false;
+    }
+
+    const codigoPedido = obtenerCodigoPedido(pedido);
+    const fechaAnteriorTexto = pedido?.created_at ? new Date(pedido.created_at).toLocaleString("es-CO") : "fecha anterior no disponible";
+    const fechaNuevaTexto = fechaNueva.toLocaleString("es-CO");
+
+    const confirmar = await confirmarRafiki({
+      tipo: "advertencia",
+      titulo: `Cambiar fecha del pedido #${codigoPedido}`,
+      mensaje: `El pedido pasará de ${fechaAnteriorTexto} a ${fechaNuevaTexto}. Esto mueve el pedido en Pedidos Hoy, Informes y Caja porque esos módulos consultan por fecha del pedido. Si el día ya tenía cierre, revisa el informe nuevamente.`,
+      textoConfirmar: "Cambiar fecha",
+    });
+
+    if (!confirmar) return false;
+
+    setEditandoPedidoId(pedido.id);
+
+    try {
+      const { data, error } = await actualizarFechaPedido(pedido.id, fechaNueva.toISOString());
+
+      if (error) {
+        registrarErrorSupabase("cambiar fecha de pedido", error);
+        mostrarMensaje(describirErrorSupabase(error, "cambiar la fecha del pedido"), "error");
+        return false;
+      }
+
+      registrarAuditoria({
+        accion: "pedido_fecha_cambiada",
+        pedido: data || pedido,
+        detalle: {
+          created_at_anterior: pedido?.created_at || null,
+          created_at_nuevo: data?.created_at || fechaNueva.toISOString(),
+          motivo: "Corrección operativa desde Pedidos Hoy",
+        },
+      });
+
+      setPedidos((actual) => {
+        const actualizado = data || { ...pedido, created_at: fechaNueva.toISOString() };
+        const coincide = typeof pedidoCoincideConFiltroActual === "function"
+          ? pedidoCoincideConFiltroActual(actualizado)
+          : true;
+
+        if (!coincide) {
+          return actual.filter((item) => item.id !== pedido.id);
+        }
+
+        return actual.map((item) => (item.id === pedido.id ? actualizado : item));
+      });
+
+      mostrarMensaje(`Fecha del pedido #${codigoPedido} actualizada correctamente.`, "success");
+      return true;
+    } finally {
+      setEditandoPedidoId(null);
+    }
+  }, [confirmarRafiki, editandoPedidoId, mostrarMensaje, pedidoCoincideConFiltroActual, puedeEditarPedido, registrarAuditoria, setPedidos]);
+
+
   const editarPedidoAdministrador = useCallback(async (id, cambios = {}) => {
     if (editandoPedidoId) return false;
 
@@ -809,5 +884,6 @@ export function usePedidos({
     eliminarPedidoAdministrador,
     editarPedidoAdministrador,
     editarPedidoMesaAdministrador,
+    cambiarFechaPedidoAdministrador,
   };
 }

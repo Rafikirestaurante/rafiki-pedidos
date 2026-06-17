@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "121.18-FASE32-CAJA-INFORME-ULTIMO-ARQUEO-2026-06-16",
-  phase: "Fase 32.0 - Informe Caja actualizado con último arqueo",
-  date: "2026-06-16",
+  version: "121.21-FASE32-AJUSTES-PWA-PEDIDOS-CARTERA-2026-06-17",
+  phase: "Fase 32.0 - Ajustes PWA, Pedidos Hoy y Cartera",
+  date: "2026-06-17",
   fase: "32.0",
   notes:
-    "Hotfix de Caja: Informe Caja toma el último arqueo guardado vigente y no queda atado solo al historial archivado. WhatsApp y Excel también usan el último conteo guardado."
+    "PWA abre por defecto en Admin, Pedidos Hoy carga más resultados iniciales del rango y Cartera permite ver pedidos realizados por cada cliente."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
