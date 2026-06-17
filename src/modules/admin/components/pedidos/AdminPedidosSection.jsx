@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { dinero, formatearFechaHora, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido } from "../../../../shared/utils/pedidos";
+import { dinero, formatearFechaHora, normalizarTexto, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido, obtenerItemsPedido } from "../../../../shared/utils/pedidos";
 import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
@@ -18,6 +18,166 @@ function normalizarMesaPedido(pedido) {
 
 function compararFechaPedidoDesc(a, b) {
   return new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime();
+}
+
+
+function formatearFechaCortaTicket(valor = new Date()) {
+  const fecha = valor ? new Date(valor) : new Date();
+  if (Number.isNaN(fecha.getTime())) return "--/--/--";
+
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit"
+  }).format(fecha).replace(/\//g, "-");
+}
+
+function escapeHtmlTicket(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function obtenerUbicacionTicketPedido(pedido) {
+  return String(pedido?.ubicacion || pedido?.mesa || pedido?.cliente || "Sin ubicación").trim() || "Sin ubicación";
+}
+
+function itemEsCafeteriaPedidoHoy(item) {
+  return item?.categoria === "cafeteria" || item?.area === "cafeteria";
+}
+
+function pedidoEsRestauranteParaLlevar(pedido) {
+  const items = obtenerItemsPedido(pedido);
+
+  if (items.length > 0) {
+    return items.some((item) => Boolean(item?.paraLlevar) && !itemEsCafeteriaPedidoHoy(item));
+  }
+
+  const ubicacion = normalizarTexto([pedido?.ubicacion, pedido?.mesa, pedido?.tipo_pedido].filter(Boolean).join(" "));
+  const texto = normalizarTexto([pedido?.pedido_texto, pedido?.cliente, pedido?.observaciones].filter(Boolean).join(" "));
+  const pareceMesa = /\b[1-5][ab]\b/.test(ubicacion) || ubicacion.includes("comer en restaurante") || ubicacion.includes("mesa");
+  const pareceRestaurante = ["almuerzo", "pechuga", "cerdo", "res", "posta", "sopa", "sancocho", "ajiaco", "plato"].some((palabra) => texto.includes(palabra));
+
+  return !pareceMesa && pareceRestaurante;
+}
+
+function imprimirResumenRestauranteParaLlevar(pedidos = [], fechaReferencia = new Date()) {
+  const lista = Array.isArray(pedidos) ? pedidos : [];
+  const fechaTicket = formatearFechaCortaTicket(fechaReferencia || lista[0]?.created_at || new Date());
+  const total = lista.reduce((suma, pedido) => suma + Number(pedido?.total || 0), 0);
+  const filas = lista.map((pedido) => `
+    <tr>
+      <td class="numero">#${escapeHtmlTicket(obtenerCodigoPedido(pedido))}</td>
+      <td>${escapeHtmlTicket(obtenerCliente(pedido))}</td>
+      <td>${escapeHtmlTicket(obtenerUbicacionTicketPedido(pedido))}</td>
+      <td class="total">${escapeHtmlTicket(dinero(pedido?.total || 0))}</td>
+    </tr>
+  `).join("");
+
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Pedidos para llevar ${fechaTicket}</title>
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          * { box-sizing: border-box; }
+          body {
+            width: 80mm;
+            margin: 0;
+            padding: 8px 6px 12px;
+            background: #fff;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10px;
+          }
+          .titulo {
+            text-align: center;
+            font-weight: 900;
+            font-size: 14px;
+            line-height: 1.15;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+          }
+          .fecha {
+            text-align: center;
+            font-weight: 800;
+            font-size: 12px;
+            margin-bottom: 8px;
+          }
+          table { width: 100%; border-collapse: collapse; }
+          th {
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            padding: 4px 2px;
+            text-align: left;
+            font-size: 9px;
+            text-transform: uppercase;
+          }
+          td {
+            border-bottom: 1px dashed #bbb;
+            padding: 4px 2px;
+            vertical-align: top;
+            word-break: break-word;
+          }
+          .numero { width: 17mm; font-weight: 900; }
+          .total { width: 18mm; text-align: right; font-weight: 900; white-space: nowrap; }
+          .resumen {
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px dashed #000;
+            font-size: 12px;
+            font-weight: 900;
+            display: flex;
+            justify-content: space-between;
+          }
+          .vacio {
+            text-align: center;
+            font-weight: 800;
+            padding: 12px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="titulo">Pedidos para llevar</div>
+        <div class="fecha">Fecha ${escapeHtmlTicket(fechaTicket)}</div>
+        ${lista.length ? `
+          <table>
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Cliente</th>
+                <th>Ubicación</th>
+                <th class="total">Total</th>
+              </tr>
+            </thead>
+            <tbody>${filas}</tbody>
+          </table>
+          <div class="resumen"><span>${lista.length} pedido${lista.length === 1 ? "" : "s"}</span><span>${escapeHtmlTicket(dinero(total))}</span></div>
+        ` : `<div class="vacio">Sin pedidos restaurante para llevar.</div>`}
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.print();
+              window.close();
+            }, 250);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+
+  const ventana = window.open("", "_blank", "width=420,height=700");
+  if (!ventana) return false;
+  ventana.document.open();
+  ventana.document.write(html);
+  ventana.document.close();
+  return true;
 }
 
 function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
@@ -495,6 +655,7 @@ function AdminPedidosSectionBase({
   const [mensajeCorreccionCliente, setMensajeCorreccionCliente] = useState("");
   const [ordenPedidosHoy, setOrdenPedidosHoy] = useState("ultimos");
   const [vistaPedidosHoy, setVistaPedidosHoy] = useState("pedidos");
+  const [filtroRestauranteParaLlevar, setFiltroRestauranteParaLlevar] = useState(false);
   const [mostrarFiltrosPedidos, setMostrarFiltrosPedidos] = useState(true);
   const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
   const hayMasPedidos = Boolean(paginacionPedidos?.hayMas);
@@ -513,6 +674,19 @@ function AdminPedidosSectionBase({
       return ordenPedidosHoy === "primeros" ? fechaA - fechaB : fechaB - fechaA;
     });
   }, [pedidosActivos, ordenPedidosHoy]);
+
+  const pedidosRestauranteParaLlevar = useMemo(
+    () => pedidosUnificados.filter(pedidoEsRestauranteParaLlevar),
+    [pedidosUnificados]
+  );
+
+  const pedidosVisiblesTabla = filtroRestauranteParaLlevar ? pedidosRestauranteParaLlevar : pedidosUnificados;
+
+  const fechaReferenciaImpresion = useMemo(() => {
+    if (filtroPedidos === "dia" && fechaSeleccionada) return new Date(`${fechaSeleccionada}T12:00:00-05:00`);
+    if (filtroPedidos === "rango" && fechaInicioRangoPedidos) return new Date(`${fechaInicioRangoPedidos}T12:00:00-05:00`);
+    return new Date();
+  }, [fechaInicioRangoPedidos, fechaSeleccionada, filtroPedidos]);
 
   const tabsPedidosHoy = useMemo(() => ([
     { id: "pedidos", label: "Pedidos", icon: "📋", count: pedidosUnificados.length },
@@ -614,6 +788,15 @@ function AdminPedidosSectionBase({
     setAlertaPedidoNuevo(null);
   }, [setAlertaPedidoNuevo]);
 
+  const alternarFiltroRestauranteParaLlevar = useCallback(() => {
+    setFiltroRestauranteParaLlevar((actual) => !actual);
+    setVistaPedidosHoy("pedidos");
+  }, []);
+
+  const imprimirRestauranteParaLlevar = useCallback(() => {
+    imprimirResumenRestauranteParaLlevar(pedidosRestauranteParaLlevar, fechaReferenciaImpresion);
+  }, [fechaReferenciaImpresion, pedidosRestauranteParaLlevar]);
+
   return (
     <section className="card card-pad">
       <div className="admin-top-row admin-top-row-compact">
@@ -639,6 +822,24 @@ function AdminPedidosSectionBase({
             onClick={refrescarPedidos}
           >
             🔄 Actualizar datos
+          </button>
+
+          <button
+            type="button"
+            className={filtroRestauranteParaLlevar ? "button green admin-action-button" : "button light admin-action-button"}
+            onClick={alternarFiltroRestauranteParaLlevar}
+            title="Mostrar solo pedidos de restaurante marcados para llevar"
+          >
+            🥡 Restaurante para llevar
+          </button>
+
+          <button
+            type="button"
+            className="button light admin-action-button"
+            onClick={imprimirRestauranteParaLlevar}
+            title="Imprimir resumen 80mm de restaurante para llevar"
+          >
+            🧾 Imprimir 80mm
           </button>
 
           <button
@@ -762,8 +963,13 @@ function AdminPedidosSectionBase({
 
       {vistaPedidosHoy === "pedidos" ? (
       <div className="pedido-seccion">
+        {filtroRestauranteParaLlevar ? (
+          <div className="alert alert-info pedidos-filtro-activo">
+            Mostrando solo pedidos de <strong>Restaurante para llevar</strong>. Total: {pedidosRestauranteParaLlevar.length}.
+          </div>
+        ) : null}
         <div className="section-heading section-heading-pedidos-unificados">
-          <h3>📋 Pedidos</h3>
+          <h3>{filtroRestauranteParaLlevar ? "🥡 Restaurante para llevar" : "📋 Pedidos"}</h3>
           <div className="section-heading-actions pedidos-orden-actions">
             {pedidosPendientes.length > 0 && puedeFinalizarPendientes && (
               <button
@@ -791,19 +997,19 @@ function AdminPedidosSectionBase({
             >
               Primeros
             </button>
-            <span>{pedidosUnificados.length}</span>
+            <span>{pedidosVisiblesTabla.length}</span>
           </div>
         </div>
 
-        {pedidosUnificados.length === 0 ? (
+        {pedidosVisiblesTabla.length === 0 ? (
           <RafikiEmptyState
             icon="📋"
-            title="No hay pedidos en esta vista"
-            description="Cuando entren pedidos activos o finalizados, aparecerán aquí con sus estados, pagos y acciones."
+            title={filtroRestauranteParaLlevar ? "No hay pedidos restaurante para llevar" : "No hay pedidos en esta vista"}
+            description={filtroRestauranteParaLlevar ? "Cuando existan pedidos de restaurante marcados para llevar, aparecerán aquí y en la impresión 80mm." : "Cuando entren pedidos activos o finalizados, aparecerán aquí con sus estados, pagos y acciones."}
           />
         ) : (
           <TablaPedidosCompacta
-            pedidos={pedidosUnificados}
+            pedidos={pedidosVisiblesTabla}
             onCambiarEstado={cambiarEstadoPedido}
             guardandoEstadoPedidoId={guardandoEstadoPedidoId}
             onEliminarPedido={puedeEliminarPedido ? eliminarPedidoAdministrador : undefined}

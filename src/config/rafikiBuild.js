@@ -1,5 +1,5 @@
 export const RAFIKI_BUILD = {
-  version: "122.2-HISTORIAL-MENU-SUGERENCIAS-VISUALES-2026-06-17",
+  version: "122.3-HISTORIAL-MENU-SUGERENCIAS-VISUALES-2026-06-17",
   phase: "Fase 32 - Historial de menú con sugerencias visuales",
   date: "2026-06-17",
   fase: "32",
