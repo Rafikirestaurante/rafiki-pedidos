@@ -120,6 +120,43 @@ function ordenarAcompanantesResumen(items = []) {
   });
 }
 
+function categoriaRotacionMenu(producto) {
+  const categoria = normalizarTextoCatalogo(producto?.categoria || "");
+  const nombre = normalizarTextoCatalogo(producto?.nombre || producto);
+
+  if (categoria.includes("sopa") || esSopaResumen(nombre)) return "sopas";
+  if (categoria.includes("pasta") || nombre.startsWith("pastas")) return "pastas";
+  if (categoria.includes("guiso")) return "guisos";
+
+  if (categoria.includes("plato")) {
+    if (nombre.startsWith("pechuga") || nombre.startsWith("cerdo") || nombre.startsWith("pechuga o cerdo")) return "platos";
+    return "guisos";
+  }
+
+  return null;
+}
+
+function obtenerNombresHistorialRotacion(registro) {
+  if (!registro) return [];
+  if (Array.isArray(registro.platos)) {
+    return registro.platos
+      .map((plato) => String(plato?.nombre || plato || "").trim())
+      .filter(Boolean);
+  }
+  return obtenerPlatosSinPrecio(registro);
+}
+
+function fechaDentroDeRangoMenu(fecha, dias) {
+  if (!fecha) return false;
+  const fechaRegistro = new Date(`${fecha}T12:00:00`);
+  if (Number.isNaN(fechaRegistro.getTime())) return false;
+
+  const hoy = new Date();
+  const limite = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  limite.setDate(limite.getDate() - (Number(dias) - 1));
+  return fechaRegistro >= limite;
+}
+
 function productosRestauranteFallback() {
   return PRODUCTOS_CATALOGO_FALLBACK
     .filter((item) => item.linea === "Restaurante" && item.activo !== false && item.agotado !== true)
@@ -186,6 +223,7 @@ export default function GeneradorMenu() {
   const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
   const [seleccionCatalogoPlatos, setSeleccionCatalogoPlatos] = useState([]);
   const [seleccionCatalogoAcompanantes, setSeleccionCatalogoAcompanantes] = useState([]);
+  const [pestanaGenerador, setPestanaGenerador] = useState("generador");
 
   useEffect(() => {
     let activo = true;
@@ -318,6 +356,54 @@ export default function GeneradorMenu() {
       .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
       .slice(-12);
   }, [historial]);
+
+  const rotacionInteligenteMenu = useMemo(() => {
+    const configuracion = [
+      { key: "platos", titulo: "Platos", dias: 10, icono: "🍽️" },
+      { key: "guisos", titulo: "Guisos", dias: 5, icono: "🥘" },
+      { key: "sopas", titulo: "Sopas", dias: 5, icono: "🍲" },
+      { key: "pastas", titulo: "Pastas", dias: 5, icono: "🍝" }
+    ];
+
+    const catalogoPorCategoria = configuracion.reduce((acc, item) => {
+      acc[item.key] = catalogoRestaurante
+        .filter((producto) => producto.linea === "Restaurante" && producto.activo !== false && producto.agotado !== true)
+        .filter((producto) => !esProductoOcultoGenerador(producto))
+        .filter((producto) => categoriaRotacionMenu(producto) === item.key)
+        .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre), "es", { sensitivity: "base" }));
+      return acc;
+    }, {});
+
+    return configuracion.map((config) => {
+      const usados = new Map();
+      historial
+        .filter((registro) => fechaDentroDeRangoMenu(registro.fecha, config.dias))
+        .forEach((registro) => {
+          obtenerNombresHistorialRotacion(registro).forEach((nombre) => {
+            const clave = normalizarTextoCatalogo(nombre);
+            const productoCatalogo = (catalogoPorCategoria[config.key] || []).find((producto) => normalizarTextoCatalogo(producto.nombre) === clave);
+            if (productoCatalogo && !usados.has(clave)) {
+              usados.set(clave, { nombre: productoCatalogo.nombre, fecha: registro.fecha });
+            }
+          });
+        });
+
+      const noUsados = (catalogoPorCategoria[config.key] || [])
+        .filter((producto) => !usados.has(normalizarTextoCatalogo(producto.nombre)))
+        .map((producto) => producto.nombre);
+
+      return {
+        ...config,
+        usados: Array.from(usados.values()).map((item) => item.nombre),
+        noUsados,
+        totalCatalogo: (catalogoPorCategoria[config.key] || []).length
+      };
+    });
+  }, [catalogoRestaurante, historial]);
+
+  const sugerenciasRotacionMenu = useMemo(() => (
+    rotacionInteligenteMenu.flatMap((grupo) => grupo.noUsados.slice(0, 4).map((nombre) => ({ categoria: grupo.titulo, nombre })))
+  ), [rotacionInteligenteMenu]);
 
   const totalPaginasHistorial = Math.max(1, Math.ceil(historial.length / 5));
 
@@ -736,7 +822,172 @@ export default function GeneradorMenu() {
         <p className="muted">Crea una imagen solo texto del menú para usarla en WhatsApp, Instagram o sobre una plantilla.</p>
       </div>
 
-      <div className="generador-menu-grid">
+      <div className="generador-subtabs" role="tablist" aria-label="Secciones del generador de menú">
+        <button type="button" className={pestanaGenerador === "generador" ? "active" : ""} onClick={() => setPestanaGenerador("generador")}>
+          Generador
+        </button>
+        <button type="button" className={pestanaGenerador === "historial" ? "active" : ""} onClick={() => setPestanaGenerador("historial")}>
+          Historial de menú
+        </button>
+      </div>
+
+      {pestanaGenerador === "historial" && (
+        <div className="historial-inteligente-menu">
+          <div className="box soft historial-inteligente-header">
+            <div>
+              <strong>Historial y rotación inteligente de menú</strong>
+              <p className="muted small" style={{ marginBottom: 0 }}>
+                Revisa los últimos menús y detecta qué productos se han usado o no según la regla Rafiki: Platos 10 días; Guisos, Sopas y Pastas 5 días.
+              </p>
+            </div>
+            <button type="button" className="button light" onClick={() => cargarHistorialGenerador({ cargarUltimo: false })} disabled={cargandoHistorial}>
+              {cargandoHistorial ? "Cargando..." : "Actualizar historial"}
+            </button>
+          </div>
+
+          <div className="box soft" style={{ marginTop: 14 }}>
+            <div className="generador-box-header">
+              <div>
+                <strong>Informe últimos 12 menús</strong>
+                <p className="muted small" style={{ marginBottom: 0 }}>Solo platos, sin precios. Ideal para revisar rotación y compartir por WhatsApp.</p>
+              </div>
+              <div className="informe-menu-acciones">
+                <button type="button" className="button light" onClick={generarInformeUltimosMenus} disabled={informeUltimosMenus.length === 0} style={{ padding: "8px 10px" }}>
+                  📋 Generar informe
+                </button>
+                <button type="button" className="button" onClick={compartirInformeUltimosMenusWhatsApp} disabled={informeUltimosMenus.length === 0} style={{ padding: "8px 10px" }}>
+                  💬 WhatsApp
+                </button>
+              </div>
+            </div>
+            {informeUltimosMenus.length === 0 ? (
+              <p className="muted small" style={{ marginBottom: 0 }}>Guarda menús en el historial para ver el informe.</p>
+            ) : (
+              <div className="informe-menu-scroll">
+                <table className="informe-menu-tabla">
+                  <thead>
+                    <tr>
+                      {informeUltimosMenus.map((registro) => {
+                        const fechaInforme = formatearFechaInformeMenu(registro.fecha);
+                        return (
+                          <th key={registro.fecha}>
+                            <span className="informe-menu-dia">{fechaInforme.diaSemana}</span>
+                            <span className="informe-menu-fecha">{fechaInforme.fechaCorta}</span>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      {informeUltimosMenus.map((registro) => {
+                        const platosRegistro = obtenerPlatosSinPrecio(registro);
+                        return (
+                          <td key={registro.fecha}>
+                            {platosRegistro.length ? (
+                              <ul>
+                                {platosRegistro.map((plato, index) => (
+                                  <li key={`${registro.fecha}-${index}`}>{plato}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="muted small">Sin platos</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="rotacion-menu-grid">
+            {rotacionInteligenteMenu.map((grupo) => (
+              <div key={grupo.key} className="box soft rotacion-menu-card">
+                <div className="rotacion-menu-title">
+                  <strong>{grupo.icono} {grupo.titulo}</strong>
+                  <span className="badge">Últimos {grupo.dias} días</span>
+                </div>
+                <p className="muted small">Catálogo activo: {grupo.totalCatalogo} · Usados: {grupo.usados.length} · Sin usar: {grupo.noUsados.length}</p>
+
+                <div className="rotacion-menu-columns">
+                  <div>
+                    <h4>Usados recientemente</h4>
+                    {grupo.usados.length ? (
+                      <ul>
+                        {grupo.usados.map((nombre) => <li key={`${grupo.key}-usado-${nombre}`}>{nombre}</li>)}
+                      </ul>
+                    ) : <p className="muted small">Sin uso reciente.</p>}
+                  </div>
+                  <div>
+                    <h4>No usados recientemente</h4>
+                    {grupo.noUsados.length ? (
+                      <ul>
+                        {grupo.noUsados.map((nombre) => <li key={`${grupo.key}-no-${nombre}`}>{nombre}</li>)}
+                      </ul>
+                    ) : <p className="muted small">Todos han rotado en el rango.</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="box soft sugerencias-rotacion-menu" style={{ marginTop: 14 }}>
+            <strong>💡 Sugerencias para próximo menú</strong>
+            {sugerenciasRotacionMenu.length ? (
+              <div className="sugerencias-rotacion-lista">
+                {sugerenciasRotacionMenu.map((item) => (
+                  <span key={`${item.categoria}-${item.nombre}`} className="producto-chip">{item.categoria}: {item.nombre}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="muted small" style={{ marginBottom: 0 }}>No hay sugerencias pendientes con los rangos actuales.</p>
+            )}
+          </div>
+
+          <div className="box soft" style={{ marginTop: 14 }}>
+            <div className="generador-box-header">
+              <div>
+                <strong>Historial reciente</strong>
+                <p className="muted small" style={{ marginBottom: 0 }}>Paginado de 5 en 5 para que sea más cómodo desde celular.</p>
+              </div>
+            </div>
+            {historial.length === 0 ? (
+              <p className="muted small" style={{ marginBottom: 0 }}>Todavía no hay registros guardados.</p>
+            ) : (
+              <>
+                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                  {historialPaginado.map((registro) => (
+                    <button
+                      key={registro.id}
+                      type="button"
+                      className="history-menu-item"
+                      onClick={() => { cargarRegistro(registro); setPestanaGenerador("generador"); }}
+                      title="Cargar este menú en el generador"
+                    >
+                      <strong>{registro.fecha}</strong>
+                      <span>{Array.isArray(registro.platos) ? registro.platos.length : 0} platos · {Array.isArray(registro.acompanantes) ? registro.acompanantes.length : 0} acompañantes</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="historial-menu-paginacion">
+                  <button type="button" className="button light" onClick={() => setPaginaHistorial((actual) => Math.max(1, actual - 1))} disabled={paginaHistorial <= 1}>
+                    ← Anterior
+                  </button>
+                  <span>Página {paginaHistorial} de {totalPaginasHistorial}</span>
+                  <button type="button" className="button light" onClick={() => setPaginaHistorial((actual) => Math.min(totalPaginasHistorial, actual + 1))} disabled={paginaHistorial >= totalPaginasHistorial}>
+                    Siguiente →
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="generador-menu-grid" style={{ display: pestanaGenerador === "historial" ? "none" : undefined }}>
         <div>
           <div className="box soft" style={{ marginTop: 0 }}>
             <strong>Fecha del menú</strong>
@@ -1089,6 +1340,19 @@ export default function GeneradorMenu() {
         .generador-menu, .generador-menu * { min-width: 0; }
         .generador-menu h2 { line-height: 1.05; }
         .generador-menu-grid { width: 100%; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 22px; align-items: start; margin-top: 18px; }
+        .generador-subtabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding: 6px; border-radius: 18px; background: #fff7ed; border: 1px solid #fed7aa; }
+        .generador-subtabs button { border: 1px solid transparent; background: transparent; color: #7c2d12; border-radius: 14px; padding: 10px 14px; font-weight: 950; cursor: pointer; }
+        .generador-subtabs button.active { background: #fff; border-color: #fdba74; box-shadow: 0 4px 12px rgba(124, 45, 18, 0.08); }
+        .historial-inteligente-menu { margin-top: 16px; }
+        .historial-inteligente-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .rotacion-menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+        .rotacion-menu-card { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
+        .rotacion-menu-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+        .rotacion-menu-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+        .rotacion-menu-columns h4 { margin: 0 0 8px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .rotacion-menu-columns ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+        .rotacion-menu-columns li { color: #3f2a1d; font-size: 13px; font-weight: 800; line-height: 1.25; }
+        .sugerencias-rotacion-lista { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .plato-menu-row { display: grid; grid-template-columns: minmax(0, 1fr) 120px 38px; gap: 8px; margin-top: 10px; align-items: center; }
         .field { display: grid; gap: 7px; margin-bottom: 12px; }
         .field span { font-weight: 900; color: #3f2a1d; }
@@ -1143,11 +1407,13 @@ export default function GeneradorMenu() {
         .acompanantes-manual-field textarea { min-height: 92px; }
         @media (max-width: 860px) {
           .generador-menu-grid { grid-template-columns: 1fr !important; gap: 16px; }
+          .rotacion-menu-grid, .rotacion-menu-columns { grid-template-columns: 1fr; }
           .selector-catalogo-section-head { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
           .generador-menu.card-pad { padding: 14px !important; border-radius: 22px; }
           .generador-menu h2 { font-size: 24px; }
+          .generador-subtabs button { flex: 1 1 140px; padding: 10px 8px; }
           .plato-menu-row { grid-template-columns: minmax(0, 1fr) 92px 34px; gap: 6px; }
           .box.soft input, .field input, .field textarea { padding: 10px 8px; font-size: 14px; }
           .acciones-generador .button, .generador-menu .button { width: 100%; justify-content: center; }
