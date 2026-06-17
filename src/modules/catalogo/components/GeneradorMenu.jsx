@@ -203,7 +203,7 @@ function leerBorradorGeneradorMenu() {
   }
 }
 
-export default function GeneradorMenu() {
+export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   const borradorInicial = leerBorradorGeneradorMenu();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) && borradorInicial.platos.length ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
@@ -223,7 +223,7 @@ export default function GeneradorMenu() {
   const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
   const [seleccionCatalogoPlatos, setSeleccionCatalogoPlatos] = useState([]);
   const [seleccionCatalogoAcompanantes, setSeleccionCatalogoAcompanantes] = useState([]);
-  const [pestanaGenerador, setPestanaGenerador] = useState("generador");
+  const [pestanaGenerador, setPestanaGenerador] = useState(pestanaInicial === "historial" ? "historial" : "generador");
 
   useEffect(() => {
     let activo = true;
@@ -404,6 +404,10 @@ export default function GeneradorMenu() {
   const sugerenciasRotacionMenu = useMemo(() => (
     rotacionInteligenteMenu.flatMap((grupo) => grupo.noUsados.slice(0, 4).map((nombre) => ({ categoria: grupo.titulo, nombre })))
   ), [rotacionInteligenteMenu]);
+
+  useEffect(() => {
+    setPestanaGenerador(pestanaInicial === "historial" ? "historial" : "generador");
+  }, [pestanaInicial]);
 
   const totalPaginasHistorial = Math.max(1, Math.ceil(historial.length / 5));
 
@@ -827,7 +831,7 @@ export default function GeneradorMenu() {
           Generador
         </button>
         <button type="button" className={pestanaGenerador === "historial" ? "active" : ""} onClick={() => setPestanaGenerador("historial")}>
-          Historial de menú
+          📊 Historial de menú
         </button>
       </div>
 

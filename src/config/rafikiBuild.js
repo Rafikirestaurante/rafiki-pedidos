@@ -1,6 +1,6 @@
 export const RAFIKI_BUILD = {
-  version: "122.0-HISTORIAL-ROTACION-INTELIGENTE-MENU-2026-06-17",
-  phase: "Fase 32 - Historial y rotación inteligente de menú",
+  version: "122.1-HISTORIAL-MENU-VISIBLE-2026-06-17",
+  phase: "Fase 32 - Historial de menú visible en pestaña propia y rotación inteligente",
   date: "2026-06-17",
   fase: "32",
   notes:

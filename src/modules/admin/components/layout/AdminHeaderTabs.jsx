@@ -75,6 +75,16 @@ export default function AdminHeaderTabs({
           </button>
         )}
 
+        {puedeVerGenerador && (
+          <button
+            type="button"
+            onClick={() => setAdminTab("historialMenu")}
+            className={adminTab === "historialMenu" ? "active" : ""}
+          >
+            Historial menú
+          </button>
+        )}
+
         {puedeVerCatalogo && (
           <button
             type="button"
