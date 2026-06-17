@@ -380,6 +380,7 @@ export default function CajaAdmin() {
   const [guardandoAjustes, setGuardandoAjustes] = useState(false);
   const [cuadreReal, setCuadreReal] = useState(null);
   const [historialArqueos, setHistorialArqueos] = useState([]);
+  const [ultimoArqueoGuardado, setUltimoArqueoGuardado] = useState(null);
   const [ajustesCaja, setAjustesCaja] = useState(() => crearAjustesCajaVacios());
   const [cargandoCuadre, setCargandoCuadre] = useState(false);
   const [mensaje, setMensaje] = useState("");
@@ -395,10 +396,21 @@ export default function CajaAdmin() {
   const gastosRafaTotal = useMemo(() => limpiarNumero(ajustesCaja.gastosRafa), [ajustesCaja.gastosRafa]);
   const cuentasPorCobrarTotal = useMemo(() => limpiarNumero(ajustesCaja.cuentasPorCobrar), [ajustesCaja.cuentasPorCobrar]);
   const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal - gastosRafaTotal - cuentasPorCobrarTotal, [totalInicio, ventasTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
+  const arqueoVigenteInforme = useMemo(() => {
+    if (ultimoArqueoGuardado?.arqueoData) return ultimoArqueoGuardado;
+    return historialArqueos[0] || null;
+  }, [historialArqueos, ultimoArqueoGuardado]);
+
+  const arqueosInforme = useMemo(() => {
+    const lista = [];
+    if (ultimoArqueoGuardado?.arqueoData) lista.push(ultimoArqueoGuardado);
+    return [...lista, ...historialArqueos].filter(Boolean);
+  }, [historialArqueos, ultimoArqueoGuardado]);
+
   const totalUltimoArqueoInforme = useMemo(() => {
-    if (historialArqueos[0]?.arqueoData) return limpiarNumero(historialArqueos[0].arqueoTotal);
+    if (arqueoVigenteInforme?.arqueoData) return limpiarNumero(arqueoVigenteInforme.arqueoTotal);
     return totalFin;
-  }, [historialArqueos, totalFin]);
+  }, [arqueoVigenteInforme, totalFin]);
   const diferenciaReal = useMemo(() => totalUltimoArqueoInforme - dineroEsperado, [totalUltimoArqueoInforme, dineroEsperado]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
   const tabsCaja = useMemo(() => ([
@@ -427,12 +439,23 @@ export default function CajaAdmin() {
     let activo = true;
     async function cargarArqueo() {
       setCargando(true); setError(""); setMensaje("");
-      setInicioDia(crearEstadoArqueo()); setFinDia(crearEstadoArqueo()); setAjustesCaja(crearAjustesCajaVacios());
+      setInicioDia(crearEstadoArqueo()); setFinDia(crearEstadoArqueo()); setAjustesCaja(crearAjustesCajaVacios()); setUltimoArqueoGuardado(null);
       try {
         const registro = await cargarCajaArqueoPorFecha(fechaCaja);
         if (!activo) return;
         if (registro?.inicioData) setInicioDia(normalizarEstadoArqueo(registro.inicioData));
-        if (registro?.finData) setFinDia(normalizarEstadoArqueo(registro.finData));
+        if (registro?.finData) {
+          const finNormalizado = normalizarEstadoArqueo(registro.finData);
+          setFinDia(finNormalizado);
+          setUltimoArqueoGuardado({
+            id: "arqueo-vigente",
+            fecha: fechaCaja,
+            arqueoData: finNormalizado,
+            arqueoTotal: limpiarNumero(registro.finTotal),
+            creadoEn: registro.actualizadoEn || registro.creadoEn || "",
+            esVigente: true,
+          });
+        }
         if (registro?.ajustesData) setAjustesCaja(normalizarAjustesCaja(registro.ajustesData));
       } catch (err) {
         if (activo) {
@@ -501,8 +524,18 @@ export default function CajaAdmin() {
   async function guardarFin() {
     setGuardandoFin(true); setMensaje(""); setError("");
     try {
-      await guardarFinCaja({ fecha: fechaCaja, estado: finDia, total: totalFin });
-      mostrarMensajeCaja("Arqueo guardado correctamente como último conteo.", "success", "Arqueo guardado");
+      const registro = await guardarFinCaja({ fecha: fechaCaja, estado: finDia, total: totalFin });
+      const finNormalizado = normalizarEstadoArqueo(registro?.finData || finDia);
+      setFinDia(finNormalizado);
+      setUltimoArqueoGuardado({
+        id: "arqueo-vigente",
+        fecha: fechaCaja,
+        arqueoData: finNormalizado,
+        arqueoTotal: limpiarNumero(registro?.finTotal ?? totalFin),
+        creadoEn: registro?.actualizadoEn || new Date().toISOString(),
+        esVigente: true,
+      });
+      mostrarMensajeCaja("Arqueo guardado correctamente. El Informe Caja ya quedó actualizado con este último conteo.", "success", "Arqueo guardado");
     }
     catch (err) { registrarErrorSupabase("guardar arqueo de caja", err); mostrarErrorCaja(describirErrorSupabase(err, "guardar el arqueo")); }
     finally { setGuardandoFin(false); }
@@ -516,6 +549,7 @@ export default function CajaAdmin() {
       }
       await limpiarUltimoArqueoCaja({ fecha: fechaCaja });
       setFinDia(crearEstadoArqueo());
+      setUltimoArqueoGuardado(null);
       const historial = await cargarHistorialArqueosCaja(fechaCaja);
       setHistorialArqueos(historial);
       mostrarMensajeCaja(totalFin > 0 ? "Último arqueo archivado. Ya puedes iniciar un arqueo nuevo." : "Arqueo limpiado. Ya puedes iniciar un arqueo nuevo.", "success", "Arqueo nuevo");
@@ -572,7 +606,7 @@ export default function CajaAdmin() {
       `${estadoDiferencia.etiqueta}: ${dinero(Math.abs(diferenciaReal))}`,
     );
 
-    const saldosUltimo = obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia);
+    const saldosUltimo = obtenerSaldosArqueo(arqueoVigenteInforme?.arqueoData || finDia);
     lineas.push(
       "",
       "*Saldos último arqueo*",
@@ -584,10 +618,11 @@ export default function CajaAdmin() {
       `Datafono: ${dinero(saldosUltimo.datafono)}`,
     );
 
-    if (historialArqueos.length) {
+    if (arqueosInforme.length) {
       lineas.push("", "*Arqueos realizados*");
-      historialArqueos.forEach((arqueo, index) => {
-        lineas.push(`- ${index === 0 ? "Último arqueo" : `Arqueo ${historialArqueos.length - index}`}: ${formatearFechaHoraColombia(arqueo.creadoEn)} · ${dinero(arqueo.arqueoTotal)}`);
+      arqueosInforme.forEach((arqueo, index) => {
+        const etiqueta = arqueo.esVigente ? "Último arqueo actual" : index === 0 ? "Último arqueo" : `Arqueo ${arqueosInforme.length - index}`;
+        lineas.push(`- ${etiqueta}: ${formatearFechaHoraColombia(arqueo.creadoEn)} · ${dinero(arqueo.arqueoTotal)}`);
       });
     }
 
@@ -616,12 +651,12 @@ export default function CajaAdmin() {
       [estadoDiferencia.etiqueta, Math.abs(diferenciaReal)],
       ["", ""],
       ["Saldos último arqueo", ""],
-      ["Caja Registradora", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).cajaRegistradora],
-      ["Caja Azul", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).cajaAzul],
-      ["Bancolombia", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).bancolombia],
-      ["Nequi", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).nequi],
-      ["Rafa", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).rafa],
-      ["Datafono", obtenerSaldosArqueo(historialArqueos[0]?.arqueoData || finDia).datafono],
+      ["Caja Registradora", obtenerSaldosArqueo(arqueoVigenteInforme?.arqueoData || finDia).cajaRegistradora],
+      ["Caja Azul", obtenerSaldosArqueo(arqueoVigenteInforme?.arqueoData || finDia).cajaAzul],
+      ["Bancolombia", obtenerSaldosArqueo(arqueoVigenteInforme?.arqueoData || finDia).bancolombia],
+      ["Nequi", obtenerSaldosArqueo(arqueoVigenteInforme?.arqueoData || finDia).nequi],
+      ["Rafa", obtenerSaldosArqueo(arqueoVigenteInforme?.arqueoData || finDia).rafa],
+      ["Datafono", obtenerSaldosArqueo(arqueoVigenteInforme?.arqueoData || finDia).datafono],
       ["", ""],
       ["Detalle gastos", ""],
       ["Proveedor", "Valor", "Categoría / artículos"],
@@ -629,7 +664,7 @@ export default function CajaAdmin() {
       ["", ""],
       ["Arqueos realizados", ""],
       ["Fecha y hora", "Valor"],
-      ...historialArqueos.map((arqueo) => [formatearFechaHoraColombia(arqueo.creadoEn), arqueo.arqueoTotal]),
+      ...arqueosInforme.map((arqueo) => [arqueo.esVigente ? "Último arqueo actual" : formatearFechaHoraColombia(arqueo.creadoEn), arqueo.arqueoTotal]),
     ];
 
     const csv = filas.map((fila) => fila.map(textoCsv).join(";")).join("\n");
@@ -712,10 +747,10 @@ export default function CajaAdmin() {
                 <div className="caja-actions caja-ajustes-actions"><button type="button" className="btn secondary" onClick={() => setModalAjustesAbierto(true)}>Editar ajustes</button></div>
               </section>
               <FilaInforme etiqueta="Caja esperada" valor={dineroEsperado} fuerte />
-              <SaldosUltimoArqueo arqueo={historialArqueos[0]} respaldo={finDia} />
+              <SaldosUltimoArqueo arqueo={arqueoVigenteInforme} respaldo={finDia} />
               <FilaInforme etiqueta="Fin / arqueo contado" valor={totalUltimoArqueoInforme} />
               <section className="caja-informe-bloque caja-historial-resumen">
-                <div className="caja-informe-row fuerte"><span>Arqueos realizados</span><strong>{historialArqueos.length}</strong></div>
+                <div className="caja-informe-row fuerte"><span>Arqueos realizados</span><strong>{arqueosInforme.length}</strong></div>
                 <button type="button" className="btn secondary" onClick={() => setTabCaja("historial")}>Ver historial completo</button>
               </section>
               <div className="caja-resultado-final">

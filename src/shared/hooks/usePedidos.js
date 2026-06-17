@@ -134,7 +134,7 @@ export function usePedidos({
 
     const clienteNombre = limpiarTexto(cliente, 120);
     const telefonoLimpio = limpiarTelefono(telefono);
-    const ubicacionLimpia = comerRestauranteCliente ? "Mesa 5A" : limpiarTexto(ubicacion, 200);
+    const ubicacionLimpia = comerRestauranteCliente ? "Comer en restaurante" : limpiarTexto(ubicacion, 200);
     const observacionesLimpias = limpiarTexto(observaciones, 500);
 
     if (!clienteNombre || !telefonoLimpio || !ubicacionLimpia) {
@@ -153,6 +153,7 @@ export function usePedidos({
       tipo_pago: tipoPago,
       tipo_pedido: comerRestauranteCliente ? "mesa" : "cliente",
       mesa: comerRestauranteCliente ? "5A" : null,
+      mesero: "Aplicacion",
       observaciones: observacionesLimpias,
       items: itemsValidos,
       pedido_texto: pedidoTexto,

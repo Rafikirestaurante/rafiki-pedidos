@@ -404,7 +404,32 @@ export default function App() {
       : "#";
 
   function actualizarItem(id, cambios) {
-    setItemsPedido((actual) => actual.map((item) => (item.id === id ? { ...item, ...cambios } : item)));
+    setItemsPedido((actual) =>
+      actual.map((item) => {
+        if (item.id !== id) return item;
+
+        const cambiosSeguros = { ...cambios };
+
+        if (comerRestauranteCliente && cambiosSeguros.paraLlevar === true) {
+          cambiosSeguros.paraLlevar = false;
+        }
+
+        return { ...item, ...cambiosSeguros };
+      })
+    );
+  }
+
+  function manejarComerRestauranteCliente(marcado) {
+    setComerRestauranteCliente(Boolean(marcado));
+
+    if (marcado) {
+      setUbicacion("Comer en restaurante");
+      setItemsPedido((actual) => actual.map((item) => ({ ...item, paraLlevar: false })));
+    } else {
+      setUbicacion("");
+    }
+
+    if (errorDatosPedido) setErrorDatosPedido("");
   }
 
   function cambiarPlatoItem(id, platoSeleccionado) {
@@ -798,7 +823,7 @@ export default function App() {
               setCliente={setCliente}
               setTelefono={setTelefono}
               setUbicacion={setUbicacion}
-              setComerRestauranteCliente={setComerRestauranteCliente}
+              setComerRestauranteCliente={manejarComerRestauranteCliente}
               setTipoPago={setTipoPago}
               setObservaciones={setObservaciones}
               setErrorDatosPedido={setErrorDatosPedido}

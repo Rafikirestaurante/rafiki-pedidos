@@ -268,17 +268,20 @@ export default function PedidoCliente({
                                   <div>
                                     <strong>🥡 Para llevar</strong>
                                     <p className="muted u-mb-0">
-                                      {valorParaLlevarItem(item) === 0 && item.paraLlevar
-                                        ? "Sin costo adicional"
-                                        : `Suma ${dinero(valorParaLlevarItem(item))}`}
+                                      {comerRestauranteCliente
+                                        ? "No aplica si comes en el restaurante"
+                                        : valorParaLlevarItem(item) === 0 && item.paraLlevar
+                                          ? "Sin costo adicional"
+                                          : `Suma ${dinero(valorParaLlevarItem(item))}`}
                                     </p>
                                   </div>
 
                                   <input
                                     type="checkbox"
-                                    checked={item.paraLlevar}
+                                    checked={comerRestauranteCliente ? false : Boolean(item.paraLlevar)}
+                                    disabled={comerRestauranteCliente}
                                     onChange={(e) =>
-                                      actualizarItem(item.id, { paraLlevar: e.target.checked })
+                                      actualizarItem(item.id, { paraLlevar: comerRestauranteCliente ? false : e.target.checked })
                                     }
                                     className="u-icon-sm"
                                   />
@@ -423,20 +426,18 @@ export default function PedidoCliente({
                           onChange={(e) => {
                             const marcado = e.target.checked;
                             setComerRestauranteCliente?.(marcado);
-                            setUbicacion(marcado ? "Mesa 5A" : "");
-                            if (errorDatosPedido) setErrorDatosPedido("");
                           }}
                         />
                         <span>Registrar este pedido para comer en el restaurante</span>
                       </label>
                       {comerRestauranteCliente ? (
-                        <small className="muted">Se guardará automáticamente como Mesa 5A.</small>
+                        <small className="muted">Se guardará internamente como mesa 5A, con ubicación “Comer en restaurante”, y sin recargo de para llevar.</small>
                       ) : null}
                     </label>
 
                     <CampoTexto
                       etiqueta="📍 Ubicación"
-                      value={comerRestauranteCliente ? "Mesa 5A" : ubicacion}
+                      value={comerRestauranteCliente ? "Comer en restaurante" : ubicacion}
                       onChange={(valor) => {
                         setUbicacion(valor);
                         if (comerRestauranteCliente) setComerRestauranteCliente?.(false);
