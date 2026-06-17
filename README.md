@@ -1,4 +1,4 @@
-# Rafiki Pedidos — 121.9
+# Rafiki Pedidos — 121.10
 
 Fase 30E — Manejo profesional de errores Supabase.
 
@@ -159,6 +159,14 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se evitó que botones de navegación, tabs y chips hereden ancho completo en móvil.
 - Se eliminaron bloques CSS duplicados de Caja para reducir riesgo de divergencia futura.
 - No se modificó lógica de negocio, servicios, SQL, pedidos, cartera, caja, inventario ni Supabase.
+
+
+## 121.10 — Hotfix navegación Panel Mesas
+
+- Se corrigió un efecto secundario de la Fase 31H.3/31H.4: en móvil, el Panel Mesas estaba ocultando la barra superior completa.
+- En `/mesas` vuelve a mostrarse la navegación principal: Admin, Pedidos hoy y Gerencia cuando el usuario tiene permiso.
+- La barra superior de Mesas ahora queda compacta y debajo de la navegación fija de pasos 1-2-R-3.
+- No se modificó lógica de pedidos, cartera, caja, inventario, gastos, Supabase ni SQL.
 
 ## 121.9 — Fase 31H.4: Limpieza visual gradual y deuda técnica
 
