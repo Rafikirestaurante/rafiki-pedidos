@@ -1504,12 +1504,15 @@ export const appStyles = `
 .pedidos-filtros-card { margin-bottom: 10px; }
 .pedidos-filtros-rapidos-card {
   display: grid;
-  gap: 10px;
-  margin: 10px 0 14px;
-  padding: 12px 14px;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
   border: 1px solid var(--rafiki-border);
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--rafiki-surface-soft);
+}
+.pedidos-filtros-rapidos-card-compacta {
+  box-shadow: none;
 }
 .pedidos-filtros-rapidos-head {
   display: flex;
@@ -1518,11 +1521,30 @@ export const appStyles = `
   gap: 10px;
   color: var(--rafiki-brand-strong);
 }
+.pedidos-filtros-rapidos-head > div:first-child {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pedidos-filtros-rapidos-contador {
+  font-weight: 800;
+}
+.pedidos-filtros-rapidos-acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .pedidos-filtros-rapidos-botones {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+.pedidos-filtros-rapidos-botones .mini-btn,
+.pedidos-filtros-rapidos-acciones .mini-btn {
+  margin-bottom: 0;
 }
 .pedidos-filtros-rapidos-botones .mini-btn.active {
   background: #16a34a;
@@ -1533,8 +1555,8 @@ export const appStyles = `
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
-  padding: 5px 8px;
+  min-height: 32px;
+  padding: 4px 8px;
   border: 1px solid var(--rafiki-border);
   border-radius: 14px;
   background: #fff;
@@ -1574,7 +1596,10 @@ export const appStyles = `
 @media (max-width: 640px) {
   .pedidos-filtros-resumen-colapsado { align-items: stretch; flex-direction: column; }
   .pedidos-filtros-rapidos-head { align-items: stretch; flex-direction: column; }
+  .pedidos-filtros-rapidos-head > div:first-child,
+  .pedidos-filtros-rapidos-acciones { width: 100%; justify-content: space-between; }
   .pedidos-filtros-rapidos-botones .mini-btn,
+  .pedidos-filtros-rapidos-acciones .mini-btn,
   .pedido-filtro-pago-rapido { width: 100%; justify-content: space-between; }
   .pedidos-filtros-resumen-colapsado .mini-btn { width: 100%; }
 }

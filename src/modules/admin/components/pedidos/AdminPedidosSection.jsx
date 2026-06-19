@@ -104,6 +104,45 @@ function pedidoCumpleFiltroTipoPedido(pedido, filtro) {
   });
 }
 
+
+function fechaISOColombiaDesdeValor(valor) {
+  const fecha = valor ? new Date(valor) : new Date();
+  if (Number.isNaN(fecha.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(fecha);
+}
+
+function pedidoDebeVerseEntregadoPorCorte(pedido, ahora = new Date()) {
+  if (obtenerEstadoPedido(pedido) !== "Pendiente") return false;
+
+  const fechaPedido = fechaISOColombiaDesdeValor(pedido?.created_at);
+  if (!fechaPedido) return false;
+
+  const corte = new Date(`${fechaPedido}T19:30:00-05:00`);
+  if (Number.isNaN(corte.getTime())) return false;
+
+  return ahora.getTime() >= corte.getTime();
+}
+
+function aplicarEstadoVisualEntregadoPorCorte(pedido, ahora = new Date()) {
+  if (!pedidoDebeVerseEntregadoPorCorte(pedido, ahora)) return pedido;
+
+  return {
+    ...pedido,
+    estado: "Finalizado",
+    estado_visual_auto: "entregado_por_corte_730pm",
+  };
+}
+
+function aplicarEstadoVisualListaPedidos(pedidos = [], ahora = new Date()) {
+  return (Array.isArray(pedidos) ? pedidos : []).map((pedido) => aplicarEstadoVisualEntregadoPorCorte(pedido, ahora));
+}
+
 function aplicarFiltrosRapidosPedidos(pedidos = [], filtrosTipo = {}, filtroPago = "") {
   const filtrosActivos = Object.entries(filtrosTipo || {}).filter(([, activo]) => Boolean(activo)).map(([clave]) => clave);
   const pagoNormalizado = normalizarTexto(filtroPago);
@@ -132,7 +171,7 @@ function pedidoEsRestauranteParaLlevar(pedido) {
   return !pareceMesa && pareceRestaurante;
 }
 
-function imprimirResumenRestauranteParaLlevar(pedidos = [], fechaReferencia = new Date()) {
+function imprimirResumenPedidosFiltrados80mm(pedidos = [], fechaReferencia = new Date(), titulo = "Pedidos filtrados") {
   const lista = Array.isArray(pedidos) ? pedidos : [];
   const fechaTicket = formatearFechaCortaTicket(fechaReferencia || lista[0]?.created_at || new Date());
   const total = lista.reduce((suma, pedido) => suma + Number(pedido?.total || 0), 0);
@@ -150,7 +189,7 @@ function imprimirResumenRestauranteParaLlevar(pedidos = [], fechaReferencia = ne
     <html>
       <head>
         <meta charset="utf-8" />
-        <title>Pedidos para llevar ${fechaTicket}</title>
+        <title>${escapeHtmlTicket(titulo)} ${fechaTicket}</title>
         <style>
           @page { size: 80mm auto; margin: 0; }
           * { box-sizing: border-box; }
@@ -211,7 +250,7 @@ function imprimirResumenRestauranteParaLlevar(pedidos = [], fechaReferencia = ne
         </style>
       </head>
       <body>
-        <div class="titulo">Pedidos para llevar</div>
+        <div class="titulo">${escapeHtmlTicket(titulo)}</div>
         <div class="fecha">Fecha ${escapeHtmlTicket(fechaTicket)}</div>
         ${lista.length ? `
           <table>
@@ -730,6 +769,7 @@ function AdminPedidosSectionBase({
   });
   const [filtroTipoPagoRapido, setFiltroTipoPagoRapido] = useState("");
   const [mostrarFiltrosPedidos, setMostrarFiltrosPedidos] = useState(true);
+  const [ahoraPedidosHoy, setAhoraPedidosHoy] = useState(() => new Date());
   const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
   const hayMasPedidos = Boolean(paginacionPedidos?.hayMas);
   const cargandoMasPedidos = Boolean(paginacionPedidos?.cargandoMas);
@@ -739,14 +779,34 @@ function AdminPedidosSectionBase({
   const cantidadPedidosActivos = Array.isArray(pedidosActivos) ? pedidosActivos.length : 0;
   const cantidadPedidosBorrados = Array.isArray(pedidosBorrados) ? pedidosBorrados.length : 0;
 
+  useEffect(() => {
+    const intervalo = window.setInterval(() => setAhoraPedidosHoy(new Date()), 60 * 1000);
+    return () => window.clearInterval(intervalo);
+  }, []);
+
+  const pedidosActivosVisuales = useMemo(
+    () => aplicarEstadoVisualListaPedidos(pedidosActivos, ahoraPedidosHoy),
+    [ahoraPedidosHoy, pedidosActivos]
+  );
+
+  const resultadoNumeroPedidoVisual = useMemo(
+    () => aplicarEstadoVisualListaPedidos(resultadoNumeroPedido, ahoraPedidosHoy),
+    [ahoraPedidosHoy, resultadoNumeroPedido]
+  );
+
+  const pedidosPendientesVisuales = useMemo(
+    () => aplicarEstadoVisualListaPedidos(pedidosPendientes, ahoraPedidosHoy).filter((pedido) => obtenerEstadoPedido(pedido) === "Pendiente"),
+    [ahoraPedidosHoy, pedidosPendientes]
+  );
+
   const pedidosUnificados = useMemo(() => {
-    const lista = Array.isArray(pedidosActivos) ? pedidosActivos.slice() : [];
+    const lista = Array.isArray(pedidosActivosVisuales) ? pedidosActivosVisuales.slice() : [];
     return lista.sort((a, b) => {
       const fechaA = new Date(a?.created_at || 0).getTime();
       const fechaB = new Date(b?.created_at || 0).getTime();
       return ordenPedidosHoy === "primeros" ? fechaA - fechaB : fechaB - fechaA;
     });
-  }, [pedidosActivos, ordenPedidosHoy]);
+  }, [pedidosActivosVisuales, ordenPedidosHoy]);
 
   const pedidosRestauranteParaLlevar = useMemo(
     () => pedidosUnificados.filter(pedidoEsRestauranteParaLlevar),
@@ -882,9 +942,10 @@ function AdminPedidosSectionBase({
     setVistaPedidosHoy("pedidos");
   }, []);
 
-  const imprimirRestauranteParaLlevar = useCallback(() => {
-    imprimirResumenRestauranteParaLlevar(pedidosRestauranteParaLlevar, fechaReferenciaImpresion);
-  }, [fechaReferenciaImpresion, pedidosRestauranteParaLlevar]);
+  const imprimirPedidosFiltrados80mm = useCallback(() => {
+    const tituloTicket = hayFiltrosRapidosActivos ? "Pedidos filtrados" : "Pedidos de hoy";
+    imprimirResumenPedidosFiltrados80mm(pedidosVisiblesTabla, fechaReferenciaImpresion, tituloTicket);
+  }, [fechaReferenciaImpresion, hayFiltrosRapidosActivos, pedidosVisiblesTabla]);
 
   return (
     <section className="card card-pad">
@@ -913,23 +974,6 @@ function AdminPedidosSectionBase({
             🔄 Actualizar datos
           </button>
 
-          <button
-            type="button"
-            className={filtrosTipoPedido.restauranteParaLlevar ? "button green admin-action-button" : "button light admin-action-button"}
-            onClick={() => alternarFiltroTipoPedido("restauranteParaLlevar")}
-            title="Mostrar solo pedidos de restaurante marcados para llevar"
-          >
-            🥡 Restaurante para llevar
-          </button>
-
-          <button
-            type="button"
-            className="button light admin-action-button"
-            onClick={imprimirRestauranteParaLlevar}
-            title="Imprimir resumen 80mm de restaurante para llevar"
-          >
-            🧾 Imprimir 80mm
-          </button>
 
           <button
             type="button"
@@ -982,12 +1026,26 @@ function AdminPedidosSectionBase({
         </div>
       )}
 
-      <div className="pedidos-filtros-rapidos-card">
+      <div className="pedidos-filtros-rapidos-card pedidos-filtros-rapidos-card-compacta">
         <div className="pedidos-filtros-rapidos-head">
-          <strong>Filtros rápidos</strong>
-          {hayFiltrosRapidosActivos ? (
-            <button type="button" className="mini-btn" onClick={limpiarFiltrosRapidosPedidos}>Limpiar filtros rápidos</button>
-          ) : null}
+          <div>
+            <strong>Filtros rápidos</strong>
+            <span className="muted small pedidos-filtros-rapidos-contador">{pedidosVisiblesTabla.length} pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"}</span>
+          </div>
+          <div className="pedidos-filtros-rapidos-acciones">
+            <button
+              type="button"
+              className="mini-btn"
+              onClick={imprimirPedidosFiltrados80mm}
+              disabled={pedidosVisiblesTabla.length === 0}
+              title="Imprimir en 80mm los pedidos que estén filtrados en pantalla"
+            >
+              🧾 Imprimir 80mm
+            </button>
+            {hayFiltrosRapidosActivos ? (
+              <button type="button" className="mini-btn" onClick={limpiarFiltrosRapidosPedidos}>Limpiar</button>
+            ) : null}
+          </div>
         </div>
         <div className="pedidos-filtros-rapidos-botones">
           <button type="button" className={filtrosTipoPedido.restauranteParaLlevar ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("restauranteParaLlevar")}>🥡 Restaurante para llevar</button>
@@ -1008,17 +1066,17 @@ function AdminPedidosSectionBase({
         </div>
       </div>
 
-      {(resultadoNumeroPedido.length > 0 || errorNumeroPedido) && (
+      {(resultadoNumeroPedidoVisual.length > 0 || errorNumeroPedido) && (
         <div className="pedido-numero-global-resultados">
           <div className="section-heading section-heading-pedidos-unificados">
             <h3>🔎 Resultado por número de pedido</h3>
-            <span>{resultadoNumeroPedido.length}</span>
+            <span>{resultadoNumeroPedidoVisual.length}</span>
           </div>
-          {errorNumeroPedido && resultadoNumeroPedido.length === 0 ? (
+          {errorNumeroPedido && resultadoNumeroPedidoVisual.length === 0 ? (
             <div className="alert alert-warning">{errorNumeroPedido}</div>
           ) : (
             <TablaPedidosCompacta
-              pedidos={resultadoNumeroPedido}
+              pedidos={resultadoNumeroPedidoVisual}
               onCambiarEstado={cambiarEstadoPedido}
               guardandoEstadoPedidoId={guardandoEstadoPedidoId}
               onEliminarPedido={puedeEliminarPedido ? eliminarPedidoAdministrador : undefined}
@@ -1067,7 +1125,7 @@ function AdminPedidosSectionBase({
 
       {vistaPedidosHoy === "mesas" ? (
         <ResumenMesasHoy
-          pedidosActivos={pedidosActivos}
+          pedidosActivos={pedidosActivosVisuales}
           cambiarEstadoPedido={cambiarEstadoPedido}
           guardandoEstadoPedidoId={guardandoEstadoPedidoId}
           puedeEditarPedido={puedeEditarPedido}
@@ -1086,7 +1144,7 @@ function AdminPedidosSectionBase({
         <div className="section-heading section-heading-pedidos-unificados">
           <h3>{hayFiltrosRapidosActivos ? "🔎 Pedidos filtrados" : "📋 Pedidos"}</h3>
           <div className="section-heading-actions pedidos-orden-actions">
-            {pedidosPendientes.length > 0 && puedeFinalizarPendientes && (
+            {pedidosPendientesVisuales.length > 0 && puedeFinalizarPendientes && (
               <button
                 type="button"
                 className="mini-btn green"
@@ -1115,6 +1173,12 @@ function AdminPedidosSectionBase({
             <span>{pedidosVisiblesTabla.length}</span>
           </div>
         </div>
+
+        {pedidosVisiblesTabla.some((pedido) => pedido.estado_visual_auto === "entregado_por_corte_730pm") ? (
+          <div className="alert alert-info pedidos-corte-730">
+            Después de las 7:30 p. m., los pedidos pendientes de ese día se muestran como entregados en Pedidos Hoy. No se cambian automáticamente en Supabase.
+          </div>
+        ) : null}
 
         {pedidosVisiblesTabla.length === 0 ? (
           <RafikiEmptyState
