@@ -220,6 +220,19 @@ export function esCategoriaSopa(categoria) {
   return normalizarTexto(categoria).includes("sopa");
 }
 
+export function esProductoSinAcompanantes(item = {}) {
+  const categoria = normalizarTexto(item?.categoria);
+  const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre || item?.producto);
+
+  if (categoria.includes("sopa")) return true;
+  if (categoria.includes("pasta")) return true;
+  if (nombre.startsWith("arroz de ")) return true;
+  if (nombre.includes(" arroz de ")) return true;
+  if (nombre.includes("arroz trifasico") || nombre.includes("arroz trifásico")) return true;
+
+  return false;
+}
+
 export function esSopaParaLlevarGratis(item) {
   const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre);
   const categoria = normalizarTexto(item?.categoria);
@@ -587,18 +600,18 @@ export function crearTextoItem(item) {
   const nombrePlato = item.plato || item.proteina || "Plato";
   const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
   const partes = [`${item.cantidad} ${nombrePlato} (${dinero(precio)})`];
-  const esSopa = esCategoriaSopa(item.categoria);
-  const acompanantes = esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || []);
+  const sinAcompanantes = esProductoSinAcompanantes(item);
+  const acompanantes = sinAcompanantes ? [] : limpiarAcompanantesCliente(item.acompanantes || []);
 
   if (acompanantes.length > 0) {
     partes.push(acompanantes.join(", "));
   }
 
-  if (!esSopa && item.observacionAcompanantes?.trim()) {
+  if (!sinAcompanantes && item.observacionAcompanantes?.trim()) {
     partes.push(`Obs. acompañantes: ${item.observacionAcompanantes.trim()}`);
   }
 
-  if (!esSopa) {
+  if (!sinAcompanantes) {
     partes.push(INCLUIDOS_FIJOS);
   }
 

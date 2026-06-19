@@ -10,7 +10,7 @@ import {
   limpiarTexto,
   obtenerCodigoPedido,
   obtenerEstadoPedido,
-  esCategoriaSopa,
+  esProductoSinAcompanantes,
 } from "../utils/pedidos";
 import {
   esErrorDeConexion,
@@ -97,12 +97,12 @@ export function usePedidos({
     const itemsValidos = itemsPedido
       .filter((item) => item.plato || item.proteina)
       .map((item) => {
-        const esSopa = esCategoriaSopa(item.categoria);
+        const sinAcompanantes = esProductoSinAcompanantes(item);
 
         return {
           ...item,
-          acompanantes: esSopa ? [] : limpiarAcompanantesCliente(item.acompanantes || []),
-          observacionAcompanantes: esSopa ? "" : (item.observacionAcompanantes || "").trim()
+          acompanantes: sinAcompanantes ? [] : limpiarAcompanantesCliente(item.acompanantes || []),
+          observacionAcompanantes: sinAcompanantes ? "" : (item.observacionAcompanantes || "").trim()
         };
       });
 
@@ -247,14 +247,16 @@ export function usePedidos({
           };
         }
 
+        const sinAcompanantes = esProductoSinAcompanantes(item);
+
         return {
           ...item,
-          acompanantes: limpiarAcompanantesMenu(
+          acompanantes: sinAcompanantes ? [] : limpiarAcompanantesMenu(
             Array.isArray(item.acompanantes) && item.acompanantes.length > 0
               ? item.acompanantes
               : acompanantes || []
           ),
-          observacionAcompanantes: item.observacionAcompanantes || "",
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || "",
           paraLlevar: Boolean(modoLlevar)
         };
       });
@@ -749,14 +751,16 @@ export function usePedidos({
           };
         }
 
+        const sinAcompanantes = esProductoSinAcompanantes(item);
+
         return {
           ...item,
-          acompanantes: limpiarAcompanantesMenu(
+          acompanantes: sinAcompanantes ? [] : limpiarAcompanantesMenu(
             Array.isArray(item.acompanantes) && item.acompanantes.length > 0
               ? item.acompanantes
               : acompanantes || []
           ),
-          observacionAcompanantes: item.observacionAcompanantes || "",
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || "",
           paraLlevar: Boolean(modoLlevar)
         };
       });

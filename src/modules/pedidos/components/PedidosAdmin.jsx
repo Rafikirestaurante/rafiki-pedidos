@@ -7,7 +7,7 @@ import {
   crearMensajePedidoListo,
   crearTextoItem,
   dinero,
-  esCategoriaSopa,
+  esProductoSinAcompanantes,
   textoParaLlevarItem,
   formatearFechaHora,
   limpiarTelefonoWhatsApp,
@@ -92,7 +92,7 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
               : item.plato || item.proteina || "Plato";
             const precioUnitario = obtenerPrecioUnitarioItem(item);
             const totalItem = calcularTotalItem(item);
-            const esSopa = esCategoriaSopa(item.categoria);
+            const itemSinAcompanantes = esProductoSinAcompanantes(item);
             const detallesCafeteria = itemEsCafeteria ? renderDetalleCafeteria(item) : [];
 
             return (
@@ -135,7 +135,7 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
                     </>
                   ) : (
                     <>
-                      {!esSopa && (
+                      {!itemSinAcompanantes && (
                         <p>
                           <strong>Acompañantes:</strong>{" "}
                           {Array.isArray(item.acompanantes) && item.acompanantes.length > 0
@@ -144,19 +144,19 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
                         </p>
                       )}
 
-                      {!esSopa && item.observacionAcompanantes?.trim() && (
+                      {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                         <p className="obs-acompanantes-admin">
                           <strong>Obs. acompañantes:</strong> {item.observacionAcompanantes.trim()}
                         </p>
                       )}
 
-                      {esSopa && (
+                      {itemSinAcompanantes && (
                         <p>
-                          <strong>Acompañantes:</strong> No aplica para sopas
+                          <strong>Acompañantes:</strong> No aplica
                         </p>
                       )}
 
-                      {!esSopa && (
+                      {!itemSinAcompanantes && (
                         <p>
                           <strong>Incluye:</strong> Sopa + bebida
                         </p>
@@ -250,13 +250,13 @@ export function resumirItemsPedidoCompacto(pedido) {
 
     const nombre = item.plato || item.proteina || "Plato";
     const cantidad = item.cantidad || 1;
-    const acomp = Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+    const acomp = !esProductoSinAcompanantes(item) && Array.isArray(item.acompanantes) && item.acompanantes.length > 0
       ? ` · ${item.acompanantes.join(", ")}`
       : "";
     const adicionalesAlmuerzo = Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length > 0
       ? ` · Adicionales: ${item.adicionalesAlmuerzo.map((x) => `${x.nombre || x}${Number(x.precio || 0) ? ` ${dinero(x.precio)}` : ""}`).join(", ")}`
       : "";
-    const obsAcomp = item.observacionAcompanantes?.trim()
+    const obsAcomp = !esProductoSinAcompanantes(item) && item.observacionAcompanantes?.trim()
       ? ` · Obs: ${item.observacionAcompanantes.trim()}`
       : "";
     const empaque = textoParaLlevarItem(item) ? ` · ${textoParaLlevarItem(item)}` : "";

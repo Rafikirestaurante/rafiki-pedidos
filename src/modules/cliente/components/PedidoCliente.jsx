@@ -3,7 +3,7 @@ import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   calcularTotalItem,
   dinero,
-  esCategoriaSopa,
+  esProductoSinAcompanantes,
   textoParaLlevarItem,
   valorParaLlevarItem,
 } from "../../../shared/utils/pedidos";
@@ -44,7 +44,7 @@ export default function PedidoCliente({
 
   const obtenerItemsSinMinimoAcompanantes = () => itemsPedido
     .filter((item) => item.plato || item.proteina)
-    .filter((item) => !esCategoriaSopa(item.categoria))
+    .filter((item) => !esProductoSinAcompanantes(item))
     .filter((item) => !Array.isArray(item.acompanantes) || item.acompanantes.length < 2);
 
   const mostrarAlertaMinimoAcompanantes = (itemsSinMinimo) => {
@@ -113,14 +113,14 @@ export default function PedidoCliente({
                       </div>
 
                       {itemsPedido.map((item, index) => {
-                        const itemEsSopa = esCategoriaSopa(item.categoria);
+                        const itemSinAcompanantes = esProductoSinAcompanantes(item);
                         const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
                         const tienePlato = Boolean(item.plato || item.proteina);
-                        const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
+                        const tieneAcompanantes = itemSinAcompanantes || acompanantesItem.length > 0;
 
-                        const pasos = itemEsSopa
-                          ? ["Proteína", "Datos"]
-                          : ["Proteína", "Acomp.", "Datos"];
+                        const pasos = itemSinAcompanantes
+                          ? ["Producto", "Datos"]
+                          : ["Producto", "Acomp.", "Datos"];
                         const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
 
                         return (
@@ -187,7 +187,7 @@ export default function PedidoCliente({
                               </div>
                             ))}
 
-                            {tienePlato && !itemEsSopa && (
+                            {tienePlato && !itemSinAcompanantes && (
                               <div id={`paso-acompanantes-${item.id}`} className="fade-step u-mt-18">
                                 <div className="step-title">
                                   <span className="step-number">2</span>
@@ -233,11 +233,11 @@ export default function PedidoCliente({
                               </div>
                             )}
 
-                            {tienePlato && itemEsSopa && (
+                            {tienePlato && itemSinAcompanantes && (
                               <div className="box soft fade-step u-mt-18">
                                 <strong>🥣 Producto de sopas</strong>
                                 <p className="muted u-mb-0">
-                                  Este producto no incluye acompañantes, sopa adicional ni bebida.
+                                  Este producto no requiere acompañantes.
                                 </p>
                               </div>
                             )}
@@ -252,7 +252,7 @@ export default function PedidoCliente({
                                   />
                                 </div>
 
-                                {!itemEsSopa && (
+                                {!itemSinAcompanantes && (
                                   <CampoTexto
                                     etiqueta="Observación sobre tus acompañantes"
                                     value={item.observacionAcompanantes || ""}
@@ -333,7 +333,7 @@ export default function PedidoCliente({
                       {itemsPedido
                         .filter((item) => item.plato || item.proteina)
                         .map((item) => {
-                          const itemEsSopa = esCategoriaSopa(item.categoria);
+                          const itemSinAcompanantes = esProductoSinAcompanantes(item);
                           const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
                           return (
@@ -355,13 +355,13 @@ export default function PedidoCliente({
 
                               {item.categoria && <p>Categoría: {item.categoria}</p>}
 
-                              {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
-                              {!itemEsSopa && item.observacionAcompanantes?.trim() && (
+                              {!itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                              {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                                 <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                               )}
-                              {itemEsSopa && <p>Acompañantes: No aplica</p>}
+                              {itemSinAcompanantes && <p>Acompañantes: No aplica</p>}
 
-                              {!itemEsSopa && <p>Sopa + bebida incluida</p>}
+                              {!itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
 
                               <p>{textoParaLlevarItem(item)}</p>
                             </div>

@@ -5,7 +5,7 @@ import {
   crearItemCafeteria,
   crearItemNuevo,
   dinero,
-  esCategoriaSopa,
+  esProductoSinAcompanantes,
   precioPorNombre
 } from "../../../shared/utils/pedidos";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
@@ -310,7 +310,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       actual.map((item) => {
         if (item.id !== id) return item;
 
-        const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+        const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
 
         return {
           ...item,
@@ -319,16 +319,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           proteina: platoSeleccionado.nombre || "",
           precioPlato: Number(platoSeleccionado.precio) || 0,
           precioProteina: Number(platoSeleccionado.precio) || 0,
-          acompanantes: esSopa ? [] : item.acompanantes || [],
-          observacionAcompanantes: esSopa ? "" : item.observacionAcompanantes || "",
+          acompanantes: sinAcompanantes ? [] : item.acompanantes || [],
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || "",
           paraLlevar: false
         };
       })
     );
 
-    const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+    const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
 
-    irAElementoMesas(esSopa ? `mesa-confirmacion-${id}` : `mesa-paso-acompanantes-${id}`, 180, "center");
+    irAElementoMesas(sinAcompanantes ? `mesa-confirmacion-${id}` : `mesa-paso-acompanantes-${id}`, 180, "center");
   }
 
   function cambiarAcompananteMesa(id, acompanante) {
@@ -337,7 +337,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       actual.map((item) => {
         if (item.id !== id) return item;
 
-        if (esCategoriaSopa(item.categoria)) {
+        if (esProductoSinAcompanantes(item)) {
           return { ...item, acompanantes: [] };
         }
 
@@ -787,10 +787,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
             <>
               {itemsAlmuerzoMesa.map((item, index) => {
               const tienePlato = Boolean(item.plato || item.proteina);
-              const itemEsSopa = esCategoriaSopa(item.categoria);
+              const itemSinAcompanantes = esProductoSinAcompanantes(item);
               const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
               const acompanantesMesaDisponibles = ["Con todo", ...menu.acompanantes.filter((acompanante) => acompanante !== "Con todo")];
-              const tieneAcompanantes = itemEsSopa || acompanantesItem.length > 0;
+              const tieneAcompanantes = itemSinAcompanantes || acompanantesItem.length > 0;
               return (
                 <div key={item.id} id={`mesa-producto-${item.id}`} className="product-card">
                   {itemsAlmuerzoMesa.length > 1 && (
@@ -835,7 +835,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     </div>
                   ))}
 
-                  {tienePlato && !itemEsSopa && (
+                  {tienePlato && !itemSinAcompanantes && (
                     <div id={`mesa-paso-acompanantes-${item.id}`} className="fade-step" style={{ marginTop: 18 }}>
                       <div className="step-title">
                         <span className="step-number">2</span>
@@ -901,7 +901,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     </div>
                   )}
 
-                  {tienePlato && itemEsSopa && (
+                  {tienePlato && itemSinAcompanantes && (
                     <div className="box soft fade-step" style={{ marginTop: 18 }}>
                       <strong>🥣 Producto de sopas</strong>
                     </div>
@@ -917,7 +917,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                         />
                       </div>
 
-                      {!itemEsSopa && (
+                      {!itemSinAcompanantes && (
                         <CampoTexto
                           etiqueta="Observación sobre acompañantes"
                           value={item.observacionAcompanantes || ""}
@@ -1272,7 +1272,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
               {itemsConModoLlevar.map((item) => {
                 const itemEsCafeteria = item.categoria === "cafeteria";
-                const itemEsSopa = esCategoriaSopa(item.categoria);
+                const itemSinAcompanantes = esProductoSinAcompanantes(item);
                 const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
                 return (
@@ -1303,15 +1303,15 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     ) : (
                       <>
                         {item.categoria && <p>Categoría: {item.categoria}</p>}
-                        {!itemEsSopa && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
-                        {!itemEsSopa && Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length > 0 && (
+                        {!itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                        {!itemSinAcompanantes && Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length > 0 && (
                           <p>Adicionales: {item.adicionalesAlmuerzo.map((x) => `${x.nombre} ${dinero(x.precio)}`).join(", ")}</p>
                         )}
-                        {!itemEsSopa && item.observacionAcompanantes?.trim() && (
+                        {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                           <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                         )}
-                        {itemEsSopa && <p>Acompañantes: No aplica</p>}
-                        {!itemEsSopa && <p>Sopa + bebida incluida</p>}
+                        {itemSinAcompanantes && <p>Acompañantes: No aplica</p>}
+                        {!itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
                       </>
                     )}
                   </div>

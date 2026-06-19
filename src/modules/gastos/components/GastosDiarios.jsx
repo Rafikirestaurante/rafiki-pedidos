@@ -322,7 +322,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
           <input value={formulario.proveedor} onChange={(e) => cambiarCampo("proveedor", e.target.value)} placeholder="Proveedor" required />
         </label>
         <label className="field-label">Valor *
-          <input type="number" min="0" step="100" value={formulario.valor} onChange={(e) => cambiarCampo("valor", e.target.value)} placeholder="0" required />
+          <input type="number" min="0" step="1" inputMode="numeric" value={formulario.valor} onChange={(e) => cambiarCampo("valor", e.target.value)} placeholder="Ej: 146825" required />
         </label>
         <label className="field-label">Categoría
           <select value={formulario.categoria} onChange={(e) => cambiarCampo("categoria", e.target.value)}>

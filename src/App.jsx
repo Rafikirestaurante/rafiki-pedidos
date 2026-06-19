@@ -12,7 +12,7 @@ import {
   crearLinkWhatsApp,
   crearMensajeWhatsAppPedido,
   limpiarTelefonoWhatsApp,
-  esCategoriaSopa,
+  esProductoSinAcompanantes,
   obtenerCliente,
   obtenerEstadoPedido
 } from "./shared/utils/pedidos";
@@ -437,7 +437,7 @@ export default function App() {
       actual.map((item) => {
         if (item.id !== id) return item;
 
-        const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+        const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
 
         return {
           ...item,
@@ -446,15 +446,15 @@ export default function App() {
           proteina: platoSeleccionado.nombre || "",
           precioPlato: Number(platoSeleccionado.precio) || 0,
           precioProteina: Number(platoSeleccionado.precio) || 0,
-          acompanantes: esSopa ? [] : item.acompanantes || [],
-          observacionAcompanantes: esSopa ? "" : item.observacionAcompanantes || ""
+          acompanantes: sinAcompanantes ? [] : item.acompanantes || [],
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || ""
         };
       })
     );
 
-    const esSopa = esCategoriaSopa(platoSeleccionado.categoria);
+    const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
 
-    if (esSopa) {
+    if (sinAcompanantes) {
       irAElemento(`paso-cantidad-${id}`);
     } else {
       irAElemento(`paso-acompanantes-${id}`);
@@ -466,7 +466,7 @@ export default function App() {
       actual.map((item) => {
         if (item.id !== id) return item;
 
-        if (esCategoriaSopa(item.categoria)) {
+        if (esProductoSinAcompanantes(item)) {
           return {
             ...item,
             acompanantes: []

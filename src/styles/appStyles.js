@@ -1502,6 +1502,52 @@ export const appStyles = `
 /* Fase 31E - Pedidos Hoy más limpio */
 .pedidos-hoy-tabs { margin-top: 8px; margin-bottom: 18px; }
 .pedidos-filtros-card { margin-bottom: 10px; }
+.pedidos-filtros-rapidos-card {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 18px;
+  background: var(--rafiki-surface-soft);
+}
+.pedidos-filtros-rapidos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--rafiki-brand-strong);
+}
+.pedidos-filtros-rapidos-botones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pedidos-filtros-rapidos-botones .mini-btn.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+.pedido-filtro-pago-rapido {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--rafiki-brand-strong);
+}
+.pedido-filtro-pago-rapido select {
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  font-weight: 800;
+}
 .pedidos-filtros-resumen-colapsado {
   display: flex;
   align-items: center;
@@ -1527,6 +1573,9 @@ export const appStyles = `
 
 @media (max-width: 640px) {
   .pedidos-filtros-resumen-colapsado { align-items: stretch; flex-direction: column; }
+  .pedidos-filtros-rapidos-head { align-items: stretch; flex-direction: column; }
+  .pedidos-filtros-rapidos-botones .mini-btn,
+  .pedido-filtro-pago-rapido { width: 100%; justify-content: space-between; }
   .pedidos-filtros-resumen-colapsado .mini-btn { width: 100%; }
 }
 

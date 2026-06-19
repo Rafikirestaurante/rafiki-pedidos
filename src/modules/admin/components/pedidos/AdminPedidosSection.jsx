@@ -50,6 +50,73 @@ function itemEsCafeteriaPedidoHoy(item) {
   return item?.categoria === "cafeteria" || item?.area === "cafeteria";
 }
 
+
+function itemEsRestaurantePedidoHoy(item) {
+  return item && !itemEsCafeteriaPedidoHoy(item);
+}
+
+function pedidoItemsPedidoHoy(pedido) {
+  return obtenerItemsPedido(pedido);
+}
+
+function pedidoUbicacionNormalizada(pedido) {
+  return normalizarTexto([pedido?.ubicacion, pedido?.mesa, pedido?.tipo_pedido].filter(Boolean).join(" "));
+}
+
+function pedidoPareceParaLlevar(pedido) {
+  const ubicacion = pedidoUbicacionNormalizada(pedido);
+  return ubicacion.includes("llevar") || ubicacion.includes("domicilio") || ubicacion.includes("recoger");
+}
+
+function pedidoPareceEnMesa(pedido) {
+  const ubicacion = pedidoUbicacionNormalizada(pedido);
+  return /\b[1-5][ab]\b/.test(ubicacion) || ubicacion.includes("mesa") || ubicacion.includes("comer en restaurante");
+}
+
+function pedidoCumpleFiltroTipoPedido(pedido, filtro) {
+  const items = pedidoItemsPedidoHoy(pedido);
+  const paraLlevarGeneral = pedidoPareceParaLlevar(pedido);
+  const enMesaGeneral = pedidoPareceEnMesa(pedido) && !paraLlevarGeneral;
+
+  if (items.length === 0) {
+    const texto = normalizarTexto([pedido?.pedido_texto, pedido?.cliente, pedido?.observaciones].filter(Boolean).join(" "));
+    const pareceCafeteria = ["parfait", "batido", "jugo", "cafe", "capuchino", "desayuno", "sandwich", "postre"].some((palabra) => texto.includes(palabra));
+    const pareceRestaurante = !pareceCafeteria;
+
+    if (filtro === "restauranteParaLlevar") return pareceRestaurante && paraLlevarGeneral;
+    if (filtro === "cafeteriaParaLlevar") return pareceCafeteria && paraLlevarGeneral;
+    if (filtro === "restauranteMesa") return pareceRestaurante && enMesaGeneral;
+    if (filtro === "cafeteriaMesa") return pareceCafeteria && enMesaGeneral;
+    return false;
+  }
+
+  return items.some((item) => {
+    const cafeteria = itemEsCafeteriaPedidoHoy(item);
+    const restaurante = itemEsRestaurantePedidoHoy(item);
+    const paraLlevar = Boolean(item?.paraLlevar) || paraLlevarGeneral;
+    const enMesa = !paraLlevar && enMesaGeneral;
+
+    if (filtro === "restauranteParaLlevar") return restaurante && paraLlevar;
+    if (filtro === "cafeteriaParaLlevar") return cafeteria && paraLlevar;
+    if (filtro === "restauranteMesa") return restaurante && enMesa;
+    if (filtro === "cafeteriaMesa") return cafeteria && enMesa;
+    return false;
+  });
+}
+
+function aplicarFiltrosRapidosPedidos(pedidos = [], filtrosTipo = {}, filtroPago = "") {
+  const filtrosActivos = Object.entries(filtrosTipo || {}).filter(([, activo]) => Boolean(activo)).map(([clave]) => clave);
+  const pagoNormalizado = normalizarTexto(filtroPago);
+
+  return pedidos.filter((pedido) => {
+    const cumpleTipo = filtrosActivos.length === 0 || filtrosActivos.some((filtro) => pedidoCumpleFiltroTipoPedido(pedido, filtro));
+    if (!cumpleTipo) return false;
+
+    if (!pagoNormalizado) return true;
+    return normalizarTexto(pedido?.tipo_pago || "").includes(pagoNormalizado);
+  });
+}
+
 function pedidoEsRestauranteParaLlevar(pedido) {
   const items = obtenerItemsPedido(pedido);
 
@@ -655,7 +722,13 @@ function AdminPedidosSectionBase({
   const [mensajeCorreccionCliente, setMensajeCorreccionCliente] = useState("");
   const [ordenPedidosHoy, setOrdenPedidosHoy] = useState("ultimos");
   const [vistaPedidosHoy, setVistaPedidosHoy] = useState("pedidos");
-  const [filtroRestauranteParaLlevar, setFiltroRestauranteParaLlevar] = useState(false);
+  const [filtrosTipoPedido, setFiltrosTipoPedido] = useState({
+    restauranteParaLlevar: false,
+    cafeteriaParaLlevar: false,
+    restauranteMesa: false,
+    cafeteriaMesa: false,
+  });
+  const [filtroTipoPagoRapido, setFiltroTipoPagoRapido] = useState("");
   const [mostrarFiltrosPedidos, setMostrarFiltrosPedidos] = useState(true);
   const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
   const hayMasPedidos = Boolean(paginacionPedidos?.hayMas);
@@ -680,7 +753,12 @@ function AdminPedidosSectionBase({
     [pedidosUnificados]
   );
 
-  const pedidosVisiblesTabla = filtroRestauranteParaLlevar ? pedidosRestauranteParaLlevar : pedidosUnificados;
+  const pedidosVisiblesTabla = useMemo(
+    () => aplicarFiltrosRapidosPedidos(pedidosUnificados, filtrosTipoPedido, filtroTipoPagoRapido),
+    [filtroTipoPagoRapido, filtrosTipoPedido, pedidosUnificados]
+  );
+
+  const hayFiltrosRapidosActivos = Object.values(filtrosTipoPedido).some(Boolean) || Boolean(filtroTipoPagoRapido);
 
   const fechaReferenciaImpresion = useMemo(() => {
     if (filtroPedidos === "dia" && fechaSeleccionada) return new Date(`${fechaSeleccionada}T12:00:00-05:00`);
@@ -788,8 +866,19 @@ function AdminPedidosSectionBase({
     setAlertaPedidoNuevo(null);
   }, [setAlertaPedidoNuevo]);
 
-  const alternarFiltroRestauranteParaLlevar = useCallback(() => {
-    setFiltroRestauranteParaLlevar((actual) => !actual);
+  const alternarFiltroTipoPedido = useCallback((clave) => {
+    setFiltrosTipoPedido((actual) => ({ ...actual, [clave]: !actual[clave] }));
+    setVistaPedidosHoy("pedidos");
+  }, []);
+
+  const limpiarFiltrosRapidosPedidos = useCallback(() => {
+    setFiltrosTipoPedido({
+      restauranteParaLlevar: false,
+      cafeteriaParaLlevar: false,
+      restauranteMesa: false,
+      cafeteriaMesa: false,
+    });
+    setFiltroTipoPagoRapido("");
     setVistaPedidosHoy("pedidos");
   }, []);
 
@@ -826,8 +915,8 @@ function AdminPedidosSectionBase({
 
           <button
             type="button"
-            className={filtroRestauranteParaLlevar ? "button green admin-action-button" : "button light admin-action-button"}
-            onClick={alternarFiltroRestauranteParaLlevar}
+            className={filtrosTipoPedido.restauranteParaLlevar ? "button green admin-action-button" : "button light admin-action-button"}
+            onClick={() => alternarFiltroTipoPedido("restauranteParaLlevar")}
             title="Mostrar solo pedidos de restaurante marcados para llevar"
           >
             🥡 Restaurante para llevar
@@ -892,6 +981,32 @@ function AdminPedidosSectionBase({
           <button type="button" className="mini-btn" onClick={() => setMostrarFiltrosPedidos(true)}>Mostrar filtros</button>
         </div>
       )}
+
+      <div className="pedidos-filtros-rapidos-card">
+        <div className="pedidos-filtros-rapidos-head">
+          <strong>Filtros rápidos</strong>
+          {hayFiltrosRapidosActivos ? (
+            <button type="button" className="mini-btn" onClick={limpiarFiltrosRapidosPedidos}>Limpiar filtros rápidos</button>
+          ) : null}
+        </div>
+        <div className="pedidos-filtros-rapidos-botones">
+          <button type="button" className={filtrosTipoPedido.restauranteParaLlevar ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("restauranteParaLlevar")}>🥡 Restaurante para llevar</button>
+          <button type="button" className={filtrosTipoPedido.cafeteriaParaLlevar ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("cafeteriaParaLlevar")}>☕ Cafetería para llevar</button>
+          <button type="button" className={filtrosTipoPedido.restauranteMesa ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("restauranteMesa")}>🍽️ Restaurante en mesa</button>
+          <button type="button" className={filtrosTipoPedido.cafeteriaMesa ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("cafeteriaMesa")}>☕ Cafetería en mesa</button>
+          <label className="pedido-filtro-pago-rapido">
+            <span>Tipo de pago</span>
+            <select value={filtroTipoPagoRapido} onChange={(e) => setFiltroTipoPagoRapido(e.target.value)}>
+              <option value="">Todos</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Datafono">Datafono</option>
+              <option value="Crédito">Crédito</option>
+              <option value="Nequi">Nequi</option>
+            </select>
+          </label>
+        </div>
+      </div>
 
       {(resultadoNumeroPedido.length > 0 || errorNumeroPedido) && (
         <div className="pedido-numero-global-resultados">
@@ -963,13 +1078,13 @@ function AdminPedidosSectionBase({
 
       {vistaPedidosHoy === "pedidos" ? (
       <div className="pedido-seccion">
-        {filtroRestauranteParaLlevar ? (
+        {hayFiltrosRapidosActivos ? (
           <div className="alert alert-info pedidos-filtro-activo">
-            Mostrando solo pedidos de <strong>Restaurante para llevar</strong>. Total: {pedidosRestauranteParaLlevar.length}.
+            Filtros rápidos activos. Mostrando <strong>{pedidosVisiblesTabla.length}</strong> pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"}.
           </div>
         ) : null}
         <div className="section-heading section-heading-pedidos-unificados">
-          <h3>{filtroRestauranteParaLlevar ? "🥡 Restaurante para llevar" : "📋 Pedidos"}</h3>
+          <h3>{hayFiltrosRapidosActivos ? "🔎 Pedidos filtrados" : "📋 Pedidos"}</h3>
           <div className="section-heading-actions pedidos-orden-actions">
             {pedidosPendientes.length > 0 && puedeFinalizarPendientes && (
               <button
@@ -1004,8 +1119,8 @@ function AdminPedidosSectionBase({
         {pedidosVisiblesTabla.length === 0 ? (
           <RafikiEmptyState
             icon="📋"
-            title={filtroRestauranteParaLlevar ? "No hay pedidos restaurante para llevar" : "No hay pedidos en esta vista"}
-            description={filtroRestauranteParaLlevar ? "Cuando existan pedidos de restaurante marcados para llevar, aparecerán aquí y en la impresión 80mm." : "Cuando entren pedidos activos o finalizados, aparecerán aquí con sus estados, pagos y acciones."}
+            title={hayFiltrosRapidosActivos ? "No hay pedidos con esos filtros" : "No hay pedidos en esta vista"}
+            description={hayFiltrosRapidosActivos ? "Prueba limpiar o combinar otros filtros rápidos para ampliar los resultados." : "Cuando entren pedidos activos o finalizados, aparecerán aquí con sus estados, pagos y acciones."}
           />
         ) : (
           <TablaPedidosCompacta
