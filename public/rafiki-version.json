@@ -1,9 +1,9 @@
 {
-  "version": "122.1-HISTORIAL-MENU-VISIBLE-2026-06-17",
+  "version": "122.7-PEDIDOS-HOY-FILTROS-MODAL-80MM-2026-06-19",
   "fase": "32",
-  "mensaje": "122.1: Historial de menú visible como pestaña propia y dentro del Generador, con rotación inteligente por categoría.",
-  "build": "122.1",
-  "base_estable": "121.21",
-  "phase": "Fase 32 - Historial y rotación inteligente de menú",
-  "date": "2026-06-17"
+  "mensaje": "122.7: Pedidos Hoy usa modal de filtros rápidos y mantiene impresión 80mm relacionada con los pedidos filtrados.",
+  "build": "122.7",
+  "base_estable": "122.6",
+  "phase": "Fase 32 - Pedidos Hoy filtros compactos e impresión filtrada",
+  "date": "2026-06-19"
 }

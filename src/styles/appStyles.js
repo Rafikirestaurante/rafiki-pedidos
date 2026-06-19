@@ -1551,6 +1551,71 @@ export const appStyles = `
   border-color: #16a34a;
   color: #fff;
 }
+
+.pedidos-filtros-rapidos-card-modalizado {
+  padding: 8px 10px;
+  border-radius: 14px;
+}
+.pedidos-filtros-rapidos-card-modalizado .pedidos-filtros-rapidos-head {
+  min-height: 34px;
+}
+.pedidos-filtros-rapidos-card-modalizado .mini-btn {
+  margin-bottom: 0;
+  min-height: 30px;
+  padding: 6px 10px;
+}
+.pedidos-filtros-rapidos-card-modalizado .mini-btn.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+.pedidos-filtros-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.filtro-modal-opcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--rafiki-brand-strong);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.filtro-modal-opcion.active {
+  background: #ecfdf5;
+  border-color: #16a34a;
+  color: #166534;
+  box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.25);
+}
+.pedido-filtro-pago-modal {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--rafiki-brand-strong);
+}
+.pedido-filtro-pago-modal select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 800;
+}
+.pedidos-filtros-modal-resumen {
+  margin: 10px 0 0;
+}
 .pedido-filtro-pago-rapido {
   display: inline-flex;
   align-items: center;
@@ -1602,6 +1667,13 @@ export const appStyles = `
   .pedidos-filtros-rapidos-acciones .mini-btn,
   .pedido-filtro-pago-rapido { width: 100%; justify-content: space-between; }
   .pedidos-filtros-resumen-colapsado .mini-btn { width: 100%; }
+
+  .pedidos-filtros-rapidos-card-modalizado .pedidos-filtros-rapidos-head { align-items: stretch; flex-direction: row; }
+  .pedidos-filtros-rapidos-card-modalizado .pedidos-filtros-rapidos-head > div:first-child { width: auto; min-width: 0; }
+  .pedidos-filtros-rapidos-card-modalizado .pedidos-filtros-rapidos-contador { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pedidos-filtros-rapidos-card-modalizado .pedidos-filtros-rapidos-acciones { width: auto; flex-shrink: 0; justify-content: flex-end; }
+  .pedidos-filtros-rapidos-card-modalizado .pedidos-filtros-rapidos-acciones .mini-btn { width: auto; }
+  .pedidos-filtros-modal-grid { grid-template-columns: 1fr; }
 }
 
 

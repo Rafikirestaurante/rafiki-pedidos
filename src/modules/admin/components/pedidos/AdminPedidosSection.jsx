@@ -9,6 +9,7 @@ import { corregirClienteCreditoDePedido } from "../../../../services/carteraServ
 import { listarClientesCreditoActivos } from "../../../../services/clientesCreditoService";
 import RafikiEmptyState from "../../../../shared/components/RafikiEmptyState";
 import RafikiTabs from "../../../../shared/components/RafikiTabs";
+import RafikiModal from "../../../../shared/components/RafikiModal";
 
 
 function normalizarMesaPedido(pedido) {
@@ -768,6 +769,7 @@ function AdminPedidosSectionBase({
     cafeteriaMesa: false,
   });
   const [filtroTipoPagoRapido, setFiltroTipoPagoRapido] = useState("");
+  const [mostrarModalFiltrosRapidos, setMostrarModalFiltrosRapidos] = useState(false);
   const [mostrarFiltrosPedidos, setMostrarFiltrosPedidos] = useState(true);
   const [ahoraPedidosHoy, setAhoraPedidosHoy] = useState(() => new Date());
   const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
@@ -819,6 +821,16 @@ function AdminPedidosSectionBase({
   );
 
   const hayFiltrosRapidosActivos = Object.values(filtrosTipoPedido).some(Boolean) || Boolean(filtroTipoPagoRapido);
+
+  const resumenFiltrosRapidos = useMemo(() => {
+    const etiquetas = [];
+    if (filtrosTipoPedido.restauranteParaLlevar) etiquetas.push("Restaurante para llevar");
+    if (filtrosTipoPedido.cafeteriaParaLlevar) etiquetas.push("Cafetería para llevar");
+    if (filtrosTipoPedido.restauranteMesa) etiquetas.push("Restaurante en mesa");
+    if (filtrosTipoPedido.cafeteriaMesa) etiquetas.push("Cafetería en mesa");
+    if (filtroTipoPagoRapido) etiquetas.push(`Pago: ${filtroTipoPagoRapido}`);
+    return etiquetas.length > 0 ? etiquetas.join(" · ") : "Sin filtros rápidos activos";
+  }, [filtroTipoPagoRapido, filtrosTipoPedido]);
 
   const fechaReferenciaImpresion = useMemo(() => {
     if (filtroPedidos === "dia" && fechaSeleccionada) return new Date(`${fechaSeleccionada}T12:00:00-05:00`);
@@ -1026,13 +1038,18 @@ function AdminPedidosSectionBase({
         </div>
       )}
 
-      <div className="pedidos-filtros-rapidos-card pedidos-filtros-rapidos-card-compacta">
+      <div className="pedidos-filtros-rapidos-card pedidos-filtros-rapidos-card-modalizado">
         <div className="pedidos-filtros-rapidos-head">
           <div>
             <strong>Filtros rápidos</strong>
-            <span className="muted small pedidos-filtros-rapidos-contador">{pedidosVisiblesTabla.length} pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"}</span>
+            <span className="muted small pedidos-filtros-rapidos-contador">
+              {pedidosVisiblesTabla.length} pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"} · {resumenFiltrosRapidos}
+            </span>
           </div>
           <div className="pedidos-filtros-rapidos-acciones">
+            <button type="button" className={hayFiltrosRapidosActivos ? "mini-btn active" : "mini-btn"} onClick={() => setMostrarModalFiltrosRapidos(true)}>
+              ⚙️ Filtros
+            </button>
             <button
               type="button"
               className="mini-btn"
@@ -1042,27 +1059,7 @@ function AdminPedidosSectionBase({
             >
               🧾 Imprimir 80mm
             </button>
-            {hayFiltrosRapidosActivos ? (
-              <button type="button" className="mini-btn" onClick={limpiarFiltrosRapidosPedidos}>Limpiar</button>
-            ) : null}
           </div>
-        </div>
-        <div className="pedidos-filtros-rapidos-botones">
-          <button type="button" className={filtrosTipoPedido.restauranteParaLlevar ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("restauranteParaLlevar")}>🥡 Restaurante para llevar</button>
-          <button type="button" className={filtrosTipoPedido.cafeteriaParaLlevar ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("cafeteriaParaLlevar")}>☕ Cafetería para llevar</button>
-          <button type="button" className={filtrosTipoPedido.restauranteMesa ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("restauranteMesa")}>🍽️ Restaurante en mesa</button>
-          <button type="button" className={filtrosTipoPedido.cafeteriaMesa ? "mini-btn active" : "mini-btn"} onClick={() => alternarFiltroTipoPedido("cafeteriaMesa")}>☕ Cafetería en mesa</button>
-          <label className="pedido-filtro-pago-rapido">
-            <span>Tipo de pago</span>
-            <select value={filtroTipoPagoRapido} onChange={(e) => setFiltroTipoPagoRapido(e.target.value)}>
-              <option value="">Todos</option>
-              <option value="Efectivo">Efectivo</option>
-              <option value="Transferencia">Transferencia</option>
-              <option value="Datafono">Datafono</option>
-              <option value="Crédito">Crédito</option>
-              <option value="Nequi">Nequi</option>
-            </select>
-          </label>
         </div>
       </div>
 
@@ -1239,6 +1236,55 @@ function AdminPedidosSectionBase({
           editandoPedidoId={editandoPedidoId}
         />
       ) : null}
+
+      <RafikiModal
+        open={mostrarModalFiltrosRapidos}
+        title="Filtros rápidos"
+        description="Selecciona una o varias opciones. La impresión 80mm usará exactamente los pedidos visibles en pantalla."
+        onClose={() => setMostrarModalFiltrosRapidos(false)}
+        size="sm"
+        footer={(
+          <>
+            {hayFiltrosRapidosActivos ? (
+              <button type="button" className="button light" onClick={limpiarFiltrosRapidosPedidos}>Limpiar filtros</button>
+            ) : null}
+            <button type="button" className="button" onClick={() => setMostrarModalFiltrosRapidos(false)}>Aplicar filtros</button>
+          </>
+        )}
+      >
+        <div className="pedidos-filtros-modal-grid">
+          <button type="button" className={filtrosTipoPedido.restauranteParaLlevar ? "filtro-modal-opcion active" : "filtro-modal-opcion"} onClick={() => alternarFiltroTipoPedido("restauranteParaLlevar")}>
+            <span>🥡</span>
+            <strong>Restaurante para llevar</strong>
+          </button>
+          <button type="button" className={filtrosTipoPedido.cafeteriaParaLlevar ? "filtro-modal-opcion active" : "filtro-modal-opcion"} onClick={() => alternarFiltroTipoPedido("cafeteriaParaLlevar")}>
+            <span>☕</span>
+            <strong>Cafetería para llevar</strong>
+          </button>
+          <button type="button" className={filtrosTipoPedido.restauranteMesa ? "filtro-modal-opcion active" : "filtro-modal-opcion"} onClick={() => alternarFiltroTipoPedido("restauranteMesa")}>
+            <span>🍽️</span>
+            <strong>Restaurante en mesa</strong>
+          </button>
+          <button type="button" className={filtrosTipoPedido.cafeteriaMesa ? "filtro-modal-opcion active" : "filtro-modal-opcion"} onClick={() => alternarFiltroTipoPedido("cafeteriaMesa")}>
+            <span>☕</span>
+            <strong>Cafetería en mesa</strong>
+          </button>
+        </div>
+        <label className="pedido-filtro-pago-modal">
+          <span>Tipo de pago</span>
+          <select value={filtroTipoPagoRapido} onChange={(e) => setFiltroTipoPagoRapido(e.target.value)}>
+            <option value="">Todos</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Datafono">Datafono</option>
+            <option value="Crédito">Crédito</option>
+            <option value="Nequi">Nequi</option>
+          </select>
+        </label>
+        <p className="muted small pedidos-filtros-modal-resumen">
+          Resultado actual: <strong>{pedidosVisiblesTabla.length}</strong> pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"} visible{pedidosVisiblesTabla.length === 1 ? "" : "s"}.
+        </p>
+      </RafikiModal>
 
       {pedidoEditando && (
         <EditarPedidoModal
