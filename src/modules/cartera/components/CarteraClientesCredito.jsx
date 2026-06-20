@@ -18,6 +18,8 @@ import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
 import RafikiModal from "../../../shared/components/RafikiModal";
 import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
+import { FORMAS_PAGO_ABONO_CARTERA, METODOS_PAGO } from "../../../shared/constants/paymentMethods";
+import { aPesosEnteros } from "../../../shared/utils/money";
 import { listarPedidosPorCliente } from "../../../services/pedidosService";
 
 const FORM_INICIAL = {
@@ -34,7 +36,7 @@ const FILTROS_INICIALES = {
   soloConSaldo: true,
 };
 
-const METODOS_ABONO = ["Efectivo", "Transferencia", "Datafono", "Nequi", "Bancolombia", "Otro"];
+const METODOS_ABONO = FORMAS_PAGO_ABONO_CARTERA;
 
 const VISTA_CARTERA_INICIAL = "resumen";
 
@@ -48,7 +50,7 @@ function fechaHoyInput() {
 
 const ABONO_INICIAL = {
   valorAbono: "",
-  metodoPago: "Efectivo",
+  metodoPago: METODOS_PAGO.EFECTIVO,
   observacion: "",
   fechaAbono: fechaHoyInput(),
 };
@@ -162,6 +164,7 @@ export default function CarteraClientesCredito() {
   const [clienteAbonoId, setClienteAbonoId] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [formularioAbono, setFormularioAbono] = useState(ABONO_INICIAL);
+  const [abonoPendienteConfirmacion, setAbonoPendienteConfirmacion] = useState(null);
   const [vistaCartera, setVistaCartera] = useState(VISTA_CARTERA_INICIAL);
   const [mostrarRankings, setMostrarRankings] = useState(false);
   const [pedidosClienteDetalle, setPedidosClienteDetalle] = useState([]);
@@ -423,6 +426,8 @@ export default function CarteraClientesCredito() {
   }
 
   function cerrarAbono() {
+    if (guardando) return;
+    setAbonoPendienteConfirmacion(null);
     setClienteAbonoId(null);
     setFormularioAbono(ABONO_INICIAL);
   }
@@ -431,19 +436,34 @@ export default function CarteraClientesCredito() {
     evento.preventDefault();
     if (!clienteAbono?.id) return;
 
-    const valor = Number(formularioAbono.valorAbono || 0);
+    const valor = aPesosEnteros(formularioAbono.valorAbono);
     if (!Number.isFinite(valor) || valor <= 0) {
       setError("El valor del abono debe ser mayor a cero.");
       return;
     }
 
-    if (valor > Number(clienteAbono.saldo_pendiente || 0)) {
+    const saldoPendiente = aPesosEnteros(clienteAbono.saldo_pendiente);
+    if (valor > saldoPendiente) {
       setError("El abono no puede ser mayor al saldo pendiente del cliente.");
       return;
     }
 
-    const confirmado = window.confirm(`¿Confirmas registrar este abono por ${dinero(valor)} para ${clienteAbono.nombre}?`);
-    if (!confirmado) return;
+    setMensaje("");
+    setError("");
+    setAbonoPendienteConfirmacion({
+      clienteId: clienteAbono.id,
+      clienteNombre: clienteAbono.nombre,
+      saldoPendiente,
+      valor,
+      metodoPago: formularioAbono.metodoPago,
+      observacion: formularioAbono.observacion,
+      fechaAbono: formularioAbono.fechaAbono,
+    });
+  }
+
+  async function confirmarRegistroAbono() {
+    const abono = abonoPendienteConfirmacion;
+    if (!abono?.clienteId || guardando) return;
 
     setGuardando(true);
     setMensaje("");
@@ -451,14 +471,16 @@ export default function CarteraClientesCredito() {
 
     try {
       await registrarAbonoClienteCredito({
-        clienteId: clienteAbono.id,
-        valorAbono: valor,
-        metodoPago: formularioAbono.metodoPago,
-        observacion: formularioAbono.observacion,
-        fechaAbono: formularioAbono.fechaAbono,
+        clienteId: abono.clienteId,
+        valorAbono: abono.valor,
+        metodoPago: abono.metodoPago,
+        observacion: abono.observacion,
+        fechaAbono: abono.fechaAbono,
       });
       setMensaje("Abono registrado correctamente. La cartera fue actualizada.");
-      cerrarAbono();
+      setAbonoPendienteConfirmacion(null);
+      setClienteAbonoId(null);
+      setFormularioAbono(ABONO_INICIAL);
       await actualizarTodo();
     } catch (err) {
       registrarErrorSupabase("registrar abono de cartera", err);
@@ -671,6 +693,30 @@ export default function CarteraClientesCredito() {
             </div>
           </form>
         )}
+      </RafikiModal>
+
+      <RafikiModal
+        open={Boolean(abonoPendienteConfirmacion)}
+        title="Confirmar abono"
+        description={abonoPendienteConfirmacion ? `Vas a registrar un abono de ${dinero(abonoPendienteConfirmacion.valor)} para ${abonoPendienteConfirmacion.clienteNombre}.` : ""}
+        onClose={() => !guardando && setAbonoPendienteConfirmacion(null)}
+        size="sm"
+        footer={(
+          <>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setAbonoPendienteConfirmacion(null)} disabled={guardando}>Cancelar</button>
+            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={confirmarRegistroAbono} disabled={guardando}>{guardando ? "Guardando..." : "Confirmar abono"}</button>
+          </>
+        )}
+      >
+        {abonoPendienteConfirmacion ? (
+          <div className="cartera-correccion-resumen">
+            <p><strong>Cliente:</strong> {abonoPendienteConfirmacion.clienteNombre}</p>
+            <p><strong>Saldo actual:</strong> {dinero(abonoPendienteConfirmacion.saldoPendiente)}</p>
+            <p><strong>Abono:</strong> {dinero(abonoPendienteConfirmacion.valor)}</p>
+            <p><strong>Nuevo saldo estimado:</strong> {dinero(Math.max(0, abonoPendienteConfirmacion.saldoPendiente - abonoPendienteConfirmacion.valor))}</p>
+            <p><strong>Método:</strong> {abonoPendienteConfirmacion.metodoPago}</p>
+          </div>
+        ) : null}
       </RafikiModal>
 
       {vistaCartera === "resumen" && (

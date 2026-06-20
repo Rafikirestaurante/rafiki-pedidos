@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { conTiempoMaximo } from "../utils/async";
 import { CONFIRMACIONES_PEDIDOS, MENSAJES_PEDIDOS } from "../constants/textos";
+import { METODOS_PAGO, esMetodoPagoCredito, normalizarMetodoPago } from "../constants/paymentMethods";
 import {
   calcularTotalItems,
   crearTextoPedido,
@@ -273,7 +274,7 @@ export function usePedidos({
     const telefonoLimpio = esLlevar ? limpiarTelefono(telefono) : "";
     const ubicacionLimpia = esLlevar ? limpiarTexto(ubicacion, 200) : mesaLimpia;
     const meseroLimpio = limpiarTexto(mesero, 80) || "Mesero";
-    const tipoPagoLimpio = limpiarTexto(tipoPago, 80) || "Efectivo";
+    const tipoPagoLimpio = normalizarMetodoPago(limpiarTexto(tipoPago, 80), { permitirCredito: true, fallback: METODOS_PAGO.EFECTIVO });
     const observacionesLimpias = limpiarTexto(obsMesa, 500);
     const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
     const total = calcularTotalItems(itemsValidos);
@@ -324,7 +325,7 @@ export function usePedidos({
         return false;
       }
 
-      if (String(tipoPagoLimpio || "").trim().toLowerCase().replace("é", "e") === "credito") {
+      if (esMetodoPagoCredito(tipoPagoLimpio)) {
         try {
           await registrarCarteraPedidoCredito(data);
         } catch (errorCartera) {
@@ -630,7 +631,7 @@ export function usePedidos({
     const ubicacionLimpia = limpiarTexto(cambios.ubicacion || "", 200);
     const mesaLimpia = limpiarTexto(cambios.mesa || "", 40);
     const meseroLimpio = limpiarTexto(cambios.mesero || "", 80);
-    const tipoPagoLimpio = limpiarTexto(cambios.tipo_pago || "", 80);
+    const tipoPagoLimpio = normalizarMetodoPago(limpiarTexto(cambios.tipo_pago || "", 80), { permitirCredito: true, fallback: METODOS_PAGO.EFECTIVO });
     const observacionesLimpias = limpiarTexto(cambios.observaciones || "", 500);
     const pedidoTextoLimpio = limpiarTexto(cambios.pedido_texto || "", 3000);
     const totalNuevo = Number(cambios.total);
@@ -664,14 +665,14 @@ export function usePedidos({
         ubicacion: ubicacionLimpia || mesaLimpia || "",
         mesa: mesaLimpia,
         mesero: meseroLimpio,
-        tipo_pago: tipoPagoLimpio || "Efectivo",
+        tipo_pago: tipoPagoLimpio || METODOS_PAGO.EFECTIVO,
         observaciones: observacionesLimpias,
         pedido_texto: pedidoTextoLimpio,
         total: totalNuevo,
       };
 
-      const pagoAnteriorEsCredito = String(pedidoActual?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
-      const pagoNuevoEsCredito = String(payload?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
+      const pagoAnteriorEsCredito = esMetodoPagoCredito(pedidoActual?.tipo_pago);
+      const pagoNuevoEsCredito = esMetodoPagoCredito(payload?.tipo_pago);
 
       if (pagoAnteriorEsCredito && !pagoNuevoEsCredito) {
         try {
@@ -777,7 +778,7 @@ export function usePedidos({
     const telefonoLimpio = esLlevar ? limpiarTelefono(telefono) : "";
     const ubicacionLimpia = esLlevar ? limpiarTexto(ubicacion, 200) : mesaLimpia;
     const meseroLimpio = limpiarTexto(mesero, 80);
-    const tipoPagoLimpio = limpiarTexto(tipoPago, 80) || "Efectivo";
+    const tipoPagoLimpio = normalizarMetodoPago(limpiarTexto(tipoPago, 80), { permitirCredito: true, fallback: METODOS_PAGO.EFECTIVO });
     const observacionesLimpias = limpiarTexto(obsMesa, 500);
     const pedidoTexto = crearTextoPedido(itemsValidos, observacionesLimpias);
     const total = calcularTotalItems(itemsValidos);
@@ -819,8 +820,8 @@ export function usePedidos({
         total,
       };
 
-      const pagoAnteriorEsCredito = String(pedidoActual?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
-      const pagoNuevoNoEsCredito = String(payload?.tipo_pago || "").trim().toLowerCase().replace("é", "e") !== "credito";
+      const pagoAnteriorEsCredito = esMetodoPagoCredito(pedidoActual?.tipo_pago);
+      const pagoNuevoNoEsCredito = !esMetodoPagoCredito(payload?.tipo_pago);
 
       if (pagoAnteriorEsCredito && pagoNuevoNoEsCredito) {
         try {

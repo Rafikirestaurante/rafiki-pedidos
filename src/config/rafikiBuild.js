@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "122.7-PEDIDOS-HOY-FILTROS-MODAL-80MM-2026-06-19",
-  phase: "Fase 32 - Pedidos Hoy filtros compactos e impresión filtrada",
-  date: "2026-06-19",
-  fase: "32",
+  version: "123.0-FASE33-BLINDAJE-CARTERA-2026-06-20",
+  phase: "Fase 33 - Blindaje de Cartera",
+  date: "2026-06-20",
+  fase: "33",
   notes:
-    "Organiza Pedidos Hoy dejando filtros rápidos e impresión 80mm en un solo bloque compacto. La impresión usa los pedidos filtrados en pantalla."
+    "Activa abonos seguros con RPC, clientes crédito únicos por nombre normalizado, métodos de pago centralizados, valores monetarios enteros y confirmación visual de abonos con RafikiModal."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

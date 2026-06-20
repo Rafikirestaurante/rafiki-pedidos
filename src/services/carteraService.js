@@ -1,4 +1,6 @@
 import { supabase, supabaseConfigOk } from "../supabaseClient";
+import { METODOS_PAGO, esMetodoPagoCredito, normalizarMetodoPago } from "../shared/constants/paymentMethods";
+import { aPesosEnteros, valoresPesosDiferentes } from "../shared/utils/money";
 import { asegurarClienteCredito, normalizarNombreClienteCredito } from "./clientesCreditoService";
 
 export const SELECT_CARTERA_MOVIMIENTOS = [
@@ -34,8 +36,7 @@ export const SELECT_CARTERA_ABONOS = [
 ].join(", ");
 
 function normalizarNumero(valor) {
-  const numero = Number(valor || 0);
-  return Number.isFinite(numero) ? numero : 0;
+  return aPesosEnteros(valor);
 }
 
 function limpiarTexto(valor) {
@@ -50,7 +51,7 @@ function fechaAbonoNormalizada(valor) {
 }
 
 function esPagoCredito(tipoPago) {
-  return String(tipoPago || "").trim().toLowerCase().replace("é", "e") === "credito";
+  return esMetodoPagoCredito(tipoPago);
 }
 
 function estadoDesdeSaldo(saldo) {
@@ -82,7 +83,7 @@ function estadoPendienteDesdeAbonos(saldo, abonosAplicados = 0) {
 }
 
 function valoresDiferentes(a, b) {
-  return Math.abs(normalizarNumero(a) - normalizarNumero(b)) > 0.5;
+  return valoresPesosDiferentes(a, b);
 }
 
 function seleccionarMovimientoPrincipal(movimientos = [], abonosPorMovimiento = new Map()) {
@@ -423,7 +424,7 @@ export async function corregirClienteCreditoDePedido(pedido = {}, nombreDestino 
     ...pedido,
     cliente: nombreLimpio,
     cliente_nombre: nombreLimpio,
-    tipo_pago: "Crédito",
+    tipo_pago: METODOS_PAGO.CREDITO,
   };
 
   const resultado = await sincronizarCarteraPedido(pedidoSincronizado, {
@@ -452,7 +453,7 @@ export async function anularCarteraPedidoCredito(pedido = {}, motivo = "Pedido r
   return sincronizarCarteraPedido(
     {
       ...pedido,
-      tipo_pago: opciones.tipoPagoFinal || opciones.tipo_pago || "Efectivo",
+      tipo_pago: opciones.tipoPagoFinal || opciones.tipo_pago || METODOS_PAGO.EFECTIVO,
     },
     {
       accion: opciones.accion || "anular_pedido_credito",
@@ -707,7 +708,7 @@ export async function listarAbonosCartera({ clienteId = null, movimientoId = nul
 export async function registrarAbonoClienteCredito({
   clienteId,
   valorAbono,
-  metodoPago = "Efectivo",
+  metodoPago = METODOS_PAGO.EFECTIVO,
   observacion = "",
   fechaAbono = "",
 } = {}) {
@@ -716,109 +717,37 @@ export async function registrarAbonoClienteCredito({
   const valor = normalizarNumero(valorAbono);
   if (valor <= 0) throw new Error("El valor del abono debe ser mayor a cero.");
 
-  const { error: errorTablaAbonos } = await supabase
-    .from("cartera_abonos")
-    .select("id")
-    .limit(1);
-
-  if (errorTablaAbonos) {
-    throw new Error("Primero ejecuta el SQL de la Fase 29F para crear la tabla cartera_abonos.");
-  }
-
-  const { data: movimientosData, error: errorMovimientos } = await supabase
-    .from("cartera_movimientos")
-    .select(SELECT_CARTERA_MOVIMIENTOS)
-    .eq("cliente_credito_id", clienteId)
-    .eq("tipo_movimiento", "pedido_credito")
-    .order("fecha_movimiento", { ascending: true });
-
-  if (errorMovimientos) throw errorMovimientos;
-
-  const movimientosPendientes = (Array.isArray(movimientosData) ? movimientosData : [])
-    .filter(movimientoTieneSaldo)
-    .sort((a, b) => new Date(a.fecha_movimiento || a.created_at).getTime() - new Date(b.fecha_movimiento || b.created_at).getTime());
-
-  const saldoTotal = movimientosPendientes.reduce((total, movimiento) => total + normalizarNumero(movimiento.saldo_movimiento ?? movimiento.valor), 0);
-  if (saldoTotal <= 0) throw new Error("Este cliente no tiene cartera pendiente para abonar.");
-  if (valor > saldoTotal) throw new Error("El abono no puede ser mayor al saldo pendiente del cliente.");
-
-  let restante = valor;
+  const metodoPagoControlado = normalizarMetodoPago(metodoPago, {
+    permitirCredito: false,
+    fallback: METODOS_PAGO.EFECTIVO,
+  });
   const fechaRegistro = fechaAbonoNormalizada(fechaAbono);
-  const abonosRegistrados = [];
-  const movimientosAfectados = [];
 
-  for (const movimiento of movimientosPendientes) {
-    if (restante <= 0) break;
+  const { data, error } = await supabase.rpc("registrar_abono_cliente_credito", {
+    p_cliente_id: clienteId,
+    p_valor_abono: valor,
+    p_metodo_pago: metodoPagoControlado,
+    p_observacion: limpiarTexto(observacion),
+    p_fecha_abono: fechaRegistro,
+  });
 
-    const saldoAnterior = normalizarNumero(movimiento.saldo_movimiento ?? movimiento.valor);
-    const valorAplicado = Math.min(restante, saldoAnterior);
-    const saldoNuevo = Math.max(0, saldoAnterior - valorAplicado);
-    const estadoNuevo = estadoDesdeSaldo(saldoNuevo);
+  if (error) {
+    const mensaje = String(error?.message || error?.details || error?.hint || "");
+    const rpcNoDisponible = mensaje.toLowerCase().includes("registrar_abono_cliente_credito")
+      || mensaje.toLowerCase().includes("could not find the function")
+      || mensaje.toLowerCase().includes("schema cache");
 
-    const { error: errorUpdateMovimiento } = await supabase
-      .from("cartera_movimientos")
-      .update({
-        saldo_movimiento: saldoNuevo,
-        estado: estadoNuevo,
-      })
-      .eq("id", movimiento.id);
-
-    if (errorUpdateMovimiento) throw errorUpdateMovimiento;
-
-    const { data: abonoCreado, error: errorInsertAbono } = await supabase
-      .from("cartera_abonos")
-      .insert({
-        cliente_credito_id: clienteId,
-        cartera_movimiento_id: movimiento.id,
-        pedido_id: movimiento.pedido_id || null,
-        numero_pedido: movimiento.numero_pedido || null,
-        cliente_nombre: movimiento.cliente_nombre || null,
-        valor_abono: valorAplicado,
-        metodo_pago: limpiarTexto(metodoPago) || "Efectivo",
-        observacion: limpiarTexto(observacion),
-        fecha_abono: fechaRegistro,
-        saldo_anterior: saldoAnterior,
-        saldo_nuevo: saldoNuevo,
-      })
-      .select(SELECT_CARTERA_ABONOS)
-      .single();
-
-    if (errorInsertAbono) throw errorInsertAbono;
-
-    abonosRegistrados.push(abonoCreado);
-    movimientosAfectados.push({ ...movimiento, saldo_movimiento: saldoNuevo, estado: estadoNuevo });
-    restante -= valorAplicado;
-  }
-
-  const idsClientesAfectados = new Set([clienteId]);
-  for (const movimiento of movimientosAfectados) {
-    if (movimiento.pedido_id) {
-      try {
-        const resultado = await sincronizarCarteraPedido({
-          id: movimiento.pedido_id,
-          numero_pedido: movimiento.numero_pedido,
-          cliente: movimiento.cliente_nombre,
-          cliente_nombre: movimiento.cliente_nombre,
-          tipo_pago: "Crédito",
-          total: movimiento.valor,
-          created_at: movimiento.fecha_movimiento,
-        }, {
-          accion: "abono_cliente_credito",
-          motivo: "Saldo de cartera recalculado después de registrar abono.",
-        });
-        (resultado?.clientesRecalculados || []).forEach((id) => idsClientesAfectados.add(id));
-      } catch (errorSync) {
-        console.warn("No se pudo resincronizar movimiento después del abono:", errorSync?.message || errorSync);
-      }
+    if (rpcNoDisponible) {
+      throw new Error("Primero ejecuta en Supabase el SQL de la Fase 33 para activar los abonos seguros con RPC.");
     }
+
+    throw error;
   }
 
-  await Promise.all(Array.from(idsClientesAfectados).map((id) => recalcularResumenClienteCredito(id)));
-
-  return {
+  return data || {
     valor_abono: valor,
-    abonos: abonosRegistrados,
-    saldo_anterior_total: saldoTotal,
-    saldo_nuevo_total: Math.max(0, saldoTotal - valor),
+    abonos: [],
+    saldo_anterior_total: 0,
+    saldo_nuevo_total: 0,
   };
 }

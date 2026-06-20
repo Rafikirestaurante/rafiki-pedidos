@@ -38,6 +38,7 @@ import MesaTabs from "./MesaTabs";
 import DatosMesa from "./DatosMesa";
 import {
   FORMA_PAGO_CREDITO,
+  FORMAS_PAGO_MESA,
   guardarClienteCredito,
   irAElementoMesas,
   leerClientesCreditoGuardados,
@@ -111,7 +112,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [telefonoLlevar, setTelefonoLlevar] = useState("");
   const [ubicacionLlevar, setUbicacionLlevar] = useState("");
   const [meseroLocal, setMeseroLocal] = useState("");
-  const [tipoPagoMesa, setTipoPagoMesa] = useState("Efectivo");
+  const [tipoPagoMesa, setTipoPagoMesa] = useState(FORMAS_PAGO_MESA[0]);
   const [observacionesLocal, setObservacionesLocal] = useState("");
   const [errorMesa, setErrorMesa] = useState("");
   const [categoriaActivaMesa, setCategoriaActivaMesa] = useState("almuerzos");
@@ -182,7 +183,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     setTelefonoLlevar(pedidoEditando.telefono || "");
     setUbicacionLlevar(esLlevar ? (pedidoEditando.ubicacion || "") : "");
     setMeseroLocal(pedidoEditando.mesero || "");
-    setTipoPagoMesa(pedidoEditando.tipo_pago || "Efectivo");
+    setTipoPagoMesa(pedidoEditando.tipo_pago || FORMAS_PAGO_MESA[0]);
     setObservacionesLocal(pedidoEditando.observaciones || "");
     setPedidoMesaConfirmado(null);
     setErrorMesa("");
@@ -458,7 +459,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     setTelefonoLlevar("");
     setUbicacionLlevar("");
     setMeseroLocal("");
-    setTipoPagoMesa("Efectivo");
+    setTipoPagoMesa(FORMAS_PAGO_MESA[0]);
     setObservacionesLocal("");
     setErrorMesa("");
 

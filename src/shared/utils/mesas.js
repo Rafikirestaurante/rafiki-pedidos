@@ -1,3 +1,5 @@
+import { FORMAS_PAGO_MESA as FORMAS_PAGO_MESA_CONTROLADAS, METODOS_PAGO } from "../constants/paymentMethods";
+
 export function irAElementoMesas(id, delay = 180, block = "start") {
   window.setTimeout(() => {
     window.requestAnimationFrame(() => {
@@ -16,8 +18,8 @@ export function vibracionCortaMesas() {
 
 export const MESAS_DISPONIBLES = ["1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B", "5B"];
 export const MESEROS_DISPONIBLES = ["Rafa", "Ara", "Pao", "Jesús"];
-export const FORMA_PAGO_CREDITO = "Crédito";
-export const FORMAS_PAGO_MESA = ["Efectivo", "Transferencia", "Datafono", FORMA_PAGO_CREDITO];
+export const FORMA_PAGO_CREDITO = METODOS_PAGO.CREDITO;
+export const FORMAS_PAGO_MESA = FORMAS_PAGO_MESA_CONTROLADAS;
 
 const STORAGE_CLIENTES_CREDITO = "rafiki_clientes_credito_v1";
 

@@ -7,6 +7,7 @@ import {
   textoParaLlevarItem,
   valorParaLlevarItem,
 } from "../../../shared/utils/pedidos";
+import { FORMAS_PAGO_CLIENTE } from "../../../shared/constants/paymentMethods";
 
 export default function PedidoCliente({
   menu,
@@ -453,9 +454,9 @@ export default function PedidoCliente({
                         if (errorDatosPedido) setErrorDatosPedido("");
                       }}>
                         <option value="">Selecciona una forma de pago</option>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Transferencia">Transferencia</option>
-                        <option value="Datafono">Datafono</option>
+                        {FORMAS_PAGO_CLIENTE.map((metodo) => (
+                          <option key={metodo} value={metodo}>{metodo}</option>
+                        ))}
                       </select>
                     </label>
 

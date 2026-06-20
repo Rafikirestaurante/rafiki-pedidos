@@ -4,6 +4,7 @@ import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
 import { MESAS_DISPONIBLES } from "../../../../shared/utils/mesas";
+import { FORMAS_PAGO_ABONO_CARTERA, FORMAS_PAGO_MESA, METODOS_PAGO, esMetodoPagoCredito, normalizarMetodoPago } from "../../../../shared/constants/paymentMethods";
 import { PedidoCocina, TablaPedidosCompacta, resumirItemsPedidoCompacto } from "../../../pedidos/components/PedidosAdmin";
 import { corregirClienteCreditoDePedido } from "../../../../services/carteraService";
 import { listarClientesCreditoActivos } from "../../../../services/clientesCreditoService";
@@ -490,7 +491,7 @@ function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
     ubicacion: pedido?.ubicacion || "",
     mesa: pedido?.mesa || "",
     mesero: pedido?.mesero || "",
-    tipo_pago: pedido?.tipo_pago || "Efectivo",
+    tipo_pago: normalizarMetodoPago(pedido?.tipo_pago, { permitirCredito: true, fallback: METODOS_PAGO.EFECTIVO }),
     observaciones: pedido?.observaciones || "",
     pedido_texto: pedido?.pedido_texto || "",
     total: Number(pedido?.total || 0),
@@ -547,11 +548,9 @@ function EditarPedidoModal({ pedido, onCerrar, onGuardar, guardando = false }) {
           <label>
             Método de pago
             <select value={form.tipo_pago} onChange={cambiarCampo("tipo_pago")}>
-              <option value="Efectivo">Efectivo</option>
-              <option value="Transferencia">Transferencia</option>
-              <option value="Datafono">Datafono</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Crédito">Crédito</option>
+              {FORMAS_PAGO_MESA.map((metodo) => (
+                <option key={metodo} value={metodo}>{metodo}</option>
+              ))}
             </select>
           </label>
           <label>
@@ -581,8 +580,8 @@ function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, onRetirar, g
   const [nombre, setNombre] = useState(() => pedido?.cliente_nombre || pedido?.cliente || "");
   const [clientesCredito, setClientesCredito] = useState([]);
   const [cargandoClientes, setCargandoClientes] = useState(false);
-  const [formaPagoRetiro, setFormaPagoRetiro] = useState("Efectivo");
-  const pedidoEsCredito = String(pedido?.tipo_pago || "").trim().toLowerCase().replace("é", "e") === "credito";
+  const [formaPagoRetiro, setFormaPagoRetiro] = useState(METODOS_PAGO.EFECTIVO);
+  const pedidoEsCredito = esMetodoPagoCredito(pedido?.tipo_pago);
 
   useEffect(() => {
     let activo = true;
@@ -678,12 +677,9 @@ function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, onRetirar, g
               <label>
                 Forma de pago real
                 <select value={formaPagoRetiro} onChange={(event) => setFormaPagoRetiro(event.target.value)} disabled={guardando}>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Transferencia">Transferencia</option>
-                  <option value="Datafono">Datafono</option>
-                  <option value="Nequi">Nequi</option>
-                  <option value="Bancolombia">Bancolombia</option>
-                  <option value="Otro">Otro</option>
+                  {FORMAS_PAGO_ABONO_CARTERA.map((metodo) => (
+                    <option key={metodo} value={metodo}>{metodo}</option>
+                  ))}
                 </select>
               </label>
               <button type="button" className="button danger" onClick={retirar} disabled={guardando}>
@@ -879,7 +875,7 @@ function AdminPedidosSectionBase({
         ...pedido,
         cliente: nombreLimpio,
         cliente_nombre: nombreLimpio,
-        tipo_pago: "Crédito",
+        tipo_pago: METODOS_PAGO.CREDITO,
       };
 
       const okPedido = await editarPedidoAdministrador?.(pedido.id, pedidoActualizado);
@@ -896,14 +892,14 @@ function AdminPedidosSectionBase({
     }
   }, [editarPedidoAdministrador, setRecargaPedidos]);
 
-  const retirarPedidoDeCredito = useCallback(async (pedido, nuevoTipoPago = "Efectivo") => {
+  const retirarPedidoDeCredito = useCallback(async (pedido, nuevoTipoPago = METODOS_PAGO.EFECTIVO) => {
     if (!pedido?.id) {
       setMensajeCorreccionCliente("No se pudo identificar el pedido.");
       return false;
     }
 
-    const pagoReal = String(nuevoTipoPago || "Efectivo").trim() || "Efectivo";
-    if (pagoReal.toLowerCase().replace("é", "e") === "credito") {
+    const pagoReal = normalizarMetodoPago(nuevoTipoPago, { permitirCredito: true, fallback: METODOS_PAGO.EFECTIVO });
+    if (esMetodoPagoCredito(pagoReal)) {
       setMensajeCorreccionCliente("Selecciona una forma de pago diferente a Crédito.");
       return false;
     }
@@ -1274,11 +1270,10 @@ function AdminPedidosSectionBase({
           <span>Tipo de pago</span>
           <select value={filtroTipoPagoRapido} onChange={(e) => setFiltroTipoPagoRapido(e.target.value)}>
             <option value="">Todos</option>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Transferencia">Transferencia</option>
-            <option value="Datafono">Datafono</option>
-            <option value="Crédito">Crédito</option>
-            <option value="Nequi">Nequi</option>
+            {FORMAS_PAGO_MESA.map((metodo) => (
+              <option key={metodo} value={metodo}>{metodo}</option>
+            ))}
+            <option value={METODOS_PAGO.NEQUI}>Nequi</option>
           </select>
         </label>
         <p className="muted small pedidos-filtros-modal-resumen">
