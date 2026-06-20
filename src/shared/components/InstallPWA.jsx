@@ -56,7 +56,7 @@ export default function InstallPWA() {
     }
   };
 
-  // La instalación se ofrece solo en rutas internas: /mesas, /admin, /pedidos, /rafa y /gastos.
+  // La instalación se ofrece solo en rutas internas. La PWA instalada siempre inicia en /admin.
   // /cliente sigue funcionando como web pública, sin promoción de instalación.
   if (!isInstallablePage || isStandalone) return null;
   if (!installPrompt && !esIOS() && !esAndroid()) return null;

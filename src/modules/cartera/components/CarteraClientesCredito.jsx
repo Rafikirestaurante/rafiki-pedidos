@@ -20,6 +20,14 @@ import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import { FORMAS_PAGO_ABONO_CARTERA, METODOS_PAGO } from "../../../shared/constants/paymentMethods";
 import { aPesosEnteros } from "../../../shared/utils/money";
+import {
+  esHoyColombia,
+  fechaColombiaHaceDias,
+  fechaColombiaYYYYMMDD,
+  fechaDentroRangoColombia,
+  formatearFechaColombia,
+  formatearFechaHoraColombia,
+} from "../../../shared/utils/fechasColombia";
 import { listarPedidosPorCliente } from "../../../services/pedidosService";
 
 const FORM_INICIAL = {
@@ -40,19 +48,11 @@ const METODOS_ABONO = FORMAS_PAGO_ABONO_CARTERA;
 
 const VISTA_CARTERA_INICIAL = "resumen";
 
-function fechaHoyInput() {
-  const fecha = new Date();
-  const yyyy = fecha.getFullYear();
-  const mm = String(fecha.getMonth() + 1).padStart(2, "0");
-  const dd = String(fecha.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
 const ABONO_INICIAL = {
   valorAbono: "",
   metodoPago: METODOS_PAGO.EFECTIVO,
   observacion: "",
-  fechaAbono: fechaHoyInput(),
+  fechaAbono: fechaColombiaYYYYMMDD(),
 };
 
 function dinero(valor) {
@@ -72,43 +72,15 @@ function normalizarTexto(valor) {
 }
 
 function formatearFecha(valor) {
-  if (!valor) return "—";
-  const fecha = new Date(valor);
-  if (Number.isNaN(fecha.getTime())) return "—";
-  return fecha.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return formatearFechaColombia(valor);
 }
 
 function formatearFechaHora(valor) {
-  if (!valor) return "—";
-  const fecha = new Date(valor);
-  if (Number.isNaN(fecha.getTime())) return "—";
-  return fecha.toLocaleString("es-CO", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatearFechaHoraColombia(valor);
 }
 
 function fechaDentroRango(valor, fechaInicio, fechaFin) {
-  if (!fechaInicio && !fechaFin) return true;
-  if (!valor) return false;
-
-  const fecha = new Date(valor);
-  if (Number.isNaN(fecha.getTime())) return false;
-
-  if (fechaInicio) {
-    const inicio = new Date(`${fechaInicio}T00:00:00`);
-    if (fecha < inicio) return false;
-  }
-
-  if (fechaFin) {
-    const fin = new Date(`${fechaFin}T23:59:59.999`);
-    if (fecha > fin) return false;
-  }
-
-  return true;
+  return fechaDentroRangoColombia(valor, fechaInicio, fechaFin);
 }
 
 function estadoCartera(movimiento) {
@@ -302,6 +274,8 @@ export default function CarteraClientesCredito() {
     }
   }, [cargarPedidosClienteDetalle, clienteDetalle]);
 
+  const hayFiltroFechaMovimientos = Boolean(filtros.fechaInicio || filtros.fechaFin);
+
   const movimientosFiltrados = useMemo(() => {
     const texto = normalizarTexto(filtros.texto);
 
@@ -335,6 +309,19 @@ export default function CarteraClientesCredito() {
     const saldoTotal = clientes.reduce((total, cliente) => total + Number(cliente.saldo_pendiente || 0), 0);
     const pedidosPendientes = movimientosCartera.filter(movimientoPendiente).length;
     const carteraPagada = abonosCartera.reduce((total, abono) => total + Number(abono.valor_abono || 0), 0);
+    const creditosOtorgadosHoy = movimientosCartera.reduce((total, movimiento) => {
+      if (estadoCartera(movimiento) === "anulado") return total;
+      if (!esHoyColombia(movimiento.fecha_movimiento || movimiento.created_at)) return total;
+      return total + aPesosEnteros(movimiento.valor);
+    }, 0);
+    const abonosRecibidosHoy = abonosCartera.reduce((total, abono) => {
+      if (!esHoyColombia(abono.fecha_abono || abono.created_at)) return total;
+      return total + aPesosEnteros(abono.valor_abono);
+    }, 0);
+    const valorOriginalFiltrado = movimientosFiltrados.reduce((total, movimiento) => {
+      if (estadoCartera(movimiento) === "anulado") return total;
+      return total + aPesosEnteros(movimiento.valor);
+    }, 0);
     const saldoFiltrado = movimientosFiltrados.reduce((total, movimiento) => {
       if (!movimientoPendiente(movimiento)) return total;
       return total + saldoMovimiento(movimiento);
@@ -347,6 +334,9 @@ export default function CarteraClientesCredito() {
       pedidosPendientes,
       carteraPagada,
       abonosRecibidos: abonosCartera.length,
+      creditosOtorgadosHoy,
+      abonosRecibidosHoy,
+      valorOriginalFiltrado,
       saldoFiltrado,
       movimientosFiltrados: movimientosFiltrados.length,
     };
@@ -410,6 +400,30 @@ export default function CarteraClientesCredito() {
 
   function cambiarFiltro(campo, valor) {
     setFiltros((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function aplicarFiltroCreditosHoy() {
+    const hoy = fechaColombiaYYYYMMDD();
+    setFiltros({ ...FILTROS_INICIALES, estado: "todos", fechaInicio: hoy, fechaFin: hoy, soloConSaldo: false });
+  }
+
+  function aplicarFiltroAyer() {
+    const ayer = fechaColombiaHaceDias(1);
+    setFiltros({ ...FILTROS_INICIALES, estado: "todos", fechaInicio: ayer, fechaFin: ayer, soloConSaldo: false });
+  }
+
+  function aplicarFiltroUltimos7Dias() {
+    setFiltros({
+      ...FILTROS_INICIALES,
+      estado: "todos",
+      fechaInicio: fechaColombiaHaceDias(6),
+      fechaFin: fechaColombiaYYYYMMDD(),
+      soloConSaldo: false,
+    });
+  }
+
+  function aplicarFiltroPendientes() {
+    setFiltros({ ...FILTROS_INICIALES, estado: "pendiente", soloConSaldo: true });
   }
 
   function cambiarCampoAbono(campo, valor) {
@@ -584,6 +598,9 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel input, .cartera-profesional-panel textarea, .cartera-profesional-panel select { width: 100%; min-height: 44px; border: 1px solid #e7e5e4; border-radius: 14px; padding: 10px 12px; font: inherit; background: #fff; }
         .cartera-profesional-panel textarea { min-height: 76px; resize: vertical; }
         .cartera-profesional-panel .cartera-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .cartera-profesional-panel .cartera-quick-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; padding: 10px; border: 1px dashed #fed7aa; border-radius: 16px; background: #fffaf5; }
+        .cartera-profesional-panel .cartera-movimientos-resumen { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; color: #475569; font-size: 12px; }
+        .cartera-profesional-panel .cartera-movimientos-resumen strong { color: #0f172a; font-size: 13px; }
         .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
         .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 980px; }
         .cartera-profesional-panel .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 8; background: #fff7ed; box-shadow: 0 1px 0 #fed7aa; }
@@ -612,7 +629,7 @@ export default function CarteraClientesCredito() {
         .cartera-ui-limpia .cartera-resumen-header h3 { margin: 0; color: #9a3412; }
         .cartera-ui-limpia .cartera-table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } }
+        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } .cartera-profesional-panel .cartera-movimientos-resumen { align-items: flex-start; } }
       `}</style>
 
       <div className="section-heading section-heading-pedidos-unificados">
@@ -722,10 +739,12 @@ export default function CarteraClientesCredito() {
       {vistaCartera === "resumen" && (
         <section className="card card-pad cartera-resumen-card">
           <div className="cartera-indicadores">
+            <div className="cartera-indicador"><small>Créditos otorgados hoy</small><strong>{dinero(indicadores.creditosOtorgadosHoy)}</strong></div>
+            <div className="cartera-indicador neutral"><small>Abonos recibidos hoy</small><strong>{dinero(indicadores.abonosRecibidosHoy)}</strong></div>
             <div className="cartera-indicador"><small>Cartera pendiente total</small><strong>{dinero(indicadores.saldoTotal)}</strong></div>
             <div className="cartera-indicador"><small>Clientes con saldo</small><strong>{indicadores.clientesConSaldo}</strong></div>
             <div className="cartera-indicador"><small>Pedidos pendientes</small><strong>{indicadores.pedidosPendientes}</strong></div>
-            <div className="cartera-indicador neutral"><small>Abonos recibidos</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
+            <div className="cartera-indicador neutral"><small>Abonos acumulados</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
             <div className="cartera-indicador neutral"><small>Cantidad de abonos</small><strong>{indicadores.abonosRecibidos}</strong></div>
             <div className="cartera-indicador neutral"><small>Saldo según filtros</small><strong>{dinero(indicadores.saldoFiltrado)}</strong></div>
           </div>
@@ -870,9 +889,21 @@ export default function CarteraClientesCredito() {
           <div className="section-heading section-heading-pedidos-unificados">
             <div>
               <h3>Movimientos de cartera</h3>
-              <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Incluye pedidos crédito, saldos actualizados y estados según abonos registrados.</p>
+              <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Los cortes se calculan con horario Colombia para evitar descuadres al cierre.</p>
             </div>
-            <strong className="muted small">{indicadores.movimientosFiltrados} movimiento(s)</strong>
+            <div className="cartera-movimientos-resumen">
+              <strong>{indicadores.movimientosFiltrados} movimiento(s)</strong>
+              <span>Valor filtrado: {dinero(indicadores.valorOriginalFiltrado)}</span>
+              <span>Saldo filtrado: {dinero(indicadores.saldoFiltrado)}</span>
+            </div>
+          </div>
+
+          <div className="cartera-quick-filters" aria-label="Filtros rápidos de movimientos">
+            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroCreditosHoy}>Créditos de hoy</button>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroAyer}>Ayer</button>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroUltimos7Dias}>Últimos 7 días</button>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroPendientes}>Pendientes</button>
+            {hayFiltroFechaMovimientos && <span className="muted small">Mostrando auditoría por fecha: los créditos pagados se mantienen visibles.</span>}
           </div>
 
           <div className="cartera-filtros">
@@ -915,7 +946,7 @@ export default function CarteraClientesCredito() {
                   const estado = estadoCartera(movimiento);
                   const saldoPendiente = saldoMovimiento(movimiento);
                   return (
-                    <tr key={movimiento.id} className={movimientoPendiente(movimiento) ? "" : "subtle-row"}>
+                    <tr key={movimiento.id} className={!hayFiltroFechaMovimientos && !movimientoPendiente(movimiento) ? "subtle-row" : ""}>
                       <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
                       <td>#{movimiento.numero_pedido || "—"}</td>
                       <td>{movimiento.cliente_nombre || "—"}</td>
