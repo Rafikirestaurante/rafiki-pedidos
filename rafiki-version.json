@@ -1,0 +1,9 @@
+{
+  "version": "123.0-FASE33-BLINDAJE-CARTERA-2026-06-20",
+  "fase": "33",
+  "mensaje": "123.0: Blindaje de Cartera con RPC transaccional para abonos, clientes crédito únicos, métodos de pago controlados y modal de confirmación.",
+  "build": "123.0",
+  "base_estable": "122.7",
+  "phase": "Fase 33 - Blindaje de Cartera",
+  "date": "2026-06-20"
+}
