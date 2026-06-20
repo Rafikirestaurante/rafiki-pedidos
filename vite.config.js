@@ -6,7 +6,7 @@ const rafikiManifest = {
   id: '/admin',
   name: 'Rafiki Pedidos',
   short_name: 'Rafiki',
-  description: 'Aplicación PWA interna de Rafiki Pedidos. Al instalarse abre por defecto en el panel administrativo.',
+  description: 'Aplicación PWA interna de Rafiki Pedidos. Al instalarse abre obligatoriamente en el panel administrativo.',
   lang: 'es',
   start_url: '/admin?app=admin',
   scope: '/',
@@ -46,17 +46,17 @@ const rafikiManifest = {
       icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }]
     },
     {
-      name: 'Panel Rafa',
-      short_name: 'Rafa',
-      description: 'Abrir la sección privada del panel Rafa.',
-      url: '/rafa?source=pwa-shortcut',
+      name: 'Gerencia',
+      short_name: 'Gerencia',
+      description: 'Abrir la sección privada de Gerencia.',
+      url: '/gerencia?source=pwa-shortcut',
       icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }]
     },
     {
       name: 'Gastos rápidos',
       short_name: 'Gastos',
-      description: 'Abrir el registro rápido de gastos.',
-      url: '/gastos?source=pwa-shortcut',
+      description: 'Abrir Gerencia para registrar gastos.',
+      url: '/gerencia?source=pwa-shortcut&tab=gastos',
       icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }]
     }
   ]

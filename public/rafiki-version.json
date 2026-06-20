@@ -1,9 +1,6 @@
 {
-  "version": "123.2-PWA-INICIO-ADMIN-OBLIGATORIO-2026-06-20",
-  "fase": "33F-HOTFIX-PWA",
-  "mensaje": "123.2: Hotfix PWA para que la aplicación instalada inicie obligatoriamente en /admin. Se corrige el manifest generado por VitePWA y el manifest público.",
-  "build": "123.2",
-  "base_estable": "123.1",
-  "phase": "Fase 33F - Hotfix PWA inicio obligatorio en Admin",
-  "date": "2026-06-20"
+  "version": "123.3-ROOT-CLIENTE-PWA-ADMIN-2026-06-20",
+  "phase": "Fase 33F - Root público hacia Cliente y PWA obligatoria en Admin",
+  "date": "2026-06-20",
+  "notes": "La raíz pública / redirige a /cliente, pero la PWA instalada conserva start_url /admin y además fuerza /admin al arrancar si detecta rutas públicas o una instalación antigua desde /mesas."
 }
