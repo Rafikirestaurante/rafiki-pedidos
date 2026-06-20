@@ -14,10 +14,26 @@ function rutaSeguraPWA(ruta) {
   return ruta;
 }
 
+function rutaInicialSeguraPWA(ruta) {
+  if (!estaEnModoPWAInstalada()) return ruta;
+
+  const params = new URLSearchParams(window.location.search || "");
+  const vieneDeShortcut = params.get("source") === "pwa-shortcut";
+
+  // Si la PWA fue instalada antes desde /mesas, /cliente o raíz, algunos celulares
+  // conservan esa ruta antigua aunque el manifest ya tenga start_url=/admin.
+  // En el arranque inicial la obligamos a caer en Admin, salvo accesos directos explícitos.
+  if (!vieneDeShortcut && ["/", "/cliente", "/pedido", "/mesas"].includes(ruta)) {
+    return "/admin";
+  }
+
+  return rutaSeguraPWA(ruta);
+}
+
 export function obtenerVistaInicial() {
   let ruta = window.location.pathname.replace(/\/$/, "") || "/";
   const rutaOriginal = ruta;
-  ruta = rutaSeguraPWA(ruta);
+  ruta = rutaInicialSeguraPWA(ruta);
   if (ruta !== rutaOriginal) {
     window.history.replaceState({}, "", ruta);
   }
