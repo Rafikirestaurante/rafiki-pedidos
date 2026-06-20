@@ -3,12 +3,12 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const rafikiManifest = {
-  id: '/mesas',
+  id: '/admin',
   name: 'Rafiki Pedidos',
   short_name: 'Rafiki',
-  description: 'Aplicación PWA interna de Rafiki Pedidos para panel mesas, administración, gastos y panel Rafa.',
+  description: 'Aplicación PWA interna de Rafiki Pedidos. Al instalarse abre por defecto en el panel administrativo.',
   lang: 'es',
-  start_url: '/mesas',
+  start_url: '/admin?app=admin',
   scope: '/',
   display: 'standalone',
   display_override: ['standalone', 'minimal-ui'],

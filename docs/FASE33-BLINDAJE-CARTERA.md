@@ -33,3 +33,16 @@ Ejecutar en Supabase SQL Editor:
 `supabase/2026-06-20-fase33-blindaje-cartera.sql`
 
 Sin este SQL, la app mostrará un mensaje indicando que falta activar la RPC de Fase 33.
+
+## Complemento 33F — Control diario de créditos
+
+La versión `123.1` agrega control operativo para cierre de caja:
+
+- indicador **Créditos otorgados hoy**,
+- indicador **Abonos recibidos hoy**,
+- filtros rápidos en Movimientos,
+- fechas comparadas con horario `America/Bogota`,
+- movimientos pagados visibles cuando existe filtro por fecha,
+- resumen de valor original filtrado y saldo filtrado.
+
+Documento detallado: `docs/FASE33F-CONTROL-DIARIO-CREDITOS.md`.

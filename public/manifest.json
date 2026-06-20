@@ -2,7 +2,7 @@
   "id": "/admin",
   "name": "Rafiki Pedidos",
   "short_name": "Rafiki",
-  "description": "Aplicación PWA interna de Rafiki Pedidos para panel mesas, administración, gastos y panel Rafa.",
+  "description": "Aplicación PWA interna de Rafiki Pedidos. Al instalarse abre por defecto en el panel administrativo.",
   "start_url": "/admin?app=admin",
   "scope": "/",
   "display": "standalone",
