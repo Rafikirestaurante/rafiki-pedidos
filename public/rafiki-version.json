@@ -1,6 +1,6 @@
 {
-  "version": "123.7-HOTFIX-PAGINACION-DASHBOARD-GASTOS-2026-06-23",
-  "phase": "Fase 33F - Hotfix paginación y dashboard gastos",
+  "version": "123.8-HOTFIX-CARTERA-CARGA-ESTABLE-2026-06-23",
+  "phase": "Fase 33F - Hotfix Cartera carga estable",
   "date": "2026-06-23",
-  "notes": "Estabiliza la paginación de Pedidos Hoy y muestra todas las categorías de gastos en Dashboard Rafa sin agrupar gastos menores en Otros."
+  "notes": "Evita que Cartera quede bloqueada en Actualizando separando la carga normal de la auditoría completa y agregando timeouts seguros."
 }
