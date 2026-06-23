@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "123.5-CLIENTE-PARA-LLEVAR-OBLIGATORIO-2026-06-23",
-  phase: "Fase 33F - Hotfix cliente para llevar obligatorio",
+  version: "123.6-HOTFIX-FILTROS-PEDIDOS-HOY-2026-06-23",
+  phase: "Fase 33F - Hotfix filtros Pedidos Hoy",
   date: "2026-06-23",
-  fase: "33F-HOTFIX-CLIENTE-PARA-LLEVAR",
+  fase: "33F-HOTFIX-FILTROS-PEDIDOS-HOY",
   notes:
-    "Corrige el flujo público /cliente para que todo pedido externo quede marcado obligatoriamente como para llevar, salvo que el cliente active Comer en el restaurante. Refuerza la regla en la interfaz, en el estado de App.jsx, en el guardado de usePedidos.js y en filtros de Pedidos Hoy."
+    "Corrige los filtros rápidos de Pedidos Hoy para que Restaurante para llevar incluya pedidos creados desde /cliente y /mesas. La detección ahora usa señales del pedido completo, tipo_pedido, ubicación, mesa y marcas de los ítems."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

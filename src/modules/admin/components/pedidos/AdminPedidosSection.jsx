@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { dinero, formatearFechaHora, normalizarTexto, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido, obtenerItemsPedido } from "../../../../shared/utils/pedidos";
+import { dinero, formatearFechaHora, normalizarTexto, esItemCafeteria, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido, obtenerItemsPedido } from "../../../../shared/utils/pedidos";
 import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
@@ -49,40 +49,96 @@ function obtenerUbicacionTicketPedido(pedido) {
 }
 
 function itemEsCafeteriaPedidoHoy(item) {
-  return item?.categoria === "cafeteria" || item?.area === "cafeteria";
+  return esItemCafeteria(item);
 }
 
-
 function itemEsRestaurantePedidoHoy(item) {
-  return item && !itemEsCafeteriaPedidoHoy(item);
+  return Boolean(item) && !itemEsCafeteriaPedidoHoy(item);
 }
 
 function pedidoItemsPedidoHoy(pedido) {
   return obtenerItemsPedido(pedido);
 }
 
-function pedidoUbicacionNormalizada(pedido) {
-  return normalizarTexto([pedido?.ubicacion, pedido?.mesa, pedido?.tipo_pedido].filter(Boolean).join(" "));
+function textoOperativoPedido(pedido) {
+  return normalizarTexto([
+    pedido?.ubicacion,
+    pedido?.mesa,
+    pedido?.tipo_pedido,
+    pedido?.pedido_texto,
+    pedido?.observaciones,
+  ].filter(Boolean).join(" "));
+}
+
+function itemMarcadoParaLlevar(item) {
+  const valor = item?.paraLlevar ?? item?.para_llevar ?? item?.para_llevar_item ?? item?.llevar;
+
+  if (typeof valor === "boolean") return valor;
+  if (typeof valor === "number") return valor === 1;
+
+  const texto = normalizarTexto(valor);
+  return ["true", "1", "si", "sí", "para llevar", "llevar"].includes(texto);
+}
+
+function pedidoEsComerEnRestaurante(pedido) {
+  const texto = textoOperativoPedido(pedido);
+  const tipoPedido = normalizarTexto(pedido?.tipo_pedido);
+  const mesa = normalizarTexto(pedido?.mesa);
+  const ubicacion = normalizarTexto(pedido?.ubicacion);
+
+  if (texto.includes("comer en restaurante")) return true;
+  if (texto.includes("para llevar") || texto.includes("llevar") || texto.includes("domicilio") || texto.includes("recoger")) return false;
+  if (tipoPedido === "cliente") return false;
+
+  return tipoPedido === "mesa" && Boolean(mesa || ubicacion) && mesa !== "llevar" && ubicacion !== "llevar";
 }
 
 function pedidoPareceParaLlevar(pedido) {
-  const ubicacion = pedidoUbicacionNormalizada(pedido);
-  return ubicacion.includes("llevar") || ubicacion.includes("domicilio") || ubicacion.includes("recoger") || ubicacion.includes("cliente");
+  if (pedidoEsComerEnRestaurante(pedido)) return false;
+
+  const tipoPedido = normalizarTexto(pedido?.tipo_pedido);
+  const texto = textoOperativoPedido(pedido);
+  const items = pedidoItemsPedidoHoy(pedido);
+
+  if (tipoPedido === "cliente" || tipoPedido === "llevar") return true;
+  if (texto.includes("para llevar") || texto.includes("llevar") || texto.includes("domicilio") || texto.includes("recoger")) return true;
+  return items.some((item) => itemMarcadoParaLlevar(item));
 }
 
 function pedidoPareceEnMesa(pedido) {
-  const ubicacion = pedidoUbicacionNormalizada(pedido);
-  return /\b[1-5][ab]\b/.test(ubicacion) || ubicacion.includes("mesa") || ubicacion.includes("comer en restaurante");
+  if (pedidoPareceParaLlevar(pedido)) return false;
+  if (pedidoEsComerEnRestaurante(pedido)) return true;
+
+  const texto = textoOperativoPedido(pedido);
+  return /\b[1-5][ab]\b/.test(texto) || texto.includes("mesa");
+}
+
+function textoItemsPedidoHoy(pedido) {
+  return pedidoItemsPedidoHoy(pedido)
+    .map((item) => [
+      item?.categoria,
+      item?.area,
+      item?.tipo,
+      item?.producto,
+      item?.plato,
+      item?.proteina,
+      item?.nombre,
+    ].filter(Boolean).join(" "))
+    .join(" ");
+}
+
+function pedidoSinItemsPareceCafeteria(pedido) {
+  const texto = normalizarTexto([pedido?.pedido_texto, pedido?.cliente, pedido?.observaciones, textoItemsPedidoHoy(pedido)].filter(Boolean).join(" "));
+  return ["parfait", "batido", "jugo", "cafe", "capuchino", "desayuno", "sandwich", "sanduche", "postre", "bebida", "fresas con crema", "ensalada de frutas"].some((palabra) => texto.includes(palabra));
 }
 
 function pedidoCumpleFiltroTipoPedido(pedido, filtro) {
   const items = pedidoItemsPedidoHoy(pedido);
   const paraLlevarGeneral = pedidoPareceParaLlevar(pedido);
-  const enMesaGeneral = pedidoPareceEnMesa(pedido) && !paraLlevarGeneral;
+  const enMesaGeneral = pedidoPareceEnMesa(pedido);
 
   if (items.length === 0) {
-    const texto = normalizarTexto([pedido?.pedido_texto, pedido?.cliente, pedido?.observaciones].filter(Boolean).join(" "));
-    const pareceCafeteria = ["parfait", "batido", "jugo", "cafe", "capuchino", "desayuno", "sandwich", "postre"].some((palabra) => texto.includes(palabra));
+    const pareceCafeteria = pedidoSinItemsPareceCafeteria(pedido);
     const pareceRestaurante = !pareceCafeteria;
 
     if (filtro === "restauranteParaLlevar") return pareceRestaurante && paraLlevarGeneral;
@@ -95,7 +151,7 @@ function pedidoCumpleFiltroTipoPedido(pedido, filtro) {
   return items.some((item) => {
     const cafeteria = itemEsCafeteriaPedidoHoy(item);
     const restaurante = itemEsRestaurantePedidoHoy(item);
-    const paraLlevar = Boolean(item?.paraLlevar) || paraLlevarGeneral;
+    const paraLlevar = itemMarcadoParaLlevar(item) || paraLlevarGeneral;
     const enMesa = !paraLlevar && enMesaGeneral;
 
     if (filtro === "restauranteParaLlevar") return restaurante && paraLlevar;
@@ -156,21 +212,6 @@ function aplicarFiltrosRapidosPedidos(pedidos = [], filtrosTipo = {}, filtroPago
     if (!pagoNormalizado) return true;
     return normalizarTexto(pedido?.tipo_pago || "").includes(pagoNormalizado);
   });
-}
-
-function pedidoEsRestauranteParaLlevar(pedido) {
-  const items = obtenerItemsPedido(pedido);
-
-  if (items.length > 0) {
-    return items.some((item) => Boolean(item?.paraLlevar) && !itemEsCafeteriaPedidoHoy(item));
-  }
-
-  const ubicacion = normalizarTexto([pedido?.ubicacion, pedido?.mesa, pedido?.tipo_pedido].filter(Boolean).join(" "));
-  const texto = normalizarTexto([pedido?.pedido_texto, pedido?.cliente, pedido?.observaciones].filter(Boolean).join(" "));
-  const pareceMesa = /\b[1-5][ab]\b/.test(ubicacion) || ubicacion.includes("comer en restaurante") || ubicacion.includes("mesa");
-  const pareceRestaurante = ["almuerzo", "pechuga", "cerdo", "res", "posta", "sopa", "sancocho", "ajiaco", "plato"].some((palabra) => texto.includes(palabra));
-
-  return !pareceMesa && pareceRestaurante;
 }
 
 function imprimirResumenPedidosFiltrados80mm(pedidos = [], fechaReferencia = new Date(), titulo = "Pedidos filtrados") {
@@ -805,11 +846,6 @@ function AdminPedidosSectionBase({
       return ordenPedidosHoy === "primeros" ? fechaA - fechaB : fechaB - fechaA;
     });
   }, [pedidosActivosVisuales, ordenPedidosHoy]);
-
-  const pedidosRestauranteParaLlevar = useMemo(
-    () => pedidosUnificados.filter(pedidoEsRestauranteParaLlevar),
-    [pedidosUnificados]
-  );
 
   const pedidosVisiblesTabla = useMemo(
     () => aplicarFiltrosRapidosPedidos(pedidosUnificados, filtrosTipoPedido, filtroTipoPagoRapido),
