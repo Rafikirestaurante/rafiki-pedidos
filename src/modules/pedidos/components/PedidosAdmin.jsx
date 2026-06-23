@@ -289,9 +289,6 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
   const tablaRef = useRef(null);
   const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
 
-  useEffect(() => {
-    setPaginaActual(1);
-  }, [pedidos]);
 
   useEffect(() => {
     if (paginaActual > totalPaginas) {

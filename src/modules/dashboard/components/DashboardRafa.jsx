@@ -100,6 +100,19 @@ function totalDistribucion(items, claveValor = "total") {
   return (items || []).reduce((suma, item) => suma + (Number(item?.[claveValor]) || 0), 0);
 }
 
+function prepararGastosPorCategoriaCompletos(gastosPorCategoria, totalGastos) {
+  const lista = Object.entries(gastosPorCategoria || {})
+    .map(([categoria, total]) => ({
+      nombre: String(categoria || "Sin categoría").trim() || "Sin categoría",
+      total: Number(total) || 0
+    }))
+    .filter((item) => item.total > 0)
+    .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, "es"));
+
+  const basePorcentaje = Number(totalGastos) || totalDistribucion(lista, "total") || 0;
+  return prepararDistribucionPorcentajes(lista, basePorcentaje, "total");
+}
+
 function SumatorioDashboard({ cantidad, total, textoCantidad = "Cantidad" }) {
   return (
     <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -283,6 +296,8 @@ export default function DashboardRafa({
   const mesaTop = dashboardRafa.mesaTop;
   const mejorHora = dashboardRafa.mejorHora;
   const ventaBrutaMostrar = totalVentasBrutas || totalVentas;
+  const gastosCategoriaCompletos = prepararGastosPorCategoriaCompletos(gastosPorCategoria, totalGastos);
+  const totalGastosCategorias = totalDistribucion(gastosCategoriaCompletos, "total") || totalGastos;
   return (
     <div className="soft-box" style={{ marginBottom: 22, borderColor: "#fed7aa", background: "linear-gradient(135deg, #fff7ed, #ffffff)" }}>
       <div className="admin-top-row">
@@ -325,20 +340,13 @@ export default function DashboardRafa({
 
         <div className="soft-box" style={{ borderColor: "#fed7aa", background: "#fff7ed" }}>
           <h3>💸 Gastos por categoría</h3>
-          {Object.keys(gastosPorCategoria || {}).length ? (
+          <p className="muted" style={{ marginTop: 4 }}>Se muestran todas las categorías del periodo, sin agrupar gastos menores en “Otros”.</p>
+          {gastosCategoriaCompletos.length ? (
             <div style={{ marginTop: 8 }}>
-              {prepararDistribucionPorcentajes(
-                agruparConOtros(
-                  Object.entries(gastosPorCategoria)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([categoria, total]) => ({ nombre: categoria, total })),
-                  8
-                ),
-                totalGastos,
-                "total"
-              ).map((item) => (
-                <MiniBarra key={item.nombre} label={item.nombre} valor={item.total} total={totalGastos} detalle={`${item.porcentaje}% · ${dinero(item.total)}`} />
+              {gastosCategoriaCompletos.map((item) => (
+                <MiniBarra key={item.nombre} label={item.nombre} valor={item.total} total={totalGastosCategorias} detalle={`${item.porcentaje}% · ${dinero(item.total)}`} />
               ))}
+              <SumatorioDashboard cantidad={gastosCategoriaCompletos.length} total={totalGastosCategorias} textoCantidad="Categorías" />
             </div>
           ) : <p className="muted">Sin gastos registrados en este periodo.</p>}
         </div>
