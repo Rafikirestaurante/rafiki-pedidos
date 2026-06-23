@@ -41,8 +41,10 @@ export function mostrarPantallaRecuperacionPWA(error) {
 
   document.getElementById('rafiki-reset-pwa')?.addEventListener('click', async () => {
     await limpiarCachesYServiceWorkers();
-    const rutaActual = window.location.pathname?.replace(/\/$/, '') || '/admin';
-    const rutaDestino = rutaActual === '/' || rutaActual === '/cliente' || rutaActual === '/pedido' ? '/admin' : rutaActual;
+    const rutaActual = window.location.pathname?.replace(/\/$/, '') || '/mesas';
+    const paramsActuales = new URLSearchParams(window.location.search || '');
+    const arranqueAdminAnterior = rutaActual === '/admin' && paramsActuales.get('app') === 'admin';
+    const rutaDestino = rutaActual === '/' || rutaActual === '/cliente' || rutaActual === '/pedido' || arranqueAdminAnterior ? '/mesas' : rutaActual;
     const base = `${window.location.origin}${rutaDestino}?rafiki_reset=${Date.now()}&pwa=clean`;
     window.location.replace(base);
   });

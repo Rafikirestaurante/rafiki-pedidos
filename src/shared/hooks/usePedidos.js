@@ -103,7 +103,8 @@ export function usePedidos({
         return {
           ...item,
           acompanantes: sinAcompanantes ? [] : limpiarAcompanantesCliente(item.acompanantes || []),
-          observacionAcompanantes: sinAcompanantes ? "" : (item.observacionAcompanantes || "").trim()
+          observacionAcompanantes: sinAcompanantes ? "" : (item.observacionAcompanantes || "").trim(),
+          paraLlevar: !comerRestauranteCliente
         };
       });
 

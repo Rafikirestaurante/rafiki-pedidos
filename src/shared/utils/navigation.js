@@ -8,35 +8,36 @@ function estaEnModoPWAInstalada() {
   );
 }
 
-function rutaSeguraPWA(ruta) {
-  if (!estaEnModoPWAInstalada()) return ruta;
-  if (ruta === "/cliente" || ruta === "/pedido" || ruta === "/") return "/admin";
-  return ruta;
+function normalizarRutaActual() {
+  return window.location.pathname.replace(/\/$/, "") || "/";
 }
 
 function rutaInicialSeguraPWA(ruta) {
   if (!estaEnModoPWAInstalada()) return ruta;
 
   const params = new URLSearchParams(window.location.search || "");
-  const vieneDeShortcut = params.get("source") === "pwa-shortcut";
+  const arranqueAdminVersionAnterior = ruta === "/admin" && params.get("app") === "admin";
 
-  // Si la PWA fue instalada antes desde /mesas, /cliente o raíz, algunos celulares
-  // conservan esa ruta antigua aunque el manifest ya tenga start_url=/admin.
-  // En el arranque inicial la obligamos a caer en Admin, salvo accesos directos explícitos.
-  if (!vieneDeShortcut && ["/", "/cliente", "/pedido", "/mesas"].includes(ruta)) {
-    return "/admin";
+  // La PWA interna debe arrancar en Panel Mesas.
+  // La raíz pública del navegador sigue redirigiendo a /cliente desde Vercel,
+  // pero el ícono instalado usa start_url=/mesas?app=mesas.
+  // También corregimos instalaciones viejas que todavía abran /admin?app=admin.
+  if (ruta === "/" || ruta === "/cliente" || ruta === "/pedido" || arranqueAdminVersionAnterior) {
+    return "/mesas";
   }
 
-  return rutaSeguraPWA(ruta);
+  return ruta;
 }
 
 export function obtenerVistaInicial() {
-  let ruta = window.location.pathname.replace(/\/$/, "") || "/";
+  let ruta = normalizarRutaActual();
   const rutaOriginal = ruta;
   ruta = rutaInicialSeguraPWA(ruta);
+
   if (ruta !== rutaOriginal) {
     window.history.replaceState({}, "", ruta);
   }
+
   if (ruta === "/gastos") {
     ruta = "/gerencia";
     window.history.replaceState({}, "", ruta);
@@ -65,21 +66,26 @@ export function obtenerVistaInicial() {
   }
 
   if (ruta === "/mesas") {
+    // En la PWA instalada pedimos inicio de sesión al arrancar si no hay
+    // sesión administrativa local. Eso permite saber si se deben mostrar
+    // accesos Admin / Pedidos Hoy / Gerencia.
+    if (estaEnModoPWAInstalada() && !adminActivo) {
+      return "adminLogin";
+    }
     return "mesas";
   }
 
-
   if (estaEnModoPWAInstalada()) {
-    window.history.replaceState({}, "", "/admin");
-    return adminActivo ? "admin" : "adminLogin";
+    window.history.replaceState({}, "", "/mesas");
+    return adminActivo ? "mesas" : "adminLogin";
   }
 
   return "inicio";
 }
 
 export function actualizarRuta(ruta) {
-  const rutaFinal = rutaSeguraPWA(ruta);
-  if (window.location.pathname !== rutaFinal) {
+  const rutaFinal = ruta || "/";
+  if (normalizarRutaActual() !== rutaFinal) {
     window.history.pushState({}, "", rutaFinal);
   }
 }

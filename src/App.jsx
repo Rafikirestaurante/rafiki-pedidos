@@ -46,10 +46,17 @@ const GerenciaPanel = lazyConReintento(() => import("./modules/gerencia/componen
 
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
 
+function crearItemClienteInicial({ comerRestaurante = false } = {}) {
+  return {
+    ...crearItemNuevo(),
+    paraLlevar: !comerRestaurante
+  };
+}
+
 export default function App() {
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
   const [vista, setVista] = useState(() => obtenerVistaInicial());
-  const [itemsPedido, setItemsPedido] = useState([crearItemNuevo()]);
+  const [itemsPedido, setItemsPedido] = useState([crearItemClienteInicial()]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
@@ -80,6 +87,23 @@ export default function App() {
     actualizarRuta(ruta);
     setVista(nuevaVista);
   }, []);
+
+  useEffect(() => {
+    if (vista !== "cliente") return;
+
+    const valorParaLlevarCliente = !comerRestauranteCliente;
+
+    setItemsPedido((actual) => {
+      let requiereAjuste = false;
+      const normalizados = actual.map((item) => {
+        if (Boolean(item.paraLlevar) === valorParaLlevarCliente) return item;
+        requiereAjuste = true;
+        return { ...item, paraLlevar: valorParaLlevarCliente };
+      });
+
+      return requiereAjuste ? normalizados : actual;
+    });
+  }, [vista, comerRestauranteCliente]);
 
 
   const {
@@ -410,11 +434,11 @@ export default function App() {
 
         const cambiosSeguros = { ...cambios };
 
-        if (comerRestauranteCliente && cambiosSeguros.paraLlevar === true) {
-          cambiosSeguros.paraLlevar = false;
+        if (Object.prototype.hasOwnProperty.call(cambiosSeguros, "paraLlevar")) {
+          cambiosSeguros.paraLlevar = !comerRestauranteCliente;
         }
 
-        return { ...item, ...cambiosSeguros };
+        return { ...item, ...cambiosSeguros, paraLlevar: comerRestauranteCliente ? false : true };
       })
     );
   }
@@ -427,6 +451,7 @@ export default function App() {
       setItemsPedido((actual) => actual.map((item) => ({ ...item, paraLlevar: false })));
     } else {
       setUbicacion("");
+      setItemsPedido((actual) => actual.map((item) => ({ ...item, paraLlevar: true })));
     }
 
     if (errorDatosPedido) setErrorDatosPedido("");
@@ -446,6 +471,7 @@ export default function App() {
           proteina: platoSeleccionado.nombre || "",
           precioPlato: Number(platoSeleccionado.precio) || 0,
           precioProteina: Number(platoSeleccionado.precio) || 0,
+          paraLlevar: !comerRestauranteCliente,
           acompanantes: sinAcompanantes ? [] : item.acompanantes || [],
           observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || ""
         };
@@ -506,7 +532,7 @@ export default function App() {
   }
 
   function agregarAlmuerzo() {
-    const nuevoItem = crearItemNuevo();
+    const nuevoItem = crearItemClienteInicial({ comerRestaurante: comerRestauranteCliente });
 
     setItemsPedido((actual) => [...actual, nuevoItem]);
 
@@ -521,12 +547,12 @@ export default function App() {
   function eliminarAlmuerzo(id) {
     setItemsPedido((actual) => {
       const restantes = actual.filter((item) => item.id !== id);
-      return restantes.length === 0 ? [crearItemNuevo()] : restantes;
+      return restantes.length === 0 ? [crearItemClienteInicial({ comerRestaurante: comerRestauranteCliente })] : restantes;
     });
   }
 
   function reiniciarPedido() {
-    setItemsPedido([crearItemNuevo()]);
+    setItemsPedido([crearItemClienteInicial()]);
     setCliente("");
     setTelefono("");
     setUbicacion("");

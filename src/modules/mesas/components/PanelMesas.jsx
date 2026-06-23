@@ -768,8 +768,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
         {navegacionAdminVisible && (
           <div className="mesa-admin-nav" aria-label="Navegación administrativa">
-            <button type="button" onClick={onIrAdmin}>Admin</button>
             <button type="button" onClick={onIrPedidos}>Pedidos hoy</button>
+            <button type="button" onClick={onIrAdmin}>Admin</button>
             {puedeVerRafa && <button type="button" onClick={onIrGerencia}>Gerencia</button>}
           </div>
         )}

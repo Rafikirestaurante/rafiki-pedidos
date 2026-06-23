@@ -271,19 +271,17 @@ export default function PedidoCliente({
                                     <p className="muted u-mb-0">
                                       {comerRestauranteCliente
                                         ? "No aplica si comes en el restaurante"
-                                        : valorParaLlevarItem(item) === 0 && item.paraLlevar
+                                        : valorParaLlevarItem({ ...item, paraLlevar: true }) === 0
                                           ? "Sin costo adicional"
-                                          : `Suma ${dinero(valorParaLlevarItem(item))}`}
+                                          : `Suma ${dinero(valorParaLlevarItem({ ...item, paraLlevar: true }))}`}
                                     </p>
                                   </div>
 
                                   <input
                                     type="checkbox"
-                                    checked={comerRestauranteCliente ? false : Boolean(item.paraLlevar)}
-                                    disabled={comerRestauranteCliente}
-                                    onChange={(e) =>
-                                      actualizarItem(item.id, { paraLlevar: comerRestauranteCliente ? false : e.target.checked })
-                                    }
+                                    checked={!comerRestauranteCliente}
+                                    disabled
+                                    readOnly
                                     className="u-icon-sm"
                                   />
                                 </label>

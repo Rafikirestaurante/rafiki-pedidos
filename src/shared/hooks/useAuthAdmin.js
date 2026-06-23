@@ -12,6 +12,14 @@ import {
 } from "../utils/authAdmin";
 import { describirErrorSupabase, registrarErrorSupabase } from "../utils/supabaseErrors";
 
+function estaEnModoPWAInstalada() {
+  return Boolean(
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.matchMedia?.('(display-mode: fullscreen)').matches ||
+      window.navigator.standalone
+  );
+}
+
 export const ADMIN_TAB_STORAGE_KEY = "rafikiAdminTabActiva";
 
 export const ADMIN_TABS_VALIDAS = new Set([
@@ -103,18 +111,22 @@ export function useAuthAdmin({ vista, setVista, navegar }) {
       vista === "pedidos" ||
       vista === "inventario" ||
       vista === "gerencia";
+    const rutaMesas = vista === "mesas";
+    const rutaMesasPWA = rutaMesas && estaEnModoPWAInstalada();
+    const haySesionLocalAdmin = obtenerSesionActiva("rafikiAdminActivo");
+    const debeVerificarSesion = rutaAdmin || rutaMesasPWA || (rutaMesas && haySesionLocalAdmin);
 
     const enviarALoginAdmin = () => {
       localStorage.removeItem("rafikiAdminActivo");
       setAdminRol("usuario");
       setAdminUsuario(null);
       setAdminAutenticado(false);
-      if (rutaAdmin) {
+      if (rutaAdmin || rutaMesasPWA) {
         setVista("adminLogin");
       }
     };
 
-    if (!supabaseConfigOk || !rutaAdmin) {
+    if (!supabaseConfigOk || !debeVerificarSesion) {
       setAdminAuthCargando(false);
       return () => {
         activo = false;
@@ -173,6 +185,9 @@ export function useAuthAdmin({ vista, setVista, navegar }) {
           }
           if (rutaActualAdmin === "/gerencia" || rutaActualAdmin === "/rafa") {
             setVista("gerencia");
+          }
+          if (rutaActualAdmin === "/mesas") {
+            setVista("mesas");
           }
           return;
         }
@@ -296,10 +311,14 @@ export function useAuthAdmin({ vista, setVista, navegar }) {
     setAdminPassword("");
     setErrorClaveAdmin("");
     const rutaActual = window.location.pathname.replace(/\/$/, "") || "/";
-    if (rutaActual === "/pedidos") {
+    if (rutaActual === "/mesas") {
+      navegar("/mesas", "mesas");
+    } else if (rutaActual === "/pedidos") {
       navegar("/pedidos", "pedidos");
     } else if (rutaActual === "/inventario") {
       navegar("/inventario", "inventario");
+    } else if (rutaActual === "/gerencia" || rutaActual === "/rafa") {
+      navegar("/gerencia", "gerencia");
     } else {
       navegar("/admin", "admin");
     }
@@ -315,6 +334,11 @@ export function useAuthAdmin({ vista, setVista, navegar }) {
     setAdminEmail("");
     setAdminPassword("");
     setErrorClaveAdmin("");
+    if (rutaActual === "/mesas") {
+      navegar("/mesas", estaEnModoPWAInstalada() ? "adminLogin" : "mesas");
+      return;
+    }
+
     navegar(
       rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : "/admin",
       "adminLogin"

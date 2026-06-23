@@ -67,7 +67,7 @@ function pedidoUbicacionNormalizada(pedido) {
 
 function pedidoPareceParaLlevar(pedido) {
   const ubicacion = pedidoUbicacionNormalizada(pedido);
-  return ubicacion.includes("llevar") || ubicacion.includes("domicilio") || ubicacion.includes("recoger");
+  return ubicacion.includes("llevar") || ubicacion.includes("domicilio") || ubicacion.includes("recoger") || ubicacion.includes("cliente");
 }
 
 function pedidoPareceEnMesa(pedido) {
