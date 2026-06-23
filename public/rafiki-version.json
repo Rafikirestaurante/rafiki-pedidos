@@ -1,6 +1,6 @@
 {
-  "version": "123.5-CLIENTE-PARA-LLEVAR-OBLIGATORIO-2026-06-23",
-  "phase": "Fase 33F - Hotfix cliente para llevar obligatorio",
+  "version": "123.7-HOTFIX-PAGINACION-DASHBOARD-GASTOS-2026-06-23",
+  "phase": "Fase 33F - Hotfix paginación y dashboard gastos",
   "date": "2026-06-23",
-  "notes": "Todo pedido realizado desde /cliente queda marcado como Para llevar por defecto y de forma obligatoria, salvo que el cliente active Comer en el restaurante. Se refuerza la regla en interfaz, estado, guardado y filtros de Pedidos Hoy."
+  "notes": "Estabiliza la paginación de Pedidos Hoy y muestra todas las categorías de gastos en Dashboard Rafa sin agrupar gastos menores en Otros."
 }
