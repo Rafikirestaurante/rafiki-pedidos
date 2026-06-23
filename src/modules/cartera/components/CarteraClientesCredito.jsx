@@ -115,6 +115,19 @@ function textoBusquedaMovimiento(movimiento) {
     .join(" ");
 }
 
+function conTiempoMaximo(promesa, ms = 18000, nombre = "consulta") {
+  let timerId = null;
+  const timeout = new Promise((_, reject) => {
+    timerId = window.setTimeout(() => {
+      reject(new Error(`${nombre} tardó demasiado en responder. Revisa la conexión e intenta actualizar nuevamente.`));
+    }, ms);
+  });
+
+  return Promise.race([promesa, timeout]).finally(() => {
+    if (timerId) window.clearTimeout(timerId);
+  });
+}
+
 export default function CarteraClientesCredito() {
   const [clientes, setClientes] = useState([]);
   const [movimientosCartera, setMovimientosCartera] = useState([]);
@@ -146,32 +159,52 @@ export default function CarteraClientesCredito() {
   const cargarClientes = useCallback(async () => {
     setCargando(true);
     setError("");
-    const data = await listarClientesCredito({ busqueda: busquedaClientes, incluirInactivos: mostrarInactivos });
-    setClientes(data);
-    setCargando(false);
+    try {
+      const data = await conTiempoMaximo(
+        listarClientesCredito({ busqueda: busquedaClientes, incluirInactivos: mostrarInactivos }),
+        15000,
+        "Clientes de cartera"
+      );
+      setClientes(Array.isArray(data) ? data : []);
+    } catch (err) {
+      registrarErrorSupabase("cargar clientes crédito", err);
+      setError(describirErrorSupabase(err, "cargar los clientes de cartera"));
+      setClientes([]);
+    } finally {
+      setCargando(false);
+    }
   }, [busquedaClientes, mostrarInactivos]);
 
-  const cargarMovimientos = useCallback(async ({ sincronizar = true } = {}) => {
+  const cargarMovimientos = useCallback(async ({ sincronizar = false } = {}) => {
     setCargandoMovimientos(true);
     try {
       let resultadoSync = null;
       if (sincronizar) {
-        resultadoSync = await sincronizarCarteraCompleta({ limite: 2000 });
+        resultadoSync = await conTiempoMaximo(
+          sincronizarCarteraCompleta({ limite: 2000 }),
+          30000,
+          "Auditoría automática de cartera"
+        );
         setResultadoAuditoria(resultadoSync);
         if (Number(resultadoSync?.totalCorrecciones || 0) > 0) {
           setMensaje(`Auditoría aplicada: ${resultadoSync.totalCorrecciones} corrección(es), ${resultadoSync.anulados} movimiento(s) anulados y ${resultadoSync.valoresAjustados} saldo(s) ajustados.`);
         }
       }
 
-      const data = await listarMovimientosCartera({ estado: "todos", limite: 2000 });
-      setMovimientosCartera(data);
+      const data = await conTiempoMaximo(
+        listarMovimientosCartera({ estado: "todos", limite: 2000 }),
+        18000,
+        "Movimientos de cartera"
+      );
+      setMovimientosCartera(Array.isArray(data) ? data : []);
 
       if (Number(resultadoSync?.totalCorrecciones || 0) > 0) {
         await cargarClientes();
       }
     } catch (err) {
-      registrarErrorSupabase("auditar y sincronizar cartera", err);
-      setError(describirErrorSupabase(err, "auditar y sincronizar la cartera"));
+      registrarErrorSupabase("cargar movimientos de cartera", err);
+      setError(describirErrorSupabase(err, "cargar los movimientos de cartera"));
+      setMovimientosCartera([]);
     } finally {
       setCargandoMovimientos(false);
     }
@@ -179,13 +212,25 @@ export default function CarteraClientesCredito() {
 
   const cargarAbonos = useCallback(async () => {
     setCargandoAbonos(true);
-    const data = await listarAbonosCartera({ limite: 1500 });
-    setAbonosCartera(data);
-    setCargandoAbonos(false);
+    try {
+      const data = await conTiempoMaximo(
+        listarAbonosCartera({ limite: 1500 }),
+        15000,
+        "Abonos de cartera"
+      );
+      setAbonosCartera(Array.isArray(data) ? data : []);
+    } catch (err) {
+      registrarErrorSupabase("cargar abonos de cartera", err);
+      setError(describirErrorSupabase(err, "cargar los abonos de cartera"));
+      setAbonosCartera([]);
+    } finally {
+      setCargandoAbonos(false);
+    }
   }, []);
 
   const actualizarTodo = useCallback(async () => {
-    await Promise.all([cargarClientes(), cargarMovimientos(), cargarAbonos()]);
+    setMensaje("");
+    await Promise.allSettled([cargarClientes(), cargarMovimientos({ sincronizar: false }), cargarAbonos()]);
   }, [cargarClientes, cargarMovimientos, cargarAbonos]);
 
   const auditarCartera = useCallback(async () => {
@@ -194,7 +239,11 @@ export default function CarteraClientesCredito() {
     setMensaje("");
     setError("");
     try {
-      const resultado = await sincronizarCarteraCompleta({ limite: 3000 });
+      const resultado = await conTiempoMaximo(
+        sincronizarCarteraCompleta({ limite: 3000 }),
+        45000,
+        "Auditoría manual de cartera"
+      );
       setResultadoAuditoria(resultado);
       await Promise.all([cargarClientes(), cargarMovimientos({ sincronizar: false }), cargarAbonos()]);
       if (Number(resultado?.totalCorrecciones || 0) > 0) {

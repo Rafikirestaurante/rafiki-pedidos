@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "123.7-HOTFIX-PAGINACION-DASHBOARD-GASTOS-2026-06-23",
-  phase: "Fase 33F - Hotfix paginación y dashboard gastos",
+  version: "123.8-HOTFIX-CARTERA-CARGA-ESTABLE-2026-06-23",
+  phase: "Fase 33F - Hotfix Cartera carga estable",
   date: "2026-06-23",
-  fase: "33F-HOTFIX-PAGINACION-DASHBOARD-GASTOS",
+  fase: "33F-HOTFIX-CARTERA-CARGA-ESTABLE",
   notes:
-    "Estabiliza la paginación de Pedidos Hoy eliminando el reinicio por cambios de referencia en pedidos y muestra todos los gastos por categoría en Dashboard Rafa sin agrupar menores en Otros."
+    "Evita que Cartera quede bloqueada en Actualizando, separa la carga normal de la auditoría completa y agrega timeouts seguros a clientes, movimientos y abonos."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
