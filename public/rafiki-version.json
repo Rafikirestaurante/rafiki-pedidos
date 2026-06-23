@@ -1,6 +1,6 @@
 {
-  "version": "123.3-ROOT-CLIENTE-PWA-ADMIN-2026-06-20",
-  "phase": "Fase 33F - Root público hacia Cliente y PWA obligatoria en Admin",
-  "date": "2026-06-20",
-  "notes": "La raíz pública / redirige a /cliente, pero la PWA instalada conserva start_url /admin y además fuerza /admin al arrancar si detecta rutas públicas o una instalación antigua desde /mesas."
+  "version": "123.5-CLIENTE-PARA-LLEVAR-OBLIGATORIO-2026-06-23",
+  "phase": "Fase 33F - Hotfix cliente para llevar obligatorio",
+  "date": "2026-06-23",
+  "notes": "Todo pedido realizado desde /cliente queda marcado como Para llevar por defecto y de forma obligatoria, salvo que el cliente active Comer en el restaurante. Se refuerza la regla en interfaz, estado, guardado y filtros de Pedidos Hoy."
 }

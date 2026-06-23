@@ -1,9 +1,9 @@
 {
-  "id": "/admin",
+  "id": "/mesas",
   "name": "Rafiki Pedidos",
   "short_name": "Rafiki",
-  "description": "Aplicación PWA interna de Rafiki Pedidos. Al instalarse abre obligatoriamente en el panel administrativo.",
-  "start_url": "/admin?app=admin",
+  "description": "Aplicación PWA interna de Rafiki Pedidos. Al instalarse abre por defecto en Panel Mesas y valida sesión para accesos administrativos.",
+  "start_url": "/mesas?app=mesas",
   "scope": "/",
   "display": "standalone",
   "display_override": [
