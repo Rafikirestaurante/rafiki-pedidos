@@ -1,6 +1,6 @@
 {
-  "version": "123.11-HOTFIX-CARTERA-MOVIMIENTOS-DETALLE-FILTRO-CLIENTE-2026-06-24",
-  "phase": "Fase 33F - Hotfix Cartera movimientos detalle y filtro cliente",
+  "version": "123.12-HOTFIX-CARTERA-EXPORTAR-MOVIMIENTOS-2026-06-24",
+  "phase": "Fase 33F - Hotfix Cartera exportar movimientos",
   "date": "2026-06-24",
-  "notes": "Movimientos de Cartera muestra pedido compacto, filtro por cliente y resumen visual ajustado."
+  "notes": "Movimientos de Cartera sin fondo naranja, con exportación Excel y resumen WhatsApp según filtros."
 }
