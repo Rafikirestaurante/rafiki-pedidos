@@ -1,6 +1,6 @@
 {
-  "version": "123.8-HOTFIX-CARTERA-CARGA-ESTABLE-2026-06-23",
-  "phase": "Fase 33F - Hotfix Cartera carga estable",
-  "date": "2026-06-23",
-  "notes": "Evita que Cartera quede bloqueada en Actualizando separando la carga normal de la auditoría completa y agregando timeouts seguros."
+  "version": "123.11-HOTFIX-CARTERA-MOVIMIENTOS-DETALLE-FILTRO-CLIENTE-2026-06-24",
+  "phase": "Fase 33F - Hotfix Cartera movimientos detalle y filtro cliente",
+  "date": "2026-06-24",
+  "notes": "Movimientos de Cartera muestra pedido compacto, filtro por cliente y resumen visual ajustado."
 }
