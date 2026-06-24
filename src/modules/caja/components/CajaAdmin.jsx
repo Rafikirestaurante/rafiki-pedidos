@@ -68,6 +68,7 @@ function crearAjustesCajaVacios() {
   return {
     gastosRafa: "",
     cuentasPorCobrar: "",
+    ingresosDiasAnteriores: "",
   };
 }
 
@@ -78,6 +79,7 @@ function normalizarAjustesCaja(ajustes) {
     ...base,
     gastosRafa: ajustes.gastosRafa ?? ajustes.gastos_rafa ?? "",
     cuentasPorCobrar: ajustes.cuentasPorCobrar ?? ajustes.cuentas_por_cobrar ?? "",
+    ingresosDiasAnteriores: ajustes.ingresosDiasAnteriores ?? ajustes.ingresos_dias_anteriores ?? "",
   };
 }
 
@@ -395,6 +397,9 @@ export default function CajaAdmin() {
   const gastosTotal = useMemo(() => Number(cuadreReal?.gastosTotal || 0), [cuadreReal]);
   const gastosRafaTotal = useMemo(() => limpiarNumero(ajustesCaja.gastosRafa), [ajustesCaja.gastosRafa]);
   const cuentasPorCobrarTotal = useMemo(() => limpiarNumero(ajustesCaja.cuentasPorCobrar), [ajustesCaja.cuentasPorCobrar]);
+  const ingresosDiasAnterioresTotal = useMemo(() => limpiarNumero(ajustesCaja.ingresosDiasAnteriores), [ajustesCaja.ingresosDiasAnteriores]);
+  const ajustesEgresosTotal = useMemo(() => gastosRafaTotal + cuentasPorCobrarTotal, [gastosRafaTotal, cuentasPorCobrarTotal]);
+  const ajustesNetosTotal = useMemo(() => ingresosDiasAnterioresTotal + ajustesEgresosTotal, [ingresosDiasAnterioresTotal, ajustesEgresosTotal]);
   const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal - gastosRafaTotal - cuentasPorCobrarTotal, [totalInicio, ventasTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
   const arqueoVigenteInforme = useMemo(() => {
     if (ultimoArqueoGuardado?.arqueoData) return ultimoArqueoGuardado;
@@ -411,7 +416,8 @@ export default function CajaAdmin() {
     if (arqueoVigenteInforme?.arqueoData) return limpiarNumero(arqueoVigenteInforme.arqueoTotal);
     return totalFin;
   }, [arqueoVigenteInforme, totalFin]);
-  const diferenciaReal = useMemo(() => totalUltimoArqueoInforme - dineroEsperado, [totalUltimoArqueoInforme, dineroEsperado]);
+  const totalUltimoArqueoAjustadoInforme = useMemo(() => totalUltimoArqueoInforme - ingresosDiasAnterioresTotal, [totalUltimoArqueoInforme, ingresosDiasAnterioresTotal]);
+  const diferenciaReal = useMemo(() => totalUltimoArqueoAjustadoInforme - dineroEsperado, [totalUltimoArqueoAjustadoInforme, dineroEsperado]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
   const tabsCaja = useMemo(() => ([
     { id: "inicio", label: "Inicio", icon: "🌅" },
@@ -587,6 +593,7 @@ export default function CajaAdmin() {
       `Inicio del día: ${dinero(totalInicio)}`,
       `Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos): ${dinero(ventasTotal)}`,
       `Gastos operativos: ${dinero(gastosTotal)}`,
+      `Ingresos días anteriores: ${dinero(ingresosDiasAnterioresTotal)}`,
       `Gastos Rafa: ${dinero(gastosRafaTotal)}`,
       `Cuentas por cobrar: ${dinero(cuentasPorCobrarTotal)}`,
     ];
@@ -644,6 +651,7 @@ export default function CajaAdmin() {
       ["Inicio del día", totalInicio],
       [`Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos)`, ventasTotal],
       ["Gastos operativos", gastosTotal],
+      ["Ingresos días anteriores", ingresosDiasAnterioresTotal],
       ["Gastos Rafa", gastosRafaTotal],
       ["Cuentas por cobrar", cuentasPorCobrarTotal],
       ["Caja esperada", dineroEsperado],
@@ -695,7 +703,7 @@ export default function CajaAdmin() {
         totalInicio={totalInicio}
         totalFin={totalUltimoArqueoInforme}
         ventasTotal={ventasTotal}
-        gastosTotal={gastosTotal + gastosRafaTotal + cuentasPorCobrarTotal}
+        gastosTotal={gastosTotal + ajustesEgresosTotal}
         dineroEsperado={dineroEsperado}
         diferenciaReal={diferenciaReal}
         estadoDiferencia={estadoDiferencia}
@@ -739,8 +747,9 @@ export default function CajaAdmin() {
                 <button type="button" className="btn secondary" onClick={() => setModalGastosAbierto(true)}>Ver detalle de gastos</button>
               </section>
               <section className="caja-informe-bloque caja-ajustes-bloque caja-ajustes-compacto">
-                <div className="caja-informe-row fuerte caja-movimiento-egreso"><span>Ajustes de Caja</span><strong>{dinero(gastosRafaTotal + cuentasPorCobrarTotal)}</strong></div>
+                <div className={`caja-informe-row fuerte ${ajustesNetosTotal > 0 ? "caja-movimiento-egreso" : ""}`}><span>Ajustes de Caja</span><strong>{dinero(Math.abs(ajustesNetosTotal))}</strong></div>
                 <div className="caja-ajustes-resumen">
+                  <span>Ingresos días anteriores: <strong>{dinero(ingresosDiasAnterioresTotal)}</strong></span>
                   <span>Gastos Rafa: <strong>{dinero(gastosRafaTotal)}</strong></span>
                   <span>Cuentas x cobrar: <strong>{dinero(cuentasPorCobrarTotal)}</strong></span>
                 </div>
@@ -758,7 +767,7 @@ export default function CajaAdmin() {
                 <RafikiBadge tipo={tipoBadgeDiferencia(estadoDiferencia.clase)}>{estadoDiferencia.texto}</RafikiBadge>
               </div>
             </div>
-            <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada.</p>
+            <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada. Los ingresos días anteriores no aumentan ventas y se descuentan del arqueo contado para calcular la diferencia.</p>
           </section>
         </div>
       )}
@@ -776,7 +785,7 @@ export default function CajaAdmin() {
       <RafikiModal
         open={modalAjustesAbierto}
         title="Ajustes de Caja"
-        description="Registra valores que restan a la caja esperada sin cargar el informe visualmente."
+        description="Registra ajustes que afectan el cuadre de dinero sin modificar las ventas reales del día."
         onClose={() => setModalAjustesAbierto(false)}
         footer={(
           <button type="button" className="btn primary" onClick={guardarAjustesInformeCaja} disabled={guardandoAjustes}>
@@ -785,6 +794,11 @@ export default function CajaAdmin() {
         )}
       >
         <div className="caja-ajustes-grid">
+          <label className="field">
+            <span>Ingresos días anteriores</span>
+            <input type="number" min="0" inputMode="numeric" value={ajustesCaja.ingresosDiasAnteriores} onChange={(event) => actualizarAjusteCaja("ingresosDiasAnteriores", event.target.value)} placeholder="0" />
+            <small className="muted">Pagos recibidos hoy por ventas de días anteriores. No aumenta ventas ni caja esperada; se descuenta del arqueo contado para calcular la diferencia.</small>
+          </label>
           <label className="field">
             <span>Gastos Rafa</span>
             <input type="number" min="0" inputMode="numeric" value={ajustesCaja.gastosRafa} onChange={(event) => actualizarAjusteCaja("gastosRafa", event.target.value)} placeholder="0" />
