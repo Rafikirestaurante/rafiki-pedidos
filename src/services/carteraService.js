@@ -35,6 +35,9 @@ export const SELECT_CARTERA_ABONOS = [
   "saldo_nuevo"
 ].join(", ");
 
+const SELECT_PEDIDO_DETALLE_CARTERA = "id,items,pedido_texto,total";
+const TAMANO_LOTE_PEDIDOS_CARTERA = 500;
+
 function normalizarNumero(valor) {
   return aPesosEnteros(valor);
 }
@@ -661,6 +664,43 @@ export async function recalcularResumenClienteCredito(clienteId) {
   return data || null;
 }
 
+async function cargarPedidosDetalleCartera(pedidoIds = []) {
+  if (!supabaseConfigOk || pedidoIds.length === 0) return new Map();
+
+  const detalles = new Map();
+  const idsUnicos = Array.from(new Set(pedidoIds.map((id) => String(id || "").trim()).filter(Boolean)));
+
+  for (let indice = 0; indice < idsUnicos.length; indice += TAMANO_LOTE_PEDIDOS_CARTERA) {
+    const lote = idsUnicos.slice(indice, indice + TAMANO_LOTE_PEDIDOS_CARTERA);
+    const { data, error } = await supabase
+      .from("pedidos")
+      .select(SELECT_PEDIDO_DETALLE_CARTERA)
+      .in("id", lote);
+
+    if (error) {
+      console.warn("No se pudieron cargar detalles de pedidos para cartera:", error.message);
+      continue;
+    }
+
+    (Array.isArray(data) ? data : []).forEach((pedido) => {
+      detalles.set(String(pedido.id), pedido);
+    });
+  }
+
+  return detalles;
+}
+
+function anexarDetallePedidoMovimiento(movimiento, pedido) {
+  if (!pedido) return movimiento;
+
+  return {
+    ...movimiento,
+    pedido_items: Array.isArray(pedido.items) ? pedido.items : [],
+    pedido_texto_detalle: pedido.pedido_texto || "",
+    pedido_total_detalle: pedido.total ?? null,
+  };
+}
+
 export async function listarMovimientosCartera({ clienteId = null, estado = "pendiente", limite = 300 } = {}) {
   if (!supabaseConfigOk) return [];
 
@@ -680,7 +720,17 @@ export async function listarMovimientosCartera({ clienteId = null, estado = "pen
     return [];
   }
 
-  return Array.isArray(data) ? data : [];
+  const movimientos = Array.isArray(data) ? data : [];
+  const pedidoIds = movimientos.map((movimiento) => movimiento.pedido_id).filter(Boolean);
+
+  if (pedidoIds.length === 0) return movimientos;
+
+  const pedidosDetalle = await cargarPedidosDetalleCartera(pedidoIds);
+
+  return movimientos.map((movimiento) => {
+    const pedido = pedidosDetalle.get(String(movimiento.pedido_id || ""));
+    return anexarDetallePedidoMovimiento(movimiento, pedido);
+  });
 }
 
 export async function listarAbonosCartera({ clienteId = null, movimientoId = null, limite = 500 } = {}) {

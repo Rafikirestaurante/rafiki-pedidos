@@ -39,6 +39,7 @@ const FORM_INICIAL = {
 const FILTROS_INICIALES = {
   texto: "",
   estado: "todos",
+  clienteId: "",
   fechaInicio: "",
   fechaFin: "",
   soloConSaldo: true,
@@ -103,11 +104,51 @@ function telefonoWhatsApp(telefono) {
   return digitos;
 }
 
+function resumirLineaPedidoTexto(texto = "") {
+  return String(texto || "")
+    .split(/\n+/)
+    .map((linea) => linea.replace(/^[-•*\s]+/, "").trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(" · ");
+}
+
+function nombreItemPedidoCompacto(item = {}) {
+  const nombre = item.detalle_impresion
+    || item.producto
+    || item.nombre
+    || item.plato
+    || item.proteina
+    || item.tipo
+    || "Producto";
+  const cantidad = Number(item.cantidad) || 1;
+  const acompanantes = Array.isArray(item.acompanantes) && item.acompanantes.length > 0
+    ? ` · ${item.acompanantes.slice(0, 3).join(", ")}`
+    : "";
+  const tamano = item.tamano ? ` · ${item.tamano}` : "";
+  return `${cantidad} x ${nombre}${tamano}${acompanantes}`;
+}
+
+function resumenPedidoMovimiento(movimiento = {}) {
+  const items = Array.isArray(movimiento.pedido_items) ? movimiento.pedido_items : [];
+  if (items.length > 0) {
+    const resumen = items.slice(0, 3).map(nombreItemPedidoCompacto).join(" + ");
+    const restantes = items.length > 3 ? ` + ${items.length - 3} más` : "";
+    return `${resumen}${restantes}`;
+  }
+
+  const textoPedido = resumirLineaPedidoTexto(movimiento.pedido_texto_detalle);
+  if (textoPedido) return textoPedido;
+
+  return movimiento.concepto || "Pedido crédito";
+}
+
 function textoBusquedaMovimiento(movimiento) {
   return [
     movimiento.numero_pedido,
     movimiento.cliente_nombre,
     movimiento.concepto,
+    resumenPedidoMovimiento(movimiento),
     movimiento.estado,
     movimiento.observaciones,
   ]
@@ -331,6 +372,7 @@ export default function CarteraClientesCredito() {
     return movimientosCartera.filter((movimiento) => {
       const estado = estadoCartera(movimiento);
       if (filtros.estado !== "todos" && estado !== filtros.estado) return false;
+      if (filtros.clienteId && String(movimiento.cliente_credito_id || "") !== String(filtros.clienteId)) return false;
       if (!fechaDentroRango(movimiento.fecha_movimiento || movimiento.created_at, filtros.fechaInicio, filtros.fechaFin)) return false;
       if (texto && !normalizarTexto(textoBusquedaMovimiento(movimiento)).includes(texto)) return false;
       return true;
@@ -351,6 +393,12 @@ export default function CarteraClientesCredito() {
       ].filter(Boolean).join(" ")).includes(texto);
     });
   }, [busquedaClientes, clientes, filtros.soloConSaldo, mostrarInactivos]);
+
+  const clientesParaFiltroMovimientos = useMemo(() => {
+    return [...clientes]
+      .filter((cliente) => cliente?.id && cliente?.nombre)
+      .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" }));
+  }, [clientes]);
 
   const indicadores = useMemo(() => {
     const activos = clientes.filter((cliente) => cliente.activo !== false);
@@ -451,19 +499,23 @@ export default function CarteraClientesCredito() {
     setFiltros((actual) => ({ ...actual, [campo]: valor }));
   }
 
+  function filtrosBaseMovimientosConClienteActual() {
+    return { ...FILTROS_INICIALES, clienteId: filtros.clienteId || "" };
+  }
+
   function aplicarFiltroCreditosHoy() {
     const hoy = fechaColombiaYYYYMMDD();
-    setFiltros({ ...FILTROS_INICIALES, estado: "todos", fechaInicio: hoy, fechaFin: hoy, soloConSaldo: false });
+    setFiltros({ ...filtrosBaseMovimientosConClienteActual(), estado: "todos", fechaInicio: hoy, fechaFin: hoy, soloConSaldo: false });
   }
 
   function aplicarFiltroAyer() {
     const ayer = fechaColombiaHaceDias(1);
-    setFiltros({ ...FILTROS_INICIALES, estado: "todos", fechaInicio: ayer, fechaFin: ayer, soloConSaldo: false });
+    setFiltros({ ...filtrosBaseMovimientosConClienteActual(), estado: "todos", fechaInicio: ayer, fechaFin: ayer, soloConSaldo: false });
   }
 
   function aplicarFiltroUltimos7Dias() {
     setFiltros({
-      ...FILTROS_INICIALES,
+      ...filtrosBaseMovimientosConClienteActual(),
       estado: "todos",
       fechaInicio: fechaColombiaHaceDias(6),
       fechaFin: fechaColombiaYYYYMMDD(),
@@ -472,7 +524,7 @@ export default function CarteraClientesCredito() {
   }
 
   function aplicarFiltroPendientes() {
-    setFiltros({ ...FILTROS_INICIALES, estado: "pendiente", soloConSaldo: true });
+    setFiltros({ ...filtrosBaseMovimientosConClienteActual(), estado: "pendiente", soloConSaldo: true });
   }
 
   function cambiarCampoAbono(campo, valor) {
@@ -648,10 +700,12 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel textarea { min-height: 76px; resize: vertical; }
         .cartera-profesional-panel .cartera-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
         .cartera-profesional-panel .cartera-quick-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; padding: 10px; border: 1px dashed #fed7aa; border-radius: 16px; background: #fffaf5; }
-        .cartera-profesional-panel .cartera-movimientos-resumen { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; color: #475569; font-size: 12px; }
-        .cartera-profesional-panel .cartera-movimientos-resumen strong { color: #0f172a; font-size: 13px; }
-        .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
-        .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 980px; }
+        .cartera-profesional-panel .cartera-movimientos-resumen { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 8px; color: #475569; font-size: 12px; min-width: min(100%, 520px); }
+        .cartera-profesional-panel .cartera-resumen-chip { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 8px 10px; min-width: 0; }
+        .cartera-profesional-panel .cartera-resumen-chip span { display: block; font-size: 11px; font-weight: 800; color: #64748b; line-height: 1.15; }
+        .cartera-profesional-panel .cartera-resumen-chip strong { display: block; color: #0f172a; font-size: 13px; line-height: 1.2; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.8fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
+        .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 1040px; }
         .cartera-profesional-panel .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 8; background: #fff7ed; box-shadow: 0 1px 0 #fed7aa; }
         .cartera-profesional-panel .detalle-cartera { margin-top: 14px; border: 1px solid #fed7aa; border-radius: 18px; background: #fffaf5; padding: 12px; }
         .cartera-profesional-panel .detalle-cartera h3 { margin: 0 0 8px; }
@@ -665,6 +719,8 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel .ranking-item strong, .cartera-profesional-panel td strong { display: block; }
         .cartera-profesional-panel .ranking-item small, .cartera-profesional-panel td small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
         .cartera-profesional-panel .td-acciones { min-width: 160px; }
+        .cartera-profesional-panel .td-pedido-detalle { min-width: 260px; max-width: 420px; white-space: normal; line-height: 1.35; }
+        .cartera-profesional-panel .td-pedido-detalle small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
         .cartera-profesional-panel .subtle-row { background: #fffaf5; }
         .cartera-profesional-panel .auditoria-resumen { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 16px; padding: 10px 12px; margin-top: 10px; }
         .cartera-profesional-panel .auditoria-resumen strong { display: block; margin-bottom: 4px; }
@@ -678,7 +734,7 @@ export default function CarteraClientesCredito() {
         .cartera-ui-limpia .cartera-resumen-header h3 { margin: 0; color: #9a3412; }
         .cartera-ui-limpia .cartera-table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } .cartera-profesional-panel .cartera-movimientos-resumen { align-items: flex-start; } }
+        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid, .cartera-profesional-panel .cartera-movimientos-resumen { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } }
       `}</style>
 
       <div className="section-heading section-heading-pedidos-unificados">
@@ -941,9 +997,9 @@ export default function CarteraClientesCredito() {
               <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Los cortes se calculan con horario Colombia para evitar descuadres al cierre.</p>
             </div>
             <div className="cartera-movimientos-resumen">
-              <strong>{indicadores.movimientosFiltrados} movimiento(s)</strong>
-              <span>Valor filtrado: {dinero(indicadores.valorOriginalFiltrado)}</span>
-              <span>Saldo filtrado: {dinero(indicadores.saldoFiltrado)}</span>
+              <div className="cartera-resumen-chip"><span>Movimientos</span><strong>{indicadores.movimientosFiltrados}</strong></div>
+              <div className="cartera-resumen-chip"><span>Valor filtrado</span><strong title={dinero(indicadores.valorOriginalFiltrado)}>{dinero(indicadores.valorOriginalFiltrado)}</strong></div>
+              <div className="cartera-resumen-chip"><span>Saldo filtrado</span><strong title={dinero(indicadores.saldoFiltrado)}>{dinero(indicadores.saldoFiltrado)}</strong></div>
             </div>
           </div>
 
@@ -956,7 +1012,13 @@ export default function CarteraClientesCredito() {
           </div>
 
           <div className="cartera-filtros">
-            <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Buscar por pedido, cliente o concepto" />
+            <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Buscar por pedido, cliente o producto" />
+            <select value={filtros.clienteId} onChange={(e) => cambiarFiltro("clienteId", e.target.value)} aria-label="Filtrar movimientos por cliente">
+              <option value="">Todos los clientes</option>
+              {clientesParaFiltroMovimientos.map((cliente) => (
+                <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>
+              ))}
+            </select>
             <select value={filtros.estado} onChange={(e) => cambiarFiltro("estado", e.target.value)}>
               <option value="todos">Todos los estados</option>
               <option value="pendiente">Pendiente</option>
@@ -981,16 +1043,15 @@ export default function CarteraClientesCredito() {
                   <th>Fecha</th>
                   <th>Pedido</th>
                   <th>Cliente</th>
-                  <th>Concepto</th>
+                  <th>Pedido realizado</th>
                   <th>Valor</th>
-                  <th>Saldo</th>
                   <th>Estado</th>
-                  <th>Observación</th>
+                  <th>Saldo</th>
                 </tr>
               </thead>
               <tbody>
                 {movimientosFiltrados.length === 0 ? (
-                  <tr><td colSpan="8"><RafikiEmptyState icon="🧾" title={cargandoMovimientos ? "Cargando movimientos..." : "Sin movimientos"} description={cargandoMovimientos ? "Estamos consultando los movimientos de cartera." : "No hay movimientos para los filtros actuales."} /></td></tr>
+                  <tr><td colSpan="7"><RafikiEmptyState icon="🧾" title={cargandoMovimientos ? "Cargando movimientos..." : "Sin movimientos"} description={cargandoMovimientos ? "Estamos consultando los movimientos de cartera." : "No hay movimientos para los filtros actuales."} /></td></tr>
                 ) : movimientosFiltrados.slice(0, 300).map((movimiento) => {
                   const estado = estadoCartera(movimiento);
                   const saldoPendiente = saldoMovimiento(movimiento);
@@ -999,11 +1060,10 @@ export default function CarteraClientesCredito() {
                       <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
                       <td>#{movimiento.numero_pedido || "—"}</td>
                       <td>{movimiento.cliente_nombre || "—"}</td>
-                      <td>{movimiento.concepto || "Pedido crédito"}</td>
+                      <td className="td-pedido-detalle">{resumenPedidoMovimiento(movimiento)}<small>{movimiento.pedido_items?.length ? `${movimiento.pedido_items.length} item(s)` : "Detalle compacto"}</small></td>
                       <td className="td-total">{dinero(movimiento.valor)}</td>
-                      <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
                       <td><RafikiBadge estado={estado} /></td>
-                      <td className="td-obs">{movimiento.observaciones || "—"}</td>
+                      <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
                     </tr>
                   );
                 })}
@@ -1050,16 +1110,15 @@ export default function CarteraClientesCredito() {
                     <tr>
                       <th>Fecha</th>
                       <th>Pedido</th>
-                      <th>Concepto</th>
+                      <th>Pedido realizado</th>
                       <th>Valor</th>
-                      <th>Saldo</th>
                       <th>Estado</th>
-                      <th>Observación</th>
+                      <th>Saldo</th>
                     </tr>
                   </thead>
                   <tbody>
                     {movimientosClienteDetalle.length === 0 ? (
-                      <tr><td colSpan="7"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente no tiene movimientos con los filtros actuales." /></td></tr>
+                      <tr><td colSpan="6"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente no tiene movimientos con los filtros actuales." /></td></tr>
                     ) : movimientosClienteDetalle.map((movimiento) => {
                       const estado = estadoCartera(movimiento);
                       const saldoPendiente = saldoMovimiento(movimiento);
@@ -1067,11 +1126,10 @@ export default function CarteraClientesCredito() {
                         <tr key={movimiento.id}>
                           <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
                           <td>#{movimiento.numero_pedido || "—"}</td>
-                          <td>{movimiento.concepto || "Pedido crédito"}</td>
+                          <td className="td-pedido-detalle">{resumenPedidoMovimiento(movimiento)}<small>{movimiento.pedido_items?.length ? `${movimiento.pedido_items.length} item(s)` : "Detalle compacto"}</small></td>
                           <td className="td-total">{dinero(movimiento.valor)}</td>
-                          <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
                           <td><RafikiBadge estado={estado} /></td>
-                          <td className="td-obs">{movimiento.observaciones || "—"}</td>
+                          <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
                         </tr>
                       );
                     })}
