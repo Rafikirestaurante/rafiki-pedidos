@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "123.11-HOTFIX-CARTERA-MOVIMIENTOS-DETALLE-FILTRO-CLIENTE-2026-06-24",
-  phase: "Fase 33F - Hotfix Cartera movimientos detalle y filtro cliente",
+  version: "123.12-HOTFIX-CARTERA-EXPORTAR-MOVIMIENTOS-2026-06-24",
+  phase: "Fase 33F - Hotfix Cartera exportar movimientos",
   date: "2026-06-24",
-  fase: "33F-HOTFIX-CARTERA-MOVIMIENTOS-DETALLE-FILTRO-CLIENTE",
+  fase: "33F-HOTFIX-CARTERA-EXPORTAR-MOVIMIENTOS",
   notes:
-    "Ajusta la subsección Movimientos de Cartera: muestra detalle compacto del pedido, permite filtrar por cliente y mejora los cuadros Valor filtrado y Saldo filtrado."
+    "Quita fondo naranja de los cuadros de Movimientos de Cartera y agrega exportación Excel y resumen por WhatsApp de los movimientos filtrados."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

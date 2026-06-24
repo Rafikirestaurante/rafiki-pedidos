@@ -64,6 +64,33 @@ function dinero(valor) {
   });
 }
 
+
+function escaparHtmlExcel(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function descargarArchivo(nombreArchivo, contenido, tipo = "application/vnd.ms-excel;charset=utf-8") {
+  const blob = new Blob([contenido], { type: tipo });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombreArchivo;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
+}
+
+function nombreArchivoSeguro(valor) {
+  return normalizarTexto(valor || "cartera")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "cartera";
+}
+
 function normalizarTexto(valor) {
   return String(valor || "")
     .normalize("NFD")
@@ -400,6 +427,11 @@ export default function CarteraClientesCredito() {
       .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" }));
   }, [clientes]);
 
+  const clienteFiltradoMovimientos = useMemo(() => {
+    if (!filtros.clienteId) return null;
+    return clientes.find((cliente) => String(cliente.id || "") === String(filtros.clienteId)) || null;
+  }, [clientes, filtros.clienteId]);
+
   const indicadores = useMemo(() => {
     const activos = clientes.filter((cliente) => cliente.activo !== false);
     const clientesConSaldo = clientes.filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0);
@@ -525,6 +557,90 @@ export default function CarteraClientesCredito() {
 
   function aplicarFiltroPendientes() {
     setFiltros({ ...filtrosBaseMovimientosConClienteActual(), estado: "pendiente", soloConSaldo: true });
+  }
+
+
+  function descripcionFiltrosMovimientos() {
+    const partes = [];
+    if (clienteFiltradoMovimientos?.nombre) partes.push(`Cliente: ${clienteFiltradoMovimientos.nombre}`);
+    if (filtros.fechaInicio || filtros.fechaFin) partes.push(`Fechas: ${filtros.fechaInicio || "inicio"} a ${filtros.fechaFin || "hoy"}`);
+    if (filtros.estado && filtros.estado !== "todos") partes.push(`Estado: ${filtros.estado}`);
+    if (filtros.texto) partes.push(`Búsqueda: ${filtros.texto}`);
+    return partes.length ? partes.join(" · ") : "Todos los movimientos filtrados";
+  }
+
+  function exportarMovimientosExcel() {
+    const encabezados = ["Fecha", "Pedido", "Cliente", "Pedido realizado", "Valor", "Estado", "Saldo"];
+    const filas = movimientosFiltrados.map((movimiento) => [
+      formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at),
+      movimiento.numero_pedido ? `#${movimiento.numero_pedido}` : "—",
+      movimiento.cliente_nombre || "—",
+      resumenPedidoMovimiento(movimiento),
+      Number(movimiento.valor || 0),
+      estadoCartera(movimiento),
+      saldoMovimiento(movimiento),
+    ]);
+
+    const resumen = [
+      ["Movimientos de cartera", ""],
+      ["Fecha de exportación", formatearFechaHora(new Date())],
+      ["Filtros", descripcionFiltrosMovimientos()],
+      ["Movimientos", indicadores.movimientosFiltrados],
+      ["Valor filtrado", indicadores.valorOriginalFiltrado],
+      ["Saldo filtrado", indicadores.saldoFiltrado],
+      ["", ""],
+    ];
+
+    const tabla = [...resumen, encabezados, ...filas]
+      .map((fila, indiceFila) => `<tr>${fila.map((celda) => {
+        const etiqueta = indiceFila === resumen.length ? "th" : "td";
+        return `<${etiqueta}>${escaparHtmlExcel(celda)}</${etiqueta}>`;
+      }).join("")}</tr>`)
+      .join("");
+
+    const contenido = `<!doctype html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body>
+<table border="1">${tabla}</table>
+</body>
+</html>`;
+
+    const clienteArchivo = clienteFiltradoMovimientos?.nombre ? `-${nombreArchivoSeguro(clienteFiltradoMovimientos.nombre)}` : "";
+    descargarArchivo(`movimientos-cartera${clienteArchivo}-${fechaColombiaYYYYMMDD()}.xls`, contenido);
+  }
+
+  function construirTextoMovimientosWhatsApp() {
+    const limite = 25;
+    const lineas = [];
+    const saludoCliente = clienteFiltradoMovimientos?.nombre ? `Hola ${clienteFiltradoMovimientos.nombre},` : "Hola,";
+    lineas.push(saludoCliente);
+    lineas.push("Te compartimos el resumen de movimientos de cartera Rafiki.");
+    lineas.push("");
+    lineas.push(`*Filtros:* ${descripcionFiltrosMovimientos()}`);
+    lineas.push(`*Movimientos:* ${indicadores.movimientosFiltrados}`);
+    lineas.push(`*Valor filtrado:* ${dinero(indicadores.valorOriginalFiltrado)}`);
+    lineas.push(`*Saldo filtrado:* ${dinero(indicadores.saldoFiltrado)}`);
+
+    if (movimientosFiltrados.length > 0) {
+      lineas.push("");
+      lineas.push("*Detalle:* ");
+      movimientosFiltrados.slice(0, limite).forEach((movimiento) => {
+        lineas.push(`- ${formatearFecha(movimiento.fecha_movimiento || movimiento.created_at)} · Pedido #${movimiento.numero_pedido || "—"} · ${resumenPedidoMovimiento(movimiento)} · Valor ${dinero(movimiento.valor)} · Saldo ${dinero(saldoMovimiento(movimiento))} · ${estadoCartera(movimiento)}`);
+      });
+      if (movimientosFiltrados.length > limite) {
+        lineas.push(`... y ${movimientosFiltrados.length - limite} movimiento(s) más. Para el detalle completo, revisa el archivo de Excel exportado desde Rafiki.`);
+      }
+    }
+
+    return lineas.join("\n");
+  }
+
+  function compartirMovimientosWhatsApp() {
+    const texto = encodeURIComponent(construirTextoMovimientosWhatsApp());
+    const telefono = telefonoWhatsApp(clienteFiltradoMovimientos?.telefono);
+    const url = telefono ? `https://wa.me/${telefono}?text=${texto}` : `https://wa.me/?text=${texto}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function cambiarCampoAbono(campo, valor) {
@@ -702,8 +818,9 @@ export default function CarteraClientesCredito() {
         .cartera-profesional-panel .cartera-quick-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; padding: 10px; border: 1px dashed #fed7aa; border-radius: 16px; background: #fffaf5; }
         .cartera-profesional-panel .cartera-movimientos-resumen { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 8px; color: #475569; font-size: 12px; min-width: min(100%, 520px); }
         .cartera-profesional-panel .cartera-resumen-chip { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 8px 10px; min-width: 0; }
-        .cartera-profesional-panel .cartera-resumen-chip span { display: block; font-size: 11px; font-weight: 800; color: #64748b; line-height: 1.15; }
-        .cartera-profesional-panel .cartera-resumen-chip strong { display: block; color: #0f172a; font-size: 13px; line-height: 1.2; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cartera-profesional-panel .section-heading .cartera-resumen-chip span { display: block; background: transparent !important; color: #64748b; min-width: 0; height: auto; border-radius: 0; box-shadow: none; padding: 0; font-size: 11px; font-weight: 800; line-height: 1.15; text-align: left; }
+        .cartera-profesional-panel .section-heading .cartera-resumen-chip strong { display: block; background: transparent !important; color: #0f172a; box-shadow: none; border-radius: 0; padding: 0; font-size: 13px; line-height: 1.2; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cartera-profesional-panel .cartera-export-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
         .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.8fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
         .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 1040px; }
         .cartera-profesional-panel .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 8; background: #fff7ed; box-shadow: 0 1px 0 #fed7aa; }
@@ -1034,7 +1151,14 @@ export default function CarteraClientesCredito() {
             <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarMovimientos} disabled={cargandoMovimientos}>
               {cargandoMovimientos ? "Cargando..." : "Actualizar movimientos"}
             </button>
+            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={exportarMovimientosExcel} disabled={movimientosFiltrados.length === 0}>
+              Exportar Excel
+            </button>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={compartirMovimientosWhatsApp} disabled={movimientosFiltrados.length === 0}>
+              Compartir WhatsApp
+            </button>
           </div>
+          <p className="muted small" style={{ margin: "4px 0 0" }}>WhatsApp comparte un resumen en texto. Para enviar el archivo completo, exporta Excel y adjúntalo manualmente.</p>
 
           <div className="pedidos-tabla-wrap" style={{ marginTop: 10 }}>
             <table className="pedidos-tabla-compacta">
