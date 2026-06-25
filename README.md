@@ -1,3 +1,25 @@
+# Rafiki Pedidos — 124.0
+
+Fase 34A — Base SQL y arquitectura de Clientes Especiales.
+
+## Objetivo de Fase 34A
+
+Crear la base segura para códigos de clientes especiales sin modificar todavía `/cliente`, `/mesas` ni la lógica de pedidos.
+
+## Cambios principales
+
+- Nueva tabla SQL `clientes_especiales` para nombre, teléfono, ubicación, código, estado y reglas especiales.
+- Nueva RPC `validar_cliente_especial_codigo(p_codigo text)` para validar códigos desde la zona pública sin exponer toda la tabla.
+- Nuevo servicio `src/services/clientesEspecialesService.js`, preparado para futuras integraciones visuales.
+- Campo flexible `reglas_json` para promociones, regalos, descuentos y beneficios futuros.
+- Documentación de fase en `docs/FASE34A-BASE-CLIENTES-ESPECIALES.md`.
+
+## Alcance seguro
+
+Esta subfase no modifica `src/modules/cliente`, `src/modules/mesas` ni `src/App.jsx`. Por lo tanto, `/cliente` y `/mesas` deben conservar el mismo comportamiento de la versión anterior.
+
+---
+
 # Rafiki Pedidos — 121.10
 
 Fase 30E — Manejo profesional de errores Supabase.
