@@ -416,8 +416,7 @@ export default function CajaAdmin() {
     if (arqueoVigenteInforme?.arqueoData) return limpiarNumero(arqueoVigenteInforme.arqueoTotal);
     return totalFin;
   }, [arqueoVigenteInforme, totalFin]);
-  const arqueoContadoAjustadoInforme = useMemo(() => totalUltimoArqueoInforme - ingresosDiasAnterioresTotal, [totalUltimoArqueoInforme, ingresosDiasAnterioresTotal]);
-  const diferenciaReal = useMemo(() => arqueoContadoAjustadoInforme - dineroEsperado, [arqueoContadoAjustadoInforme, dineroEsperado]);
+  const diferenciaReal = useMemo(() => totalUltimoArqueoInforme + ingresosDiasAnterioresTotal - dineroEsperado, [totalUltimoArqueoInforme, ingresosDiasAnterioresTotal, dineroEsperado]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
   const tabsCaja = useMemo(() => ([
     { id: "inicio", label: "Inicio", icon: "🌅" },
@@ -767,7 +766,7 @@ export default function CajaAdmin() {
                 <RafikiBadge tipo={tipoBadgeDiferencia(estadoDiferencia.clase)}>{estadoDiferencia.texto}</RafikiBadge>
               </div>
             </div>
-            <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales + ingresos días anteriores - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada. Los ingresos días anteriores no aumentan ventas del día.</p>
+            <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada. Diferencia: fin / arqueo contado + ingresos días anteriores - caja esperada. Los ingresos días anteriores no aumentan ventas del día.</p>
           </section>
         </div>
       )}
