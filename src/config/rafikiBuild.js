@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.0-FASE34A-BASE-CLIENTES-ESPECIALES-2026-06-25",
-  phase: "Fase 34A - Base SQL y arquitectura Clientes Especiales",
+  version: "124.1-FASE34B-PANEL-CLIENTES-ESPECIALES-2026-06-25",
+  phase: "Fase 34B - Panel Clientes Especiales en Catálogo",
   date: "2026-06-25",
-  fase: "34A-BASE-CLIENTES-ESPECIALES",
+  fase: "34B-PANEL-CLIENTES-ESPECIALES",
   notes:
-    "Crea tabla clientes_especiales, RPC segura para validar códigos y servicio base para futuras fases. No modifica /cliente, /mesas ni App.jsx."
+    "Agrega pestaña administrativa Clientes especiales dentro de Catálogo para crear, editar, activar y desactivar códigos VIP. No modifica /cliente, /mesas ni App.jsx."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

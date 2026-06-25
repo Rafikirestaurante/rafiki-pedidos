@@ -3,6 +3,7 @@ import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData
 import { categoriasSolicitudProductos, productosRestauranteBase } from "../../../data/solicitudProductosData";
 import { supabaseConfigOk, supabaseConfigMensaje } from "../../../supabaseClient";
 import CatalogoGastos from "../../gastos/components/CatalogoGastos";
+import ClientesEspecialesCatalogo from "./ClientesEspecialesCatalogo";
 import {
   actualizarInsumoCatalogoAdmin,
   cargarCatalogoInsumosAdmin,
@@ -194,6 +195,7 @@ export default function CatalogoRafa() {
   const esInsumos = tipo === "insumos";
   const esProductosRestaurante = tipo === "productos_restaurante";
   const esProductosCafeteria = tipo === "productos_cafeteria";
+  const esClientesEspeciales = tipo === "clientes_especiales";
   const esProductos = esProductosRestaurante || esProductosCafeteria;
   const lineaTipo = esProductosRestaurante ? "Restaurante" : esProductosCafeteria ? "Cafetería" : "";
 
@@ -626,7 +628,7 @@ export default function CatalogoRafa() {
       <style>{`.catalogo-rafa .badge-estado-negro { color: #111827 !important; }`}</style>
       <div className="admin-top-row">
         <h3>🧾 Catálogo Rafa</h3>
-        <button type="button" className="button button-secondary" onClick={restaurarBase}>Restaurar base</button>
+        {!esClientesEspeciales && <button type="button" className="button button-secondary" onClick={restaurarBase}>Restaurar base</button>}
       </div>
 
       <div className="catalogo-selector-tarjetas" style={{ marginTop: 14 }}>
@@ -668,10 +670,21 @@ export default function CatalogoRafa() {
           <span className="catalogo-selector-icono">📦</span>
           <span><strong>Insumos</strong><small style={{ display: "block" }}>Base de Solicitud e Inventario</small></span>
         </button>
+        <button
+          type="button"
+          onClick={() => cambiarTipo("clientes_especiales")}
+          className={`catalogo-selector-card ${tipo === "clientes_especiales" ? "active" : ""}`}
+          aria-pressed={tipo === "clientes_especiales"}
+        >
+          <span className="catalogo-selector-icono">⭐</span>
+          <span><strong>Clientes especiales</strong><small style={{ display: "block" }}>Códigos VIP</small></span>
+        </button>
       </div>
 
       {tipo === "gastos" ? (
         <CatalogoGastos />
+      ) : esClientesEspeciales ? (
+        <ClientesEspecialesCatalogo />
       ) : (
         <>
       {esInsumos && (
