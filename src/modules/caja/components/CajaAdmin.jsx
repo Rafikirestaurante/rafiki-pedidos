@@ -400,7 +400,7 @@ export default function CajaAdmin() {
   const ingresosDiasAnterioresTotal = useMemo(() => limpiarNumero(ajustesCaja.ingresosDiasAnteriores), [ajustesCaja.ingresosDiasAnteriores]);
   const ajustesEgresosTotal = useMemo(() => gastosRafaTotal + cuentasPorCobrarTotal, [gastosRafaTotal, cuentasPorCobrarTotal]);
   const ajustesNetosTotal = useMemo(() => ingresosDiasAnterioresTotal + ajustesEgresosTotal, [ingresosDiasAnterioresTotal, ajustesEgresosTotal]);
-  const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal - gastosRafaTotal - cuentasPorCobrarTotal, [totalInicio, ventasTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
+  const dineroEsperado = useMemo(() => totalInicio + ventasTotal + ingresosDiasAnterioresTotal - gastosTotal - gastosRafaTotal - cuentasPorCobrarTotal, [totalInicio, ventasTotal, ingresosDiasAnterioresTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
   const arqueoVigenteInforme = useMemo(() => {
     if (ultimoArqueoGuardado?.arqueoData) return ultimoArqueoGuardado;
     return historialArqueos[0] || null;
@@ -416,8 +416,7 @@ export default function CajaAdmin() {
     if (arqueoVigenteInforme?.arqueoData) return limpiarNumero(arqueoVigenteInforme.arqueoTotal);
     return totalFin;
   }, [arqueoVigenteInforme, totalFin]);
-  const totalUltimoArqueoAjustadoInforme = useMemo(() => totalUltimoArqueoInforme - ingresosDiasAnterioresTotal, [totalUltimoArqueoInforme, ingresosDiasAnterioresTotal]);
-  const diferenciaReal = useMemo(() => totalUltimoArqueoAjustadoInforme - dineroEsperado, [totalUltimoArqueoAjustadoInforme, dineroEsperado]);
+  const diferenciaReal = useMemo(() => totalUltimoArqueoInforme - dineroEsperado, [totalUltimoArqueoInforme, dineroEsperado]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
   const tabsCaja = useMemo(() => ([
     { id: "inicio", label: "Inicio", icon: "🌅" },
@@ -767,7 +766,7 @@ export default function CajaAdmin() {
                 <RafikiBadge tipo={tipoBadgeDiferencia(estadoDiferencia.clase)}>{estadoDiferencia.texto}</RafikiBadge>
               </div>
             </div>
-            <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada. Los ingresos días anteriores no aumentan ventas y se descuentan del arqueo contado para calcular la diferencia.</p>
+            <p className="muted small caja-formula">Fórmula: inicio del día + ventas reales + ingresos días anteriores - gastos operativos - gastos Rafa - cuentas por cobrar = caja esperada. Los ingresos días anteriores no aumentan ventas del día.</p>
           </section>
         </div>
       )}

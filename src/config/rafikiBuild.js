@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "123.12-HOTFIX-CARTERA-EXPORTAR-MOVIMIENTOS-2026-06-24",
-  phase: "Fase 33F - Hotfix Cartera exportar movimientos",
+  version: "123.13-HOTFIX-INGRESOS-DIAS-ANTERIORES-SUMA-CAJA-ESPERADA-2026-06-24",
+  phase: "Fase 33F - Hotfix Ingresos días anteriores suma a Caja esperada",
   date: "2026-06-24",
-  fase: "33F-HOTFIX-CARTERA-EXPORTAR-MOVIMIENTOS",
+  fase: "33F-HOTFIX-INGRESOS-DIAS-ANTERIORES-SUMA-CAJA-ESPERADA",
   notes:
-    "Quita fondo naranja de los cuadros de Movimientos de Cartera y agrega exportación Excel y resumen por WhatsApp de los movimientos filtrados."
+    "Corrige Informe Caja para que Ingresos días anteriores sume a Caja esperada sin sumar a Ventas del día y sin cambiar títulos del informe."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
