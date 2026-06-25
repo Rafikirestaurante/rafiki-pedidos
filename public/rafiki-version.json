@@ -1,6 +1,6 @@
 {
-  "version": "123.12-HOTFIX-CARTERA-EXPORTAR-MOVIMIENTOS-2026-06-24",
-  "phase": "Fase 33F - Hotfix Cartera exportar movimientos",
+  "version": "123.14-HOTFIX-INGRESOS-DIAS-ANTERIORES-RESTA-ARQUEO-FINAL-2026-06-24",
+  "phase": "Fase 33F - Hotfix Ingresos días anteriores resta al arqueo final",
   "date": "2026-06-24",
-  "notes": "Movimientos de Cartera sin fondo naranja, con exportación Excel y resumen WhatsApp según filtros."
+  "notes": "Ingresos días anteriores no suma a Caja esperada; se descuenta internamente del Fin / arqueo contado para calcular la diferencia. Se mantienen los títulos del informe."
 }

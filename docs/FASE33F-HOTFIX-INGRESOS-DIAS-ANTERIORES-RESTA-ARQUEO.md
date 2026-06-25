@@ -1,5 +1,7 @@
 # Fase 33F — Hotfix Ingresos días anteriores resta al arqueo contado
 
+> Nota: esta lógica fue corregida posteriormente en la versión `123.13-HOTFIX-INGRESOS-DIAS-ANTERIORES-SUMA-CAJA-ESPERADA-2026-06-24`. La regla definitiva es que **Ingresos días anteriores suma a Caja esperada**, pero no suma a Ventas del día.
+
 ## Objetivo
 
 Corregir el comportamiento de **Ingresos días anteriores** en **Caja > Informe Caja > Ajustes de Caja**.
