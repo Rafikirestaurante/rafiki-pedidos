@@ -1,3 +1,35 @@
+# Rafiki Pedidos — 124.1
+
+Fase 34B — Panel de Clientes Especiales en Catálogo.
+
+## Objetivo de Fase 34B
+
+Agregar administración visual de clientes especiales/VIP dentro de **Gerencia > Catálogo**, sin activar todavía cambios en `/cliente` ni `/mesas`.
+
+## Cambios principales
+
+- Nueva pestaña **Clientes especiales** dentro de `CatalogoRafa`.
+- Nuevo componente `src/modules/catalogo/components/ClientesEspecialesCatalogo.jsx`.
+- Formulario para crear/editar clientes especiales con código, nombre, teléfono, ubicación, mensaje de bienvenida y observaciones.
+- Activación/desactivación de clientes especiales desde el listado.
+- Reglas guardadas para próximas fases: sin restricción de acompañantes, habilitación futura de cafetería y datos editables.
+- Listado responsive con tabla en escritorio y tarjetas en móvil.
+- Documentación de fase en `docs/FASE34B-PANEL-CLIENTES-ESPECIALES.md`.
+
+## Alcance seguro
+
+Esta subfase no modifica `src/modules/cliente`, `src/modules/mesas` ni `src/App.jsx`. Por lo tanto, `/cliente` y `/mesas` deben conservar el mismo comportamiento de la versión anterior.
+
+## Requisito previo
+
+Ejecutar previamente el SQL de Fase 34A:
+
+```text
+supabase/2026-06-25-fase34a-clientes-especiales.sql
+```
+
+---
+
 # Rafiki Pedidos — 124.0
 
 Fase 34A — Base SQL y arquitectura de Clientes Especiales.

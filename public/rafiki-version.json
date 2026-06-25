@@ -1,6 +1,6 @@
 {
-  "version": "124.0-FASE34A-BASE-CLIENTES-ESPECIALES-2026-06-25",
-  "phase": "Fase 34A - Base SQL y arquitectura Clientes Especiales",
+  "version": "124.1-FASE34B-PANEL-CLIENTES-ESPECIALES-2026-06-25",
+  "phase": "Fase 34B - Panel Clientes Especiales en Catálogo",
   "date": "2026-06-25",
-  "notes": "Crea tabla clientes_especiales, RPC segura para validar códigos y servicio base. No modifica /cliente, /mesas ni App.jsx."
+  "notes": "Agrega pestaña administrativa Clientes especiales dentro de Catálogo. No modifica /cliente, /mesas ni App.jsx."
 }
