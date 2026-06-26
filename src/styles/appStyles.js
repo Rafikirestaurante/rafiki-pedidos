@@ -2916,4 +2916,151 @@ body.rafiki-modal-open {
 }
 
 
+
+/* Hotfix 34D.8 - Código discreto y bienvenida en modal */
+.cliente-especial-box-discreta {
+  border-color: rgba(148, 163, 184, 0.34);
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 14px;
+  box-shadow: none;
+}
+
+.cliente-especial-heading-discreta {
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.cliente-especial-heading-discreta strong {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cliente-especial-heading-discreta .muted {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.cliente-especial-box-discreta .cliente-especial-form {
+  gap: 8px;
+}
+
+.cliente-especial-box-discreta .cliente-especial-form input {
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.cliente-especial-box-discreta .cliente-especial-form .button {
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 9px 14px;
+}
+
+.cliente-especial-acciones {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.cliente-especial-acciones .button {
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.cliente-especial-modal-bienvenida {
+  overflow: hidden;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  background: linear-gradient(145deg, #fff7ed 0%, #ffffff 52%, #ecfdf5 100%);
+}
+
+.cliente-especial-modal-bienvenida .rafiki-ui-modal-header {
+  border-bottom: 0;
+  padding-bottom: 6px;
+  text-align: center;
+}
+
+.cliente-especial-modal-bienvenida .rafiki-ui-modal-header > div {
+  width: 100%;
+}
+
+.cliente-especial-modal-bienvenida .rafiki-ui-modal-header h3 {
+  color: #9a3412;
+  font-size: 26px;
+  font-weight: 950;
+}
+
+.cliente-especial-modal-bienvenida .rafiki-ui-modal-body {
+  background: transparent;
+  padding-top: 4px;
+}
+
+.cliente-especial-modal-content {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+  padding: 4px 4px 10px;
+}
+
+.cliente-especial-modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #fed7aa, #fef3c7);
+  box-shadow: 0 14px 30px rgba(249, 115, 22, 0.18);
+  font-size: 38px;
+}
+
+.cliente-especial-modal-content h2 {
+  margin: 0;
+  color: #14532d;
+  font-size: clamp(28px, 8vw, 38px);
+  line-height: 1.04;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.cliente-especial-modal-content p {
+  max-width: 320px;
+  margin: 0;
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.cliente-especial-modal-bienvenida .rafiki-ui-modal-footer {
+  justify-content: center;
+  border-top: 0;
+  background: transparent;
+  padding-top: 0;
+}
+
+.cliente-especial-modal-bienvenida .rafiki-ui-modal-footer .button {
+  min-width: 190px;
+  border-radius: 999px;
+}
+
+@media (max-width: 620px) {
+  .cliente-especial-modal-bienvenida .rafiki-ui-modal-header h3 {
+    font-size: 24px;
+  }
+
+  .cliente-especial-modal-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 24px;
+    font-size: 34px;
+  }
+}
+
 `;

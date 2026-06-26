@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import RafikiModal from "../../../shared/components/RafikiModal";
 import {
   normalizarCodigoClienteEspecial,
   validarCodigoClienteEspecial
@@ -17,6 +18,7 @@ export default function CodigoClienteEspecial({
   const [validando, setValidando] = useState(false);
   const [mensajeCodigo, setMensajeCodigo] = useState("");
   const [tipoMensajeCodigo, setTipoMensajeCodigo] = useState("info");
+  const [modalBienvenidaAbierto, setModalBienvenidaAbierto] = useState(false);
 
   const codigoNormalizado = useMemo(() => normalizarCodigoClienteEspecial(codigo), [codigo]);
 
@@ -58,8 +60,9 @@ export default function CodigoClienteEspecial({
 
       aplicarClienteEspecial(resultado.cliente);
       setCodigo(resultado.cliente.codigo || codigoNormalizado);
-      setMensajeCodigo(resultado.mensaje || `Bienvenido, ${resultado.cliente.nombre}`);
+      setMensajeCodigo("");
       setTipoMensajeCodigo("success");
+      setModalBienvenidaAbierto(true);
     } catch {
       setClienteEspecialAplicado?.(null);
       setMensajeCodigo("No se pudo validar el código en este momento. Puedes continuar con el pedido normal.");
@@ -71,15 +74,17 @@ export default function CodigoClienteEspecial({
 
   const quitarCodigo = () => {
     setClienteEspecialAplicado?.(null);
+    setModalBienvenidaAbierto(false);
     setCodigo("");
     setMensajeCodigo("Código retirado. Puedes continuar con el pedido normal.");
     setTipoMensajeCodigo("info");
   };
 
   const mensajeBienvenida = clienteEspecialAplicado?.mensaje_bienvenida
-    || (clienteEspecialAplicado?.nombre ? `Bienvenido, ${clienteEspecialAplicado.nombre}` : "");
+    || (clienteEspecialAplicado?.nombre ? `Bienvenido, ${clienteEspecialAplicado.nombre}` : "Bienvenido");
 
   const mostrarMensajeEstado = mensajeCodigo && !clienteEspecialAplicado;
+  const cerrarModalBienvenida = () => setModalBienvenidaAbierto(false);
 
   return (
     <div className="cliente-especial-box cliente-especial-box-discreta fade-step">
@@ -113,11 +118,25 @@ export default function CodigoClienteEspecial({
         </button>
       </form>
 
-      {clienteEspecialAplicado ? (
-        <div className="cliente-especial-bienvenida" role="status">
-          {mensajeBienvenida}
+      <RafikiModal
+        open={modalBienvenidaAbierto && Boolean(clienteEspecialAplicado)}
+        title="¡Bienvenido!"
+        onClose={cerrarModalBienvenida}
+        closeLabel="Cerrar bienvenida"
+        size="sm"
+        className="cliente-especial-modal-bienvenida"
+        footer={(
+          <button type="button" className="button" onClick={cerrarModalBienvenida}>
+            Continuar pedido
+          </button>
+        )}
+      >
+        <div className="cliente-especial-modal-content" role="status">
+          <div className="cliente-especial-modal-icon" aria-hidden="true">⭐</div>
+          <h2>{mensajeBienvenida}</h2>
+          <p>Tu código fue aplicado correctamente. Ya puedes continuar con tu pedido.</p>
         </div>
-      ) : null}
+      </RafikiModal>
 
       {mostrarMensajeEstado ? (
         <div className={`cliente-especial-message cliente-especial-message-${tipoMensajeCodigo}`} role="status">
