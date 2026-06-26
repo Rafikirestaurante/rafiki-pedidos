@@ -9,7 +9,7 @@ Asegurar que el recuadro **“⭐ ¿Tienes código de cliente?”** quede visibl
 - Se movió `CodigoClienteEspecial` al inicio de la tarjeta principal de `/cliente`, antes del hero del menú.
 - Se mantuvo la integración con la RPC `validar_cliente_especial_codigo`.
 - Se conserva la precarga de nombre, teléfono y ubicación cuando el código es válido.
-- Se agregó `/cliente` dentro de las rutas reconocidas por la PWA para que también pueda mostrar avisos de actualización y limpieza de caché.
+- Nota corregida en 34D.2: `/cliente` corresponde al link público de clientes y no debe mezclarse con rutas PWA internas.
 
 ## Alcance protegido
 

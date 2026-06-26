@@ -1,6 +1,6 @@
 {
-  "version": "124.32-HOTFIX34D2-CLIENTE-LINK-PUBLICO-SIN-PWA-2026-06-26",
-  "phase": "Fase 34D.2 - /cliente público sin mezcla PWA",
+  "version": "124.33-HOTFIX34D3-RECUADRO-CLIENTE-DESDE-APP-2026-06-26",
+  "phase": "Fase 34D.3 - Recuadro cliente visible desde App",
   "date": "2026-06-26",
-  "notes": "Mantiene visible el recuadro de código especial en /cliente y corrige la documentación/configuración para no tratar /cliente como ruta PWA interna. No modifica /mesas ni reglas de pedidos."
+  "notes": "Renderiza el recuadro de código especial directamente desde App.jsx cuando vista === cliente, antes del formulario de pedido. No modifica /mesas ni reglas de pedidos."
 }

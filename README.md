@@ -281,6 +281,11 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 
 Versión: `124.32-HOTFIX34D2-CLIENTE-LINK-PUBLICO-SIN-PWA-2026-06-26`
 
-Se movió el recuadro **“⭐ ¿Tienes código de cliente?”** al inicio visible de `/cliente`, antes del encabezado del menú. También se incluyó `/cliente` dentro de las rutas PWA que pueden mostrar aviso de actualización/limpieza de caché.
+Se movió el recuadro **“⭐ ¿Tienes código de cliente?”** al inicio visible de `/cliente`, antes del encabezado del menú. Esta ruta corresponde al link público de clientes y no debe mezclarse con el flujo PWA interno.
 
 No se modificó `/mesas`.
+
+
+## 124.33-HOTFIX34D3-RECUADRO-CLIENTE-DESDE-APP-2026-06-26
+
+Hotfix 34D.3: el recuadro `⭐ ¿Tienes código de cliente?` se renderiza directamente desde `App.jsx` cuando la vista es `/cliente`, antes del formulario de pedido. Se retiró el render duplicable desde `PedidoCliente.jsx`. No se modificó `/mesas`, Caja, Cartera ni reglas de pedidos.
