@@ -1,4 +1,11 @@
 
+## 124.39 — Hotfix 34D.9 mensaje bienvenida cliente especial
+
+- Ajusta el texto del modal de bienvenida mostrado al aplicar un código válido en `/cliente`.
+- Nuevo texto secundario: `Gracias por preferirnos. Ya puedes continuar con tu pedido.`
+- No modifica `/mesas`, Caja, Cartera, Pedidos Hoy ni reglas 34E.
+
+
 ## 124.37 - Hotfix 34D.7: Código cliente discreto y bienvenida destacada
 
 - Ajusta el recuadro de código de cliente especial en `/cliente` para que sea más discreto.
@@ -335,3 +342,12 @@ No se modificó `/mesas`.
 ## 124.33-HOTFIX34D3-RECUADRO-CLIENTE-DESDE-APP-2026-06-26
 
 Hotfix 34D.3: el recuadro `⭐ ¿Tienes código de cliente?` se renderiza directamente desde `App.jsx` cuando la vista es `/cliente`, antes del formulario de pedido. Se retiró el render duplicable desde `PedidoCliente.jsx`. No se modificó `/mesas`, Caja, Cartera ni reglas de pedidos.
+
+
+## 124.38 - Hotfix 34D.8 - Bienvenida cliente especial en modal
+
+- La bienvenida al aplicar un código de cliente especial en `/cliente` ahora aparece en un `RafikiModal` elegante.
+- Se conserva el recuadro de código en versión discreta.
+- Se elimina el mensaje fijo de bienvenida dentro de la tarjeta para no ocupar espacio permanente.
+- Se corrigió la ubicación de estilos del hotfix visual anterior dentro de `appStyles`.
+- No se tocaron `/mesas`, Caja, Cartera, Pedidos Hoy ni reglas pendientes de 34E.

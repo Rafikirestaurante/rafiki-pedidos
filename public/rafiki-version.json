@@ -1,6 +1,6 @@
 {
-  "version": "124.37-HOTFIX-CODIGO-CLIENTE-DISCRETO-BIENVENIDA-2026-06-26",
-  "phase": "Hotfix 34D.7 - Código cliente discreto",
+  "version": "124.39-HOTFIX-MENSAJE-BIENVENIDA-CLIENTE-2026-06-26",
+  "phase": "Hotfix 34D.9 - Mensaje de bienvenida cliente especial",
   "date": "2026-06-26",
-  "notes": "Hace más discreto el recuadro de código de cliente en /cliente y reemplaza el bloque de detalle por un mensaje de bienvenida más grande, sin afectar /mesas."
+  "notes": "Ajusta el texto del modal de bienvenida del código de cliente especial para usar el mensaje Gracias por preferirnos, sin afectar /mesas ni reglas 34E."
 }
