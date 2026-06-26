@@ -8,6 +8,7 @@ import {
   valorParaLlevarItem,
 } from "../../../shared/utils/pedidos";
 import { FORMAS_PAGO_CLIENTE } from "../../../shared/constants/paymentMethods";
+import CodigoClienteEspecial from "./CodigoClienteEspecial";
 
 export default function PedidoCliente({
   menu,
@@ -25,6 +26,8 @@ export default function PedidoCliente({
   observaciones,
   errorDatosPedido,
   guardandoPedido,
+  clienteEspecialAplicado,
+  setClienteEspecialAplicado,
   setCliente,
   setTelefono,
   setUbicacion,
@@ -98,6 +101,16 @@ export default function PedidoCliente({
                 </div>
 
                 <div className="section">
+                  <CodigoClienteEspecial
+                    clienteEspecialAplicado={clienteEspecialAplicado}
+                    setClienteEspecialAplicado={setClienteEspecialAplicado}
+                    setCliente={setCliente}
+                    setTelefono={setTelefono}
+                    setUbicacion={setUbicacion}
+                    setComerRestauranteCliente={setComerRestauranteCliente}
+                    setErrorDatosPedido={setErrorDatosPedido}
+                  />
+
                   {cargandoMenu ? (
                     <div className="box soft">
                       Cargando menú de hoy...

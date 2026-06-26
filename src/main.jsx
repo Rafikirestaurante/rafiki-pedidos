@@ -8,11 +8,19 @@ import PWAOfflineNotice from "./shared/components/PWAOfflineNotice.jsx";
 import PWAOldVersionGuard from "./shared/components/PWAOldVersionGuard.jsx";
 import PedidosOfflineStatus from "./modules/pedidos/components/PedidosOfflineStatus.jsx";
 import { registerServiceWorker } from "./registerSW.js";
+import { esRutaPublicaCliente, prepararClientePublicoSinServiceWorker } from "./shared/utils/clientePublicoRuntime.js";
 import { activarRecuperacionPWA } from "./shared/utils/pwaRecovery.js";
 import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
 
 activarRecuperacionPWA();
-registerServiceWorker();
+
+if (esRutaPublicaCliente()) {
+  prepararClientePublicoSinServiceWorker().catch((error) => {
+    console.warn("No se pudo preparar /cliente como link público sin service worker:", error);
+  });
+} else {
+  registerServiceWorker();
+}
 
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary nombreModulo="Rafiki Pedidos" usarRecuperacionPWA>

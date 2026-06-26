@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.1-FASE34B-PANEL-CLIENTES-ESPECIALES-2026-06-25",
-  phase: "Fase 34B - Panel Clientes Especiales en Catálogo",
-  date: "2026-06-25",
-  fase: "34B-PANEL-CLIENTES-ESPECIALES",
+  version: "124.34-HOTFIX34D4-CLIENTE-PUBLICO-SIN-SW-2026-06-26",
+  phase: "Fase 34D.4 - Recuadro código visible en link público",
+  date: "2026-06-26",
+  fase: "34D4-HOTFIX-CLIENTE-PUBLICO-SIN-SW",
   notes:
-    "Agrega pestaña administrativa Clientes especiales dentro de Catálogo para crear, editar, activar y desactivar códigos VIP. No modifica /cliente, /mesas ni App.jsx."
+    "Mueve el recuadro de código al componente real PedidoCliente y evita registrar service worker en /cliente, /pedido y raíz pública para que el link público no quede sirviendo bundles antiguos. No modifica /mesas ni reglas de pedidos."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

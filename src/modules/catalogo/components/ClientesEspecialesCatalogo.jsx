@@ -4,7 +4,8 @@ import {
   crearClienteEspecial,
   crearReglasClienteEspecialBase,
   listarClientesEspeciales,
-  normalizarCodigoClienteEspecial
+  normalizarCodigoClienteEspecial,
+  validarCodigoClienteEspecial
 } from "../../../services/clientesEspecialesService";
 import { supabaseConfigOk, supabaseConfigMensaje } from "../../../supabaseClient";
 
@@ -157,6 +158,9 @@ export default function ClientesEspecialesCatalogo() {
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [codigoPrueba, setCodigoPrueba] = useState("");
+  const [validandoCodigo, setValidandoCodigo] = useState(false);
+  const [resultadoValidacion, setResultadoValidacion] = useState(null);
 
   const clientesFiltrados = useMemo(() => {
     const terminos = busqueda
@@ -264,6 +268,27 @@ export default function ClientesEspecialesCatalogo() {
     setGuardando(false);
   }
 
+
+  async function probarCodigoEspecial(e) {
+    e.preventDefault();
+    const codigoNormalizado = normalizarCodigoClienteEspecial(codigoPrueba);
+
+    if (!codigoNormalizado || codigoNormalizado.length < 3) {
+      setResultadoValidacion({ ok: false, mensaje: "Ingresa un código de al menos 3 caracteres para probar." });
+      return;
+    }
+
+    setValidandoCodigo(true);
+    const resultado = await validarCodigoClienteEspecial(codigoNormalizado);
+    setResultadoValidacion(resultado);
+    setValidandoCodigo(false);
+  }
+
+  function limpiarPruebaCodigo() {
+    setCodigoPrueba("");
+    setResultadoValidacion(null);
+  }
+
   return (
     <div style={{ marginTop: 12 }}>
       <div className="alert alert-info">
@@ -305,6 +330,55 @@ export default function ClientesEspecialesCatalogo() {
           {cargando ? "Cargando..." : "Actualizar"}
         </button>
       </div>
+
+
+      <form onSubmit={probarCodigoEspecial} className="soft-box" style={{ marginTop: 14, background: "#f8fafc", borderColor: "#bfdbfe" }}>
+        <h4>Validación controlada de código</h4>
+        <p style={{ margin: "6px 0 0", color: "#4b5563" }}>
+          Prueba aquí la RPC <strong>validar_cliente_especial_codigo</strong> antes de activar el campo en <strong>/cliente</strong>. Esta prueba no crea pedidos ni cambia reglas operativas.
+        </p>
+        <div className="catalogo-filtros-avanzados" style={{ marginTop: 12 }}>
+          <label className="field catalogo-busqueda-field">
+            <span>Código a validar</span>
+            <input
+              type="search"
+              placeholder="Ej: RAFIKI-VIP"
+              value={codigoPrueba}
+              onChange={(e) => {
+                setCodigoPrueba(normalizarCodigoClienteEspecial(e.target.value));
+                setResultadoValidacion(null);
+              }}
+              className="catalogo-busqueda"
+              autoComplete="off"
+            />
+          </label>
+          <button type="submit" className="button" disabled={validandoCodigo || !supabaseConfigOk}>
+            {validandoCodigo ? "Validando..." : "Probar código"}
+          </button>
+          {(codigoPrueba || resultadoValidacion) && (
+            <button type="button" className="button button-secondary" onClick={limpiarPruebaCodigo}>
+              Limpiar prueba
+            </button>
+          )}
+        </div>
+
+        {resultadoValidacion && (
+          <div className={resultadoValidacion.ok ? "alert alert-success" : "alert alert-warning"} style={{ marginTop: 12 }}>
+            <strong>{resultadoValidacion.ok ? "Código válido." : "Código no habilitado."}</strong> {resultadoValidacion.mensaje}
+            {resultadoValidacion.ok && resultadoValidacion.cliente && (
+              <div className="catalogo-resumen-mini" style={{ marginTop: 10 }}>
+                <span><strong>{resultadoValidacion.cliente.nombre}</strong></span>
+                <span>Código: <strong>{resultadoValidacion.cliente.codigo}</strong></span>
+                <span>Teléfono: <strong>{resultadoValidacion.cliente.telefono || "—"}</strong></span>
+                <span>Ubicación: <strong>{resultadoValidacion.cliente.ubicacion || "—"}</strong></span>
+                <span>{resultadoValidacion.cliente.sin_restriccion_acompanantes ? "Sin restricción de acompañantes" : "Mantiene restricción"}</span>
+                <span>{resultadoValidacion.cliente.habilita_cafeteria ? "Cafetería habilitada" : "Cafetería no habilitada"}</span>
+                <span>{resultadoValidacion.cliente.permite_modificar_datos ? "Datos editables" : "Datos bloqueados"}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </form>
 
       <form onSubmit={guardarCliente} className="soft-box" style={{ marginTop: 14, background: "#fff" }}>
         <h4>{editandoId ? "Editar cliente especial" : "Agregar cliente especial"}</h4>

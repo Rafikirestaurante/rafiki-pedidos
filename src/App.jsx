@@ -61,6 +61,7 @@ export default function App() {
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
   const [comerRestauranteCliente, setComerRestauranteCliente] = useState(false);
+  const [clienteEspecialAplicado, setClienteEspecialAplicado] = useState(null);
   const [tipoPago, setTipoPago] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "info" });
@@ -557,6 +558,7 @@ export default function App() {
     setTelefono("");
     setUbicacion("");
     setComerRestauranteCliente(false);
+    setClienteEspecialAplicado(null);
     setTipoPago("");
     setObservaciones("");
     setPedidoFinalizado(null);
@@ -832,38 +834,42 @@ export default function App() {
           )}
 
           {!cargando && vista === "cliente" && (
-            <PedidoCliente
-              menu={menu}
-              cargandoMenu={cargandoMenu}
-              itemsPedido={itemsPedido}
-              itemsConProducto={itemsConProducto}
-              platosAgrupados={platosAgrupados}
-              hayProductoSeleccionado={hayProductoSeleccionado}
-              totalPedido={totalPedido}
-              cliente={cliente}
-              telefono={telefono}
-              ubicacion={ubicacion}
-              comerRestauranteCliente={comerRestauranteCliente}
-              tipoPago={tipoPago}
-              observaciones={observaciones}
-              errorDatosPedido={errorDatosPedido}
-              guardandoPedido={guardandoPedido}
-              setCliente={setCliente}
-              setTelefono={setTelefono}
-              setUbicacion={setUbicacion}
-              setComerRestauranteCliente={manejarComerRestauranteCliente}
-              setTipoPago={setTipoPago}
-              setObservaciones={setObservaciones}
-              setErrorDatosPedido={setErrorDatosPedido}
-              cambiarPlatoItem={cambiarPlatoItem}
-              cambiarAcompananteItem={cambiarAcompananteItem}
-              actualizarItem={actualizarItem}
-              agregarAlmuerzo={agregarAlmuerzo}
-              eliminarAlmuerzo={eliminarAlmuerzo}
-              reiniciarPedido={reiniciarPedido}
-              irAElemento={irAElemento}
-              registrarPedido={registrarPedido}
-            />
+            <>
+              <PedidoCliente
+                menu={menu}
+                cargandoMenu={cargandoMenu}
+                itemsPedido={itemsPedido}
+                itemsConProducto={itemsConProducto}
+                platosAgrupados={platosAgrupados}
+                hayProductoSeleccionado={hayProductoSeleccionado}
+                totalPedido={totalPedido}
+                cliente={cliente}
+                telefono={telefono}
+                ubicacion={ubicacion}
+                comerRestauranteCliente={comerRestauranteCliente}
+                tipoPago={tipoPago}
+                observaciones={observaciones}
+                errorDatosPedido={errorDatosPedido}
+                guardandoPedido={guardandoPedido}
+                clienteEspecialAplicado={clienteEspecialAplicado}
+                setClienteEspecialAplicado={setClienteEspecialAplicado}
+                setCliente={setCliente}
+                setTelefono={setTelefono}
+                setUbicacion={setUbicacion}
+                setComerRestauranteCliente={manejarComerRestauranteCliente}
+                setTipoPago={setTipoPago}
+                setObservaciones={setObservaciones}
+                setErrorDatosPedido={setErrorDatosPedido}
+                cambiarPlatoItem={cambiarPlatoItem}
+                cambiarAcompananteItem={cambiarAcompananteItem}
+                actualizarItem={actualizarItem}
+                agregarAlmuerzo={agregarAlmuerzo}
+                eliminarAlmuerzo={eliminarAlmuerzo}
+                reiniciarPedido={reiniciarPedido}
+                irAElemento={irAElemento}
+                registrarPedido={registrarPedido}
+              />
+            </>
           )}
 
           {!cargando && vista === "confirmacion" && pedidoFinalizado && (
