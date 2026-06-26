@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.39-HOTFIX-MENSAJE-BIENVENIDA-CLIENTE-2026-06-26",
-  phase: "Hotfix 34D.9 - Mensaje de bienvenida cliente especial",
+  version: "124.41-HOTFIX34E1-CAFETERIA-VISIBLE-CLIENTE-2026-06-26",
+  phase: "Fase 34E - Reglas clientes especiales en /cliente",
   date: "2026-06-26",
-  fase: "34D9-HOTFIX-MENSAJE-BIENVENIDA",
+  fase: "34E-REGLAS-CLIENTES-ESPECIALES",
   notes:
-    "Ajusta el texto del modal de bienvenida del código de cliente especial para usar el mensaje Gracias por preferirnos, sin afectar /mesas ni reglas 34E."
+    "Activa sin mínimo de acompañantes y Cafetería para clientes especiales en /cliente, guardando referencia segura del código en los items del pedido sin tocar /mesas, Caja, Cartera ni Pedidos Hoy."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
