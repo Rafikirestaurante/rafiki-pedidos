@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.35-HOTFIX-ACOMPANANTES-DIA-PASTAS-ARROCES-SOPAS-2026-06-26",
-  phase: "Hotfix 34D.5 - Mensaje acompañantes del día",
+  version: "124.36-HOTFIX-PASTAS-EN-PLATOS-ACOMPANANTES-DIA-2026-06-26",
+  phase: "Hotfix 34D.6 - Pastas dentro de Platos",
   date: "2026-06-26",
-  fase: "34D5-HOTFIX-ACOMPANANTES-DIA",
+  fase: "34D6-HOTFIX-PASTAS-EN-PLATOS",
   notes:
-    "Ajusta /cliente y /mesas para que Pastas, Arroces y Sopas sigan sin selección manual de acompañantes, pero muestren el mensaje Este Producto viene con acompañantes del día en vez de Producto de sopas o No aplica."
+    "Corrige la detección de productos sin acompañantes para que los platos cuyo nombre contenga pasta o pastas también muestren Este Producto viene con acompañantes del día en /cliente y /mesas."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

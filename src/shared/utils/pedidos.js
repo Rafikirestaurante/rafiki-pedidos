@@ -226,8 +226,8 @@ export function esProductoSinAcompanantes(item = {}) {
   const categoria = normalizarTexto(item?.categoria);
   const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre || item?.producto);
 
-  if (categoria.includes("sopa")) return true;
-  if (categoria.includes("pasta")) return true;
+  if (categoria.includes("sopa") || nombre.includes("sopa")) return true;
+  if (categoria.includes("pasta") || nombre.includes("pasta")) return true;
   if (nombre.startsWith("arroz de ")) return true;
   if (nombre.includes(" arroz de ")) return true;
   if (nombre.includes("arroz trifasico") || nombre.includes("arroz trifásico")) return true;
