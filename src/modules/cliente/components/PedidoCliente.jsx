@@ -4,6 +4,7 @@ import {
   calcularTotalItem,
   dinero,
   esProductoSinAcompanantes,
+  MENSAJE_ACOMPANANTES_DEL_DIA,
   textoParaLlevarItem,
   valorParaLlevarItem,
 } from "../../../shared/utils/pedidos";
@@ -249,9 +250,8 @@ export default function PedidoCliente({
 
                             {tienePlato && itemSinAcompanantes && (
                               <div className="box soft fade-step u-mt-18">
-                                <strong>🥣 Producto de sopas</strong>
                                 <p className="muted u-mb-0">
-                                  Este producto no requiere acompañantes.
+                                  {MENSAJE_ACOMPANANTES_DEL_DIA}
                                 </p>
                               </div>
                             )}
@@ -371,7 +371,7 @@ export default function PedidoCliente({
                               {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                                 <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                               )}
-                              {itemSinAcompanantes && <p>Acompañantes: No aplica</p>}
+                              {itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
 
                               {!itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
 

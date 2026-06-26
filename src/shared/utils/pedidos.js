@@ -13,6 +13,8 @@ import {
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 
+export const MENSAJE_ACOMPANANTES_DEL_DIA = "Este Producto viene con acompañantes del día";
+
 export function limpiarTexto(valor, max = 120) {
   return String(valor || "")
     .replace(/[<>]/g, "")

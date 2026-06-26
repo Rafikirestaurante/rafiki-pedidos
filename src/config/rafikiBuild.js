@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.34-HOTFIX34D4-CLIENTE-PUBLICO-SIN-SW-2026-06-26",
-  phase: "Fase 34D.4 - Recuadro código visible en link público",
+  version: "124.35-HOTFIX-ACOMPANANTES-DIA-PASTAS-ARROCES-SOPAS-2026-06-26",
+  phase: "Hotfix 34D.5 - Mensaje acompañantes del día",
   date: "2026-06-26",
-  fase: "34D4-HOTFIX-CLIENTE-PUBLICO-SIN-SW",
+  fase: "34D5-HOTFIX-ACOMPANANTES-DIA",
   notes:
-    "Mueve el recuadro de código al componente real PedidoCliente y evita registrar service worker en /cliente, /pedido y raíz pública para que el link público no quede sirviendo bundles antiguos. No modifica /mesas ni reglas de pedidos."
+    "Ajusta /cliente y /mesas para que Pastas, Arroces y Sopas sigan sin selección manual de acompañantes, pero muestren el mensaje Este Producto viene con acompañantes del día en vez de Producto de sopas o No aplica."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

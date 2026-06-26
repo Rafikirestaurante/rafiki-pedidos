@@ -6,6 +6,7 @@ import {
   crearItemNuevo,
   dinero,
   esProductoSinAcompanantes,
+  MENSAJE_ACOMPANANTES_DEL_DIA,
   precioPorNombre
 } from "../../../shared/utils/pedidos";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
@@ -904,7 +905,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
                   {tienePlato && itemSinAcompanantes && (
                     <div className="box soft fade-step" style={{ marginTop: 18 }}>
-                      <strong>🥣 Producto de sopas</strong>
+                      <p className="muted" style={{ margin: 0 }}>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>
                     </div>
                   )}
 
@@ -1311,7 +1312,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                         {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                           <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                         )}
-                        {itemSinAcompanantes && <p>Acompañantes: No aplica</p>}
+                        {itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
                         {!itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
                       </>
                     )}
