@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CampoTexto, SelectorCantidad, useAlertaRafiki } from "../../../shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
@@ -56,6 +57,11 @@ export default function PedidoCliente({
   const clienteEspecialPuedePedirCafeteria = Boolean(
     clienteEspecialAplicado && clienteEspecialAplicado.habilita_cafeteria !== false
   );
+  const [seccionClienteEspecial, setSeccionClienteEspecial] = useState("restaurante");
+  const seccionClienteActual = clienteEspecialPuedePedirCafeteria ? seccionClienteEspecial : "restaurante";
+  const mostrandoRestaurante = seccionClienteActual === "restaurante";
+  const mostrandoCafeteria = clienteEspecialPuedePedirCafeteria && seccionClienteActual === "cafeteria";
+  const itemsPedidoVisibles = itemsPedido.filter((item) => (mostrandoCafeteria ? esItemCafeteria(item) : !esItemCafeteria(item)));
 
   const obtenerItemsSinMinimoAcompanantes = () => itemsPedido
     .filter((item) => item.plato || item.proteina || item.producto)
@@ -128,33 +134,60 @@ export default function PedidoCliente({
                   {clienteEspecialSinMinimoAcompanantes ? (
                     <div className="box soft cliente-especial-regla-activa u-mb-12">
                       <strong>⭐ Cliente especial activo</strong>
-                      <p className="muted u-mb-0">
-                        Puedes continuar el pedido sin seleccionar acompañantes manualmente.
-                      </p>
                     </div>
                   ) : null}
 
-                  <CafeteriaClienteEspecial
-                    visible={clienteEspecialPuedePedirCafeteria}
-                    onAgregarProducto={agregarProductoCafeteriaCliente}
-                  />
+                  {clienteEspecialPuedePedirCafeteria ? (
+                    <div className="cliente-canal-selector" role="tablist" aria-label="Tipo de pedido">
+                      <button
+                        type="button"
+                        className={`cliente-canal-tab ${mostrandoRestaurante ? "activo" : ""}`}
+                        onClick={() => setSeccionClienteEspecial("restaurante")}
+                        aria-selected={mostrandoRestaurante}
+                      >
+                        Restaurante
+                      </button>
+                      <button
+                        type="button"
+                        className={`cliente-canal-tab ${mostrandoCafeteria ? "activo" : ""}`}
+                        onClick={() => setSeccionClienteEspecial("cafeteria")}
+                        aria-selected={mostrandoCafeteria}
+                      >
+                        Cafetería
+                      </button>
+                    </div>
+                  ) : null}
 
                   {cargandoMenu ? (
                     <div className="box soft">
                       Cargando menú de hoy...
                     </div>
-                  ) : menu.platos_detalle.length === 0 && !clienteEspecialPuedePedirCafeteria ? (
+                  ) : mostrandoRestaurante && menu.platos_detalle.length === 0 ? (
                     <div className="box soft">
                       Todavía no hay platos configurados para el menú de hoy. Entra al panel administrativo y agrega los platos del día.
                     </div>
                   ) : (
                   <>
-                      <div className="u-mb-18">
-                        <h3>🛍️ Arma tu pedido paso a paso</h3>
-                        <p className="muted">Primero selecciona tu proteína. Luego aparecerán los siguientes pasos.</p>
-                      </div>
+                      {mostrandoCafeteria ? (
+                        <CafeteriaClienteEspecial
+                          visible={mostrandoCafeteria}
+                          onAgregarProducto={agregarProductoCafeteriaCliente}
+                        />
+                      ) : null}
 
-                      {itemsPedido.map((item, index) => {
+                      {mostrandoRestaurante ? (
+                        <div className="u-mb-18">
+                          <h3>🛍️ Arma tu pedido paso a paso</h3>
+                          <p className="muted">Primero selecciona tu proteína. Luego aparecerán los siguientes pasos.</p>
+                        </div>
+                      ) : itemsPedidoVisibles.length > 0 ? (
+                        <div className="u-mb-18">
+                          <h3>☕ Productos de cafetería agregados</h3>
+                          <p className="muted">Puedes revisar cantidades o eliminar productos antes de finalizar.</p>
+                        </div>
+                      ) : null}
+
+                      {itemsPedidoVisibles.map((item, index) => {
                         const itemEsCafeteria = esItemCafeteria(item);
                         const itemSinAcompanantes = itemEsCafeteria || esProductoSinAcompanantes(item);
                         const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
@@ -357,9 +390,11 @@ export default function PedidoCliente({
                         );
                       })}
 
-                      <button type="button" onClick={agregarAlmuerzo} className="button add-meal">
-                        + Agregar otro almuerzo o producto
-                      </button>
+                      {mostrandoRestaurante ? (
+                        <button type="button" onClick={agregarAlmuerzo} className="button add-meal">
+                          + Agregar otro almuerzo o producto
+                        </button>
+                      ) : null}
                     </>
                   )}
                 </div>

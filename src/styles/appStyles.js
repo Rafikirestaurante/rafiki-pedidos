@@ -3064,6 +3064,40 @@ body.rafiki-modal-open {
 }
 
 
+.cliente-canal-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 14px;
+  padding: 4px;
+  border: 1px solid rgba(154, 52, 18, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 251, 235, 0.72);
+}
+
+.cliente-canal-tab {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 9px 10px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cliente-canal-tab.activo {
+  background: #ffffff;
+  color: var(--text-main);
+  box-shadow: 0 8px 18px rgba(154, 52, 18, 0.10);
+}
+
+.cliente-canal-tab:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.45);
+  outline-offset: 2px;
+}
+
 .cliente-especial-regla-activa {
   border: 1px solid rgba(22, 163, 74, 0.18);
   background: linear-gradient(135deg, rgba(220, 252, 231, 0.88), rgba(255, 251, 235, 0.92));
