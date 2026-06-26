@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.3-FASE34D-RECUADRO-CODIGO-CLIENTE-2026-06-26",
-  phase: "Fase 34D - Recuadro de código especial en /cliente",
+  version: "124.32-HOTFIX34D2-CLIENTE-LINK-PUBLICO-SIN-PWA-2026-06-26",
+  phase: "Fase 34D.2 - /cliente público sin mezcla PWA",
   date: "2026-06-26",
-  fase: "34D-RECUADRO-CODIGO-CLIENTE",
+  fase: "34D2-HOTFIX-CLIENTE-LINK-PUBLICO-SIN-PWA",
   notes:
-    "Agrega recuadro público en /cliente para validar código especial, mostrar bienvenida y precargar datos. No modifica /mesas ni activa todavía reglas profundas de acompañantes o cafetería."
+    "Mantiene visible el recuadro de código especial en /cliente y corrige la documentación/configuración para no tratar /cliente como ruta PWA interna. No modifica /mesas ni reglas de pedidos."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

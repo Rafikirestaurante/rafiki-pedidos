@@ -276,3 +276,11 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - No se modifica `src/modules/cliente`, `src/modules/mesas` ni `src/App.jsx`.
 - Esta fase deja lista la prueba previa para Fase 34D, donde se podrá incorporar el recuadro de código en `/cliente` de manera segura.
 
+
+## Fase 34D.1 — Hotfix recuadro código cliente visible
+
+Versión: `124.32-HOTFIX34D2-CLIENTE-LINK-PUBLICO-SIN-PWA-2026-06-26`
+
+Se movió el recuadro **“⭐ ¿Tienes código de cliente?”** al inicio visible de `/cliente`, antes del encabezado del menú. También se incluyó `/cliente` dentro de las rutas PWA que pueden mostrar aviso de actualización/limpieza de caché.
+
+No se modificó `/mesas`.
