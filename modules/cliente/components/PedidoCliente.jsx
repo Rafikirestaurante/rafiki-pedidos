@@ -94,6 +94,16 @@ export default function PedidoCliente({
   return (
 <main className="layout">
               <section className="card" id="inicio-pedido-cliente">
+                <CodigoClienteEspecial
+                  clienteEspecialAplicado={clienteEspecialAplicado}
+                  setClienteEspecialAplicado={setClienteEspecialAplicado}
+                  setCliente={setCliente}
+                  setTelefono={setTelefono}
+                  setUbicacion={setUbicacion}
+                  setComerRestauranteCliente={setComerRestauranteCliente}
+                  setErrorDatosPedido={setErrorDatosPedido}
+                />
+
                 <div className="hero">
                   <p>{menu.fecha}</p>
                   <h2>{menu.titulo}</h2>
@@ -101,16 +111,6 @@ export default function PedidoCliente({
                 </div>
 
                 <div className="section">
-                  <CodigoClienteEspecial
-                    clienteEspecialAplicado={clienteEspecialAplicado}
-                    setClienteEspecialAplicado={setClienteEspecialAplicado}
-                    setCliente={setCliente}
-                    setTelefono={setTelefono}
-                    setUbicacion={setUbicacion}
-                    setComerRestauranteCliente={setComerRestauranteCliente}
-                    setErrorDatosPedido={setErrorDatosPedido}
-                  />
-
                   {cargandoMenu ? (
                     <div className="box soft">
                       Cargando menú de hoy...
