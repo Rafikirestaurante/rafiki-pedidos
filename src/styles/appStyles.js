@@ -3063,4 +3063,53 @@ body.rafiki-modal-open {
   }
 }
 
+
+.cliente-especial-regla-activa {
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.88), rgba(255, 251, 235, 0.92));
+}
+
+.cliente-cafeteria-especial {
+  margin-top: 18px;
+  border-top: 1px dashed rgba(154, 52, 18, 0.18);
+  padding-top: 16px;
+}
+
+.cliente-cafeteria-especial-visible {
+  margin-bottom: 18px;
+  border: 1px solid rgba(251, 146, 60, 0.24);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.82), rgba(255, 255, 255, 0.96));
+  padding: 14px;
+}
+
+.cliente-cafeteria-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-color: rgba(251, 146, 60, 0.2);
+}
+
+.cliente-cafeteria-hero strong {
+  color: #7c2d12;
+}
+
+.cliente-cafeteria-categoria {
+  background: rgba(255, 251, 235, 0.72);
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid rgba(251, 146, 60, 0.18);
+}
+
+.cliente-cafeteria-option small {
+  color: #9a3412;
+  font-weight: 900;
+}
+
+.cliente-cafeteria-item {
+  border-color: rgba(14, 165, 233, 0.22);
+  background: linear-gradient(180deg, #ffffff, rgba(240, 249, 255, 0.64));
+}
+
 `;

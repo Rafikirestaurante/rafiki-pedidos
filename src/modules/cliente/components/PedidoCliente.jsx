@@ -3,6 +3,7 @@ import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   calcularTotalItem,
   dinero,
+  esItemCafeteria,
   esProductoSinAcompanantes,
   MENSAJE_ACOMPANANTES_DEL_DIA,
   textoParaLlevarItem,
@@ -10,6 +11,7 @@ import {
 } from "../../../shared/utils/pedidos";
 import { FORMAS_PAGO_CLIENTE } from "../../../shared/constants/paymentMethods";
 import CodigoClienteEspecial from "./CodigoClienteEspecial";
+import CafeteriaClienteEspecial from "./CafeteriaClienteEspecial";
 
 export default function PedidoCliente({
   menu,
@@ -29,6 +31,7 @@ export default function PedidoCliente({
   guardandoPedido,
   clienteEspecialAplicado,
   setClienteEspecialAplicado,
+  agregarProductoCafeteriaCliente,
   setCliente,
   setTelefono,
   setUbicacion,
@@ -47,8 +50,16 @@ export default function PedidoCliente({
 }) {
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
 
+  const clienteEspecialSinMinimoAcompanantes = Boolean(
+    clienteEspecialAplicado && clienteEspecialAplicado.sin_restriccion_acompanantes !== false
+  );
+  const clienteEspecialPuedePedirCafeteria = Boolean(
+    clienteEspecialAplicado && clienteEspecialAplicado.habilita_cafeteria !== false
+  );
+
   const obtenerItemsSinMinimoAcompanantes = () => itemsPedido
-    .filter((item) => item.plato || item.proteina)
+    .filter((item) => item.plato || item.proteina || item.producto)
+    .filter((item) => !esItemCafeteria(item))
     .filter((item) => !esProductoSinAcompanantes(item))
     .filter((item) => !Array.isArray(item.acompanantes) || item.acompanantes.length < 2);
 
@@ -69,6 +80,8 @@ export default function PedidoCliente({
   };
 
   const validarMinimoAcompanantesCliente = () => {
+    if (clienteEspecialSinMinimoAcompanantes) return true;
+
     const itemsSinMinimo = obtenerItemsSinMinimoAcompanantes();
 
     if (itemsSinMinimo.length === 0) return true;
@@ -112,11 +125,25 @@ export default function PedidoCliente({
                     setErrorDatosPedido={setErrorDatosPedido}
                   />
 
+                  {clienteEspecialSinMinimoAcompanantes ? (
+                    <div className="box soft cliente-especial-regla-activa u-mb-12">
+                      <strong>⭐ Cliente especial activo</strong>
+                      <p className="muted u-mb-0">
+                        Puedes continuar el pedido sin seleccionar acompañantes manualmente.
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <CafeteriaClienteEspecial
+                    visible={clienteEspecialPuedePedirCafeteria}
+                    onAgregarProducto={agregarProductoCafeteriaCliente}
+                  />
+
                   {cargandoMenu ? (
                     <div className="box soft">
                       Cargando menú de hoy...
                     </div>
-                  ) : menu.platos_detalle.length === 0 ? (
+                  ) : menu.platos_detalle.length === 0 && !clienteEspecialPuedePedirCafeteria ? (
                     <div className="box soft">
                       Todavía no hay platos configurados para el menú de hoy. Entra al panel administrativo y agrega los platos del día.
                     </div>
@@ -128,20 +155,23 @@ export default function PedidoCliente({
                       </div>
 
                       {itemsPedido.map((item, index) => {
-                        const itemSinAcompanantes = esProductoSinAcompanantes(item);
+                        const itemEsCafeteria = esItemCafeteria(item);
+                        const itemSinAcompanantes = itemEsCafeteria || esProductoSinAcompanantes(item);
                         const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
                         const tienePlato = Boolean(item.plato || item.proteina);
                         const tieneAcompanantes = itemSinAcompanantes || acompanantesItem.length > 0;
 
-                        const pasos = itemSinAcompanantes
-                          ? ["Producto", "Datos"]
-                          : ["Producto", "Acomp.", "Datos"];
+                        const pasos = itemEsCafeteria
+                          ? ["Cafetería", "Datos"]
+                          : itemSinAcompanantes
+                            ? ["Producto", "Datos"]
+                            : ["Producto", "Acomp.", "Datos"];
                         const pasoActual = !tienePlato ? 0 : !tieneAcompanantes ? 1 : pasos.length - 1;
 
                         return (
-                          <div key={item.id} id={`producto-${item.id}`} className="meal-card">
+                          <div key={item.id} id={`producto-${item.id}`} className={`meal-card ${itemEsCafeteria ? "cliente-cafeteria-item" : ""}`}>
                             <div className="row">
-                              <h3>Producto #{index + 1}</h3>
+                              <h3>{itemEsCafeteria ? "Producto cafetería" : `Producto #${index + 1}`}</h3>
 
                               {itemsPedido.length > 1 && (
                                 <button
@@ -165,15 +195,17 @@ export default function PedidoCliente({
                               ))}
                             </div>
 
-                            <div className="step-title">
-                              <span className="step-number">1</span>
-                              <div>
-                                <h4>Primero selecciona tu proteína</h4>
-                                <p className="muted u-mb-0">
-                                  Toca una opción para continuar.
-                                </p>
+                            {!itemEsCafeteria && (
+                              <div className="step-title">
+                                <span className="step-number">1</span>
+                                <div>
+                                  <h4>Primero selecciona tu proteína</h4>
+                                  <p className="muted u-mb-0">
+                                    Toca una opción para continuar.
+                                  </p>
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {tienePlato && (
                               <div className="selected-dish">
@@ -182,7 +214,7 @@ export default function PedidoCliente({
                               </div>
                             )}
 
-                            {Object.entries(platosAgrupados).map(([categoria, platos]) => (
+                            {!itemEsCafeteria && Object.entries(platosAgrupados).map(([categoria, platos]) => (
                               <div key={categoria} className="category-block">
                                 <h3 className="category-title">{categoria}</h3>
 
@@ -209,7 +241,9 @@ export default function PedidoCliente({
                                   <div>
                                     <h4>Escoge tus acompañantes</h4>
                                     <p className="muted u-mb-0">
-                                      Selecciona hasta {MAX_ACOMPANANTES_CLIENTE} opciones para completar tu almuerzo.
+                                      {clienteEspecialSinMinimoAcompanantes
+                                        ? `Puedes escoger hasta ${MAX_ACOMPANANTES_CLIENTE} opciones si deseas.`
+                                        : `Selecciona hasta ${MAX_ACOMPANANTES_CLIENTE} opciones para completar tu almuerzo.`}
                                     </p>
                                   </div>
                                 </div>
@@ -248,11 +282,17 @@ export default function PedidoCliente({
                               </div>
                             )}
 
-                            {tienePlato && itemSinAcompanantes && (
+                            {tienePlato && !itemEsCafeteria && itemSinAcompanantes && (
                               <div className="box soft fade-step u-mt-18">
                                 <p className="muted u-mb-0">
                                   {MENSAJE_ACOMPANANTES_DEL_DIA}
                                 </p>
+                              </div>
+                            )}
+
+                            {tienePlato && itemEsCafeteria && (
+                              <div className="box soft fade-step u-mt-18">
+                                <p className="muted u-mb-0">Producto de cafetería agregado al pedido.</p>
                               </div>
                             )}
 
@@ -343,23 +383,24 @@ export default function PedidoCliente({
                       <h3>Resumen del pedido</h3>
 
                       {itemsPedido
-                        .filter((item) => item.plato || item.proteina)
+                        .filter((item) => item.plato || item.proteina || item.producto)
                         .map((item) => {
-                          const itemSinAcompanantes = esProductoSinAcompanantes(item);
+                          const itemEsCafeteria = esItemCafeteria(item);
+                          const itemSinAcompanantes = itemEsCafeteria || esProductoSinAcompanantes(item);
                           const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
 
                           return (
                             <div key={item.id} className="summary-item">
                               <div className="summary-item-header">
                                 <p>
-                                  <strong>{item.cantidad} x {item.plato || item.proteina}</strong> - {" "}
-                                  {dinero(item.precioPlato || item.precioProteina)}
+                                  <strong>{item.cantidad} x {item.plato || item.proteina || item.producto}</strong> - {" "}
+                                  {dinero(item.precioPlato || item.precioProteina || item.precio)}
                                 </p>
                                 <button
                                   type="button"
                                   className="mini-danger"
                                   onClick={() => eliminarAlmuerzo(item.id)}
-                                  aria-label={`Borrar ${item.plato || item.proteina || "producto"} del pedido`}
+                                  aria-label={`Borrar ${item.plato || item.proteina || item.producto || "producto"} del pedido`}
                                 >
                                   Borrar
                                 </button>
@@ -367,13 +408,14 @@ export default function PedidoCliente({
 
                               {item.categoria && <p>Categoría: {item.categoria}</p>}
 
-                              {!itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
-                              {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
+                              {itemEsCafeteria && <p>Cafetería: {item.tipo || item.categoria || "Producto"}</p>}
+                              {!itemEsCafeteria && !itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                              {!itemEsCafeteria && !itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                                 <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                               )}
-                              {itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
+                              {!itemEsCafeteria && itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
 
-                              {!itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
+                              {!itemEsCafeteria && !itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
 
                               <p>{textoParaLlevarItem(item)}</p>
                             </div>

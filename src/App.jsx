@@ -8,6 +8,7 @@ import { MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
   agruparPlatosPorCategoria,
   calcularTotalItems,
+  crearItemCafeteria,
   crearItemNuevo,
   crearLinkWhatsApp,
   crearMensajeWhatsAppPedido,
@@ -411,7 +412,7 @@ export default function App() {
   const totalPedido = useMemo(() => calcularTotalItems(itemsConProducto), [itemsConProducto]);
 
   const hayProductoSeleccionado = useMemo(() => {
-    return itemsPedido.some((item) => item.plato || item.proteina);
+    return itemsPedido.some((item) => item.plato || item.proteina || item.producto);
   }, [itemsPedido]);
 
   const platosAgrupados = useMemo(
@@ -486,6 +487,31 @@ export default function App() {
     } else {
       irAElemento(`paso-acompanantes-${id}`);
     }
+  }
+
+
+  function agregarProductoCafeteriaCliente(producto) {
+    if (!producto?.nombre) return;
+
+    const nuevoItem = crearItemCafeteria({
+      tipo: producto.categoria || "Cafetería",
+      producto: producto.nombre,
+      precio: Number(producto.precio) || 0,
+      cantidad: 1,
+      paraLlevar: !comerRestauranteCliente,
+      catalogoId: producto.catalogoId || producto.id || null,
+      detalle_impresion: producto.nombre
+    });
+
+    setItemsPedido((actual) => [...actual, nuevoItem]);
+    mostrarMensaje(`${producto.nombre} agregado al pedido.`, "success");
+
+    setTimeout(() => {
+      const elemento = document.getElementById(`producto-${nuevoItem.id}`);
+      if (elemento) {
+        elemento.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 160);
   }
 
   function cambiarAcompananteItem(id, acompanante) {
@@ -587,6 +613,7 @@ export default function App() {
     telefono,
     ubicacion,
     comerRestauranteCliente,
+    clienteEspecialAplicado,
     tipoPago,
     observaciones,
     pedidos,
@@ -853,6 +880,7 @@ export default function App() {
                 guardandoPedido={guardandoPedido}
                 clienteEspecialAplicado={clienteEspecialAplicado}
                 setClienteEspecialAplicado={setClienteEspecialAplicado}
+                agregarProductoCafeteriaCliente={agregarProductoCafeteriaCliente}
                 setCliente={setCliente}
                 setTelefono={setTelefono}
                 setUbicacion={setUbicacion}

@@ -11,6 +11,7 @@ import {
   limpiarTexto,
   obtenerCodigoPedido,
   obtenerEstadoPedido,
+  esItemCafeteria,
   esProductoSinAcompanantes,
 } from "../utils/pedidos";
 import {
@@ -36,6 +37,7 @@ export function usePedidos({
   telefono,
   ubicacion,
   comerRestauranteCliente = false,
+  clienteEspecialAplicado = null,
   tipoPago,
   observaciones,
   pedidos,
@@ -95,13 +97,22 @@ export function usePedidos({
   const registrarPedido = useCallback(async () => {
     if (guardandoPedido) return;
 
+    const clienteEspecialPedido = clienteEspecialAplicado
+      ? {
+          id: clienteEspecialAplicado.id || null,
+          codigo: limpiarTexto(clienteEspecialAplicado.codigo || "", 80),
+          nombre: limpiarTexto(clienteEspecialAplicado.nombre || "", 120)
+        }
+      : null;
+
     const itemsValidos = itemsPedido
-      .filter((item) => item.plato || item.proteina)
+      .filter((item) => item.plato || item.proteina || item.producto)
       .map((item) => {
-        const sinAcompanantes = esProductoSinAcompanantes(item);
+        const sinAcompanantes = esItemCafeteria(item) || esProductoSinAcompanantes(item);
 
         return {
           ...item,
+          cliente_especial: clienteEspecialPedido || undefined,
           acompanantes: sinAcompanantes ? [] : limpiarAcompanantesCliente(item.acompanantes || []),
           observacionAcompanantes: sinAcompanantes ? "" : (item.observacionAcompanantes || "").trim(),
           paraLlevar: !comerRestauranteCliente
@@ -234,6 +245,7 @@ export function usePedidos({
     tipoPago,
     ubicacion,
     comerRestauranteCliente,
+    clienteEspecialAplicado,
   ]);
 
   const registrarPedidoMesa = useCallback(async ({ items, acompanantes, modoLlevar = false, mesa, cliente, telefono, ubicacion, mesero, tipoPago, observaciones: obsMesa }) => {
