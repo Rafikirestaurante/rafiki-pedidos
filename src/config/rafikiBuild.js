@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.37-HOTFIX-CODIGO-CLIENTE-DISCRETO-BIENVENIDA-2026-06-26",
-  phase: "Hotfix 34D.7 - Código cliente discreto",
+  version: "124.38-HOTFIX-CODIGO-CLIENTE-BIENVENIDA-MODAL-2026-06-26",
+  phase: "Hotfix 34D.8 - Bienvenida cliente especial en modal",
   date: "2026-06-26",
-  fase: "34D7-HOTFIX-CODIGO-CLIENTE-DISCRETO",
+  fase: "34D8-HOTFIX-BIENVENIDA-MODAL",
   notes:
-    "Hace más discreto el recuadro de código de cliente en /cliente y reemplaza el bloque de detalle por un mensaje de bienvenida más grande, sin afectar /mesas."
+    "Muestra la bienvenida del código de cliente especial en un RafikiModal elegante y corrige estilos del hotfix visual dentro de appStyles, sin afectar /mesas ni reglas 34E."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
