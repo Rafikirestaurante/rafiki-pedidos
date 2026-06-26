@@ -134,7 +134,7 @@ export default function CodigoClienteEspecial({
         <div className="cliente-especial-modal-content" role="status">
           <div className="cliente-especial-modal-icon" aria-hidden="true">⭐</div>
           <h2>{mensajeBienvenida}</h2>
-          <p>Tu código fue aplicado correctamente. Ya puedes continuar con tu pedido.</p>
+          <p>Gracias por preferirnos. Ya puedes continuar con tu pedido.</p>
         </div>
       </RafikiModal>
 
