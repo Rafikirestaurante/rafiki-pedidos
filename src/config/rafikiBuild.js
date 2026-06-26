@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.41-HOTFIX34E1-CAFETERIA-VISIBLE-CLIENTE-2026-06-26",
-  phase: "Fase 34E - Reglas clientes especiales en /cliente",
+  version: "124.42-HOTFIX34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS-2026-06-26",
+  phase: "Fase 34E.2 - Selector Restaurante/Cafetería en cliente especial",
   date: "2026-06-26",
-  fase: "34E-REGLAS-CLIENTES-ESPECIALES",
+  fase: "34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS",
   notes:
-    "Activa sin mínimo de acompañantes y Cafetería para clientes especiales en /cliente, guardando referencia segura del código en los items del pedido sin tocar /mesas, Caja, Cartera ni Pedidos Hoy."
+    "Agrega selector discreto Restaurante/Cafetería en /cliente para clientes especiales, deja Restaurante abierto por defecto y simplifica el aviso de cliente especial sin tocar /mesas, Caja, Cartera ni Pedidos Hoy."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
