@@ -76,13 +76,18 @@ export default function CodigoClienteEspecial({
     setTipoMensajeCodigo("info");
   };
 
+  const mensajeBienvenida = clienteEspecialAplicado?.mensaje_bienvenida
+    || (clienteEspecialAplicado?.nombre ? `Bienvenido, ${clienteEspecialAplicado.nombre}` : "");
+
+  const mostrarMensajeEstado = mensajeCodigo && !clienteEspecialAplicado;
+
   return (
-    <div className="cliente-especial-box fade-step">
-      <div className="cliente-especial-heading">
+    <div className="cliente-especial-box cliente-especial-box-discreta fade-step">
+      <div className="cliente-especial-heading cliente-especial-heading-discreta">
         <div>
-          <strong>⭐ ¿Tienes código de cliente?</strong>
+          <strong>¿Tienes código de cliente?</strong>
           <p className="muted u-mb-0">
-            Ingresa tu código para cargar tus datos guardados.
+            Puedes ingresarlo aquí.
           </p>
         </div>
         {clienteEspecialAplicado ? (
@@ -98,7 +103,7 @@ export default function CodigoClienteEspecial({
             setCodigo(evento.target.value.toUpperCase());
             if (mensajeCodigo) setMensajeCodigo("");
           }}
-          placeholder="Ej: RAFIKI-VIP"
+          placeholder="Código"
           autoComplete="off"
           inputMode="text"
           aria-label="Código de cliente especial"
@@ -108,19 +113,20 @@ export default function CodigoClienteEspecial({
         </button>
       </form>
 
-      {mensajeCodigo ? (
+      {clienteEspecialAplicado ? (
+        <div className="cliente-especial-bienvenida" role="status">
+          {mensajeBienvenida}
+        </div>
+      ) : null}
+
+      {mostrarMensajeEstado ? (
         <div className={`cliente-especial-message cliente-especial-message-${tipoMensajeCodigo}`} role="status">
           {mensajeCodigo}
         </div>
       ) : null}
 
       {clienteEspecialAplicado ? (
-        <div className="cliente-especial-aplicado">
-          <strong>{clienteEspecialAplicado.nombre}</strong>
-          <span>Código: {clienteEspecialAplicado.codigo}</span>
-          <small>
-            Se precargaron los datos disponibles. Puedes modificar teléfono o ubicación antes de enviar el pedido.
-          </small>
+        <div className="cliente-especial-acciones">
           <button type="button" className="button light" onClick={quitarCodigo}>
             Quitar código
           </button>

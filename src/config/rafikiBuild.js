@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.36-HOTFIX-PASTAS-EN-PLATOS-ACOMPANANTES-DIA-2026-06-26",
-  phase: "Hotfix 34D.6 - Pastas dentro de Platos",
+  version: "124.37-HOTFIX-CODIGO-CLIENTE-DISCRETO-BIENVENIDA-2026-06-26",
+  phase: "Hotfix 34D.7 - Código cliente discreto",
   date: "2026-06-26",
-  fase: "34D6-HOTFIX-PASTAS-EN-PLATOS",
+  fase: "34D7-HOTFIX-CODIGO-CLIENTE-DISCRETO",
   notes:
-    "Corrige la detección de productos sin acompañantes para que los platos cuyo nombre contenga pasta o pastas también muestren Este Producto viene con acompañantes del día en /cliente y /mesas."
+    "Hace más discreto el recuadro de código de cliente en /cliente y reemplaza el bloque de detalle por un mensaje de bienvenida más grande, sin afectar /mesas."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
