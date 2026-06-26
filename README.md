@@ -1,3 +1,34 @@
+# Rafiki Pedidos — 124.35
+
+Hotfix 34D.5 — Mensaje de acompañantes del día para Sopas, Pastas y Arroces.
+
+## Objetivo del hotfix
+
+Corregir el mensaje visual de los productos que no llevan selección manual de acompañantes en `/cliente` y `/mesas`.
+
+## Cambios principales
+
+- Se mantiene que Sopas, Pastas y Arroces no muestran selector de acompañantes.
+- Se elimina el mensaje visual “🥣 Producto de sopas”.
+- Se elimina el texto “Este producto no requiere acompañantes”.
+- En su lugar se muestra: **Este Producto viene con acompañantes del día**.
+- El resumen del pedido también deja de mostrar “Acompañantes: No aplica” para estos productos.
+- Se centraliza el texto en `MENSAJE_ACOMPANANTES_DEL_DIA` dentro de `src/shared/utils/pedidos.js`.
+
+## Alcance seguro
+
+Este hotfix no modifica Caja, Cartera, Pedidos Hoy, servicios de guardado ni reglas de clientes especiales. Tampoco activa todavía la Fase 34E.
+
+## Validación
+
+- `npm run build`: correcto.
+- `npm run lint`: sin errores, solo advertencias antiguas.
+- `node scripts/validate-pwa.mjs`: correcto.
+
+Documentación: `docs/FASE34D5-HOTFIX-ACOMPANANTES-DIA.md`.
+
+---
+
 # Rafiki Pedidos — 124.3
 
 Fase 34D — Recuadro de código especial en `/cliente`.
