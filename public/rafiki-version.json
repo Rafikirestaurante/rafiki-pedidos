@@ -1,6 +1,6 @@
 {
-  "version": "124.1-FASE34B-PANEL-CLIENTES-ESPECIALES-2026-06-25",
-  "phase": "Fase 34B - Panel Clientes Especiales en Catálogo",
-  "date": "2026-06-25",
-  "notes": "Agrega pestaña administrativa Clientes especiales dentro de Catálogo. No modifica /cliente, /mesas ni App.jsx."
+  "version": "124.3-FASE34D-RECUADRO-CODIGO-CLIENTE-2026-06-26",
+  "phase": "Fase 34D - Recuadro de código especial en /cliente",
+  "date": "2026-06-26",
+  "notes": "Agrega recuadro público en /cliente para validar código especial, mostrar bienvenida y precargar datos. No modifica /mesas ni activa todavía reglas profundas de acompañantes o cafetería."
 }

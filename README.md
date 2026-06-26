@@ -1,3 +1,36 @@
+# Rafiki Pedidos — 124.3
+
+Fase 34D — Recuadro de código especial en `/cliente`.
+
+## Objetivo de Fase 34D
+
+Permitir que un cliente ingrese un código especial desde `/cliente`, validarlo con la RPC segura `validar_cliente_especial_codigo`, mostrar mensaje de bienvenida y precargar nombre, teléfono y ubicación sin afectar `/mesas`.
+
+## Cambios principales
+
+- Nuevo componente `src/modules/cliente/components/CodigoClienteEspecial.jsx`.
+- Nuevo recuadro inicial **¿Tienes código de cliente?** dentro de `/cliente`.
+- Validación pública del código mediante RPC, sin exponer el listado completo de clientes especiales.
+- Precarga controlada de nombre, teléfono y ubicación.
+- Mensajes controlados para código válido, inválido, inactivo o corto.
+- Estado interno `clienteEspecialAplicado` preparado en `App.jsx` para la Fase 34E.
+- Nuevos estilos responsive para el bloque de código especial.
+- Documentación de fase en `docs/FASE34D-RECUADRO-CODIGO-CLIENTE.md`.
+
+## Alcance seguro
+
+Esta subfase sí modifica `/cliente`, pero de forma limitada. No elimina todavía la restricción de acompañantes, no habilita todavía Cafetería en `/cliente` y no modifica `/mesas`.
+
+## Requisito previo
+
+Ejecutar previamente el SQL de Fase 34A:
+
+```text
+supabase/2026-06-25-fase34a-clientes-especiales.sql
+```
+
+---
+
 # Rafiki Pedidos — 124.1
 
 Fase 34B — Panel de Clientes Especiales en Catálogo.
@@ -232,3 +265,14 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se agregó clase específica `pedido-cliente-submit` para el botón final de envío a cocina, evitando estilos inline.
 - No se hizo una limpieza masiva de todo `/cliente` para evitar cambios visuales bruscos en la pantalla del usuario final.
 - No se modificó lógica de pedidos, servicios, SQL, Supabase, cartera, caja, gastos, inventario ni cálculos financieros.
+
+## 124.2 — Fase 34C: Validación controlada de código especial
+
+- Se agrega en `Gerencia > Catálogo > Clientes especiales` un bloque interno para probar códigos especiales antes de activarlos en `/cliente`.
+- La prueba usa la RPC `validar_cliente_especial_codigo` creada en Fase 34A.
+- Si el código está activo, se muestran nombre, código, teléfono, ubicación, mensaje y reglas disponibles para próximas fases.
+- Si el código no existe, está inactivo o es inválido, se muestra una advertencia controlada sin exponer el listado completo de clientes especiales.
+- Esta validación no crea pedidos, no altera pedidos existentes y no cambia reglas operativas.
+- No se modifica `src/modules/cliente`, `src/modules/mesas` ni `src/App.jsx`.
+- Esta fase deja lista la prueba previa para Fase 34D, donde se podrá incorporar el recuadro de código en `/cliente` de manera segura.
+
