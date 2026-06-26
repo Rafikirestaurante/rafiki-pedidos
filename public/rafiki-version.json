@@ -1,6 +1,6 @@
 {
-  "version": "124.39-HOTFIX-MENSAJE-BIENVENIDA-CLIENTE-2026-06-26",
-  "phase": "Hotfix 34D.9 - Mensaje de bienvenida cliente especial",
+  "version": "124.42-HOTFIX34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS-2026-06-26",
+  "phase": "Fase 34E.2 - Selector Restaurante/Cafetería en cliente especial",
   "date": "2026-06-26",
-  "notes": "Ajusta el texto del modal de bienvenida del código de cliente especial para usar el mensaje Gracias por preferirnos, sin afectar /mesas ni reglas 34E."
+  "notes": "Agrega selector discreto Restaurante/Cafetería en /cliente para clientes especiales, deja Restaurante abierto por defecto y simplifica el aviso de cliente especial sin tocar /mesas, Caja, Cartera ni Pedidos Hoy."
 }

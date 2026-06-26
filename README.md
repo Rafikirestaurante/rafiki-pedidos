@@ -1,3 +1,14 @@
+Versión: 124.41-HOTFIX34E1-CAFETERIA-VISIBLE-CLIENTE-2026-06-26
+
+## 124.40 — Fase 34E reglas clientes especiales en /cliente
+
+- Activa reglas especiales en `/cliente` para códigos válidos.
+- Si el cliente especial tiene `sin_restriccion_acompanantes`, puede continuar sin mínimo 2 acompañantes.
+- Si tiene `habilita_cafeteria`, aparece una sección de Cafetería dentro del link público `/cliente`.
+- Los productos de cafetería se agregan como items `categoria: "cafeteria"`, sin afectar el selector de almuerzos.
+- Se guarda una referencia segura del cliente especial dentro del JSON de cada item del pedido para preparar promociones, regalos o descuentos futuros.
+- No modifica `/mesas`, Caja, Cartera ni Pedidos Hoy.
+
 
 ## 124.39 — Hotfix 34D.9 mensaje bienvenida cliente especial
 
@@ -351,3 +362,8 @@ Hotfix 34D.3: el recuadro `⭐ ¿Tienes código de cliente?` se renderiza direct
 - Se elimina el mensaje fijo de bienvenida dentro de la tarjeta para no ocupar espacio permanente.
 - Se corrigió la ubicación de estilos del hotfix visual anterior dentro de `appStyles`.
 - No se tocaron `/mesas`, Caja, Cartera, Pedidos Hoy ni reglas pendientes de 34E.
+
+
+## 124.42-HOTFIX34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS-2026-06-26
+
+Hotfix 34E.2: en `/cliente`, para clientes especiales con Cafetería habilitada, se agregó una fila discreta de selección `Restaurante / Cafetería`, dejando `Restaurante` abierto por defecto. También se simplificó el aviso a solo `⭐ Cliente especial activo`. No se tocó `/mesas`, Caja, Cartera ni Pedidos Hoy.
