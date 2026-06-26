@@ -2230,6 +2230,150 @@ select.box:focus,
   min-height: 20px;
 }
 
+
+/* Fase 34D - Código de cliente especial en /cliente */
+.cliente-especial-box {
+  border: 1px solid rgba(253, 186, 116, 0.78);
+  background: linear-gradient(135deg, #fff7ed, #ffffff);
+  border-radius: 22px;
+  padding: 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 22px rgba(124, 45, 18, 0.08);
+}
+
+.cliente-especial-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cliente-especial-heading strong {
+  color: #7c2d12;
+  font-size: 17px;
+}
+
+.cliente-especial-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.cliente-especial-form input {
+  width: 100%;
+  border: 1.5px solid var(--rafiki-border);
+  border-radius: 16px;
+  padding: 13px 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  background: #fff;
+  color: var(--rafiki-text);
+}
+
+.cliente-especial-form input:focus {
+  outline: none;
+  border-color: var(--rafiki-brand);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+.cliente-especial-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cliente-especial-message {
+  margin-top: 10px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-weight: 900;
+  white-space: pre-line;
+}
+
+.cliente-especial-message-success {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.cliente-especial-message-warning {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.cliente-especial-message-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.cliente-especial-message-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.cliente-especial-aplicado {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  border-radius: 16px;
+  padding: 12px;
+  color: #14532d;
+}
+
+.cliente-especial-aplicado span,
+.cliente-especial-aplicado small {
+  color: #166534;
+}
+
+.cliente-especial-aplicado .button {
+  justify-self: start;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+@media (max-width: 620px) {
+  .cliente-especial-form {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-especial-form .button,
+  .cliente-especial-aplicado .button {
+    width: 100%;
+  }
+}
+
+/* Hotfix 34D.3 - Recuadro público de código visible desde App.jsx */
+.cliente-codigo-publico-wrapper {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.cliente-codigo-publico-card {
+  overflow: visible;
+}
+
+.cliente-codigo-publico-card .cliente-especial-box {
+  margin-bottom: 0;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
