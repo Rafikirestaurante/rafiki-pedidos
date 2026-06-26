@@ -1,6 +1,6 @@
 {
-  "version": "124.33-HOTFIX34D3-RECUADRO-CLIENTE-DESDE-APP-2026-06-26",
-  "phase": "Fase 34D.3 - Recuadro cliente visible desde App",
+  "version": "124.34-HOTFIX34D4-CLIENTE-PUBLICO-SIN-SW-2026-06-26",
+  "phase": "Fase 34D.4 - Recuadro código visible en link público",
   "date": "2026-06-26",
-  "notes": "Renderiza el recuadro de código especial directamente desde App.jsx cuando vista === cliente, antes del formulario de pedido. No modifica /mesas ni reglas de pedidos."
+  "notes": "Mueve el recuadro de código al componente real PedidoCliente y evita registrar service worker en /cliente, /pedido y raíz pública para que el link público no quede sirviendo bundles antiguos. No modifica /mesas ni reglas de pedidos."
 }
