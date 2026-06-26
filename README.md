@@ -1,3 +1,18 @@
+
+## 124.37 - Hotfix 34D.7: Código cliente discreto y bienvenida destacada
+
+- Ajusta el recuadro de código de cliente especial en `/cliente` para que sea más discreto.
+- Elimina el bloque posterior con nombre, código y texto de precarga.
+- Mantiene un mensaje de bienvenida más grande y limpio.
+- No modifica `/mesas`, Caja, Cartera, Pedidos Hoy ni reglas de 34E.
+
+
+## 124.36-HOTFIX-PASTAS-EN-PLATOS-ACOMPANANTES-DIA-2026-06-26
+
+- Corrige el caso donde productos en categoría **Platos** cuyo nombre contiene **Pastas** todavía no eran tratados como producto sin selección manual de acompañantes.
+- Aplica para `/cliente` y `/mesas` porque ambos usan la función compartida `esProductoSinAcompanantes`.
+- Mantiene el mensaje: “Este Producto viene con acompañantes del día”.
+
 # Rafiki Pedidos — 124.35
 
 Hotfix 34D.5 — Mensaje de acompañantes del día para Sopas, Pastas y Arroces.

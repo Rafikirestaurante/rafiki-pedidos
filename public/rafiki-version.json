@@ -1,6 +1,6 @@
 {
-  "version": "124.35-HOTFIX-ACOMPANANTES-DIA-PASTAS-ARROCES-SOPAS-2026-06-26",
-  "phase": "Hotfix 34D.5 - Mensaje acompañantes del día",
+  "version": "124.37-HOTFIX-CODIGO-CLIENTE-DISCRETO-BIENVENIDA-2026-06-26",
+  "phase": "Hotfix 34D.7 - Código cliente discreto",
   "date": "2026-06-26",
-  "notes": "Ajusta /cliente y /mesas para que Pastas, Arroces y Sopas sigan sin selección manual de acompañantes, pero muestren el mensaje Este Producto viene con acompañantes del día en vez de Producto de sopas o No aplica."
+  "notes": "Hace más discreto el recuadro de código de cliente en /cliente y reemplaza el bloque de detalle por un mensaje de bienvenida más grande, sin afectar /mesas."
 }
