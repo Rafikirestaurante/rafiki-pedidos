@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.42-HOTFIX34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS-2026-06-26",
-  phase: "Fase 34E.2 - Selector Restaurante/Cafetería en cliente especial",
-  date: "2026-06-26",
-  fase: "34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS",
+  version: "124.45-HOTFIX-CLIENTE-PARA-LLEVAR-BLINDAJE-2026-06-30",
+  phase: "Hotfix 34F.1 - Blindaje /cliente para llevar",
+  date: "2026-06-30",
+  fase: "34F1-HOTFIX-CLIENTE-PARA-LLEVAR-BLINDAJE",
   notes:
-    "Agrega selector discreto Restaurante/Cafetería en /cliente para clientes especiales, deja Restaurante abierto por defecto y simplifica el aviso de cliente especial sin tocar /mesas, Caja, Cartera ni Pedidos Hoy."
+    "Corrige de raíz el flujo público /cliente para que todo pedido sea para llevar por defecto, sume el adicional correspondiente y se guarde como llevar, salvo cuando se marque explícitamente Comer en restaurante."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
