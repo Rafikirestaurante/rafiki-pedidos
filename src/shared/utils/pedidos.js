@@ -31,6 +31,49 @@ export function limpiarTelefono(valor) {
     .slice(0, 20);
 }
 
+export function normalizarClienteEspecialParaPedido(clienteEspecial = null) {
+  if (!clienteEspecial || typeof clienteEspecial !== "object") return null;
+
+  const codigo = limpiarTexto(clienteEspecial.codigo || "", 80);
+  const nombre = limpiarTexto(clienteEspecial.nombre || "", 120);
+
+  if (!codigo && !nombre && !clienteEspecial.id) return null;
+
+  return {
+    id: clienteEspecial.id || null,
+    codigo,
+    nombre,
+    reglas: {
+      sin_restriccion_acompanantes: clienteEspecial.sin_restriccion_acompanantes !== false,
+      habilita_cafeteria: clienteEspecial.habilita_cafeteria !== false,
+      permite_modificar_datos: clienteEspecial.permite_modificar_datos !== false
+    },
+    origen: "cliente"
+  };
+}
+
+export function obtenerClienteEspecialPedido(pedido = {}) {
+  const items = Array.isArray(pedido?.items) ? pedido.items : [];
+
+  for (const item of items) {
+    const clienteEspecial = item?.cliente_especial;
+    if (clienteEspecial && typeof clienteEspecial === "object") {
+      const reglas = clienteEspecial.reglas && typeof clienteEspecial.reglas === "object" ? clienteEspecial.reglas : {};
+
+      return normalizarClienteEspecialParaPedido({
+        id: clienteEspecial.id,
+        codigo: clienteEspecial.codigo,
+        nombre: clienteEspecial.nombre,
+        sin_restriccion_acompanantes: reglas.sin_restriccion_acompanantes ?? clienteEspecial.sin_restriccion_acompanantes,
+        habilita_cafeteria: reglas.habilita_cafeteria ?? clienteEspecial.habilita_cafeteria,
+        permite_modificar_datos: reglas.permite_modificar_datos ?? clienteEspecial.permite_modificar_datos
+      });
+    }
+  }
+
+  return null;
+}
+
 export function guardarSesionTemporal(claveStorage) {
   const expiry = Date.now() + SESSION_DURATION_MS;
   localStorage.setItem(claveStorage, JSON.stringify({ v: true, exp: expiry }));
@@ -497,6 +540,36 @@ export function crearMensajePedidoListo(pedido) {
     "",
     "Gracias por comprar en Rafiki 🍽️"
   ].join("\n");
+}
+
+
+export function pedidoClienteVaParaLlevar(comerRestauranteCliente = false) {
+  return !Boolean(comerRestauranteCliente);
+}
+
+export function normalizarItemParaDestinoCliente(item, { comerRestauranteCliente = false } = {}) {
+  if (!item) return item;
+
+  const paraLlevar = pedidoClienteVaParaLlevar(comerRestauranteCliente);
+  if (Boolean(item.paraLlevar) === paraLlevar) return item;
+
+  return {
+    ...item,
+    paraLlevar
+  };
+}
+
+export function normalizarItemsParaDestinoCliente(items = [], opciones = {}) {
+  const lista = Array.isArray(items) ? items : [];
+  let requiereAjuste = false;
+
+  const normalizados = lista.map((item) => {
+    const normalizado = normalizarItemParaDestinoCliente(item, opciones);
+    if (normalizado !== item) requiereAjuste = true;
+    return normalizado;
+  });
+
+  return requiereAjuste ? normalizados : lista;
 }
 
 export function crearItemNuevo() {

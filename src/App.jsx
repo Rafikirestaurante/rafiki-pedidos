@@ -14,6 +14,7 @@ import {
   crearMensajeWhatsAppPedido,
   limpiarTelefonoWhatsApp,
   esProductoSinAcompanantes,
+  normalizarItemsParaDestinoCliente,
   obtenerCliente,
   obtenerEstadoPedido
 } from "./shared/utils/pedidos";
@@ -93,18 +94,9 @@ export default function App() {
   useEffect(() => {
     if (vista !== "cliente") return;
 
-    const valorParaLlevarCliente = !comerRestauranteCliente;
-
-    setItemsPedido((actual) => {
-      let requiereAjuste = false;
-      const normalizados = actual.map((item) => {
-        if (Boolean(item.paraLlevar) === valorParaLlevarCliente) return item;
-        requiereAjuste = true;
-        return { ...item, paraLlevar: valorParaLlevarCliente };
-      });
-
-      return requiereAjuste ? normalizados : actual;
-    });
+    setItemsPedido((actual) =>
+      normalizarItemsParaDestinoCliente(actual, { comerRestauranteCliente })
+    );
   }, [vista, comerRestauranteCliente]);
 
 
@@ -404,16 +396,24 @@ export default function App() {
     vista === "inventario" ||
     vista === "gerencia";
   const cargando = vistaProtegidaAdmin && adminAuthCargando;
+  const itemsPedidoClienteNormalizados = useMemo(() => {
+    if (vista !== "cliente") return itemsPedido;
+
+    return normalizarItemsParaDestinoCliente(itemsPedido, { comerRestauranteCliente });
+  }, [vista, itemsPedido, comerRestauranteCliente]);
+
+  const itemsPedidoOperativos = vista === "cliente" ? itemsPedidoClienteNormalizados : itemsPedido;
+
   const itemsConProducto = useMemo(
-    () => itemsPedido.filter((item) => item.plato || item.proteina || item.producto),
-    [itemsPedido]
+    () => itemsPedidoOperativos.filter((item) => item.plato || item.proteina || item.producto),
+    [itemsPedidoOperativos]
   );
 
   const totalPedido = useMemo(() => calcularTotalItems(itemsConProducto), [itemsConProducto]);
 
   const hayProductoSeleccionado = useMemo(() => {
-    return itemsPedido.some((item) => item.plato || item.proteina || item.producto);
-  }, [itemsPedido]);
+    return itemsPedidoOperativos.some((item) => item.plato || item.proteina || item.producto);
+  }, [itemsPedidoOperativos]);
 
   const platosAgrupados = useMemo(
     () => agruparPlatosPorCategoria(menu.platos_detalle),
@@ -445,16 +445,20 @@ export default function App() {
     );
   }
 
-  function manejarComerRestauranteCliente(marcado) {
-    setComerRestauranteCliente(Boolean(marcado));
+  function manejarComerRestauranteCliente(marcado, opciones = {}) {
+    const comerEnRestaurante = Boolean(marcado);
 
-    if (marcado) {
+    setComerRestauranteCliente(comerEnRestaurante);
+
+    if (comerEnRestaurante) {
       setUbicacion("Comer en restaurante");
-      setItemsPedido((actual) => actual.map((item) => ({ ...item, paraLlevar: false })));
-    } else {
+    } else if (!opciones?.preservarUbicacion) {
       setUbicacion("");
-      setItemsPedido((actual) => actual.map((item) => ({ ...item, paraLlevar: true })));
     }
+
+    setItemsPedido((actual) =>
+      normalizarItemsParaDestinoCliente(actual, { comerRestauranteCliente: comerEnRestaurante })
+    );
 
     if (errorDatosPedido) setErrorDatosPedido("");
   }
@@ -608,7 +612,7 @@ export default function App() {
     cambiarFechaPedidoAdministrador,
     editandoPedidoId
   } = usePedidos({
-    itemsPedido,
+    itemsPedido: itemsPedidoOperativos,
     cliente,
     telefono,
     ubicacion,
@@ -865,7 +869,7 @@ export default function App() {
               <PedidoCliente
                 menu={menu}
                 cargandoMenu={cargandoMenu}
-                itemsPedido={itemsPedido}
+                itemsPedido={itemsPedidoOperativos}
                 itemsConProducto={itemsConProducto}
                 platosAgrupados={platosAgrupados}
                 hayProductoSeleccionado={hayProductoSeleccionado}

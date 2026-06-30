@@ -387,6 +387,9 @@ export const appStyles = `
         .confirmacion-check { width: 72px; height: 72px; background: linear-gradient(135deg, var(--rafiki-success), #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; margin: 0 auto 16px; box-shadow: 0 12px 28px rgba(34,197,94,0.35); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .confirmacion-restaurante { animation: fadeInUp 0.36s ease; overflow: hidden; border: 1px solid #bbf7d0; box-shadow: 0 18px 48px rgba(22,163,74,0.16); }
         .confirmacion-restaurante .hero { padding: 34px 26px 28px; text-align: center; }
+        .confirmacion-cliente-especial { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 16px; padding: 11px 13px; margin-bottom: 12px; color: #92400e; }
+        .confirmacion-cliente-especial span { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .35px; }
+        .confirmacion-cliente-especial strong { font-size: 14px; color: #78350f; text-align: right; }
         .confirmacion-info { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
         .confirmacion-info-item { background: var(--rafiki-bg); border: 1px solid var(--rafiki-border); border-radius: 16px; padding: 11px 12px; text-align: left; }
         .confirmacion-info-item span { display: block; color: var(--rafiki-muted); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }

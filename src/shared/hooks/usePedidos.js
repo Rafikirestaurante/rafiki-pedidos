@@ -13,6 +13,8 @@ import {
   obtenerEstadoPedido,
   esItemCafeteria,
   esProductoSinAcompanantes,
+  normalizarClienteEspecialParaPedido,
+  normalizarItemsParaDestinoCliente,
 } from "../utils/pedidos";
 import {
   esErrorDeConexion,
@@ -97,15 +99,11 @@ export function usePedidos({
   const registrarPedido = useCallback(async () => {
     if (guardandoPedido) return;
 
-    const clienteEspecialPedido = clienteEspecialAplicado
-      ? {
-          id: clienteEspecialAplicado.id || null,
-          codigo: limpiarTexto(clienteEspecialAplicado.codigo || "", 80),
-          nombre: limpiarTexto(clienteEspecialAplicado.nombre || "", 120)
-        }
-      : null;
+    const clienteEspecialPedido = normalizarClienteEspecialParaPedido(clienteEspecialAplicado);
 
-    const itemsValidos = itemsPedido
+    const itemsClienteNormalizados = normalizarItemsParaDestinoCliente(itemsPedido, { comerRestauranteCliente });
+
+    const itemsValidos = itemsClienteNormalizados
       .filter((item) => item.plato || item.proteina || item.producto)
       .map((item) => {
         const sinAcompanantes = esItemCafeteria(item) || esProductoSinAcompanantes(item);
@@ -165,7 +163,7 @@ export function usePedidos({
       telefono: telefonoLimpio,
       ubicacion: ubicacionLimpia,
       tipo_pago: tipoPago,
-      tipo_pedido: comerRestauranteCliente ? "mesa" : "cliente",
+      tipo_pedido: comerRestauranteCliente ? "mesa" : "llevar",
       mesa: comerRestauranteCliente ? "5A" : null,
       mesero: "Aplicacion",
       observaciones: observacionesLimpias,

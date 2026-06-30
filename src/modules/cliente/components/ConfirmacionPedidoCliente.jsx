@@ -1,5 +1,5 @@
 import { BOTONES } from "../../../config/textos";
-import { dinero, obtenerCodigoPedido } from "../../../shared/utils/pedidos";
+import { dinero, obtenerClienteEspecialPedido, obtenerCodigoPedido } from "../../../shared/utils/pedidos";
 
 export default function ConfirmacionPedidoCliente({
   pedidoFinalizado,
@@ -7,6 +7,8 @@ export default function ConfirmacionPedidoCliente({
   linkWhatsAppFinal,
   nuevoPedidoCliente,
 }) {
+  const clienteEspecial = obtenerClienteEspecialPedido(pedidoFinalizado);
+
   return (
 <main style={{ maxWidth: 680, margin: "0 auto" }}>
               <section className="card confirmacion-restaurante">
@@ -17,6 +19,13 @@ export default function ConfirmacionPedidoCliente({
                 </div>
 
                 <div className="card-pad">
+                  {clienteEspecial ? (
+                    <div className="confirmacion-cliente-especial">
+                      <span>⭐ Cliente especial aplicado</span>
+                      <strong>{clienteEspecial.nombre || clienteEspecial.codigo || "Cliente especial"}</strong>
+                    </div>
+                  ) : null}
+
                   <div className="confirmacion-info">
                     <div className="confirmacion-info-item">
                       <span>Cliente</span>

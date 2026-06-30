@@ -529,7 +529,7 @@ export default function PedidoCliente({
                       value={comerRestauranteCliente ? "Comer en restaurante" : ubicacion}
                       onChange={(valor) => {
                         setUbicacion(valor);
-                        if (comerRestauranteCliente) setComerRestauranteCliente?.(false);
+                        if (comerRestauranteCliente) setComerRestauranteCliente?.(false, { preservarUbicacion: true });
                         if (errorDatosPedido) setErrorDatosPedido("");
                       }}
                       placeholder="Ej: Edificio, oficina o barrio"
