@@ -8,7 +8,12 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pwa:check": "node scripts/validate-pwa.mjs"
+    "pwa:check": "node scripts/validate-pwa.mjs",
+    "clientes-especiales:check": "node scripts/validate-clientes-especiales.mjs",
+    "cliente-para-llevar:check": "node scripts/validate-cliente-para-llevar.mjs",
+    "thermal-reports:check": "node scripts/validate-thermal-reports.mjs",
+    "thermal-pedidos-hoy:check": "node scripts/validate-thermal-pedidos-hoy.mjs",
+    "thermal-caja:check": "node scripts/validate-thermal-caja.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

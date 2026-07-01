@@ -1,6 +1,6 @@
 {
-  "version": "124.42-HOTFIX34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS-2026-06-26",
-  "phase": "Fase 34E.2 - Selector Restaurante/Cafetería en cliente especial",
-  "date": "2026-06-26",
-  "notes": "Agrega selector discreto Restaurante/Cafetería en /cliente para clientes especiales, deja Restaurante abierto por defecto y simplifica el aviso de cliente especial sin tocar /mesas, Caja, Cartera ni Pedidos Hoy."
+  "version": "125.2-FASE35C-INFORME-CAJA-TERMICO-REFORZADO-2026-07-01",
+  "phase": "Fase 35C - Informe Caja térmico reforzado",
+  "date": "2026-07-01",
+  "notes": "Refuerza la impresión térmica de Informe Caja en 58 mm y 80 mm con la misma información: resumen operativo, ajustes, métodos de pago, saldos, detalle de gastos, arqueos y fórmula validada opción 2."
 }

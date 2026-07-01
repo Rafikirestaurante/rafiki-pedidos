@@ -1,3 +1,18 @@
+## 125.1 — Fase 35B Pedidos Hoy térmico con filtros activos
+
+Se profundizó la impresión térmica de **Pedidos Hoy** para que los botones de 58 mm y 80 mm impriman la **misma información**, cambiando únicamente ancho, tamaño y saltos de línea. El informe ahora incluye rango/búsqueda aplicada, filtros rápidos, orden visible, cantidad impresa vs. cargada, resumen operativo, totales por método de pago y detalle ampliado por pedido.
+
+Archivos principales: `src/modules/admin/components/pedidos/AdminPedidosSection.jsx`, `src/modules/impresion/thermalReportService.js`, `src/styles/appStyles.js` y `scripts/validate-thermal-pedidos-hoy.mjs`.
+
+Validación recomendada: `npm run thermal-pedidos-hoy:check`, `npm run thermal-reports:check`, `npm run build` y `npm run lint`.
+
+Versión: 125.1-FASE35B-PEDIDOS-HOY-TERMICO-FILTROS-2026-06-30
+
+
+## 124.45 — Hotfix 34F.1 Cliente para llevar blindado
+
+Se corrigió de raíz el flujo público `/cliente` para que los pedidos queden para llevar por defecto, sumen el adicional correspondiente y se guarden como `tipo_pedido: "llevar"`, salvo cuando el cliente marque explícitamente “Registrar este pedido para comer en el restaurante”. También se agregó una validación estática con `npm run cliente-para-llevar:check`.
+
 Versión: 124.41-HOTFIX34E1-CAFETERIA-VISIBLE-CLIENTE-2026-06-26
 
 ## 124.40 — Fase 34E reglas clientes especiales en /cliente
@@ -367,3 +382,19 @@ Hotfix 34D.3: el recuadro `⭐ ¿Tienes código de cliente?` se renderiza direct
 ## 124.42-HOTFIX34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS-2026-06-26
 
 Hotfix 34E.2: en `/cliente`, para clientes especiales con Cafetería habilitada, se agregó una fila discreta de selección `Restaurante / Cafetería`, dejando `Restaurante` abierto por defecto. También se simplificó el aviso a solo `⭐ Cliente especial activo`. No se tocó `/mesas`, Caja, Cartera ni Pedidos Hoy.
+
+## 124.43-FASE34E3-TRAZABILIDAD-CLIENTE-ESPECIAL-2026-06-26
+
+Fase 34E.3: se centralizó la normalización del cliente especial para pedidos y se guarda una referencia segura dentro de `items[].cliente_especial`, preparando promociones, regalos, descuentos y reportes futuros sin agregar columnas SQL. La confirmación de `/cliente` muestra una franja discreta `⭐ Cliente especial aplicado` cuando corresponde. No se tocó `/mesas`, Caja, Cartera ni Pedidos Hoy.
+
+## 124.44-FASE34F-PRUEBAS-FINALES-CLIENTES-ESPECIALES-2026-06-26
+
+Fase 34F: cierre de pruebas controladas para Clientes Especiales. Se agregó una matriz de pruebas manuales y el script `npm run clientes-especiales:check` para validar puntos críticos del flujo: `/cliente` como link público, modal de bienvenida, selector `Restaurante / Cafetería`, restaurante abierto por defecto, guardado de `items[].cliente_especial`, mensaje de acompañantes del día y aislamiento de `/mesas`. No se agregaron reglas nuevas ni se tocaron Caja, Cartera, Pedidos Hoy o Dashboard.
+
+## 125.0-FASE35A-INFORMES-TERMICOS-58-80-2026-06-30
+
+Fase 35A: se agregó una base central para impresión térmica de informes administrativos en 58 mm y 80 mm. La regla aplicada es que ambos formatos imprimen la misma información; solo cambia la optimización visual para cada ancho. Se integró impresión de Pedidos Hoy según filtros visibles en pantalla y de Informe Caja desde Gerencia. No se tocó `/cliente`, `/mesas`, guardado de pedidos, Caja en cálculos internos, Cartera, Dashboard, SQL ni impresión actual de comandas.
+
+## 125.2-FASE35C-INFORME-CAJA-TERMICO-REFORZADO-2026-07-01
+
+Fase 35C: se reforzó la impresión térmica de `Gerencia > Caja > Informe Caja` en 58 mm y 80 mm. Ambos formatos imprimen la misma información; solo cambia la optimización visual por ancho. El informe ahora incluye resumen operativo, ajustes de Caja, ventas y gastos por método de pago, saldos de inicio, saldos del último arqueo, detalle enriquecido de gastos, arqueos realizados con saldos y fórmula validada opción 2. No se tocaron `/cliente`, `/mesas`, Pedidos Hoy, Cartera, Dashboard, SQL, guardado de pedidos ni impresión de comandas.
