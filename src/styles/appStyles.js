@@ -1619,6 +1619,18 @@ export const appStyles = `
 .pedidos-filtros-modal-resumen {
   margin: 10px 0 0;
 }
+.pedidos-filtros-modal-impresion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pedidos-filtros-modal-impresion .mini-btn {
+  flex: 1 1 130px;
+  justify-content: center;
+  min-height: 34px;
+  margin-bottom: 0;
+}
 .pedido-filtro-pago-rapido {
   display: inline-flex;
   align-items: center;

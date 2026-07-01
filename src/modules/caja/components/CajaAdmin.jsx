@@ -7,6 +7,7 @@ import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { dinero } from "../../../shared/utils/pedidos";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, cargarUltimoArqueoDiaAnterior, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
+import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
 const CUENTAS_INICIALES = [
@@ -678,6 +679,130 @@ export default function CajaAdmin() {
     descargarArchivo(`informe-caja-${fechaCaja}.csv`, `\ufeff${csv}`, "text/csv;charset=utf-8");
   }
 
+  function crearFilasPorMetodoTermico(resumen = {}, textoVacio = "Sin movimientos") {
+    const entradas = Object.entries(resumen || {}).filter(([, valor]) => Number(valor || 0) !== 0);
+    if (!entradas.length) return [{ etiqueta: textoVacio, valor: dinero(0) }];
+    return entradas
+      .sort(([metodoA], [metodoB]) => metodoA.localeCompare(metodoB, "es"))
+      .map(([metodo, valor]) => ({ etiqueta: metodo || "No especificado", valor: dinero(valor) }));
+  }
+
+  function crearFilasSaldosTermicos(estado, incluirTotal = false, total = 0) {
+    const saldos = obtenerSaldosArqueo(estado);
+    return [
+      ...(incluirTotal ? [{ etiqueta: "Total", valor: dinero(total), fuerte: true }] : []),
+      { etiqueta: "Caja Registradora", valor: dinero(saldos.cajaRegistradora) },
+      { etiqueta: "Caja Azul", valor: dinero(saldos.cajaAzul) },
+      { etiqueta: "Bancolombia", valor: dinero(saldos.bancolombia) },
+      { etiqueta: "Nequi", valor: dinero(saldos.nequi) },
+      { etiqueta: "Rafa", valor: dinero(saldos.rafa) },
+      { etiqueta: "Datafono", valor: dinero(saldos.datafono) },
+    ];
+  }
+
+  function crearFilasArqueosTermicos() {
+    if (!arqueosInforme.length) return [{ etiqueta: "Sin arqueos registrados", valor: "0" }];
+
+    return arqueosInforme.flatMap((arqueo, index) => {
+      const etiqueta = arqueo.esVigente ? "Último arqueo actual" : index === 0 ? "Último arqueo" : `Arqueo ${arqueosInforme.length - index}`;
+      const saldos = obtenerSaldosArqueo(arqueo.arqueoData);
+      return [
+        {
+          etiqueta: `${etiqueta} · ${formatearFechaHoraColombia(arqueo.creadoEn)}`,
+          valor: dinero(arqueo.arqueoTotal),
+          fuerte: true,
+        },
+        { etiqueta: "  Registradora / Azul", valor: `${dinero(saldos.cajaRegistradora)} / ${dinero(saldos.cajaAzul)}` },
+        { etiqueta: "  Bancolombia / Nequi", valor: `${dinero(saldos.bancolombia)} / ${dinero(saldos.nequi)}` },
+        { etiqueta: "  Rafa / Datafono", valor: `${dinero(saldos.rafa)} / ${dinero(saldos.datafono)}` },
+      ];
+    });
+  }
+
+  function imprimirInformeCajaTermico(formato) {
+    const gastosDetalle = cuadreReal?.gastosDetalle || [];
+    const fechaGeneracion = formatearFechaTermica(new Date());
+    const ok = imprimirReporteTermico({
+      formato,
+      titulo: "Informe Caja Rafiki",
+      subtitulo: `Fecha ${fechaCaja}`,
+      meta: [
+        { etiqueta: "Generado", valor: fechaGeneracion },
+        { etiqueta: "Formato", valor: `${formato} mm · misma información` },
+        { etiqueta: "Pedidos", valor: cuadreReal?.pedidosCantidad || 0 },
+        { etiqueta: "Estado", valor: estadoDiferencia.texto },
+      ],
+      secciones: [
+        {
+          titulo: "Resumen del día · Resumen operativo",
+          filas: [
+            { etiqueta: "Inicio del día", valor: dinero(totalInicio), fuerte: true },
+            { etiqueta: `Ventas del día (${cuadreReal?.pedidosCantidad || 0} pedidos)`, valor: dinero(ventasTotal), tipo: "ingreso" },
+            { etiqueta: "Gastos operativos", valor: dinero(gastosTotal), tipo: "egreso" },
+            { etiqueta: "Gastos Rafa", valor: dinero(gastosRafaTotal), tipo: "egreso" },
+            { etiqueta: "Cuentas por cobrar", valor: dinero(cuentasPorCobrarTotal), tipo: "egreso" },
+            { etiqueta: "Caja esperada", valor: dinero(dineroEsperado), fuerte: true },
+            { etiqueta: "Fin / arqueo contado", valor: dinero(totalUltimoArqueoInforme), fuerte: true },
+            { etiqueta: "Ingresos días anteriores", valor: dinero(ingresosDiasAnterioresTotal) },
+            { etiqueta: estadoDiferencia.etiqueta, valor: dinero(Math.abs(diferenciaReal)), fuerte: true, tipo: estadoDiferencia.clase },
+          ],
+        },
+        {
+          titulo: "Ajustes de Caja",
+          filas: [
+            { etiqueta: "Ingresos días anteriores", valor: dinero(ingresosDiasAnterioresTotal), fuerte: true },
+            { etiqueta: "Gastos Rafa", valor: dinero(gastosRafaTotal), tipo: "egreso" },
+            { etiqueta: "Cuentas por cobrar", valor: dinero(cuentasPorCobrarTotal), tipo: "egreso" },
+            { etiqueta: "Ajustes egresos", valor: dinero(ajustesEgresosTotal), fuerte: true },
+          ],
+        },
+        {
+          titulo: "Ventas por método",
+          filas: crearFilasPorMetodoTermico(cuadreReal?.ventasPorMetodo, "Sin ventas registradas"),
+        },
+        {
+          titulo: "Gastos por método",
+          filas: crearFilasPorMetodoTermico(cuadreReal?.gastosPorMetodo, "Sin gastos registrados"),
+        },
+        {
+          titulo: "Inicio del día - saldos",
+          filas: crearFilasSaldosTermicos(inicioDia, true, totalInicio),
+        },
+        {
+          titulo: "Saldos último arqueo",
+          filas: [
+            ...(arqueoVigenteInforme?.creadoEn ? [{ etiqueta: "Hora último arqueo", valor: formatearFechaHoraColombia(arqueoVigenteInforme.creadoEn) }] : []),
+            ...crearFilasSaldosTermicos(arqueoVigenteInforme?.arqueoData || finDia, true, totalUltimoArqueoInforme),
+          ],
+        },
+        {
+          titulo: "Detalle gastos",
+          filas: gastosDetalle.length
+            ? gastosDetalle.map((gasto) => ({
+                etiqueta: [gasto.proveedor || "Sin proveedor", gasto.categoria, gasto.articulos, gasto.metodoPago].filter(Boolean).join(" · "),
+                valor: dinero(gasto.valor),
+              }))
+            : [{ etiqueta: "Sin gastos registrados", valor: dinero(0) }],
+        },
+        {
+          titulo: "Arqueos realizados",
+          filas: crearFilasArqueosTermicos(),
+        },
+        {
+          titulo: "Fórmula validada",
+          filas: [
+            { etiqueta: "Caja esperada", valor: "Inicio + ventas - gastos - Rafa - CxC" },
+            { etiqueta: "Diferencia", valor: "Arqueo + ingresos ant. - caja esperada" },
+            { etiqueta: "Nota", valor: "Ingresos días anteriores no suben ventas ni caja esperada" },
+          ],
+        },
+      ],
+      pie: "Misma información · 58/80 optimizado por ancho",
+    });
+
+    if (!ok) window.alert("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
+  }
+
   return (
     <section className="caja-admin">
       <div className="card card-pad caja-header">
@@ -734,6 +859,8 @@ export default function CajaAdmin() {
               <div><h2>Informe Caja</h2><p className="muted">Resumen limpio de ventas, gastos, dinero esperado y arqueos realizados.</p></div>
               <div className="caja-informe-actions">
                 {cargandoCuadre && <span className="muted small">Actualizando...</span>}
+                <button type="button" className="btn secondary" onClick={() => imprimirInformeCajaTermico("58")}>Imprimir 58 mm</button>
+                <button type="button" className="btn secondary" onClick={() => imprimirInformeCajaTermico("80")}>Imprimir 80 mm</button>
                 <button type="button" className="btn secondary" onClick={compartirInformeWhatsApp}>Compartir WhatsApp</button>
                 <button type="button" className="btn secondary" onClick={exportarInformeExcel}>Exportar Excel</button>
               </div>

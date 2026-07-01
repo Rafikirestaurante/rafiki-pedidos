@@ -11,6 +11,7 @@ import { listarClientesCreditoActivos } from "../../../../services/clientesCredi
 import RafikiEmptyState from "../../../../shared/components/RafikiEmptyState";
 import RafikiTabs from "../../../../shared/components/RafikiTabs";
 import RafikiModal from "../../../../shared/components/RafikiModal";
+import { formatearFechaTermica, imprimirReporteTermico } from "../../../impresion/thermalReportService";
 
 
 function normalizarMesaPedido(pedido) {
@@ -22,27 +23,6 @@ function compararFechaPedidoDesc(a, b) {
   return new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime();
 }
 
-
-function formatearFechaCortaTicket(valor = new Date()) {
-  const fecha = valor ? new Date(valor) : new Date();
-  if (Number.isNaN(fecha.getTime())) return "--/--/--";
-
-  return new Intl.DateTimeFormat("es-CO", {
-    timeZone: "America/Bogota",
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit"
-  }).format(fecha).replace(/\//g, "-");
-}
-
-function escapeHtmlTicket(valor) {
-  return String(valor || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 function obtenerUbicacionTicketPedido(pedido) {
   return String(pedido?.ubicacion || pedido?.mesa || pedido?.cliente || "Sin ubicación").trim() || "Sin ubicación";
@@ -132,6 +112,18 @@ function pedidoSinItemsPareceCafeteria(pedido) {
   return ["parfait", "batido", "jugo", "cafe", "capuchino", "desayuno", "sandwich", "sanduche", "postre", "bebida", "fresas con crema", "ensalada de frutas"].some((palabra) => texto.includes(palabra));
 }
 
+function pedidoTieneCafeteria(pedido) {
+  const items = pedidoItemsPedidoHoy(pedido);
+  if (items.length === 0) return pedidoSinItemsPareceCafeteria(pedido);
+  return items.some(itemEsCafeteriaPedidoHoy);
+}
+
+function pedidoTieneRestaurante(pedido) {
+  const items = pedidoItemsPedidoHoy(pedido);
+  if (items.length === 0) return !pedidoSinItemsPareceCafeteria(pedido);
+  return items.some(itemEsRestaurantePedidoHoy);
+}
+
 function pedidoCumpleFiltroTipoPedido(pedido, filtro) {
   const items = pedidoItemsPedidoHoy(pedido);
   const paraLlevarGeneral = pedidoPareceParaLlevar(pedido);
@@ -161,7 +153,6 @@ function pedidoCumpleFiltroTipoPedido(pedido, filtro) {
     return false;
   });
 }
-
 
 function fechaISOColombiaDesdeValor(valor) {
   const fecha = valor ? new Date(valor) : new Date();
@@ -214,119 +205,186 @@ function aplicarFiltrosRapidosPedidos(pedidos = [], filtrosTipo = {}, filtroPago
   });
 }
 
-function imprimirResumenPedidosFiltrados80mm(pedidos = [], fechaReferencia = new Date(), titulo = "Pedidos filtrados") {
+function formatearHoraPedidoTermico(pedido) {
+  const fecha = pedido?.created_at ? new Date(pedido.created_at) : null;
+  if (!fecha || Number.isNaN(fecha.getTime())) return "Sin hora";
+
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(fecha);
+}
+
+function obtenerLineaPedidoTermico(pedido) {
+  const tieneRestaurante = pedidoTieneRestaurante(pedido);
+  const tieneCafeteria = pedidoTieneCafeteria(pedido);
+
+  if (tieneRestaurante && tieneCafeteria) return "Rest. + Caf.";
+  if (tieneCafeteria) return "Cafetería";
+  return "Restaurante";
+}
+
+function obtenerDestinoPedidoTermico(pedido) {
+  return pedidoPareceParaLlevar(pedido) ? "Para llevar" : "En mesa";
+}
+
+function resumirDetallePedidoTermico(pedido) {
+  const resumen = resumirItemsPedidoCompacto(pedido);
+  if (resumen && resumen !== "Sin detalle") return resumen;
+  return String(pedido?.pedido_texto || "Sin detalle").replace(/\s+/g, " ").trim() || "Sin detalle";
+}
+
+function sumarTotalPedidosTermicos(pedidos = []) {
+  return (Array.isArray(pedidos) ? pedidos : []).reduce((suma, pedido) => suma + Number(pedido?.total || 0), 0);
+}
+
+function contarPedidosTermicos(pedidos = [], predicado) {
+  return (Array.isArray(pedidos) ? pedidos : []).filter(predicado).length;
+}
+
+function acumularPorPagoPedidosTermicos(pedidos = []) {
+  const mapa = new Map();
+  (Array.isArray(pedidos) ? pedidos : []).forEach((pedido) => {
+    const pago = normalizarMetodoPago(pedido?.tipo_pago, { permitirCredito: true, fallback: pedido?.tipo_pago || METODOS_PAGO.EFECTIVO });
+    const actual = mapa.get(pago) || { cantidad: 0, total: 0 };
+    actual.cantidad += 1;
+    actual.total += Number(pedido?.total || 0);
+    mapa.set(pago, actual);
+  });
+
+  return Array.from(mapa.entries())
+    .sort(([a], [b]) => String(a).localeCompare(String(b), "es"))
+    .map(([metodo, datos]) => ({
+      etiqueta: `${metodo} (${datos.cantidad})`,
+      valor: dinero(datos.total),
+    }));
+}
+
+function describirRangoBusquedaPedidosTermico({ filtroPedidos, fechaSeleccionada, fechaInicioRangoPedidos, fechaFinRangoPedidos, busqueda, busquedaNumeroPedido }) {
+  const partes = [];
+
+  if (filtroPedidos === "dia" && fechaSeleccionada) partes.push(`Día: ${fechaSeleccionada}`);
+  else if (filtroPedidos === "rango") partes.push(`Rango: ${fechaInicioRangoPedidos || "inicio"} a ${fechaFinRangoPedidos || fechaInicioRangoPedidos || "fin"}`);
+  else partes.push("Hoy");
+
+  if (String(busqueda || "").trim()) partes.push(`Búsqueda: ${String(busqueda).trim()}`);
+  if (String(busquedaNumeroPedido || "").trim()) partes.push(`# pedido: ${String(busquedaNumeroPedido).trim()}`);
+
+  return partes.join(" · ");
+}
+
+
+function construirMetaFiltrosPedidosTermicos({ fechaReferencia, resumenFiltrosRapidos, cantidad, rangoBusqueda, orden, totalCargados }) {
+  return [
+    { etiqueta: "Fecha impresión", valor: formatearFechaTermica(fechaReferencia || new Date()) },
+    { etiqueta: "Rango / búsqueda", valor: rangoBusqueda || "Hoy" },
+    { etiqueta: "Filtros rápidos", valor: resumenFiltrosRapidos || "Sin filtros rápidos activos" },
+    { etiqueta: "Orden", valor: orden === "primeros" ? "Primeros pedidos primero" : "Últimos pedidos primero" },
+    { etiqueta: "Pedidos impresos", valor: `${cantidad}${Number.isFinite(totalCargados) ? ` de ${totalCargados} cargados` : ""}` },
+  ];
+}
+
+function crearSeccionesPedidosTermicos(lista) {
+  const pedidos = Array.isArray(lista) ? lista : [];
+  const total = sumarTotalPedidosTermicos(pedidos);
+  const paraLlevar = contarPedidosTermicos(pedidos, pedidoPareceParaLlevar);
+  const enMesa = contarPedidosTermicos(pedidos, (pedido) => !pedidoPareceParaLlevar(pedido));
+  const restaurante = contarPedidosTermicos(pedidos, pedidoTieneRestaurante);
+  const cafeteria = contarPedidosTermicos(pedidos, pedidoTieneCafeteria);
+  const pendientes = contarPedidosTermicos(pedidos, (pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
+  const finalizados = contarPedidosTermicos(pedidos, (pedido) => obtenerEstadoPedido(pedido) === "Finalizado");
+
+  return [
+    {
+      titulo: "Resumen",
+      filas: [
+        { etiqueta: "Pedidos impresos", valor: pedidos.length, fuerte: true },
+        { etiqueta: "Total ventas", valor: dinero(total), fuerte: true },
+        { etiqueta: "Para llevar", valor: paraLlevar },
+        { etiqueta: "En mesa", valor: enMesa },
+        { etiqueta: "Restaurante", valor: restaurante },
+        { etiqueta: "Cafetería", valor: cafeteria },
+        { etiqueta: "Pendientes", valor: pendientes },
+        { etiqueta: "Finalizados", valor: finalizados },
+      ],
+    },
+    {
+      titulo: "Métodos de pago",
+      filas: acumularPorPagoPedidosTermicos(pedidos),
+    },
+  ];
+}
+
+function crearCamposPedidosTermicos() {
+  return [
+    {
+      etiqueta: "Pedido",
+      fuerte: true,
+      valor: (pedido) => `#${obtenerCodigoPedido(pedido)} · ${formatearHoraPedidoTermico(pedido)}`,
+    },
+    {
+      etiqueta: "Cliente",
+      valor: obtenerCliente,
+    },
+    {
+      etiqueta: "Destino",
+      valor: (pedido) => `${obtenerDestinoPedidoTermico(pedido)} · ${obtenerUbicacionTicketPedido(pedido)}`,
+    },
+    {
+      etiqueta: "Línea",
+      valor: (pedido) => obtenerLineaPedidoTermico(pedido),
+    },
+    {
+      etiqueta: "Pago / Estado",
+      valor: (pedido) => `${pedido?.tipo_pago || "Sin pago"} · ${obtenerEstadoPedido(pedido)}`,
+    },
+    {
+      etiqueta: "Detalle",
+      bloque: true,
+      valor: resumirDetallePedidoTermico,
+    },
+    {
+      etiqueta: "Total",
+      fuerte: true,
+      valor: (pedido) => dinero(pedido?.total || 0),
+    },
+  ];
+}
+
+function imprimirResumenPedidosFiltradosTermico({
+  pedidos = [],
+  fechaReferencia = new Date(),
+  titulo = "Pedidos filtrados",
+  resumenFiltros = "Sin filtros rápidos activos",
+  rangoBusqueda = "Hoy",
+  orden = "ultimos",
+  totalCargados = null,
+  formato = "80",
+}) {
   const lista = Array.isArray(pedidos) ? pedidos : [];
-  const fechaTicket = formatearFechaCortaTicket(fechaReferencia || lista[0]?.created_at || new Date());
-  const total = lista.reduce((suma, pedido) => suma + Number(pedido?.total || 0), 0);
-  const filas = lista.map((pedido) => `
-    <tr>
-      <td class="numero">#${escapeHtmlTicket(obtenerCodigoPedido(pedido))}</td>
-      <td>${escapeHtmlTicket(obtenerCliente(pedido))}</td>
-      <td>${escapeHtmlTicket(obtenerUbicacionTicketPedido(pedido))}</td>
-      <td class="total">${escapeHtmlTicket(dinero(pedido?.total || 0))}</td>
-    </tr>
-  `).join("");
 
-  const html = `
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>${escapeHtmlTicket(titulo)} ${fechaTicket}</title>
-        <style>
-          @page { size: 80mm auto; margin: 0; }
-          * { box-sizing: border-box; }
-          body {
-            width: 80mm;
-            margin: 0;
-            padding: 8px 6px 12px;
-            background: #fff;
-            color: #000;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10px;
-          }
-          .titulo {
-            text-align: center;
-            font-weight: 900;
-            font-size: 14px;
-            line-height: 1.15;
-            margin-bottom: 2px;
-            text-transform: uppercase;
-          }
-          .fecha {
-            text-align: center;
-            font-weight: 800;
-            font-size: 12px;
-            margin-bottom: 8px;
-          }
-          table { width: 100%; border-collapse: collapse; }
-          th {
-            border-top: 1px dashed #000;
-            border-bottom: 1px dashed #000;
-            padding: 4px 2px;
-            text-align: left;
-            font-size: 9px;
-            text-transform: uppercase;
-          }
-          td {
-            border-bottom: 1px dashed #bbb;
-            padding: 4px 2px;
-            vertical-align: top;
-            word-break: break-word;
-          }
-          .numero { width: 17mm; font-weight: 900; }
-          .total { width: 18mm; text-align: right; font-weight: 900; white-space: nowrap; }
-          .resumen {
-            margin-top: 8px;
-            padding-top: 6px;
-            border-top: 1px dashed #000;
-            font-size: 12px;
-            font-weight: 900;
-            display: flex;
-            justify-content: space-between;
-          }
-          .vacio {
-            text-align: center;
-            font-weight: 800;
-            padding: 12px 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="titulo">${escapeHtmlTicket(titulo)}</div>
-        <div class="fecha">Fecha ${escapeHtmlTicket(fechaTicket)}</div>
-        ${lista.length ? `
-          <table>
-            <thead>
-              <tr>
-                <th>N°</th>
-                <th>Cliente</th>
-                <th>Ubicación</th>
-                <th class="total">Total</th>
-              </tr>
-            </thead>
-            <tbody>${filas}</tbody>
-          </table>
-          <div class="resumen"><span>${lista.length} pedido${lista.length === 1 ? "" : "s"}</span><span>${escapeHtmlTicket(dinero(total))}</span></div>
-        ` : `<div class="vacio">Sin pedidos restaurante para llevar.</div>`}
-        <script>
-          window.onload = function () {
-            setTimeout(function () {
-              window.print();
-              window.close();
-            }, 250);
-          };
-        </script>
-      </body>
-    </html>
-  `;
-
-  const ventana = window.open("", "_blank", "width=420,height=700");
-  if (!ventana) return false;
-  ventana.document.open();
-  ventana.document.write(html);
-  ventana.document.close();
-  return true;
+  return imprimirReporteTermico({
+    formato,
+    titulo,
+    subtitulo: "Rafiki Pedidos · Pedidos Hoy",
+    meta: construirMetaFiltrosPedidosTermicos({
+      fechaReferencia: fechaReferencia || lista[0]?.created_at || new Date(),
+      resumenFiltrosRapidos: resumenFiltros,
+      cantidad: lista.length,
+      rangoBusqueda,
+      orden,
+      totalCargados,
+    }),
+    secciones: crearSeccionesPedidosTermicos(lista),
+    listado: {
+      titulo: "Detalle pedidos",
+      vacio: "Sin pedidos para imprimir con estos filtros.",
+      items: lista,
+      campos: crearCamposPedidosTermicos(),
+    },
+    pie: "Pedidos Hoy · misma información en 58 mm y 80 mm",
+  });
 }
 
 function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
@@ -870,6 +928,15 @@ function AdminPedidosSectionBase({
     return new Date();
   }, [fechaInicioRangoPedidos, fechaSeleccionada, filtroPedidos]);
 
+  const rangoBusquedaPedidosTermico = useMemo(() => describirRangoBusquedaPedidosTermico({
+    filtroPedidos,
+    fechaSeleccionada,
+    fechaInicioRangoPedidos,
+    fechaFinRangoPedidos,
+    busqueda,
+    busquedaNumeroPedido,
+  }), [busqueda, busquedaNumeroPedido, fechaFinRangoPedidos, fechaInicioRangoPedidos, fechaSeleccionada, filtroPedidos]);
+
   const tabsPedidosHoy = useMemo(() => ([
     { id: "pedidos", label: "Pedidos", icon: "📋", count: pedidosUnificados.length },
     { id: "mesas", label: "Mesas", icon: "🍽️", count: cantidadPedidosActivos },
@@ -986,10 +1053,20 @@ function AdminPedidosSectionBase({
     setVistaPedidosHoy("pedidos");
   }, []);
 
-  const imprimirPedidosFiltrados80mm = useCallback(() => {
+  const imprimirPedidosFiltradosTermico = useCallback((formato) => {
     const tituloTicket = hayFiltrosRapidosActivos ? "Pedidos filtrados" : "Pedidos de hoy";
-    imprimirResumenPedidosFiltrados80mm(pedidosVisiblesTabla, fechaReferenciaImpresion, tituloTicket);
-  }, [fechaReferenciaImpresion, hayFiltrosRapidosActivos, pedidosVisiblesTabla]);
+    const ok = imprimirResumenPedidosFiltradosTermico({
+      pedidos: pedidosVisiblesTabla,
+      fechaReferencia: fechaReferenciaImpresion,
+      titulo: tituloTicket,
+      resumenFiltros: resumenFiltrosRapidos,
+      rangoBusqueda: rangoBusquedaPedidosTermico,
+      orden: ordenPedidosHoy,
+      totalCargados: totalCargadosServidor,
+      formato,
+    });
+    if (!ok) window.alert("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
+  }, [fechaReferenciaImpresion, hayFiltrosRapidosActivos, ordenPedidosHoy, pedidosVisiblesTabla, rangoBusquedaPedidosTermico, resumenFiltrosRapidos, totalCargadosServidor]);
 
   return (
     <section className="card card-pad">
@@ -1085,11 +1162,20 @@ function AdminPedidosSectionBase({
             <button
               type="button"
               className="mini-btn"
-              onClick={imprimirPedidosFiltrados80mm}
+              onClick={() => imprimirPedidosFiltradosTermico("58")}
               disabled={pedidosVisiblesTabla.length === 0}
-              title="Imprimir en 80mm los pedidos que estén filtrados en pantalla"
+              title="Imprimir en 58 mm los mismos pedidos filtrados en pantalla"
             >
-              🧾 Imprimir 80mm
+              🧾 58 mm
+            </button>
+            <button
+              type="button"
+              className="mini-btn"
+              onClick={() => imprimirPedidosFiltradosTermico("80")}
+              disabled={pedidosVisiblesTabla.length === 0}
+              title="Imprimir en 80 mm los mismos pedidos filtrados en pantalla"
+            >
+              🧾 80 mm
             </button>
           </div>
         </div>
@@ -1272,7 +1358,7 @@ function AdminPedidosSectionBase({
       <RafikiModal
         open={mostrarModalFiltrosRapidos}
         title="Filtros rápidos"
-        description="Selecciona una o varias opciones. La impresión 80mm usará exactamente los pedidos visibles en pantalla."
+        description="Selecciona una o varias opciones. La impresión 58 mm y 80 mm usará exactamente los pedidos visibles en pantalla; solo cambia la optimización del ancho."
         onClose={() => setMostrarModalFiltrosRapidos(false)}
         size="sm"
         footer={(
@@ -1315,6 +1401,24 @@ function AdminPedidosSectionBase({
         <p className="muted small pedidos-filtros-modal-resumen">
           Resultado actual: <strong>{pedidosVisiblesTabla.length}</strong> pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"} visible{pedidosVisiblesTabla.length === 1 ? "" : "s"}.
         </p>
+        <div className="pedidos-filtros-modal-impresion">
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={() => imprimirPedidosFiltradosTermico("58")}
+            disabled={pedidosVisiblesTabla.length === 0}
+          >
+            Imprimir 58 mm
+          </button>
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={() => imprimirPedidosFiltradosTermico("80")}
+            disabled={pedidosVisiblesTabla.length === 0}
+          >
+            Imprimir 80 mm
+          </button>
+        </div>
       </RafikiModal>
 
       {pedidoEditando && (
