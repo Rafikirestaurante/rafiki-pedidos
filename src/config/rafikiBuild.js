@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "124.45-HOTFIX-CLIENTE-PARA-LLEVAR-BLINDAJE-2026-06-30",
-  phase: "Hotfix 34F.1 - Blindaje /cliente para llevar",
-  date: "2026-06-30",
-  fase: "34F1-HOTFIX-CLIENTE-PARA-LLEVAR-BLINDAJE",
+  version: "125.2-FASE35C-INFORME-CAJA-TERMICO-REFORZADO-2026-07-01",
+  phase: "Fase 35C - Informe Caja térmico reforzado",
+  date: "2026-07-01",
+  fase: "35C-INFORME-CAJA-TERMICO-REFORZADO",
   notes:
-    "Corrige de raíz el flujo público /cliente para que todo pedido sea para llevar por defecto, sume el adicional correspondiente y se guarde como llevar, salvo cuando se marque explícitamente Comer en restaurante."
+    "Refuerza la impresión térmica de Informe Caja en 58 mm y 80 mm con la misma información: resumen operativo, ajustes, métodos de pago, saldos, detalle de gastos, arqueos y fórmula validada opción 2."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
