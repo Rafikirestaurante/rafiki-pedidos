@@ -716,16 +716,16 @@ export default function CarteraClientesCredito() {
       ],
       listado: {
         titulo: "Top saldos pendientes",
+        modo: "tabla",
         vacio: "Sin clientes activos con saldo pendiente.",
         items: topSaldo,
         campos: [
-          { etiqueta: "Cliente", fuerte: true, valor: (cliente) => cliente.nombre || "Sin nombre" },
-          { etiqueta: "Saldo", fuerte: true, valor: (cliente) => dinero(cliente.saldo_pendiente) },
-          { etiqueta: "Teléfono", valor: (cliente) => cliente.telefono || "Sin teléfono" },
-          { etiqueta: "Observación", bloque: true, valor: (cliente) => cliente.observaciones || "Sin observación" },
+          { etiqueta: "Cliente", ancho: "44%", fuerte: true, valor: (cliente) => cliente.nombre || "Sin nombre" },
+          { etiqueta: "Teléfono", ancho: "28%", valor: (cliente) => cliente.telefono || "Sin teléfono" },
+          { etiqueta: "Saldo", ancho: "28%", alinear: "right", fuerte: true, valor: (cliente) => dinero(cliente.saldo_pendiente) },
         ],
       },
-      pie: `Clientes recientes: ${recientes.length} · misma información en 58 mm y 80 mm`,
+      pie: `Clientes recientes: ${recientes.length} · tabla compacta 58 mm / 80 mm`,
     });
 
     if (!ok) setError("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
@@ -763,19 +763,17 @@ export default function CarteraClientesCredito() {
       ],
       listado: {
         titulo: "Detalle movimientos",
+        modo: "tabla",
         vacio: "Sin movimientos para imprimir con estos filtros.",
         items: lista,
         campos: [
-          { etiqueta: "Fecha", valor: (movimiento) => formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at) },
-          { etiqueta: "Pedido", fuerte: true, valor: (movimiento) => movimiento.numero_pedido ? `#${movimiento.numero_pedido}` : "—" },
-          { etiqueta: "Cliente", valor: (movimiento) => movimiento.cliente_nombre || "—" },
-          { etiqueta: "Pedido realizado", bloque: true, valor: resumenPedidoMovimiento },
-          { etiqueta: "Valor", fuerte: true, valor: (movimiento) => dinero(movimiento.valor) },
-          { etiqueta: "Estado", valor: (movimiento) => estadoCartera(movimiento) },
-          { etiqueta: "Saldo", fuerte: true, valor: (movimiento) => dinero(saldoMovimiento(movimiento)) },
+          { etiqueta: "Pedido", ancho: "17%", fuerte: true, valor: (movimiento) => movimiento.numero_pedido ? `#${movimiento.numero_pedido}` : "—" },
+          { etiqueta: "Cliente", ancho: "35%", valor: (movimiento) => movimiento.cliente_nombre || "—" },
+          { etiqueta: "Estado", ancho: "22%", valor: (movimiento) => estadoCartera(movimiento) },
+          { etiqueta: "Saldo", ancho: "26%", alinear: "right", fuerte: true, valor: (movimiento) => dinero(saldoMovimiento(movimiento)) },
         ],
       },
-      pie: "Cartera · misma información en 58 mm y 80 mm",
+      pie: "Cartera · tabla compacta 58 mm / 80 mm",
     });
 
     if (!ok) setError("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");

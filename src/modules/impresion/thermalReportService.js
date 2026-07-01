@@ -122,11 +122,46 @@ function renderSecciones(secciones = []) {
     .join("");
 }
 
-function renderListado(listado = {}) {
-  const items = Array.isArray(listado.items) ? listado.items : [];
-  if (!items.length) return listado.vacio ? `<div class="thermal-empty">${renderTextoTermico(listado.vacio)}</div>` : "";
+function resolverValorCampoTermico(campo, item) {
+  if (!campo) return "";
+  return typeof campo.valor === "function" ? campo.valor(item) : item?.[campo.key];
+}
 
-  const campos = Array.isArray(listado.campos) ? listado.campos : [];
+function normalizarAnchoColumnaTermica(campo, totalCampos) {
+  if (campo?.ancho) return String(campo.ancho).trim();
+  if (campo?.width) return String(campo.width).trim();
+  return `${Math.max(1, Math.floor(100 / Math.max(1, totalCampos)))}%`;
+}
+
+function renderListadoTabla(listado = {}, campos = [], items = []) {
+  const columnas = campos.filter((campo) => !campo?.bloque);
+  if (!columnas.length) return "";
+
+  const template = columnas.map((campo) => normalizarAnchoColumnaTermica(campo, columnas.length)).join(" ");
+  const encabezado = columnas.map((campo) => `
+    <span class="thermal-table-cell thermal-table-head-cell ${campo.alinear === "right" ? "thermal-table-cell-right" : ""}">${renderTextoTermico(campo.etiqueta)}</span>
+  `).join("");
+
+  const filas = items.map((item) => `
+    <div class="thermal-table-row" style="grid-template-columns: ${escapeHtmlTermico(template)};">
+      ${columnas.map((campo) => `
+        <span class="thermal-table-cell ${campo.fuerte ? "thermal-table-cell-strong" : ""} ${campo.alinear === "right" ? "thermal-table-cell-right" : ""}">${renderTextoTermico(resolverValorCampoTermico(campo, item))}</span>
+      `).join("")}
+    </div>
+  `).join("");
+
+  return `
+    <section class="thermal-list-section thermal-list-section-table">
+      ${listado.titulo ? `<h3>${renderTextoTermico(listado.titulo)}</h3>` : ""}
+      <div class="thermal-table">
+        <div class="thermal-table-row thermal-table-head" style="grid-template-columns: ${escapeHtmlTermico(template)};">${encabezado}</div>
+        ${filas}
+      </div>
+    </section>
+  `;
+}
+
+function renderListadoBloques(listado = {}, campos = [], items = []) {
   return `
     <section class="thermal-list-section">
       ${listado.titulo ? `<h3>${renderTextoTermico(listado.titulo)}</h3>` : ""}
@@ -136,7 +171,7 @@ function renderListado(listado = {}) {
             ${campos.map((campo) => `
               <div class="thermal-list-line ${campo.fuerte ? "thermal-list-line-strong" : ""} ${campo.bloque ? "thermal-list-line-block" : ""}">
                 <span>${renderTextoTermico(campo.etiqueta)}</span>
-                <strong>${renderTextoTermico(typeof campo.valor === "function" ? campo.valor(item) : item?.[campo.key])}</strong>
+                <strong>${renderTextoTermico(resolverValorCampoTermico(campo, item))}</strong>
               </div>
             `).join("")}
           </article>
@@ -144,6 +179,19 @@ function renderListado(listado = {}) {
       </div>
     </section>
   `;
+}
+
+function renderListado(listado = {}) {
+  const items = Array.isArray(listado.items) ? listado.items : [];
+  if (!items.length) return listado.vacio ? `<div class="thermal-empty">${renderTextoTermico(listado.vacio)}</div>` : "";
+
+  const campos = Array.isArray(listado.campos) ? listado.campos : [];
+  const modo = String(listado.modo || listado.layout || "bloques").toLowerCase();
+  if (modo === "tabla" || listado.tabla === true) {
+    return renderListadoTabla(listado, campos, items);
+  }
+
+  return renderListadoBloques(listado, campos, items);
 }
 
 function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki", subtitulo = "", meta = [], secciones = [], listado = null, pie = "" }) {
@@ -257,6 +305,39 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             text-transform: uppercase;
             font-weight: 800;
           }
+          .thermal-list-section-table {
+            padding-top: 4px;
+          }
+          .thermal-table {
+            width: 100%;
+          }
+          .thermal-table-row {
+            display: grid;
+            column-gap: 2px;
+            align-items: start;
+            border-bottom: 1px dotted #999;
+            padding: 2px 0;
+          }
+          .thermal-table-row:last-child { border-bottom: 0; }
+          .thermal-table-head {
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            margin-bottom: 1px;
+          }
+          .thermal-table-cell {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.12;
+            font-size: 0.92em;
+          }
+          .thermal-table-head-cell {
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 0.82em;
+          }
+          .thermal-table-cell-strong { font-weight: 900; }
+          .thermal-table-cell-right { text-align: right; }
           .thermal-empty {
             border-top: 1px dashed #000;
             margin-top: 6px;
@@ -313,9 +394,9 @@ export function imprimirReporteTermico(opciones = {}) {
 
 export function crearCamposListadoPedidosTermico({ obtenerNumero, obtenerClientePedido, obtenerUbicacionPedido, obtenerTotalPedido }) {
   return [
-    { etiqueta: "Pedido", valor: (pedido) => `#${obtenerNumero(pedido)}`, fuerte: true },
-    { etiqueta: "Cliente", valor: obtenerClientePedido },
-    { etiqueta: "Ubicación", valor: obtenerUbicacionPedido },
-    { etiqueta: "Total", valor: obtenerTotalPedido, fuerte: true },
+    { etiqueta: "Pedido", ancho: "17%", valor: (pedido) => `#${obtenerNumero(pedido)}`, fuerte: true },
+    { etiqueta: "Cliente", ancho: "29%", valor: obtenerClientePedido },
+    { etiqueta: "Ubicación", ancho: "31%", valor: obtenerUbicacionPedido },
+    { etiqueta: "Total", ancho: "23%", alinear: "right", valor: obtenerTotalPedido, fuerte: true },
   ];
 }

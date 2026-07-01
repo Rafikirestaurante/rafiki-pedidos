@@ -182,18 +182,17 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       ],
       listado: {
         titulo: "Detalle de gastos",
+        modo: "tabla",
         vacio: "Sin gastos registrados para esta fecha.",
         items: lista,
         campos: [
-          { etiqueta: "Proveedor", fuerte: true, valor: (gasto) => gasto.proveedor || "Sin proveedor" },
-          { etiqueta: "Valor", fuerte: true, valor: (gasto) => `$${dinero(gasto.valor)}` },
-          { etiqueta: "Categoría", valor: (gasto) => capitalizar(gasto.categoria) },
-          { etiqueta: "Pago", valor: (gasto) => capitalizar(gasto.metodoPago) },
-          { etiqueta: "Factura", valor: (gasto) => gasto.numeroFactura || "—" },
-          { etiqueta: "Detalle", bloque: true, valor: textoGastoDetalle },
+          { etiqueta: "Proveedor", ancho: "28%", fuerte: true, valor: (gasto) => gasto.proveedor || "Sin proveedor" },
+          { etiqueta: "Categoría", ancho: "24%", valor: (gasto) => capitalizar(gasto.categoria) },
+          { etiqueta: "Pago", ancho: "22%", valor: (gasto) => capitalizar(gasto.metodoPago) },
+          { etiqueta: "Valor", ancho: "26%", alinear: "right", fuerte: true, valor: (gasto) => `$${dinero(gasto.valor)}` },
         ],
       },
-      pie: "Gastos · misma información en 58 mm y 80 mm",
+      pie: "Gastos · tabla compacta 58 mm / 80 mm",
     });
 
     if (!ok) setError("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");

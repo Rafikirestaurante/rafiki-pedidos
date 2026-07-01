@@ -253,19 +253,24 @@ function crearCamposPedidosTermicos() {
   return [
     {
       etiqueta: "Pedido",
+      ancho: "17%",
       fuerte: true,
       valor: (pedido) => `#${obtenerCodigoPedido(pedido)}`,
     },
     {
       etiqueta: "Cliente",
+      ancho: "29%",
       valor: obtenerCliente,
     },
     {
       etiqueta: "Ubicación",
+      ancho: "31%",
       valor: obtenerUbicacionTicketPedido,
     },
     {
       etiqueta: "Total",
+      ancho: "23%",
+      alinear: "right",
       fuerte: true,
       valor: (pedido) => dinero(pedido?.total || 0),
     },
@@ -299,11 +304,12 @@ function imprimirResumenPedidosFiltradosTermico({
     secciones: crearSeccionesPedidosTermicos(lista),
     listado: {
       titulo: "Pedidos",
+      modo: "tabla",
       vacio: "Sin pedidos para imprimir con estos filtros.",
       items: lista,
       campos: crearCamposPedidosTermicos(),
     },
-    pie: "Pedidos Hoy · listado compacto 58 mm / 80 mm",
+    pie: "Pedidos Hoy · tabla compacta 58 mm / 80 mm",
   });
 }
 
