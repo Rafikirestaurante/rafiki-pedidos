@@ -13,7 +13,10 @@
     "cliente-para-llevar:check": "node scripts/validate-cliente-para-llevar.mjs",
     "thermal-reports:check": "node scripts/validate-thermal-reports.mjs",
     "thermal-pedidos-hoy:check": "node scripts/validate-thermal-pedidos-hoy.mjs",
-    "thermal-caja:check": "node scripts/validate-thermal-caja.mjs"
+    "thermal-caja:check": "node scripts/validate-thermal-caja.mjs",
+    "thermal-gastos-cartera:check": "node scripts/validate-thermal-gastos-cartera.mjs",
+    "thermal-selector:check": "node scripts/validate-thermal-selector.mjs",
+    "thermal-tabla:check": "node scripts/validate-thermal-tabla-compacta.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

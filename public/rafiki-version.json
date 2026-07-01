@@ -1,6 +1,6 @@
 {
-  "version": "125.2-FASE35C-INFORME-CAJA-TERMICO-REFORZADO-2026-07-01",
-  "phase": "Fase 35C - Informe Caja térmico reforzado",
+  "version": "125.6-HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS-2026-07-01",
+  "phase": "Hotfix 35E.2 - Tablas térmicas compactas",
   "date": "2026-07-01",
-  "notes": "Refuerza la impresión térmica de Informe Caja en 58 mm y 80 mm con la misma información: resumen operativo, ajustes, métodos de pago, saldos, detalle de gastos, arqueos y fórmula validada opción 2."
+  "notes": "Corrige el motor de impresión térmica para que los listados impriman en tabla compacta, optimizando espacio. Pedidos Hoy queda como Pedido | Cliente | Ubicación | Total. Gastos y Cartera también pasan a listados tabulares compactos. Se conserva selector 58/80 con la misma información, solo cambia el ancho."
 }

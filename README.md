@@ -1,3 +1,50 @@
+## 125.6 — Hotfix 35E.2 Tablas térmicas compactas
+
+Versión: 125.6-HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS-2026-07-01
+
+Se corrige el enfoque general de impresión térmica para que los listados no salgan como bloques largos. Ahora el motor central soporta modo **tabla compacta**.
+
+En **Pedidos Hoy** el formato queda optimizado como:
+
+```text
+Pedido | Cliente | Ubicación | Total
+```
+
+También se aplicó tabla compacta en **Gastos** y **Cartera**, evitando textos largos en los listados térmicos. Se mantiene el selector global 58 mm / 80 mm y la regla de que ambos formatos imprimen la misma información; solo cambia la optimización visual por ancho.
+
+Validación recomendada: `npm run thermal-tabla:check`, `npm run thermal-pedidos-hoy:check`, `npm run thermal-gastos-cartera:check`, `npm run thermal-selector:check`, `npm run build` y `npm run lint`.
+
+---
+
+## 125.5 — Hotfix 35E.1 Pedidos Hoy térmico compacto
+
+Versión: 125.5-HOTFIX35E1-PEDIDOS-HOY-TERMICO-COMPACTO-2026-07-01
+
+Ajuste puntual sobre la impresión térmica de **Pedidos Hoy**.
+
+Ahora el listado vuelve al formato compacto:
+
+- Número de pedido
+- Cliente
+- Ubicación
+- Total
+
+Se eliminan del listado térmico los textos largos de detalle del pedido, línea, pago/estado y hora, para que la impresión sea más limpia en 58 mm y 80 mm. Se mantiene el selector global y la misma información para ambos formatos.
+
+---
+
+## 125.4 — Fase 35E Selector térmico global 58 / 80 mm
+
+Se reemplazaron los botones separados de **58 mm** y **80 mm** por un selector térmico reutilizable en Pedidos Hoy, Informe Caja, Gastos y Cartera. El formato seleccionado se guarda como preferencia global en el navegador, evitando botones duplicados y manteniendo una experiencia más limpia.
+
+Regla conservada: **58 mm y 80 mm imprimen la misma información**. La diferencia sigue siendo únicamente visual: ancho, tamaño, espaciado y saltos de línea.
+
+Archivos principales: `src/modules/impresion/ThermalPrintControls.jsx`, `src/modules/impresion/thermalReportService.js`, `src/modules/admin/components/pedidos/AdminPedidosSection.jsx`, `src/modules/caja/components/CajaAdmin.jsx`, `src/modules/gastos/components/GastosDiarios.jsx`, `src/modules/cartera/components/CarteraClientesCredito.jsx`, `src/styles/appStyles.js` y `scripts/validate-thermal-selector.mjs`.
+
+Validación recomendada: `npm run thermal-selector:check`, `npm run thermal-reports:check`, `npm run thermal-pedidos-hoy:check`, `npm run thermal-caja:check`, `npm run thermal-gastos-cartera:check`, `npm run build` y `npm run lint`.
+
+Versión: 125.4-FASE35E-SELECTOR-TERMICO-GLOBAL-2026-07-01
+
 ## 125.1 — Fase 35B Pedidos Hoy térmico con filtros activos
 
 Se profundizó la impresión térmica de **Pedidos Hoy** para que los botones de 58 mm y 80 mm impriman la **misma información**, cambiando únicamente ancho, tamaño y saltos de línea. El informe ahora incluye rango/búsqueda aplicada, filtros rápidos, orden visible, cantidad impresa vs. cargada, resumen operativo, totales por método de pago y detalle ampliado por pedido.
@@ -398,3 +445,8 @@ Fase 35A: se agregó una base central para impresión térmica de informes admin
 ## 125.2-FASE35C-INFORME-CAJA-TERMICO-REFORZADO-2026-07-01
 
 Fase 35C: se reforzó la impresión térmica de `Gerencia > Caja > Informe Caja` en 58 mm y 80 mm. Ambos formatos imprimen la misma información; solo cambia la optimización visual por ancho. El informe ahora incluye resumen operativo, ajustes de Caja, ventas y gastos por método de pago, saldos de inicio, saldos del último arqueo, detalle enriquecido de gastos, arqueos realizados con saldos y fórmula validada opción 2. No se tocaron `/cliente`, `/mesas`, Pedidos Hoy, Cartera, Dashboard, SQL, guardado de pedidos ni impresión de comandas.
+
+
+## 125.3-FASE35D-GASTOS-CARTERA-TERMICO-2026-07-01
+
+Fase 35D: se agregó impresión térmica administrativa para `Gastos Diarios` y `Cartera` en 58 mm y 80 mm. Ambos formatos imprimen la misma información; solo cambia la optimización visual por ancho. En Gastos se imprime fecha, total, resumen por categoría, resumen por método de pago y detalle de gastos. En Cartera se agregó impresión de resumen general y movimientos filtrados, incluyendo indicadores, filtros, resumen por estado, abonos por método y detalle de movimientos. No se tocaron `/cliente`, `/mesas`, Caja, Pedidos Hoy, Dashboard, SQL, guardado de pedidos ni comandas.
