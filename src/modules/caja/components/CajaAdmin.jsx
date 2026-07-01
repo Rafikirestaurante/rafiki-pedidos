@@ -8,6 +8,7 @@ import { dinero } from "../../../shared/utils/pedidos";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, cargarUltimoArqueoDiaAnterior, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
+import ThermalPrintControls from "../../impresion/ThermalPrintControls";
 
 const DENOMINACIONES = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
 const CUENTAS_INICIALES = [
@@ -859,8 +860,12 @@ export default function CajaAdmin() {
               <div><h2>Informe Caja</h2><p className="muted">Resumen limpio de ventas, gastos, dinero esperado y arqueos realizados.</p></div>
               <div className="caja-informe-actions">
                 {cargandoCuadre && <span className="muted small">Actualizando...</span>}
-                <button type="button" className="btn secondary" onClick={() => imprimirInformeCajaTermico("58")}>Imprimir 58 mm</button>
-                <button type="button" className="btn secondary" onClick={() => imprimirInformeCajaTermico("80")}>Imprimir 80 mm</button>
+                <ThermalPrintControls
+                  onPrint={imprimirInformeCajaTermico}
+                  label="Imprimir"
+                  title="Tamaño"
+                  buttonClassName="btn secondary"
+                />
                 <button type="button" className="btn secondary" onClick={compartirInformeWhatsApp}>Compartir WhatsApp</button>
                 <button type="button" className="btn secondary" onClick={exportarInformeExcel}>Exportar Excel</button>
               </div>

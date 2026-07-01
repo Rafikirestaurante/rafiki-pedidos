@@ -20,6 +20,8 @@ import RafikiActionMenu from "../../../shared/components/RafikiActionMenu";
 import RafikiBadge from "../../../shared/components/RafikiBadge";
 import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
 import RafikiModal from "../../../shared/components/RafikiModal";
+import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
+import ThermalPrintControls from "../../impresion/ThermalPrintControls";
 
 const FORMULARIO_INICIAL = {
   numeroFactura: "",
@@ -55,6 +57,22 @@ function tipoMetodoPago(metodo) {
   if (limpio.includes("efectivo")) return "success";
   if (limpio.includes("transferencia") || limpio.includes("nequi") || limpio.includes("banco")) return "info";
   return "neutral";
+}
+
+function crearFilasResumenObjeto(objeto = {}) {
+  return Object.entries(objeto)
+    .sort(([a], [b]) => String(a).localeCompare(String(b), "es", { sensitivity: "base" }))
+    .map(([clave, total]) => ({
+      etiqueta: capitalizar(clave),
+      valor: `$${dinero(total)}`,
+    }));
+}
+
+function textoGastoDetalle(gasto = {}) {
+  const articulos = String(gasto.articulos || "").replace(/\s+/g, " ").trim();
+  const observacion = String(gasto.observacion || "").replace(/\s+/g, " ").trim();
+  if (articulos && observacion) return `${articulos} · Obs: ${observacion}`;
+  return articulos || observacion || "Sin detalle";
 }
 
 export default function GastosDiarios({ esAdministrador = false, modoRapido = false, mostrarInforme = true }) {
@@ -132,6 +150,54 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   useEffect(() => {
     cargar(fechaInforme);
   }, [cargar, fechaInforme]);
+
+  function imprimirGastosTermico(formato = "80") {
+    const lista = Array.isArray(gastos) ? gastos : [];
+    const ok = imprimirReporteTermico({
+      formato,
+      titulo: "Gastos del día",
+      subtitulo: "Rafiki Gerencia · Gastos",
+      meta: [
+        { etiqueta: "Fecha impresión", valor: formatearFechaTermica(new Date()) },
+        { etiqueta: "Fecha informe", valor: fechaInforme || "Sin fecha" },
+        { etiqueta: "Gastos registrados", valor: lista.length },
+        { etiqueta: "Total gastos", valor: `$${dinero(totalGastos)}` },
+      ],
+      secciones: [
+        {
+          titulo: "Resumen",
+          filas: [
+            { etiqueta: "Gastos registrados", valor: lista.length, fuerte: true },
+            { etiqueta: "Total del día", valor: `$${dinero(totalGastos)}`, fuerte: true },
+          ],
+        },
+        {
+          titulo: "Por categoría",
+          filas: crearFilasResumenObjeto(resumenCategorias),
+        },
+        {
+          titulo: "Por método de pago",
+          filas: crearFilasResumenObjeto(resumenPagos),
+        },
+      ],
+      listado: {
+        titulo: "Detalle de gastos",
+        vacio: "Sin gastos registrados para esta fecha.",
+        items: lista,
+        campos: [
+          { etiqueta: "Proveedor", fuerte: true, valor: (gasto) => gasto.proveedor || "Sin proveedor" },
+          { etiqueta: "Valor", fuerte: true, valor: (gasto) => `$${dinero(gasto.valor)}` },
+          { etiqueta: "Categoría", valor: (gasto) => capitalizar(gasto.categoria) },
+          { etiqueta: "Pago", valor: (gasto) => capitalizar(gasto.metodoPago) },
+          { etiqueta: "Factura", valor: (gasto) => gasto.numeroFactura || "—" },
+          { etiqueta: "Detalle", bloque: true, valor: textoGastoDetalle },
+        ],
+      },
+      pie: "Gastos · misma información en 58 mm y 80 mm",
+    });
+
+    if (!ok) setError("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
+  }
 
   function cambiarCampo(campo, valor) {
     setFormulario((prev) => ({ ...prev, [campo]: valor }));
@@ -486,9 +552,18 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
 
             {cargando ? <div className="alert alert-info">Cargando informe de gastos...</div> : null}
 
-            <button type="button" className="mini-btn" onClick={() => setMostrarResumenDetallado((valor) => !valor)}>
-              {mostrarResumenDetallado ? "Ocultar resumen por categoría" : "Ver resumen por categoría y método"}
-            </button>
+            <div className="gastos-acciones" style={{ marginTop: 8, marginBottom: 8 }}>
+              <button type="button" className="mini-btn" onClick={() => setMostrarResumenDetallado((valor) => !valor)}>
+                {mostrarResumenDetallado ? "Ocultar resumen por categoría" : "Ver resumen por categoría y método"}
+              </button>
+              <ThermalPrintControls
+                onPrint={imprimirGastosTermico}
+                disabled={cargando}
+                label="Imprimir"
+                title="Tamaño"
+                buttonClassName="mini-btn print"
+              />
+            </div>
 
             {mostrarResumenDetallado ? (
               <div className="gastos-resumen-mini">

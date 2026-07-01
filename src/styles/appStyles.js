@@ -3161,4 +3161,74 @@ body.rafiki-modal-open {
   background: linear-gradient(180deg, #ffffff, rgba(240, 249, 255, 0.64));
 }
 
+
+/* Fase 35E - Selector global de impresión térmica */
+.thermal-print-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.thermal-print-controls-compact {
+  gap: 6px;
+}
+
+.thermal-print-format {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--rafiki-muted);
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.thermal-print-format span {
+  line-height: 1;
+}
+
+.thermal-print-format select {
+  min-height: 32px;
+  width: auto;
+  min-width: 82px;
+  padding: 6px 26px 6px 10px;
+  border: 1px solid var(--rafiki-border-strong);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--rafiki-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.thermal-print-controls .btn,
+.thermal-print-controls .mini-btn {
+  margin-bottom: 0;
+  width: auto;
+  white-space: nowrap;
+}
+
+.pedidos-filtros-modal-impresion .thermal-print-controls {
+  justify-content: flex-start;
+}
+
+@media (max-width: 640px) {
+  .thermal-print-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .thermal-print-format,
+  .thermal-print-controls .btn,
+  .thermal-print-controls .mini-btn {
+    flex: 1 1 auto;
+  }
+
+  .thermal-print-format select {
+    flex: 1 1 auto;
+  }
+}
+
 `;

@@ -30,6 +30,33 @@ export function normalizarFormatoTermico(formato = "80") {
   return FORMATOS_TERMICOS[clave] ? clave : "80";
 }
 
+
+export const THERMAL_REPORT_FORMAT_STORAGE_KEY = "rafiki:thermal-report-format";
+
+export function obtenerFormatoTermicoPreferido(formatoRespaldo = "80") {
+  const fallback = normalizarFormatoTermico(formatoRespaldo);
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    return normalizarFormatoTermico(window.localStorage?.getItem(THERMAL_REPORT_FORMAT_STORAGE_KEY) || fallback);
+  } catch {
+    return fallback;
+  }
+}
+
+export function guardarFormatoTermicoPreferido(formato = "80") {
+  const normalizado = normalizarFormatoTermico(formato);
+  if (typeof window === "undefined") return normalizado;
+
+  try {
+    window.localStorage?.setItem(THERMAL_REPORT_FORMAT_STORAGE_KEY, normalizado);
+  } catch {
+    // La impresión debe seguir funcionando aunque localStorage no esté disponible.
+  }
+
+  return normalizado;
+}
+
 export function escapeHtmlTermico(valor) {
   return String(valor ?? "")
     .replace(/&/g, "&amp;")

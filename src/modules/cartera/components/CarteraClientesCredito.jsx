@@ -29,6 +29,8 @@ import {
   formatearFechaHoraColombia,
 } from "../../../shared/utils/fechasColombia";
 import { listarPedidosPorCliente } from "../../../services/pedidosService";
+import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
+import ThermalPrintControls from "../../impresion/ThermalPrintControls";
 
 const FORM_INICIAL = {
   nombre: "",
@@ -62,6 +64,43 @@ function dinero(valor) {
     currency: "COP",
     maximumFractionDigits: 0,
   });
+}
+
+function resumirPorEstadoMovimientos(movimientos = []) {
+  const mapa = new Map();
+  (Array.isArray(movimientos) ? movimientos : []).forEach((movimiento) => {
+    const estado = estadoCartera(movimiento);
+    const actual = mapa.get(estado) || { cantidad: 0, valor: 0, saldo: 0 };
+    actual.cantidad += 1;
+    if (estado !== "anulado") actual.valor += aPesosEnteros(movimiento.valor);
+    if (movimientoPendiente(movimiento)) actual.saldo += saldoMovimiento(movimiento);
+    mapa.set(estado, actual);
+  });
+
+  return Array.from(mapa.entries())
+    .sort(([a], [b]) => String(a).localeCompare(String(b), "es", { sensitivity: "base" }))
+    .map(([estado, datos]) => ({
+      etiqueta: `${estado} (${datos.cantidad})`,
+      valor: `${dinero(datos.valor)} · saldo ${dinero(datos.saldo)}`,
+    }));
+}
+
+function resumirAbonosPorMetodo(abonos = []) {
+  const mapa = new Map();
+  (Array.isArray(abonos) ? abonos : []).forEach((abono) => {
+    const metodo = String(abono.metodo_pago || abono.metodoPago || "Sin método").trim() || "Sin método";
+    const actual = mapa.get(metodo) || { cantidad: 0, total: 0 };
+    actual.cantidad += 1;
+    actual.total += aPesosEnteros(abono.valor_abono);
+    mapa.set(metodo, actual);
+  });
+
+  return Array.from(mapa.entries())
+    .sort(([a], [b]) => String(a).localeCompare(String(b), "es", { sensitivity: "base" }))
+    .map(([metodo, datos]) => ({
+      etiqueta: `${metodo} (${datos.cantidad})`,
+      valor: dinero(datos.total),
+    }));
 }
 
 
@@ -643,6 +682,105 @@ export default function CarteraClientesCredito() {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  function imprimirResumenCarteraTermico(formato = "80") {
+    const topSaldo = rankingClientes.topSaldo || [];
+    const recientes = rankingClientes.recientes || [];
+    const ok = imprimirReporteTermico({
+      formato,
+      titulo: "Cartera",
+      subtitulo: "Rafiki Gerencia · Resumen",
+      meta: [
+        { etiqueta: "Fecha impresión", valor: formatearFechaTermica(new Date()) },
+        { etiqueta: "Clientes activos", valor: indicadores.activos },
+        { etiqueta: "Clientes con saldo", valor: indicadores.clientesConSaldo },
+        { etiqueta: "Movimientos cargados", valor: movimientosCartera.length },
+      ],
+      secciones: [
+        {
+          titulo: "Resumen general",
+          filas: [
+            { etiqueta: "Créditos otorgados hoy", valor: dinero(indicadores.creditosOtorgadosHoy), fuerte: true },
+            { etiqueta: "Abonos recibidos hoy", valor: dinero(indicadores.abonosRecibidosHoy), fuerte: true },
+            { etiqueta: "Cartera pendiente total", valor: dinero(indicadores.saldoTotal), fuerte: true },
+            { etiqueta: "Clientes con saldo", valor: indicadores.clientesConSaldo },
+            { etiqueta: "Pedidos pendientes", valor: indicadores.pedidosPendientes },
+            { etiqueta: "Abonos acumulados", valor: dinero(indicadores.carteraPagada) },
+            { etiqueta: "Cantidad de abonos", valor: indicadores.abonosRecibidos },
+            { etiqueta: "Saldo según filtros", valor: dinero(indicadores.saldoFiltrado) },
+          ],
+        },
+        {
+          titulo: "Abonos por método",
+          filas: resumirAbonosPorMetodo(abonosCartera),
+        },
+      ],
+      listado: {
+        titulo: "Top saldos pendientes",
+        vacio: "Sin clientes activos con saldo pendiente.",
+        items: topSaldo,
+        campos: [
+          { etiqueta: "Cliente", fuerte: true, valor: (cliente) => cliente.nombre || "Sin nombre" },
+          { etiqueta: "Saldo", fuerte: true, valor: (cliente) => dinero(cliente.saldo_pendiente) },
+          { etiqueta: "Teléfono", valor: (cliente) => cliente.telefono || "Sin teléfono" },
+          { etiqueta: "Observación", bloque: true, valor: (cliente) => cliente.observaciones || "Sin observación" },
+        ],
+      },
+      pie: `Clientes recientes: ${recientes.length} · misma información en 58 mm y 80 mm`,
+    });
+
+    if (!ok) setError("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
+  }
+
+  function imprimirMovimientosCarteraTermico(formato = "80") {
+    const lista = Array.isArray(movimientosFiltrados) ? movimientosFiltrados : [];
+    const ok = imprimirReporteTermico({
+      formato,
+      titulo: "Movimientos cartera",
+      subtitulo: "Rafiki Gerencia · Cartera",
+      meta: [
+        { etiqueta: "Fecha impresión", valor: formatearFechaTermica(new Date()) },
+        { etiqueta: "Filtros", valor: descripcionFiltrosMovimientos() },
+        { etiqueta: "Movimientos", valor: indicadores.movimientosFiltrados },
+        { etiqueta: "Valor filtrado", valor: dinero(indicadores.valorOriginalFiltrado) },
+        { etiqueta: "Saldo filtrado", valor: dinero(indicadores.saldoFiltrado) },
+      ],
+      secciones: [
+        {
+          titulo: "Resumen filtrado",
+          filas: [
+            { etiqueta: "Movimientos", valor: indicadores.movimientosFiltrados, fuerte: true },
+            { etiqueta: "Valor filtrado", valor: dinero(indicadores.valorOriginalFiltrado), fuerte: true },
+            { etiqueta: "Saldo filtrado", valor: dinero(indicadores.saldoFiltrado), fuerte: true },
+            { etiqueta: "Cliente", valor: clienteFiltradoMovimientos?.nombre || "Todos los clientes" },
+            { etiqueta: "Estado", valor: filtros.estado === "todos" ? "Todos los estados" : filtros.estado },
+            { etiqueta: "Rango", valor: `${filtros.fechaInicio || "inicio"} a ${filtros.fechaFin || "hoy"}` },
+          ],
+        },
+        {
+          titulo: "Por estado",
+          filas: resumirPorEstadoMovimientos(lista),
+        },
+      ],
+      listado: {
+        titulo: "Detalle movimientos",
+        vacio: "Sin movimientos para imprimir con estos filtros.",
+        items: lista,
+        campos: [
+          { etiqueta: "Fecha", valor: (movimiento) => formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at) },
+          { etiqueta: "Pedido", fuerte: true, valor: (movimiento) => movimiento.numero_pedido ? `#${movimiento.numero_pedido}` : "—" },
+          { etiqueta: "Cliente", valor: (movimiento) => movimiento.cliente_nombre || "—" },
+          { etiqueta: "Pedido realizado", bloque: true, valor: resumenPedidoMovimiento },
+          { etiqueta: "Valor", fuerte: true, valor: (movimiento) => dinero(movimiento.valor) },
+          { etiqueta: "Estado", valor: (movimiento) => estadoCartera(movimiento) },
+          { etiqueta: "Saldo", fuerte: true, valor: (movimiento) => dinero(saldoMovimiento(movimiento)) },
+        ],
+      },
+      pie: "Cartera · misma información en 58 mm y 80 mm",
+    });
+
+    if (!ok) setError("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
+  }
+
   function cambiarCampoAbono(campo, valor) {
     setFormularioAbono((actual) => ({ ...actual, [campo]: valor }));
   }
@@ -869,6 +1007,14 @@ export default function CarteraClientesCredito() {
           <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={abrirNuevoCliente} disabled={auditando}>
             + Nuevo cliente
           </button>
+          <ThermalPrintControls
+            onPrint={imprimirResumenCarteraTermico}
+            label="Resumen"
+            title="Tamaño"
+            buttonClassName="mini-btn print"
+            className="cartera-thermal-control"
+            compact
+          />
         </div>
       </div>
 
@@ -1157,6 +1303,15 @@ export default function CarteraClientesCredito() {
             <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={compartirMovimientosWhatsApp} disabled={movimientosFiltrados.length === 0}>
               Compartir WhatsApp
             </button>
+            <ThermalPrintControls
+              onPrint={imprimirMovimientosCarteraTermico}
+              disabled={movimientosFiltrados.length === 0}
+              label="Imprimir"
+              title="Tamaño"
+              buttonClassName="mini-btn print"
+              className="cartera-thermal-control"
+              compact
+            />
           </div>
           <p className="muted small" style={{ margin: "4px 0 0" }}>WhatsApp comparte un resumen en texto. Para enviar el archivo completo, exporta Excel y adjúntalo manualmente.</p>
 

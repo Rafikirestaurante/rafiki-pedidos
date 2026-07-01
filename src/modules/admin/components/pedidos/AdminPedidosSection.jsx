@@ -12,6 +12,7 @@ import RafikiEmptyState from "../../../../shared/components/RafikiEmptyState";
 import RafikiTabs from "../../../../shared/components/RafikiTabs";
 import RafikiModal from "../../../../shared/components/RafikiModal";
 import { formatearFechaTermica, imprimirReporteTermico } from "../../../impresion/thermalReportService";
+import ThermalPrintControls from "../../../impresion/ThermalPrintControls";
 
 
 function normalizarMesaPedido(pedido) {
@@ -205,60 +206,8 @@ function aplicarFiltrosRapidosPedidos(pedidos = [], filtrosTipo = {}, filtroPago
   });
 }
 
-function formatearHoraPedidoTermico(pedido) {
-  const fecha = pedido?.created_at ? new Date(pedido.created_at) : null;
-  if (!fecha || Number.isNaN(fecha.getTime())) return "Sin hora";
-
-  return new Intl.DateTimeFormat("es-CO", {
-    timeZone: "America/Bogota",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(fecha);
-}
-
-function obtenerLineaPedidoTermico(pedido) {
-  const tieneRestaurante = pedidoTieneRestaurante(pedido);
-  const tieneCafeteria = pedidoTieneCafeteria(pedido);
-
-  if (tieneRestaurante && tieneCafeteria) return "Rest. + Caf.";
-  if (tieneCafeteria) return "Cafetería";
-  return "Restaurante";
-}
-
-function obtenerDestinoPedidoTermico(pedido) {
-  return pedidoPareceParaLlevar(pedido) ? "Para llevar" : "En mesa";
-}
-
-function resumirDetallePedidoTermico(pedido) {
-  const resumen = resumirItemsPedidoCompacto(pedido);
-  if (resumen && resumen !== "Sin detalle") return resumen;
-  return String(pedido?.pedido_texto || "Sin detalle").replace(/\s+/g, " ").trim() || "Sin detalle";
-}
-
 function sumarTotalPedidosTermicos(pedidos = []) {
   return (Array.isArray(pedidos) ? pedidos : []).reduce((suma, pedido) => suma + Number(pedido?.total || 0), 0);
-}
-
-function contarPedidosTermicos(pedidos = [], predicado) {
-  return (Array.isArray(pedidos) ? pedidos : []).filter(predicado).length;
-}
-
-function acumularPorPagoPedidosTermicos(pedidos = []) {
-  const mapa = new Map();
-  (Array.isArray(pedidos) ? pedidos : []).forEach((pedido) => {
-    const pago = normalizarMetodoPago(pedido?.tipo_pago, { permitirCredito: true, fallback: pedido?.tipo_pago || METODOS_PAGO.EFECTIVO });
-    const actual = mapa.get(pago) || { cantidad: 0, total: 0 };
-    actual.cantidad += 1;
-    actual.total += Number(pedido?.total || 0);
-    mapa.set(pago, actual);
-  });
-
-  return Array.from(mapa.entries())
-    .sort(([a], [b]) => String(a).localeCompare(String(b), "es"))
-    .map(([metodo, datos]) => ({
-      etiqueta: `${metodo} (${datos.cantidad})`,
-      valor: dinero(datos.total),
-    }));
 }
 
 function describirRangoBusquedaPedidosTermico({ filtroPedidos, fechaSeleccionada, fechaInicioRangoPedidos, fechaFinRangoPedidos, busqueda, busquedaNumeroPedido }) {
@@ -288,30 +237,14 @@ function construirMetaFiltrosPedidosTermicos({ fechaReferencia, resumenFiltrosRa
 function crearSeccionesPedidosTermicos(lista) {
   const pedidos = Array.isArray(lista) ? lista : [];
   const total = sumarTotalPedidosTermicos(pedidos);
-  const paraLlevar = contarPedidosTermicos(pedidos, pedidoPareceParaLlevar);
-  const enMesa = contarPedidosTermicos(pedidos, (pedido) => !pedidoPareceParaLlevar(pedido));
-  const restaurante = contarPedidosTermicos(pedidos, pedidoTieneRestaurante);
-  const cafeteria = contarPedidosTermicos(pedidos, pedidoTieneCafeteria);
-  const pendientes = contarPedidosTermicos(pedidos, (pedido) => obtenerEstadoPedido(pedido) === "Pendiente");
-  const finalizados = contarPedidosTermicos(pedidos, (pedido) => obtenerEstadoPedido(pedido) === "Finalizado");
 
   return [
     {
       titulo: "Resumen",
       filas: [
-        { etiqueta: "Pedidos impresos", valor: pedidos.length, fuerte: true },
-        { etiqueta: "Total ventas", valor: dinero(total), fuerte: true },
-        { etiqueta: "Para llevar", valor: paraLlevar },
-        { etiqueta: "En mesa", valor: enMesa },
-        { etiqueta: "Restaurante", valor: restaurante },
-        { etiqueta: "Cafetería", valor: cafeteria },
-        { etiqueta: "Pendientes", valor: pendientes },
-        { etiqueta: "Finalizados", valor: finalizados },
+        { etiqueta: "Pedidos", valor: pedidos.length, fuerte: true },
+        { etiqueta: "Total", valor: dinero(total), fuerte: true },
       ],
-    },
-    {
-      titulo: "Métodos de pago",
-      filas: acumularPorPagoPedidosTermicos(pedidos),
     },
   ];
 }
@@ -321,28 +254,15 @@ function crearCamposPedidosTermicos() {
     {
       etiqueta: "Pedido",
       fuerte: true,
-      valor: (pedido) => `#${obtenerCodigoPedido(pedido)} · ${formatearHoraPedidoTermico(pedido)}`,
+      valor: (pedido) => `#${obtenerCodigoPedido(pedido)}`,
     },
     {
       etiqueta: "Cliente",
       valor: obtenerCliente,
     },
     {
-      etiqueta: "Destino",
-      valor: (pedido) => `${obtenerDestinoPedidoTermico(pedido)} · ${obtenerUbicacionTicketPedido(pedido)}`,
-    },
-    {
-      etiqueta: "Línea",
-      valor: (pedido) => obtenerLineaPedidoTermico(pedido),
-    },
-    {
-      etiqueta: "Pago / Estado",
-      valor: (pedido) => `${pedido?.tipo_pago || "Sin pago"} · ${obtenerEstadoPedido(pedido)}`,
-    },
-    {
-      etiqueta: "Detalle",
-      bloque: true,
-      valor: resumirDetallePedidoTermico,
+      etiqueta: "Ubicación",
+      valor: obtenerUbicacionTicketPedido,
     },
     {
       etiqueta: "Total",
@@ -378,12 +298,12 @@ function imprimirResumenPedidosFiltradosTermico({
     }),
     secciones: crearSeccionesPedidosTermicos(lista),
     listado: {
-      titulo: "Detalle pedidos",
+      titulo: "Pedidos",
       vacio: "Sin pedidos para imprimir con estos filtros.",
       items: lista,
       campos: crearCamposPedidosTermicos(),
     },
-    pie: "Pedidos Hoy · misma información en 58 mm y 80 mm",
+    pie: "Pedidos Hoy · listado compacto 58 mm / 80 mm",
   });
 }
 
@@ -1159,24 +1079,14 @@ function AdminPedidosSectionBase({
             <button type="button" className={hayFiltrosRapidosActivos ? "mini-btn active" : "mini-btn"} onClick={() => setMostrarModalFiltrosRapidos(true)}>
               ⚙️ Filtros
             </button>
-            <button
-              type="button"
-              className="mini-btn"
-              onClick={() => imprimirPedidosFiltradosTermico("58")}
+            <ThermalPrintControls
+              onPrint={imprimirPedidosFiltradosTermico}
               disabled={pedidosVisiblesTabla.length === 0}
-              title="Imprimir en 58 mm los mismos pedidos filtrados en pantalla"
-            >
-              🧾 58 mm
-            </button>
-            <button
-              type="button"
-              className="mini-btn"
-              onClick={() => imprimirPedidosFiltradosTermico("80")}
-              disabled={pedidosVisiblesTabla.length === 0}
-              title="Imprimir en 80 mm los mismos pedidos filtrados en pantalla"
-            >
-              🧾 80 mm
-            </button>
+              label="Imprimir"
+              title="Tamaño"
+              buttonClassName="mini-btn"
+              compact
+            />
           </div>
         </div>
       </div>
@@ -1402,22 +1312,13 @@ function AdminPedidosSectionBase({
           Resultado actual: <strong>{pedidosVisiblesTabla.length}</strong> pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"} visible{pedidosVisiblesTabla.length === 1 ? "" : "s"}.
         </p>
         <div className="pedidos-filtros-modal-impresion">
-          <button
-            type="button"
-            className="mini-btn"
-            onClick={() => imprimirPedidosFiltradosTermico("58")}
+          <ThermalPrintControls
+            onPrint={imprimirPedidosFiltradosTermico}
             disabled={pedidosVisiblesTabla.length === 0}
-          >
-            Imprimir 58 mm
-          </button>
-          <button
-            type="button"
-            className="mini-btn"
-            onClick={() => imprimirPedidosFiltradosTermico("80")}
-            disabled={pedidosVisiblesTabla.length === 0}
-          >
-            Imprimir 80 mm
-          </button>
+            label="Imprimir"
+            title="Tamaño"
+            buttonClassName="mini-btn"
+          />
         </div>
       </RafikiModal>
 
