@@ -16,7 +16,8 @@
     "thermal-caja:check": "node scripts/validate-thermal-caja.mjs",
     "thermal-gastos-cartera:check": "node scripts/validate-thermal-gastos-cartera.mjs",
     "thermal-selector:check": "node scripts/validate-thermal-selector.mjs",
-    "thermal-tabla:check": "node scripts/validate-thermal-tabla-compacta.mjs"
+    "thermal-tabla:check": "node scripts/validate-thermal-tabla-compacta.mjs",
+    "thermal-cierre:check": "node scripts/validate-thermal-cierre.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

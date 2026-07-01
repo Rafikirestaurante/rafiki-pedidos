@@ -450,3 +450,8 @@ Fase 35C: se reforzó la impresión térmica de `Gerencia > Caja > Informe Caja`
 ## 125.3-FASE35D-GASTOS-CARTERA-TERMICO-2026-07-01
 
 Fase 35D: se agregó impresión térmica administrativa para `Gastos Diarios` y `Cartera` en 58 mm y 80 mm. Ambos formatos imprimen la misma información; solo cambia la optimización visual por ancho. En Gastos se imprime fecha, total, resumen por categoría, resumen por método de pago y detalle de gastos. En Cartera se agregó impresión de resumen general y movimientos filtrados, incluyendo indicadores, filtros, resumen por estado, abonos por método y detalle de movimientos. No se tocaron `/cliente`, `/mesas`, Caja, Pedidos Hoy, Dashboard, SQL, guardado de pedidos ni comandas.
+
+
+## 125.7-FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA-2026-07-01
+
+Fase 35F: cierre de impresión térmica administrativa. Se agregó ajuste fino al motor central de impresión para tablas compactas: fuente monoespaciada, tamaños diferenciados para 58 mm y 80 mm, menor padding por fila y menor separación entre columnas. Se agregó el comando `npm run thermal-cierre:check` y documentación de pruebas manuales para Pedidos Hoy, Caja, Gastos y Cartera. No se tocaron `/cliente`, `/mesas`, guardado de pedidos, SQL, comandas ni cálculos internos.

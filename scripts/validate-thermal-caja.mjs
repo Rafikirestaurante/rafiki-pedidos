@@ -24,7 +24,7 @@ check("Caja imprime arqueos realizados con saldos", caja.includes("crearFilasArq
 check("Caja imprime detalle de gastos enriquecido", caja.includes("gasto.metodoPago") && caja.includes("Detalle gastos"));
 check("Caja conserva fórmula opción 2", caja.includes("Arqueo + ingresos ant. - caja esperada") && caja.includes("Ingresos días anteriores no suben ventas ni caja esperada"));
 check("Servicio térmico sigue compartiendo data para 58/80", service.includes("renderSecciones(secciones)") && service.includes("normalizarFormatoTermico"));
-check("Versión conserva Informe Caja térmico reforzado", version.includes("FASE35C-INFORME-CAJA-TERMICO-REFORZADO") || version.includes("FASE35D-GASTOS-CARTERA-TERMICO") || version.includes("FASE35E-SELECTOR-TERMICO") || version.includes("HOTFIX35E1-PEDIDOS-HOY-TERMICO-COMPACTO") || version.includes("HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS"));
+check("Versión conserva Informe Caja térmico reforzado", version.includes("FASE35C-INFORME-CAJA-TERMICO-REFORZADO") || version.includes("FASE35D-GASTOS-CARTERA-TERMICO") || version.includes("FASE35E-SELECTOR-TERMICO") || version.includes("HOTFIX35E1-PEDIDOS-HOY-TERMICO-COMPACTO") || version.includes("HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS") || version.includes("FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA"));
 
 const errores = checks.filter((item) => !item.condicion);
 if (errores.length) {
