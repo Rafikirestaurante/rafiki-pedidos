@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "125.6-HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS-2026-07-01",
-  phase: "Hotfix 35E.2 - Tablas térmicas compactas",
+  version: "125.7-FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA-2026-07-01",
+  phase: "Fase 35F - Pruebas y cierre impresión térmica",
   date: "2026-07-01",
-  fase: "35E2-TABLAS-TERMICAS-COMPACTAS",
+  fase: "35F-PRUEBAS-CIERRE-IMPRESION-TERMICA",
   notes:
-    "Corrige el motor de impresión térmica para que los listados impriman en tabla compacta, optimizando espacio. Pedidos Hoy queda como Pedido | Cliente | Ubicación | Total. Gastos y Cartera también pasan a listados tabulares compactos. Se conserva selector 58/80 con la misma información, solo cambia el ancho."
+    "Cierre de Fase 35. Se agrega ajuste fino para tablas térmicas compactas con fuente monoespaciada, tamaños diferenciados para 58/80 mm, menor padding y validador de cierre. Se mantiene la regla de misma información en ambos formatos y solo cambia la optimización visual."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
