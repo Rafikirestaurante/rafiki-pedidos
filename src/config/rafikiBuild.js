@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "125.7-FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA-2026-07-01",
-  phase: "Fase 35F - Pruebas y cierre impresión térmica",
+  version: "125.8-HOTFIX35F1-AHORRO-PAPEL-TERMICO-ESC-POS-2026-07-01",
+  phase: "Hotfix 35F.1 - Ahorro de papel térmico estilo ESC/POS",
   date: "2026-07-01",
-  fase: "35F-PRUEBAS-CIERRE-IMPRESION-TERMICA",
+  fase: "35F1-AHORRO-PAPEL-TERMICO-ESC-POS",
   notes:
-    "Cierre de Fase 35. Se agrega ajuste fino para tablas térmicas compactas con fuente monoespaciada, tamaños diferenciados para 58/80 mm, menor padding y validador de cierre. Se mantiene la regla de misma información en ambos formatos y solo cambia la optimización visual."
+    "Ajuste profundo del motor térmico administrativo para impresión tipo ahorro de papel: fuente monoespaciada estilo térmico, letra normal legible, sin negritas forzadas, sin separadores largos, márgenes mínimos e interlineado compacto. 58 mm y 80 mm conservan la misma información; solo cambia la optimización visual."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
