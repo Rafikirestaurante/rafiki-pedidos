@@ -4,32 +4,36 @@ const FORMATOS_TERMICOS = {
     pageSize: "58mm auto",
     width: "58mm",
     ventana: "width=340,height=720",
-    bodyPadding: "6px 4px 10px",
-    fontSize: "9px",
-    titleSize: "12px",
-    subtitleSize: "10px",
-    sectionTitleSize: "9px",
-    rowGap: "3px",
-    tableFontSize: "8px",
-    tableHeaderSize: "7px",
-    tableRowPadding: "1px 0",
+    bodyPadding: "2px 1px 4px",
+    fontSize: "10.5px",
+    titleSize: "11px",
+    subtitleSize: "10.5px",
+    sectionTitleSize: "10.5px",
+    rowGap: "0",
+    tableFontSize: "10.2px",
+    tableHeaderSize: "10px",
+    tableRowPadding: "0",
     tableColumnGap: "1px",
+    lineHeight: "1.03",
+    tableLineHeight: "1.02",
   },
   "80": {
     etiqueta: "80 mm",
     pageSize: "80mm auto",
     width: "80mm",
     ventana: "width=460,height=760",
-    bodyPadding: "8px 6px 12px",
-    fontSize: "10px",
-    titleSize: "14px",
+    bodyPadding: "3px 2px 5px",
+    fontSize: "11px",
+    titleSize: "12px",
     subtitleSize: "11px",
-    sectionTitleSize: "10px",
-    rowGap: "4px",
-    tableFontSize: "9px",
-    tableHeaderSize: "8px",
-    tableRowPadding: "2px 0",
+    sectionTitleSize: "11px",
+    rowGap: "0",
+    tableFontSize: "10.8px",
+    tableHeaderSize: "10.5px",
+    tableRowPadding: "0",
     tableColumnGap: "2px",
+    lineHeight: "1.04",
+    tableLineHeight: "1.03",
   },
 };
 
@@ -222,38 +226,44 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             padding: ${cfg.bodyPadding};
             background: #fff;
             color: #000;
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: "Courier New", "Lucida Console", monospace;
             font-size: ${cfg.fontSize};
-            line-height: 1.25;
+            line-height: ${cfg.lineHeight};
+            font-weight: 400;
           }
+          h1, h2, h3, p { margin: 0; padding: 0; }
+          strong, b { font-weight: 400; }
           .thermal-title {
             text-align: center;
             font-size: ${cfg.titleSize};
-            line-height: 1.12;
-            font-weight: 900;
+            line-height: ${cfg.lineHeight};
+            font-weight: 400;
             text-transform: uppercase;
-            margin: 0 0 2px;
+            margin: 0;
           }
           .thermal-subtitle {
             text-align: center;
             font-size: ${cfg.subtitleSize};
-            font-weight: 800;
-            margin: 0 0 7px;
+            line-height: ${cfg.lineHeight};
+            font-weight: 400;
+            margin: 0;
           }
           .thermal-meta,
           .thermal-section,
           .thermal-list-section {
-            border-top: 1px dashed #000;
-            padding-top: 5px;
-            margin-top: 6px;
+            border: 0;
+            padding: 0;
+            margin: 1px 0 0;
           }
           .thermal-section h3,
           .thermal-list-section h3 {
-            margin: 0 0 4px;
+            margin: 1px 0 0;
             font-size: ${cfg.sectionTitleSize};
+            line-height: ${cfg.lineHeight};
             text-transform: uppercase;
-            text-align: center;
-            letter-spacing: 0.2px;
+            text-align: left;
+            letter-spacing: 0;
+            font-weight: 400;
           }
           .meta-row,
           .thermal-row,
@@ -261,14 +271,16 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 5px;
-            margin-bottom: ${cfg.rowGap};
+            gap: 2px;
+            margin: 0;
+            padding: 0;
           }
           .meta-row span,
           .thermal-row span,
           .thermal-list-line span {
             flex: 1 1 auto;
             min-width: 0;
+            overflow-wrap: anywhere;
             word-break: break-word;
           }
           .meta-row strong,
@@ -277,29 +289,27 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             flex: 0 0 auto;
             max-width: 52%;
             text-align: right;
+            overflow-wrap: anywhere;
             word-break: break-word;
           }
           .thermal-row-strong,
-          .thermal-list-line-strong {
-            font-size: 1.08em;
-            font-weight: 900;
-          }
+          .thermal-list-line-strong,
           .thermal-row-strong span,
           .thermal-row-strong strong,
           .thermal-list-line-strong span,
           .thermal-list-line-strong strong {
-            font-weight: 900;
+            font-size: 1em;
+            font-weight: 400;
           }
+          .thermal-list,
           .thermal-list-item {
-            border-bottom: 1px dashed #aaa;
-            padding: 4px 0;
+            margin: 0;
+            padding: 0;
+            border: 0;
           }
-          .thermal-list-item:last-child { border-bottom: 0; }
-          .thermal-list-line { margin-bottom: 2px; }
-          .thermal-list-line strong { max-width: 58%; }
           .thermal-list-line-block {
             display: block;
-            margin-top: 3px;
+            margin: 0;
           }
           .thermal-list-line-block span,
           .thermal-list-line-block strong {
@@ -309,59 +319,59 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             text-align: left;
           }
           .thermal-list-line-block span {
-            font-size: 0.86em;
+            font-size: 1em;
             text-transform: uppercase;
-            font-weight: 800;
-          }
-          .thermal-list-section-table {
-            padding-top: 4px;
+            font-weight: 400;
           }
           .thermal-table {
             width: 100%;
-            font-family: "Courier New", Consolas, monospace;
-            letter-spacing: -0.15px;
+            font-family: "Courier New", "Lucida Console", monospace;
+            letter-spacing: -0.2px;
+            margin: 0;
+            padding: 0;
           }
           .thermal-table-row {
             display: grid;
             column-gap: ${cfg.tableColumnGap};
             align-items: start;
-            border-bottom: 1px dotted #999;
+            border: 0;
+            margin: 0;
             padding: ${cfg.tableRowPadding};
           }
-          .thermal-table-row:last-child { border-bottom: 0; }
           .thermal-table-head {
-            border-bottom: 1px solid #000;
-            padding-bottom: 2px;
-            margin-bottom: 1px;
+            border: 0;
+            margin: 0;
+            padding: 0;
           }
           .thermal-table-cell {
             min-width: 0;
             overflow-wrap: anywhere;
             word-break: break-word;
-            line-height: 1.05;
+            line-height: ${cfg.tableLineHeight};
             font-size: ${cfg.tableFontSize};
+            font-weight: 400;
           }
           .thermal-table-head-cell {
-            font-weight: 900;
-            text-transform: uppercase;
             font-size: ${cfg.tableHeaderSize};
+            text-transform: uppercase;
+            font-weight: 400;
           }
-          .thermal-table-cell-strong { font-weight: 900; }
+          .thermal-table-cell-strong { font-weight: 400; }
           .thermal-table-cell-right { text-align: right; }
           .thermal-empty {
-            border-top: 1px dashed #000;
-            margin-top: 6px;
-            padding: 10px 0;
+            border: 0;
+            margin: 1px 0 0;
+            padding: 0;
             text-align: center;
-            font-weight: 800;
+            font-weight: 400;
           }
           .thermal-footer {
-            border-top: 1px dashed #000;
-            margin-top: 7px;
-            padding-top: 5px;
+            border: 0;
+            margin: 1px 0 0;
+            padding: 0;
             text-align: center;
             font-size: 0.9em;
-            font-weight: 700;
+            font-weight: 400;
           }
           @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
