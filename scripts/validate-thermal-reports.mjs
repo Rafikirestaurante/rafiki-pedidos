@@ -16,7 +16,7 @@ const caja = read("src/modules/caja/components/CajaAdmin.jsx");
 check("Existe servicio central de reportes térmicos", service.includes("imprimirReporteTermico") && service.includes("FORMATOS_TERMICOS"));
 check("El servicio soporta 58 mm", service.includes('"58"') && service.includes("58mm"));
 check("El servicio soporta 80 mm", service.includes('"80"') && service.includes("80mm"));
-check("El formato solo ajusta CSS, no cambia la data", service.includes("renderSecciones(secciones)") && service.includes("renderListado(listado)"));
+check("El formato solo ajusta CSS, no cambia la data", service.includes("renderSecciones(secciones)") && service.includes("renderListado(listado, claveFormato, cfg)"));
 check("Pedidos Hoy usa el servicio térmico central", pedidos.includes("imprimirResumenPedidosFiltradosTermico") && pedidos.includes("imprimirReporteTermico"));
 check("Pedidos Hoy imprime los mismos filtros con selector 58/80", pedidos.includes("ThermalPrintControls") && pedidos.includes("onPrint={imprimirPedidosFiltradosTermico}") && pedidos.includes("resumenFiltrosRapidos"));
 check("Pedidos Hoy conserva datos clave", pedidos.includes("Pedido") && pedidos.includes("Cliente") && pedidos.includes("Ubicación") && pedidos.includes("Total"));

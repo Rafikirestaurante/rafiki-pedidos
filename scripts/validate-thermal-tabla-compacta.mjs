@@ -15,9 +15,9 @@ const gastos = read("src/modules/gastos/components/GastosDiarios.jsx");
 const cartera = read("src/modules/cartera/components/CarteraClientesCredito.jsx");
 const pkg = JSON.parse(read("package.json"));
 
-check("Servicio térmico tiene modo tabla", service.includes("renderListadoTabla") && service.includes("thermal-table-row") && service.includes("grid-template-columns"));
+check("Servicio térmico tiene modo tabla de texto térmico", service.includes("renderListadoTabla") && service.includes("thermal-pre-table") && service.includes("formatearCeldaTablaTermica"));
 check("Servicio conserva modo bloques para casos no tabulares", service.includes("renderListadoBloques") && service.includes('modo === "tabla"'));
-check("Pedidos Hoy usa tabla compacta", pedidos.includes('modo: "tabla"') && pedidos.includes('ancho: "17%"') && pedidos.includes('ancho: "29%"') && pedidos.includes('ancho: "31%"') && pedidos.includes('ancho: "23%"'));
+check("Pedidos Hoy usa tabla compacta 1x1", pedidos.includes('modo: "tabla"') && pedidos.includes('chars58: 5') && pedidos.includes('chars58: 7') && pedidos.includes('chars58: 8'));
 check("Pedidos Hoy conserva columnas clave", pedidos.includes('etiqueta: "Pedido"') && pedidos.includes('etiqueta: "Cliente"') && pedidos.includes('etiqueta: "Ubicación"') && pedidos.includes('etiqueta: "Total"'));
 const inicioCamposPedidos = pedidos.indexOf("function crearCamposPedidosTermicos()");
 const finCamposPedidos = pedidos.indexOf("function imprimirResumenPedidosFiltradosTermico", inicioCamposPedidos);

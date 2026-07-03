@@ -1,3 +1,22 @@
+## 125.8 — Hotfix 35F.1 Ahorro de papel térmico estilo ESC/POS
+
+Versión: 125.8-HOTFIX35F1-AHORRO-PAPEL-TERMICO-ESC-POS-2026-07-01
+
+Se ajusta el motor de impresión térmica administrativa para usar un estilo más cercano al modo de ahorro de papel del Rafiki Print Server: fuente monoespaciada tipo térmica, letra normal, sin negritas forzadas, sin separadores largos, márgenes mínimos e interlineado compacto. Se conserva la misma información en 58 mm y 80 mm; solo cambia la optimización visual por ancho.
+
+Archivos clave:
+
+```text
+src/modules/impresion/thermalReportService.js
+scripts/validate-thermal-ahorro-papel.mjs
+```
+
+Validación:
+
+```bash
+npm run thermal-ahorro:check
+```
+
 ## 125.6 — Hotfix 35E.2 Tablas térmicas compactas
 
 Versión: 125.6-HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS-2026-07-01
@@ -455,3 +474,8 @@ Fase 35D: se agregó impresión térmica administrativa para `Gastos Diarios` y 
 ## 125.7-FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA-2026-07-01
 
 Fase 35F: cierre de impresión térmica administrativa. Se agregó ajuste fino al motor central de impresión para tablas compactas: fuente monoespaciada, tamaños diferenciados para 58 mm y 80 mm, menor padding por fila y menor separación entre columnas. Se agregó el comando `npm run thermal-cierre:check` y documentación de pruebas manuales para Pedidos Hoy, Caja, Gastos y Cartera. No se tocaron `/cliente`, `/mesas`, guardado de pedidos, SQL, comandas ni cálculos internos.
+
+
+## 125.9 — Hotfix 35F.2: impresión térmica con letra normal 1x1
+
+Se corrigió el motor de informes térmicos administrativos para evitar letra demasiado pequeña o borrosa en 58 mm. Ahora los listados térmicos usan letra normal equivalente a ESC/POS 1x1, texto preformateado y ancho fijo, sin reducir excesivamente el tamaño. Pedidos Hoy conserva tabla compacta con Pedido, Cliente, Ubicación y Total. No se modificaron /cliente, /mesas, guardado de pedidos, SQL ni cálculos financieros.

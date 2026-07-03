@@ -17,8 +17,8 @@ const caja = read("src/modules/caja/components/CajaAdmin.jsx");
 const pkg = JSON.parse(read("package.json"));
 
 check("Motor térmico conserva formatos 58 y 80", service.includes('"58"') && service.includes('"80"') && service.includes('pageSize: "58mm auto"') && service.includes('pageSize: "80mm auto"'));
-check("Tablas térmicas tienen ajuste fino por formato", service.includes("tableFontSize") && service.includes("tableHeaderSize") && service.includes("tableRowPadding") && service.includes("tableColumnGap"));
-check("Tablas usan fuente monoespaciada", service.includes('font-family: "Courier New", Consolas, monospace'));
+check("Tablas térmicas tienen modo texto 1x1 por formato", service.includes("tableFontSize") && service.includes("tableChars") && service.includes("thermal-pre-table"));
+check("Tablas usan estilo térmico monoespaciado 1x1", service.includes('font-family: "Courier New", "Lucida Console", monospace') && service.includes('fontSize: "12px"') && service.includes("font-weight: 400") && service.includes("border: 0"));
 check("Pedidos Hoy imprime tabla compacta", pedidos.includes('modo: "tabla"') && pedidos.includes('etiqueta: "Pedido"') && pedidos.includes('etiqueta: "Cliente"') && pedidos.includes('etiqueta: "Ubicación"') && pedidos.includes('etiqueta: "Total"'));
 const inicioCamposPedidos = pedidos.indexOf("function crearCamposPedidosTermicos()");
 const finCamposPedidos = pedidos.indexOf("function imprimirResumenPedidosFiltradosTermico", inicioCamposPedidos);
