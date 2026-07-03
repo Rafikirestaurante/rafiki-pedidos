@@ -4,36 +4,38 @@ const FORMATOS_TERMICOS = {
     pageSize: "58mm auto",
     width: "58mm",
     ventana: "width=340,height=720",
-    bodyPadding: "2px 1px 4px",
-    fontSize: "10.5px",
-    titleSize: "11px",
-    subtitleSize: "10.5px",
-    sectionTitleSize: "10.5px",
+    bodyPadding: "1px 0 2px",
+    fontSize: "12px",
+    titleSize: "12px",
+    subtitleSize: "12px",
+    sectionTitleSize: "12px",
     rowGap: "0",
-    tableFontSize: "10.2px",
-    tableHeaderSize: "10px",
+    tableFontSize: "12px",
+    tableHeaderSize: "12px",
     tableRowPadding: "0",
-    tableColumnGap: "1px",
-    lineHeight: "1.03",
-    tableLineHeight: "1.02",
+    tableColumnGap: "1ch",
+    tableChars: 30,
+    lineHeight: "1",
+    tableLineHeight: "1",
   },
   "80": {
     etiqueta: "80 mm",
     pageSize: "80mm auto",
     width: "80mm",
     ventana: "width=460,height=760",
-    bodyPadding: "3px 2px 5px",
-    fontSize: "11px",
+    bodyPadding: "1px 0 2px",
+    fontSize: "12px",
     titleSize: "12px",
-    subtitleSize: "11px",
-    sectionTitleSize: "11px",
+    subtitleSize: "12px",
+    sectionTitleSize: "12px",
     rowGap: "0",
-    tableFontSize: "10.8px",
-    tableHeaderSize: "10.5px",
+    tableFontSize: "12px",
+    tableHeaderSize: "12px",
     tableRowPadding: "0",
-    tableColumnGap: "2px",
-    lineHeight: "1.04",
-    tableLineHeight: "1.03",
+    tableColumnGap: "1ch",
+    tableChars: 42,
+    lineHeight: "1",
+    tableLineHeight: "1",
   },
 };
 
@@ -139,36 +141,109 @@ function resolverValorCampoTermico(campo, item) {
   return typeof campo.valor === "function" ? campo.valor(item) : item?.[campo.key];
 }
 
-function normalizarAnchoColumnaTermica(campo, totalCampos) {
-  if (campo?.ancho) return String(campo.ancho).trim();
-  if (campo?.width) return String(campo.width).trim();
-  return `${Math.max(1, Math.floor(100 / Math.max(1, totalCampos)))}%`;
+function etiquetaCampoTermico(campo, formato) {
+  if (formato === "58" && campo?.etiqueta58) return campo.etiqueta58;
+  if (campo?.etiquetaCorta) return campo.etiquetaCorta;
+  const etiqueta = String(campo?.etiqueta || "");
+  const mapa = {
+    Pedido: "Ped",
+    Cliente: "Cli",
+    "Ubicación": "Ubic",
+    Ubicacion: "Ubic",
+    Total: "Total",
+    Proveedor: "Prov",
+    "Categoría": "Cat",
+    Categoria: "Cat",
+    Pago: "Pago",
+    Valor: "Valor",
+    "Teléfono": "Tel",
+    Telefono: "Tel",
+    Saldo: "Saldo",
+    Estado: "Est",
+  };
+  return mapa[etiqueta] || etiqueta;
 }
 
-function renderListadoTabla(listado = {}, campos = [], items = []) {
+function limpiarTextoTablaTermica(valor) {
+  return String(valor ?? "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cortarTextoTablaTermica(valor, ancho) {
+  const texto = limpiarTextoTablaTermica(valor);
+  const limite = Math.max(1, Number(ancho) || 1);
+  if (texto.length <= limite) return texto;
+  if (limite <= 2) return texto.slice(0, limite);
+  return `${texto.slice(0, limite - 1)}.`;
+}
+
+function formatearCeldaTablaTermica(valor, ancho, alinear = "left") {
+  const texto = cortarTextoTablaTermica(valor, ancho);
+  return alinear === "right" ? texto.padStart(ancho, " ") : texto.padEnd(ancho, " ");
+}
+
+function normalizarPorcentajeColumnaTermica(campo, totalCampos) {
+  const raw = campo?.ancho || campo?.width;
+  if (!raw) return 100 / Math.max(1, totalCampos);
+  const numero = Number(String(raw).replace("%", "").trim());
+  return Number.isFinite(numero) && numero > 0 ? numero : 100 / Math.max(1, totalCampos);
+}
+
+function resolverAnchosTextoTablaTermica(columnas, formato, totalCaracteres) {
+  const espacios = Math.max(0, columnas.length - 1);
+  const disponible = Math.max(columnas.length, Number(totalCaracteres || 30) - espacios);
+  const clave = formato === "58" ? "chars58" : "chars80";
+  const fijos = columnas.map((campo) => Number(campo?.[clave] || campo?.chars || 0));
+  const totalFijos = fijos.reduce((acc, ancho) => acc + (Number.isFinite(ancho) && ancho > 0 ? ancho : 0), 0);
+
+  if (totalFijos > 0 && totalFijos <= disponible) {
+    const pendientes = columnas.filter((_, index) => !fijos[index]).length;
+    const restante = disponible - totalFijos;
+    return columnas.map((_, index) => {
+      const fijo = fijos[index];
+      if (Number.isFinite(fijo) && fijo > 0) return Math.max(1, Math.floor(fijo));
+      return Math.max(1, Math.floor(restante / Math.max(1, pendientes)));
+    });
+  }
+
+  const porcentajes = columnas.map((campo) => normalizarPorcentajeColumnaTermica(campo, columnas.length));
+  const totalPorcentaje = porcentajes.reduce((acc, n) => acc + n, 0) || 100;
+  let anchos = porcentajes.map((n) => Math.max(1, Math.floor((n / totalPorcentaje) * disponible)));
+  let usados = anchos.reduce((acc, n) => acc + n, 0);
+  let index = 0;
+  while (usados < disponible) {
+    anchos[index % anchos.length] += 1;
+    usados += 1;
+    index += 1;
+  }
+  while (usados > disponible) {
+    const pos = anchos.findIndex((ancho) => ancho > 1);
+    if (pos < 0) break;
+    anchos[pos] -= 1;
+    usados -= 1;
+  }
+  return anchos;
+}
+
+function renderListadoTabla(listado = {}, campos = [], items = [], formato = "80", cfg = FORMATOS_TERMICOS["80"]) {
   const columnas = campos.filter((campo) => !campo?.bloque);
   if (!columnas.length) return "";
 
-  const template = columnas.map((campo) => normalizarAnchoColumnaTermica(campo, columnas.length)).join(" ");
-  const encabezado = columnas.map((campo) => `
-    <span class="thermal-table-cell thermal-table-head-cell ${campo.alinear === "right" ? "thermal-table-cell-right" : ""}">${renderTextoTermico(campo.etiqueta)}</span>
-  `).join("");
+  const totalCaracteres = cfg?.tableChars || (formato === "58" ? 30 : 42);
+  const anchos = resolverAnchosTextoTablaTermica(columnas, formato, totalCaracteres);
+  const construirLinea = (item, usarEtiquetas = false) => columnas.map((campo, index) => {
+    const valor = usarEtiquetas ? etiquetaCampoTermico(campo, formato) : resolverValorCampoTermico(campo, item);
+    return formatearCeldaTablaTermica(valor, anchos[index], campo.alinear === "right" ? "right" : "left");
+  }).join(" ").replace(/\s+$/g, "");
 
-  const filas = items.map((item) => `
-    <div class="thermal-table-row" style="grid-template-columns: ${escapeHtmlTermico(template)};">
-      ${columnas.map((campo) => `
-        <span class="thermal-table-cell ${campo.fuerte ? "thermal-table-cell-strong" : ""} ${campo.alinear === "right" ? "thermal-table-cell-right" : ""}">${renderTextoTermico(resolverValorCampoTermico(campo, item))}</span>
-      `).join("")}
-    </div>
-  `).join("");
+  const lineas = [construirLinea({}, true), ...items.map((item) => construirLinea(item, false))];
 
   return `
     <section class="thermal-list-section thermal-list-section-table">
       ${listado.titulo ? `<h3>${renderTextoTermico(listado.titulo)}</h3>` : ""}
-      <div class="thermal-table">
-        <div class="thermal-table-row thermal-table-head" style="grid-template-columns: ${escapeHtmlTermico(template)};">${encabezado}</div>
-        ${filas}
-      </div>
+      <pre class="thermal-pre-table">${escapeHtmlTermico(lineas.join("\n"))}</pre>
     </section>
   `;
 }
@@ -193,14 +268,14 @@ function renderListadoBloques(listado = {}, campos = [], items = []) {
   `;
 }
 
-function renderListado(listado = {}) {
+function renderListado(listado = {}, formato = "80", cfg = FORMATOS_TERMICOS["80"]) {
   const items = Array.isArray(listado.items) ? listado.items : [];
   if (!items.length) return listado.vacio ? `<div class="thermal-empty">${renderTextoTermico(listado.vacio)}</div>` : "";
 
   const campos = Array.isArray(listado.campos) ? listado.campos : [];
   const modo = String(listado.modo || listado.layout || "bloques").toLowerCase();
   if (modo === "tabla" || listado.tabla === true) {
-    return renderListadoTabla(listado, campos, items);
+    return renderListadoTabla(listado, campos, items, formato, cfg);
   }
 
   return renderListadoBloques(listado, campos, items);
@@ -230,6 +305,8 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             font-size: ${cfg.fontSize};
             line-height: ${cfg.lineHeight};
             font-weight: 400;
+            -webkit-font-smoothing: none;
+            text-rendering: optimizeSpeed;
           }
           h1, h2, h3, p { margin: 0; padding: 0; }
           strong, b { font-weight: 400; }
@@ -323,10 +400,25 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             text-transform: uppercase;
             font-weight: 400;
           }
+          .thermal-pre-table {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            font-family: "Courier New", "Lucida Console", monospace;
+            font-size: ${cfg.tableFontSize};
+            line-height: ${cfg.tableLineHeight};
+            font-weight: 400;
+            letter-spacing: 0;
+            white-space: pre;
+            overflow: hidden;
+            -webkit-font-smoothing: none;
+            text-rendering: optimizeSpeed;
+          }
           .thermal-table {
             width: 100%;
             font-family: "Courier New", "Lucida Console", monospace;
-            letter-spacing: -0.2px;
+            letter-spacing: 0;
             margin: 0;
             padding: 0;
           }
@@ -338,11 +430,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             margin: 0;
             padding: ${cfg.tableRowPadding};
           }
-          .thermal-table-head {
-            border: 0;
-            margin: 0;
-            padding: 0;
-          }
+          .thermal-table-head { border: 0; margin: 0; padding: 0; }
           .thermal-table-cell {
             min-width: 0;
             overflow-wrap: anywhere;
@@ -351,11 +439,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             font-size: ${cfg.tableFontSize};
             font-weight: 400;
           }
-          .thermal-table-head-cell {
-            font-size: ${cfg.tableHeaderSize};
-            text-transform: uppercase;
-            font-weight: 400;
-          }
+          .thermal-table-head-cell { font-size: ${cfg.tableHeaderSize}; text-transform: uppercase; font-weight: 400; }
           .thermal-table-cell-strong { font-weight: 400; }
           .thermal-table-cell-right { text-align: right; }
           .thermal-empty {
@@ -383,7 +467,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
         ${subtitulo ? `<p class="thermal-subtitle">${escapeHtmlTermico(subtitulo)}</p>` : ""}
         ${renderMeta(meta)}
         ${renderSecciones(secciones)}
-        ${listado ? renderListado(listado) : ""}
+        ${listado ? renderListado(listado, claveFormato, cfg) : ""}
         <div class="thermal-footer">${escapeHtmlTermico(pie || `Formato ${cfg.etiqueta} · ${formatearFechaTermica(new Date())}`)}</div>
         <script>
           window.onload = function () {
@@ -414,9 +498,9 @@ export function imprimirReporteTermico(opciones = {}) {
 
 export function crearCamposListadoPedidosTermico({ obtenerNumero, obtenerClientePedido, obtenerUbicacionPedido, obtenerTotalPedido }) {
   return [
-    { etiqueta: "Pedido", ancho: "17%", valor: (pedido) => `#${obtenerNumero(pedido)}`, fuerte: true },
-    { etiqueta: "Cliente", ancho: "29%", valor: obtenerClientePedido },
-    { etiqueta: "Ubicación", ancho: "31%", valor: obtenerUbicacionPedido },
-    { etiqueta: "Total", ancho: "23%", alinear: "right", valor: obtenerTotalPedido, fuerte: true },
+    { etiqueta: "Pedido", etiquetaCorta: "Ped", ancho: "17%", chars58: 5, chars80: 7, valor: (pedido) => `#${obtenerNumero(pedido)}`, fuerte: true },
+    { etiqueta: "Cliente", etiquetaCorta: "Cli", ancho: "29%", chars58: 7, chars80: 13, valor: obtenerClientePedido },
+    { etiqueta: "Ubicación", etiquetaCorta: "Ubic", ancho: "31%", chars58: 8, chars80: 13, valor: obtenerUbicacionPedido },
+    { etiqueta: "Total", etiquetaCorta: "Total", ancho: "23%", chars58: 7, chars80: 9, alinear: "right", valor: obtenerTotalPedido, fuerte: true },
   ];
 }
