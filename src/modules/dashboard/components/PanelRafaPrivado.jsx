@@ -9,7 +9,6 @@ import {
   crearResumenClientes,
   filtrarFilasClientes
 } from "../../../services/dashboardService";
-import { guardarCierreDiario } from "../../../services/cierresDiariosService";
 import {
   dinero,
   fechaISOColombia,
@@ -79,9 +78,6 @@ export default function PanelRafaPrivado() {
   const [gastosRafa, setGastosRafa] = useState([]);
   const [cargandoRafa, setCargandoRafa] = useState(false);
   const [errorRafa, setErrorRafa] = useState("");
-  const [mensajeCierre, setMensajeCierre] = useState("");
-  const [guardandoCierre, setGuardandoCierre] = useState(false);
-  const [observacionesCierre, setObservacionesCierre] = useState("");
   const [busquedaCliente, setBusquedaCliente] = useState("");
   const [busquedaClienteAplicada, setBusquedaClienteAplicada] = useState("");
   const [pestanaRafa, setPestanaRafa] = useState("informe");
@@ -244,25 +240,6 @@ export default function PanelRafaPrivado() {
   }, {});
   const totalGastos = gastosRafa.reduce((suma, gasto) => suma + Number(gasto.valor || 0), 0);
   const utilidadAproximada = totalVentas - totalGastos;
-  const resumenCierreDiario = {
-    fecha: rangoRafa.inicioTexto,
-    ventasTotal: totalVentas,
-    ventasBrutas: totalVentasBrutas,
-    adicionalesParaLlevar: totalAdicionalesParaLlevar,
-    gastosTotal: totalGastos,
-    utilidadAproximada,
-    pedidosTotal: totalPedidos,
-    pedidosFinalizados: finalizados,
-    pedidosPendientes: pendientes,
-    pedidosCancelados: dashboardRafa.ventasPorEstado.find((item) => item.nombre === "Cancelado")?.cantidad || 0,
-    ventasRestaurante: resumenVentas.restaurante.total,
-    ventasCafeteria: resumenVentas.cafeteria.total,
-    gastosPorCategoria,
-    pagosPorMetodo: Object.fromEntries((dashboardRafa.ventasPorPago || []).map((item) => [item.nombre, item.total])),
-    observaciones: observacionesCierre
-  };
-  const cierreEsUnSoloDia = rangoRafa.inicioTexto === rangoRafa.finTexto;
-
   function obtenerFechaAyer() {
     const ayer = new Date(`${hoy}T00:00:00-05:00`);
     ayer.setDate(ayer.getDate() - 1);
@@ -338,28 +315,6 @@ export default function PanelRafaPrivado() {
   function filasProteinasPdf(items) {
     return filasResumenPdf(items, true);
   }
-
-  async function guardarCierreDiaSeleccionado() {
-    if (!cierreEsUnSoloDia) {
-      setErrorRafa("El cierre diario solo se puede guardar cuando seleccionas un solo día.");
-      return;
-    }
-
-    setGuardandoCierre(true);
-    setErrorRafa("");
-    setMensajeCierre("");
-
-    try {
-      await guardarCierreDiario(resumenCierreDiario);
-      setMensajeCierre("Cierre diario guardado correctamente.");
-    } catch (error) {
-      registrarErrorSupabase("guardar cierre diario", error);
-      setErrorRafa(describirErrorSupabase(error, "guardar el cierre diario"));
-    } finally {
-      setGuardandoCierre(false);
-    }
-  }
-
 
   function obtenerLineasAdicionalesParaInforme() {
     const lineas = [
@@ -627,7 +582,6 @@ export default function PanelRafaPrivado() {
       </div>
 
       {errorRafa && <div className="alert alert-error">{errorRafa}</div>}
-      {mensajeCierre && <div className="alert alert-success">{mensajeCierre}</div>}
       {cargandoRafa && <div className="alert alert-info">Cargando informe...</div>}
 
       {pestanaRafa === "dashboard" && (
@@ -755,23 +709,6 @@ export default function PanelRafaPrivado() {
             </table>
           </div>
         )}
-      </div>
-
-      <div className="soft-box" style={{ marginTop: 16, borderColor: "#bbf7d0", background: "#f0fdf4" }}>
-        <div className="admin-top-row">
-          <div>
-            <h3>🧮 Cierre diario inteligente</h3>
-            <p className="muted">Ventas menos gastos registrados. Es una utilidad aproximada, todavía sin inventario ni costo por receta.</p>
-          </div>
-          <button type="button" className="button" disabled={!cierreEsUnSoloDia || guardandoCierre} onClick={guardarCierreDiaSeleccionado}>
-            {guardandoCierre ? "Guardando..." : "Guardar cierre del día"}
-          </button>
-        </div>
-        {!cierreEsUnSoloDia && <div className="alert alert-info">Para guardar cierre selecciona un solo día, no un rango.</div>}
-        <label className="field" style={{ marginTop: 10 }}>
-          <span>Observaciones del cierre</span>
-          <textarea rows="2" value={observacionesCierre} onChange={(e) => setObservacionesCierre(e.target.value)} placeholder="Ej: día lluvioso, faltó personal, compra alta, evento, etc." />
-        </label>
       </div>
 
       </>

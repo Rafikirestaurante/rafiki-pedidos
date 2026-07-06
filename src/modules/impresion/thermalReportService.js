@@ -9,6 +9,8 @@ const FORMATOS_TERMICOS = {
     titleSize: "12px",
     subtitleSize: "12px",
     sectionTitleSize: "12px",
+    fontWeight: "700",
+    printStroke: "0.08px",
     rowGap: "0",
     tableFontSize: "12px",
     tableHeaderSize: "12px",
@@ -28,6 +30,8 @@ const FORMATOS_TERMICOS = {
     titleSize: "12px",
     subtitleSize: "12px",
     sectionTitleSize: "12px",
+    fontWeight: "700",
+    printStroke: "0.06px",
     rowGap: "0",
     tableFontSize: "12px",
     tableHeaderSize: "12px",
@@ -304,17 +308,20 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             font-family: "Courier New", "Lucida Console", monospace;
             font-size: ${cfg.fontSize};
             line-height: ${cfg.lineHeight};
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
+            color: #000 !important;
             -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: auto;
             text-rendering: optimizeSpeed;
+            -webkit-text-stroke: ${cfg.printStroke} #000;
           }
           h1, h2, h3, p { margin: 0; padding: 0; }
-          strong, b { font-weight: 400; }
+          strong, b { font-weight: ${cfg.fontWeight}; color: #000 !important; }
           .thermal-title {
             text-align: center;
             font-size: ${cfg.titleSize};
             line-height: ${cfg.lineHeight};
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
             text-transform: uppercase;
             margin: 0;
           }
@@ -322,7 +329,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             text-align: center;
             font-size: ${cfg.subtitleSize};
             line-height: ${cfg.lineHeight};
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
             margin: 0;
           }
           .thermal-meta,
@@ -340,7 +347,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             text-transform: uppercase;
             text-align: left;
             letter-spacing: 0;
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
           }
           .meta-row,
           .thermal-row,
@@ -376,7 +383,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
           .thermal-list-line-strong span,
           .thermal-list-line-strong strong {
             font-size: 1em;
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
           }
           .thermal-list,
           .thermal-list-item {
@@ -398,7 +405,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
           .thermal-list-line-block span {
             font-size: 1em;
             text-transform: uppercase;
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
           }
           .thermal-pre-table {
             width: 100%;
@@ -408,7 +415,7 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             font-family: "Courier New", "Lucida Console", monospace;
             font-size: ${cfg.tableFontSize};
             line-height: ${cfg.tableLineHeight};
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
             letter-spacing: 0;
             white-space: pre;
             overflow: hidden;
@@ -437,17 +444,17 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             word-break: break-word;
             line-height: ${cfg.tableLineHeight};
             font-size: ${cfg.tableFontSize};
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
           }
-          .thermal-table-head-cell { font-size: ${cfg.tableHeaderSize}; text-transform: uppercase; font-weight: 400; }
-          .thermal-table-cell-strong { font-weight: 400; }
+          .thermal-table-head-cell { font-size: ${cfg.tableHeaderSize}; text-transform: uppercase; font-weight: ${cfg.fontWeight}; }
+          .thermal-table-cell-strong { font-weight: ${cfg.fontWeight}; }
           .thermal-table-cell-right { text-align: right; }
           .thermal-empty {
             border: 0;
             margin: 1px 0 0;
             padding: 0;
             text-align: center;
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
           }
           .thermal-footer {
             border: 0;
@@ -455,10 +462,15 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             padding: 0;
             text-align: center;
             font-size: 0.9em;
-            font-weight: 400;
+            font-weight: ${cfg.fontWeight};
           }
           @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body, .thermal-pre-table, .thermal-table-cell, .thermal-row, .meta-row {
+              color: #000 !important;
+              font-weight: ${cfg.fontWeight} !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
           }
         </style>
       </head>

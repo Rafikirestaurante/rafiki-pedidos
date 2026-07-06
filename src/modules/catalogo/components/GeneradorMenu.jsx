@@ -224,6 +224,10 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   const [seleccionCatalogoPlatos, setSeleccionCatalogoPlatos] = useState([]);
   const [seleccionCatalogoAcompanantes, setSeleccionCatalogoAcompanantes] = useState([]);
   const [pestanaGenerador, setPestanaGenerador] = useState(pestanaInicial === "historial" ? "historial" : "generador");
+  const [modoInformeMenus, setModoInformeMenus] = useState("ultimos12");
+  const [fechaInformeMenu, setFechaInformeMenu] = useState(() => fechaHoyISO());
+  const [fechaInicioInformeMenu, setFechaInicioInformeMenu] = useState(() => fechaHoyISO());
+  const [fechaFinInformeMenu, setFechaFinInformeMenu] = useState(() => fechaHoyISO());
 
   useEffect(() => {
     let activo = true;
@@ -344,7 +348,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
     }
   }, [fechaMenu, platos, acompanantes]);
 
-  const informeUltimosMenus = useMemo(() => {
+  const historialUnicoOrdenado = useMemo(() => {
     const unicosPorFecha = new Map();
     historial.forEach((registro) => {
       if (registro?.fecha && !unicosPorFecha.has(registro.fecha)) {
@@ -353,9 +357,39 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
     });
 
     return Array.from(unicosPorFecha.values())
-      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
-      .slice(-12);
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
   }, [historial]);
+
+  const informeUltimosMenus = useMemo(() => {
+    if (modoInformeMenus === "fecha") {
+      return historialUnicoOrdenado.filter((registro) => registro.fecha === fechaInformeMenu);
+    }
+
+    if (modoInformeMenus === "rango") {
+      const inicio = fechaInicioInformeMenu || fechaFinInformeMenu;
+      const fin = fechaFinInformeMenu || fechaInicioInformeMenu;
+      if (!inicio && !fin) return historialUnicoOrdenado.slice(-12);
+      const desde = inicio && fin && inicio > fin ? fin : inicio;
+      const hasta = inicio && fin && inicio > fin ? inicio : fin;
+      return historialUnicoOrdenado.filter((registro) => {
+        if (desde && registro.fecha < desde) return false;
+        if (hasta && registro.fecha > hasta) return false;
+        return true;
+      });
+    }
+
+    return historialUnicoOrdenado.slice(-12);
+  }, [historialUnicoOrdenado, modoInformeMenus, fechaInformeMenu, fechaInicioInformeMenu, fechaFinInformeMenu]);
+
+  const tituloInformeMenus = useMemo(() => {
+    if (modoInformeMenus === "fecha") return `Menú del ${fechaInformeMenu || "día seleccionado"}`;
+    if (modoInformeMenus === "rango") {
+      const inicio = fechaInicioInformeMenu || fechaFinInformeMenu || "inicio";
+      const fin = fechaFinInformeMenu || fechaInicioInformeMenu || "fin";
+      return `Menús del ${inicio} al ${fin}`;
+    }
+    return "Últimos 12 menús";
+  }, [modoInformeMenus, fechaInformeMenu, fechaInicioInformeMenu, fechaFinInformeMenu]);
 
   const rotacionInteligenteMenu = useMemo(() => {
     const configuracion = [
@@ -573,7 +607,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   function construirTextoInformeUltimosMenus() {
     if (!informeUltimosMenus.length) return "";
 
-    const lineas = ["📋 Informe últimos 12 menús Rafiki", ""];
+    const lineas = [`📋 ${tituloInformeMenus} Rafiki`, ""];
     informeUltimosMenus.forEach((registro) => {
       const fechaInforme = formatearFechaInformeMenu(registro.fecha);
       const platosRegistro = obtenerPlatosSinPrecio(registro);
@@ -595,7 +629,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
       setMensaje("Guarda menús en el historial para generar el informe.");
       return;
     }
-    await copiarTextoGenerado(textoInforme, "Informe de últimos 12 menús generado y copiado correctamente.");
+    await copiarTextoGenerado(textoInforme, "Informe de menús generado y copiado correctamente.");
   }
 
   function compartirInformeUltimosMenusWhatsApp() {
@@ -606,7 +640,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
     }
     const url = `https://wa.me/?text=${encodeURIComponent(textoInforme)}`;
     window.open(url, "_blank", "noopener,noreferrer");
-    setMensaje("Informe de últimos 12 menús listo para compartir por WhatsApp.");
+    setMensaje("Informe de menús listo para compartir por WhatsApp.");
   }
 
   async function descargarSoloTexto() {
@@ -874,6 +908,45 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
                 </button>
               </div>
             </div>
+
+            <div className="selector-informe-menu" aria-label="Filtro del informe de menú">
+              <div className="selector-informe-menu-modos">
+                <button type="button" className={modoInformeMenus === "ultimos12" ? "active" : ""} onClick={() => setModoInformeMenus("ultimos12")}>
+                  Últimos 12
+                </button>
+                <button type="button" className={modoInformeMenus === "fecha" ? "active" : ""} onClick={() => setModoInformeMenus("fecha")}>
+                  Una fecha
+                </button>
+                <button type="button" className={modoInformeMenus === "rango" ? "active" : ""} onClick={() => setModoInformeMenus("rango")}>
+                  Rango
+                </button>
+              </div>
+
+              {modoInformeMenus === "fecha" && (
+                <label className="selector-informe-menu-fecha">
+                  <span>Fecha del menú</span>
+                  <input type="date" value={fechaInformeMenu} onChange={(e) => setFechaInformeMenu(e.target.value)} />
+                </label>
+              )}
+
+              {modoInformeMenus === "rango" && (
+                <div className="selector-informe-menu-rango">
+                  <label>
+                    <span>Desde</span>
+                    <input type="date" value={fechaInicioInformeMenu} onChange={(e) => setFechaInicioInformeMenu(e.target.value)} />
+                  </label>
+                  <label>
+                    <span>Hasta</span>
+                    <input type="date" value={fechaFinInformeMenu} onChange={(e) => setFechaFinInformeMenu(e.target.value)} />
+                  </label>
+                </div>
+              )}
+
+              <p className="muted small" style={{ margin: 0 }}>
+                Mostrando: <strong>{tituloInformeMenus}</strong> · {informeUltimosMenus.length} menú(s) encontrados.
+              </p>
+            </div>
+
             {informeUltimosMenus.length === 0 ? (
               <p className="muted small" style={{ marginBottom: 0 }}>Guarda menús en el historial para ver el informe.</p>
             ) : (
@@ -1270,64 +1343,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
           <div className="box soft" style={{ marginTop: 14 }}>
             <div className="generador-box-header">
               <div>
-                <strong>Informe últimos 12 menús</strong>
-                <p className="muted small" style={{ marginBottom: 0 }}>Solo platos, sin precios. Ideal para revisar rotación y compartir por WhatsApp.</p>
-              </div>
-              <div className="informe-menu-acciones">
-                <button type="button" className="button light" onClick={generarInformeUltimosMenus} disabled={informeUltimosMenus.length === 0} style={{ padding: "8px 10px" }}>
-                  📋 Generar informe
-                </button>
-                <button type="button" className="button" onClick={compartirInformeUltimosMenusWhatsApp} disabled={informeUltimosMenus.length === 0} style={{ padding: "8px 10px" }}>
-                  💬 WhatsApp
-                </button>
-              </div>
-            </div>
-            {informeUltimosMenus.length === 0 ? (
-              <p className="muted small" style={{ marginBottom: 0 }}>Guarda menús en el historial para ver el informe.</p>
-            ) : (
-              <div className="informe-menu-scroll">
-                <table className="informe-menu-tabla">
-                  <thead>
-                    <tr>
-                      {informeUltimosMenus.map((registro) => {
-                        const fechaInforme = formatearFechaInformeMenu(registro.fecha);
-                        return (
-                          <th key={registro.fecha}>
-                            <span className="informe-menu-dia">{fechaInforme.diaSemana}</span>
-                            <span className="informe-menu-fecha">{fechaInforme.fechaCorta}</span>
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      {informeUltimosMenus.map((registro) => {
-                        const platosRegistro = obtenerPlatosSinPrecio(registro);
-                        return (
-                          <td key={registro.fecha}>
-                            {platosRegistro.length ? (
-                              <ul>
-                                {platosRegistro.map((plato, index) => (
-                                  <li key={`${registro.fecha}-${index}`}>{plato}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <span className="muted small">Sin platos</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <div className="box soft" style={{ marginTop: 14 }}>
-            <div className="generador-box-header">
-              <div>
                 <strong>Historial reciente</strong>
                 <p className="muted small" style={{ marginBottom: 0 }}>Paginado de 5 en 5 para que sea más cómodo desde celular.</p>
               </div>
@@ -1402,6 +1417,12 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
         .preview-menu-frame img { max-width: 100%; height: auto; }
         .generador-box-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
         .informe-menu-acciones { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .selector-informe-menu { margin-top: 14px; display: grid; gap: 10px; padding: 12px; border: 1px dashed #fdba74; border-radius: 16px; background: #fffaf5; }
+        .selector-informe-menu-modos { display: flex; flex-wrap: wrap; gap: 8px; }
+        .selector-informe-menu-modos button { border: 1px solid #fed7aa; background: #fff; color: #7c2d12; border-radius: 999px; padding: 8px 12px; font-weight: 950; cursor: pointer; }
+        .selector-informe-menu-modos button.active { background: #f97316; border-color: #f97316; color: #fff; box-shadow: 0 6px 16px rgba(249, 115, 22, 0.18); }
+        .selector-informe-menu-fecha, .selector-informe-menu-rango label { display: grid; gap: 6px; color: #7c2d12; font-size: 12.5px; font-weight: 950; }
+        .selector-informe-menu-rango { display: grid; grid-template-columns: repeat(2, minmax(0, 180px)); gap: 10px; }
         .historial-menu-paginacion { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .historial-menu-paginacion span { color: #7c2d12; font-size: 13px; font-weight: 900; }
         .history-menu-item { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; color: #3f2a1d; }
