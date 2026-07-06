@@ -479,3 +479,8 @@ Fase 35F: cierre de impresión térmica administrativa. Se agregó ajuste fino a
 ## 125.9 — Hotfix 35F.2: impresión térmica con letra normal 1x1
 
 Se corrigió el motor de informes térmicos administrativos para evitar letra demasiado pequeña o borrosa en 58 mm. Ahora los listados térmicos usan letra normal equivalente a ESC/POS 1x1, texto preformateado y ancho fijo, sin reducir excesivamente el tamaño. Pedidos Hoy conserva tabla compacta con Pedido, Cliente, Ubicación y Total. No se modificaron /cliente, /mesas, guardado de pedidos, SQL ni cálculos financieros.
+
+
+## 125.10 — Hotfix 35F.3: contraste térmico 1x1
+
+Se reforzó el contraste del motor de impresión térmica administrativa sin volver a usar letra pequeña. El texto conserva tamaño normal equivalente a ESC/POS 1x1, pero ahora usa negro puro, peso térmico firme y un trazo mínimo de impresión para evitar que Pedidos Hoy y los demás informes salgan demasiado claros. Se mantiene el formato compacto de Pedidos Hoy con solo Pedido, Cliente, Ubicación y Total. No se modificaron `/cliente`, `/mesas`, guardado de pedidos, SQL, cálculos de Caja/Cartera ni comandas.
