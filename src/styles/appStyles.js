@@ -259,6 +259,22 @@ export const appStyles = `
         .producto-seleccionado-row .button { padding: 8px 10px; font-size: 12px; border-radius: 12px; }
         .solicitud-preview { white-space: pre-wrap; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 18px; padding: 16px; font-size: 14px; margin-top: 14px; }
 
+        .insumos-pendientes-card { border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; overflow: hidden; }
+        .insumos-pendientes-card-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .insumos-pendientes-card-header .category-title { margin: 0; }
+        .insumos-pendientes-lista { display: grid; gap: 10px; }
+        .insumo-pendiente-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 48px 76px 34px; gap: 8px; align-items: center; padding: 10px; border-radius: 14px; background: rgba(255,255,255,0.75); border: 1px solid rgba(0,0,0,0.06); max-width: 100%; }
+        .insumo-pendiente-row-comprado { background: rgba(0,0,0,0.04); }
+        .insumo-pendiente-check { display: flex; justify-content: center; align-items: center; width: 34px; height: 34px; border-radius: 10px; flex: 0 0 34px; }
+        .insumo-pendiente-check-on { background: rgba(46,125,50,0.12); }
+        .insumo-pendiente-check-off { background: rgba(0,0,0,0.04); }
+        .insumo-pendiente-nombre { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+        .insumo-pendiente-row-comprado .insumo-pendiente-nombre { text-decoration: line-through; opacity: 0.55; }
+        .insumo-jornada-badge { justify-self: center; display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 28px; padding: 5px 7px; border-radius: 999px; background: #fff7ed; color: var(--rafiki-brand-strong); border: 1px solid var(--rafiki-border); font-size: 11px; font-weight: 900; letter-spacing: 0.04em; }
+        .insumo-jornada-badge-empty { color: var(--rafiki-muted); background: #f5f5f4; }
+        .insumo-pendiente-cantidad { width: 100%; min-width: 0; padding: 8px 6px; text-align: center; font-size: 13px; border: 1.5px solid #e7e5e4; background: #fafaf9; border-radius: 12px; outline: none; }
+        .insumo-pendiente-cantidad:focus { border-color: var(--rafiki-brand); box-shadow: 0 0 0 3px rgba(249,115,22,0.12); background: #fff; }
+
         .pedidos-tabla-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--rafiki-border); border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
         .pedidos-tabla-compacta { width: 100%; border-collapse: collapse; min-width: 1080px; font-size: 12px; }
         .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 1; background: var(--rafiki-bg); color: var(--rafiki-brand-strong); text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--rafiki-border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
@@ -691,6 +707,13 @@ export const appStyles = `
           .finalizar-area { max-width: 190px; }
           .admin-tabs { grid-template-columns: 1fr 1fr; border-radius: 18px; }
           .admin-tabs button { font-size: 12px; padding: 12px 8px; }
+          .insumos-pendientes-card { border-radius: 14px; }
+          .insumos-pendientes-card-header { align-items: flex-start; }
+          .insumo-pendiente-row { grid-template-columns: 34px minmax(0, 1fr) 46px; align-items: start; padding: 9px; }
+          .insumo-pendiente-nombre { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; padding-top: 6px; }
+          .insumo-jornada-badge { justify-self: end; min-width: 40px; min-height: 26px; }
+          .insumo-pendiente-cantidad { grid-column: 1 / 3; min-height: 38px; text-align: left; padding: 9px 10px; }
+          .insumo-pendiente-row > .insumo-pendiente-check:last-child { grid-column: 3; justify-self: end; }
         }
 /* Fase 19A1: cabecera compacta de Pedidos de hoy */
 .admin-top-row-compact {

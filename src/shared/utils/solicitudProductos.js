@@ -112,6 +112,66 @@ export function cargarEstadoPendientesCompra() {
   }
 }
 
+export function obtenerJornadaInsumos(fecha = new Date()) {
+  const horaTexto = new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    hour: "2-digit",
+    hour12: false,
+    hourCycle: "h23"
+  }).format(fecha);
+  const hora = Number(horaTexto);
+  return hora < 12 ? "AM" : "PM";
+}
+
+export function obtenerHoraInsumosColombia(fecha = new Date()) {
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    hourCycle: "h23"
+  }).format(fecha);
+}
+
+function normalizarJornadaInsumos(valor) {
+  const texto = String(valor || "").trim().toUpperCase();
+  if (texto === "AM" || texto === "PM") return texto;
+  if (texto.includes("MAÑANA") || texto.includes("MANANA")) return "AM";
+  if (texto.includes("TARDE") || texto.includes("NOCHE")) return "PM";
+  return "";
+}
+
+function obtenerJornadaProductoSolicitud(producto = {}, solicitud = {}) {
+  const directa = normalizarJornadaInsumos(
+    producto.jornadaSolicitud ||
+      producto.jornada_solicitud ||
+      producto.jornada ||
+      solicitud.jornadaSolicitud ||
+      solicitud.jornada_solicitud ||
+      solicitud.jornada
+  );
+
+  if (directa) return directa;
+
+  const horaTexto = String(
+    producto.horaSolicitud ||
+      producto.hora_solicitud ||
+      producto.solicitadoEn ||
+      solicitud.horaSolicitud ||
+      solicitud.hora_solicitud ||
+      solicitud.created_at ||
+      ""
+  );
+
+  const horaMatch = horaTexto.match(/(?:T|\s|^)(\d{1,2}):\d{2}/);
+  if (!horaMatch) return "";
+
+  const hora = Number(horaMatch[1]);
+  if (!Number.isFinite(hora)) return "";
+
+  return hora < 12 ? "AM" : "PM";
+}
+
 export function guardarEstadoPendientesCompra(estado) {
   try {
     localStorage.setItem(STORAGE_INSUMOS_PENDIENTES, JSON.stringify(estado));
@@ -146,6 +206,7 @@ export function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBas
         categoria: producto.categoria || "Productos",
         vecesSolicitado: 0,
         fechas: [],
+        jornadas: [],
         fechaSolicitud: fechaSolicitudBase
       };
 
@@ -155,6 +216,13 @@ export function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBas
       if (fecha && !existente.fechas.includes(fecha)) {
         existente.fechas.push(fecha);
       }
+
+      const jornada = obtenerJornadaProductoSolicitud(producto, solicitud);
+      if (jornada && !existente.jornadas.includes(jornada)) {
+        existente.jornadas.push(jornada);
+      }
+
+      existente.jornadaSolicitud = existente.jornadas.length ? existente.jornadas.join("/") : "";
 
       mapa.set(clave, existente);
     });

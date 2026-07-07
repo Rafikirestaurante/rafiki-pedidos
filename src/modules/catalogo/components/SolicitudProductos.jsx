@@ -16,7 +16,9 @@ import {
   crearMensajeCompraProveedores,
   crearMensajeSolicitudProductos,
   guardarEstadoPendientesCompra,
+  obtenerHoraInsumosColombia,
   obtenerInsumosDeSolicitud,
+  obtenerJornadaInsumos,
   obtenerProductosPendientesDesdeSolicitudes,
   obtenerProductosSolicitudSeleccionados,
   ordenarProductosPorNombre
@@ -458,7 +460,14 @@ export default function SolicitudProductos() {
   }
 
   function construirSolicitudProductos() {
-    const productos = obtenerProductosSolicitudSeleccionados(productosSolicitud);
+    const fechaCreacion = new Date();
+    const jornadaSolicitud = obtenerJornadaInsumos(fechaCreacion);
+    const horaSolicitud = obtenerHoraInsumosColombia(fechaCreacion);
+    const productos = obtenerProductosSolicitudSeleccionados(productosSolicitud).map((producto) => ({
+      ...producto,
+      jornadaSolicitud,
+      horaSolicitud
+    }));
 
     if (productos.length === 0) {
       return {
@@ -891,42 +900,25 @@ export default function SolicitudProductos() {
           ) : (
             <div style={{ display: "grid", gap: 14 }}>
               {Object.entries(productosPendientesAgrupados).map(([categoria, productos]) => (
-                <div key={categoria} className="box soft" style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <h3 className="category-title" style={{ margin: 0 }}>{categoria}</h3>
+                <div key={categoria} className="box soft insumos-pendientes-card">
+                  <div className="insumos-pendientes-card-header">
+                    <h3 className="category-title">{categoria}</h3>
                     <span className="muted small">{productos.length} insumo{productos.length === 1 ? "" : "s"}</span>
                   </div>
 
-                  <div style={{ display: "grid", gap: 10 }}>
+                  <div className="insumos-pendientes-lista">
                     {productos.map((producto) => (
                       <div
                         key={producto.id}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "34px minmax(0, 1fr) 76px 34px",
-                          gap: 8,
-                          alignItems: "center",
-                          padding: "10px",
-                          borderRadius: 14,
-                          background: producto.comprado ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.75)",
-                          border: "1px solid rgba(0,0,0,0.06)"
-                        }}
+                        className={`insumo-pendiente-row${producto.comprado ? " insumo-pendiente-row-comprado" : ""}`}
                       >
                         <label
+                          className={`insumo-pendiente-check${
+                            producto.comprado || estadoPendientesCompra[producto.id]?.enviarProveedor === false
+                              ? " insumo-pendiente-check-off"
+                              : " insumo-pendiente-check-on"
+                          }`}
                           title={producto.comprado ? "Comprado: no se envía" : "Enviar por WhatsApp"}
-                          style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            width: 34,
-                            height: 34,
-                            borderRadius: 10,
-                            background: producto.comprado
-                              ? "rgba(0,0,0,0.04)"
-                              : estadoPendientesCompra[producto.id]?.enviarProveedor === false
-                                ? "rgba(0,0,0,0.04)"
-                                : "rgba(46,125,50,0.12)"
-                          }}
                         >
                           <input
                             type="checkbox"
@@ -938,40 +930,31 @@ export default function SolicitudProductos() {
                         </label>
 
                         <strong
-                          style={{
-                            display: "block",
-                            minWidth: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            textDecoration: producto.comprado ? "line-through" : "none",
-                            opacity: producto.comprado ? 0.55 : 1
-                          }}
+                          className="insumo-pendiente-nombre"
                           title={producto.nombre}
                         >
                           {producto.nombre}
                         </strong>
 
+                        <span
+                          className={`insumo-jornada-badge${producto.jornadaSolicitud ? "" : " insumo-jornada-badge-empty"}`}
+                          title={producto.jornadaSolicitud ? `Solicitud realizada en jornada ${producto.jornadaSolicitud}` : "Jornada no disponible para esta solicitud"}
+                        >
+                          {producto.jornadaSolicitud || "—"}
+                        </span>
+
                         <input
+                          className="insumo-pendiente-cantidad"
                           type="text"
                           value={producto.cantidadComprar}
                           onChange={(e) => actualizarPendienteCompra(producto.id, { cantidadComprar: e.target.value })}
                           placeholder="Cant."
                           disabled={producto.comprado}
-                          style={{ width: "100%", minWidth: 0, padding: "8px 6px", textAlign: "center", fontSize: 13 }}
                         />
 
                         <label
+                          className={`insumo-pendiente-check${producto.comprado ? " insumo-pendiente-check-on" : " insumo-pendiente-check-off"}`}
                           title={producto.comprado ? "Comprado" : "Marcar comprado"}
-                          style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            width: 34,
-                            height: 34,
-                            borderRadius: 10,
-                            background: producto.comprado ? "rgba(46,125,50,0.12)" : "rgba(0,0,0,0.04)"
-                          }}
                         >
                           <input
                             type="checkbox"
