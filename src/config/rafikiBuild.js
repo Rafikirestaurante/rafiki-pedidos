@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "126.1-FASE35A1-AJUSTES-INFORMES-MENU-2026-07-06",
-  phase: "Fase 35A.1 - Ajustes Informes Rafa y Menú",
+  version: "126.2-FASE35A2-INSUMOS-PENDIENTES-MOBILE-AMPM-2026-07-06",
+  phase: "Fase 35A.2 - Insumos pendientes móvil y AM/PM",
   date: "2026-07-06",
-  fase: "35A1-AJUSTES-INFORMES-MENU",
+  fase: "35A2-INSUMOS-PENDIENTES-MOBILE-AMPM",
   notes:
-    "Retira el bloque Cierre diario inteligente de Informes Rafa, elimina el Informe últimos 12 duplicado del Generador de menú y deja el informe solo en Historial de menú con filtros por últimos 12, una fecha o rango de fechas."
+    "Optimiza Admin > Solicitud de insumos > Insumos pendientes para celular, evita que las filas se corten y agrega una etiqueta discreta AM/PM por insumo según la jornada en que fue solicitada."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
