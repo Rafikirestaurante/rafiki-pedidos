@@ -1,3 +1,15 @@
+## 126.2 — Fase 35A.2 Insumos pendientes móvil y señal AM/PM
+
+Versión: 126.2-FASE35A2-INSUMOS-PENDIENTES-MOBILE-AMPM-2026-07-06
+
+Se optimiza `Admin > Solicitud de insumos > Insumos pendientes` para celular. Las filas de insumos pendientes dejan de depender de columnas rígidas con estilos inline y ahora usan clases responsivas para evitar que el recuadro se corte en pantallas pequeñas.
+
+También se agrega una señal discreta `AM` / `PM` por insumo pendiente, basada en la jornada en que fue guardada la solicitud. La información se almacena dentro del JSON `insumos`, sin agregar columnas SQL y sin modificar el mensaje de WhatsApp.
+
+No se tocaron `/cliente`, `/mesas`, Caja, Cartera, Pedidos Hoy, SQL, impresión térmica ni cálculos financieros.
+
+---
+
 ## 125.8 — Hotfix 35F.1 Ahorro de papel térmico estilo ESC/POS
 
 Versión: 125.8-HOTFIX35F1-AHORRO-PAPEL-TERMICO-ESC-POS-2026-07-01
@@ -484,3 +496,7 @@ Se corrigió el motor de informes térmicos administrativos para evitar letra de
 ## 125.10 — Hotfix 35F.3: contraste térmico 1x1
 
 Se reforzó el contraste del motor de impresión térmica administrativa sin volver a usar letra pequeña. El texto conserva tamaño normal equivalente a ESC/POS 1x1, pero ahora usa negro puro, peso térmico firme y un trazo mínimo de impresión para evitar que Pedidos Hoy y los demás informes salgan demasiado claros. Se mantiene el formato compacto de Pedidos Hoy con solo Pedido, Cliente, Ubicación y Total. No se modificaron `/cliente`, `/mesas`, guardado de pedidos, SQL, cálculos de Caja/Cartera ni comandas.
+
+## 126.3-FASE35A3-RESUMEN-PEDIDO-AGRUPADO-CANTIDADES-2026-07-07
+
+Fase 35A.3: se optimizó el Resumen del pedido en `/cliente` y `/mesas`. Los productos realmente iguales ahora se agrupan en una sola línea con cantidad acumulada, siempre que coincidan producto, precio, acompañantes/adicionales y configuración de cafetería o empaque. También se agregó selector de cantidad directamente en el resumen y el borrado por grupo. La consolidación queda aplicada al estado interno antes de guardar para evitar líneas duplicadas. No se tocaron SQL, Caja, Cartera, Pedidos Hoy, informes térmicos, clientes especiales ni service worker/PWA de `/cliente`.
