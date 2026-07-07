@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CampoTexto, SelectorCantidad, useAlertaRafiki } from "../../../shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
@@ -13,6 +13,7 @@ import {
 import { FORMAS_PAGO_CLIENTE } from "../../../shared/constants/paymentMethods";
 import CodigoClienteEspecial from "./CodigoClienteEspecial";
 import CafeteriaClienteEspecial from "./CafeteriaClienteEspecial";
+import { agruparItemsResumenPedido } from "../../../shared/utils/resumenPedido";
 
 export default function PedidoCliente({
   menu,
@@ -45,6 +46,8 @@ export default function PedidoCliente({
   actualizarItem,
   agregarAlmuerzo,
   eliminarAlmuerzo,
+  actualizarCantidadGrupoResumen,
+  eliminarGrupoResumen,
   reiniciarPedido,
   irAElemento,
   registrarPedido,
@@ -62,6 +65,10 @@ export default function PedidoCliente({
   const mostrandoRestaurante = seccionClienteActual === "restaurante";
   const mostrandoCafeteria = clienteEspecialPuedePedirCafeteria && seccionClienteActual === "cafeteria";
   const itemsPedidoVisibles = itemsPedido.filter((item) => (mostrandoCafeteria ? esItemCafeteria(item) : !esItemCafeteria(item)));
+  const gruposResumenPedido = useMemo(
+    () => agruparItemsResumenPedido(itemsPedido.filter((item) => item.plato || item.proteina || item.producto)),
+    [itemsPedido]
+  );
 
   const obtenerItemsSinMinimoAcompanantes = () => itemsPedido
     .filter((item) => item.plato || item.proteina || item.producto)
@@ -417,45 +424,57 @@ export default function PedidoCliente({
                     <div className="box soft u-mb-12">
                       <h3>Resumen del pedido</h3>
 
-                      {itemsPedido
-                        .filter((item) => item.plato || item.proteina || item.producto)
-                        .map((item) => {
-                          const itemEsCafeteria = esItemCafeteria(item);
-                          const itemSinAcompanantes = itemEsCafeteria || esProductoSinAcompanantes(item);
-                          const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+                      {gruposResumenPedido.map((grupo) => {
+                        const item = grupo.item;
+                        const itemEsCafeteria = esItemCafeteria(item);
+                        const itemSinAcompanantes = itemEsCafeteria || esProductoSinAcompanantes(item);
+                        const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+                        const nombreItem = item.plato || item.proteina || item.producto;
 
-                          return (
-                            <div key={item.id} className="summary-item">
-                              <div className="summary-item-header">
-                                <p>
-                                  <strong>{item.cantidad} x {item.plato || item.proteina || item.producto}</strong> - {" "}
-                                  {dinero(item.precioPlato || item.precioProteina || item.precio)}
-                                </p>
-                                <button
-                                  type="button"
-                                  className="mini-danger"
-                                  onClick={() => eliminarAlmuerzo(item.id)}
-                                  aria-label={`Borrar ${item.plato || item.proteina || item.producto || "producto"} del pedido`}
-                                >
-                                  Borrar
-                                </button>
-                              </div>
-
-                              {item.categoria && <p>Categoría: {item.categoria}</p>}
-
-                              {itemEsCafeteria && <p>Cafetería: {item.tipo || item.categoria || "Producto"}</p>}
-                              {!itemEsCafeteria && !itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
-                              {!itemEsCafeteria && !itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
-                                <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
-                              )}
-                              {!itemEsCafeteria && itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
-
-                              {!itemEsCafeteria && !itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
-
-                              <p>{textoParaLlevarItem(item)}</p>
+                        return (
+                          <div key={grupo.key} className="summary-item">
+                            <div className="summary-item-header">
+                              <p>
+                                <strong>{grupo.cantidad} x {nombreItem}</strong> - {" "}
+                                {dinero(item.precioPlato || item.precioProteina || item.precio)}
+                              </p>
+                              <button
+                                type="button"
+                                className="mini-danger"
+                                onClick={() => eliminarGrupoResumen?.(grupo.ids)}
+                                aria-label={`Borrar ${nombreItem || "producto"} del pedido`}
+                              >
+                                Borrar
+                              </button>
                             </div>
-                          );
-                        })}
+
+                            <div className="summary-qty-row">
+                              <span>Cantidad</span>
+                              <SelectorCantidad
+                                cantidad={grupo.cantidad}
+                                onChange={(cantidad) => actualizarCantidadGrupoResumen?.(grupo.ids, cantidad)}
+                              />
+                            </div>
+
+                            {grupo.agrupado ? (
+                              <p className="summary-group-note">Agrupado automáticamente por producto igual.</p>
+                            ) : null}
+
+                            {item.categoria && <p>Categoría: {item.categoria}</p>}
+
+                            {itemEsCafeteria && <p>Cafetería: {item.tipo || item.categoria || "Producto"}</p>}
+                            {!itemEsCafeteria && !itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                            {!itemEsCafeteria && !itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
+                              <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
+                            )}
+                            {!itemEsCafeteria && itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
+
+                            {!itemEsCafeteria && !itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
+
+                            <p>{textoParaLlevarItem(item)}</p>
+                          </div>
+                        );
+                      })}
 
                       <div className="total-row">
                         <span>Total</span>

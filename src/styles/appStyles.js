@@ -203,6 +203,12 @@ export const appStyles = `
         .summary-item { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; margin-bottom: 10px; font-weight: 700; }
         .summary-item-header { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
         .summary-item-header p { margin-top: 0; }
+        .summary-qty-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f8fafc; border: 1px solid #e7e5e4; border-radius: 14px; padding: 8px 10px; margin: 8px 0 10px; }
+        .summary-qty-row span { font-size: 13px; font-weight: 900; color: #57534e; }
+        .summary-qty-row .quantity { gap: 8px; }
+        .summary-qty-row .quantity button { width: 32px; height: 32px; font-size: 18px; }
+        .summary-qty-row .quantity strong { min-width: 22px; text-align: center; }
+        .summary-group-note { display: inline-flex; background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 900; margin: 0 0 8px; }
         .mini-danger { border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 900; cursor: pointer; white-space: nowrap; }
         .mini-danger:hover { background: #fee2e2; border-color: #fca5a5; }
         .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }

@@ -9,6 +9,11 @@ import {
   MENSAJE_ACOMPANANTES_DEL_DIA,
   precioPorNombre
 } from "../../../shared/utils/pedidos";
+import {
+  agruparItemsResumenPedido,
+  consolidarItemsResumenPedido,
+  normalizarCantidadResumen
+} from "../../../shared/utils/resumenPedido";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import { CampoTexto, useAlertaRafiki } from "../../../shared/components/common";
 import {
@@ -161,6 +166,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }, []);
 
   useEffect(() => {
+    setItemsMesa((actual) => consolidarItemsResumenPedido(actual));
+  }, [itemsMesa]);
+
+  useEffect(() => {
     if (!pedidoEditando?.id) return;
 
     const itemsEditables = Array.isArray(pedidoEditando.items) && pedidoEditando.items.length > 0
@@ -270,6 +279,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     [itemsConProducto, modoLlevar]
   );
   const total = useMemo(() => calcularTotalItems(itemsConModoLlevar), [itemsConModoLlevar]);
+  const gruposResumenMesa = useMemo(() => agruparItemsResumenPedido(itemsConModoLlevar), [itemsConModoLlevar]);
   const itemAlmuerzoActivo = itemsAlmuerzoMesa[itemsAlmuerzoMesa.length - 1];
   const itemNavMesa = itemAlmuerzoActivo || itemsAlmuerzoMesa[0] || itemsMesa[0];
 
@@ -420,8 +430,42 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   function quitarItemPedidoMesa(id) {
+    quitarGrupoPedidoMesa([id]);
+  }
+
+  function actualizarCantidadGrupoMesa(ids = [], cantidad) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0) return;
+
+    const cantidadNormalizada = normalizarCantidadResumen(cantidad);
+
     setItemsMesa((actual) => {
-      const filtrados = actual.filter((item) => item.id !== id);
+      let primerItemActualizado = false;
+      const siguientesItems = [];
+
+      actual.forEach((item) => {
+        if (!idsGrupo.has(item.id)) {
+          siguientesItems.push(item);
+          return;
+        }
+
+        if (!primerItemActualizado) {
+          siguientesItems.push({ ...item, cantidad: cantidadNormalizada });
+          primerItemActualizado = true;
+        }
+      });
+
+      return siguientesItems.length > 0 ? siguientesItems : [crearItemNuevo()];
+    });
+    setErrorMesa("");
+  }
+
+  function quitarGrupoPedidoMesa(ids = []) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0) return;
+
+    setItemsMesa((actual) => {
+      const filtrados = actual.filter((item) => !idsGrupo.has(item.id));
       return filtrados.length > 0 ? filtrados : [crearItemNuevo()];
     });
     setErrorMesa("");
@@ -1272,24 +1316,39 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
             <div className="box soft" style={{ marginBottom: 12 }}>
               <h3>Resumen del pedido</h3>
 
-              {itemsConModoLlevar.map((item) => {
+              {gruposResumenMesa.map((grupo) => {
+                const item = grupo.item;
                 const itemEsCafeteria = item.categoria === "cafeteria";
                 const itemSinAcompanantes = esProductoSinAcompanantes(item);
                 const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
+                const nombreItem = item.producto || item.plato || item.proteina;
 
                 return (
-                  <div key={item.id} className="summary-item">
+                  <div key={grupo.key} className="summary-item">
                     <div className="summary-item-header">
-                      <p><strong>{item.cantidad} x {item.producto || item.plato || item.proteina}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
+                      <p><strong>{grupo.cantidad} x {nombreItem}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
                       <button
                         type="button"
                         className="mini-danger"
-                        onClick={() => quitarItemPedidoMesa(item.id)}
-                        aria-label={`Borrar ${item.producto || item.plato || item.proteina || "producto"} del pedido`}
+                        onClick={() => quitarGrupoPedidoMesa(grupo.ids)}
+                        aria-label={`Borrar ${nombreItem || "producto"} del pedido`}
                       >
                         Borrar
                       </button>
                     </div>
+
+                    <div className="summary-qty-row">
+                      <span>Cantidad</span>
+                      <SelectorCantidad
+                        cantidad={grupo.cantidad}
+                        onChange={(cantidad) => actualizarCantidadGrupoMesa(grupo.ids, cantidad)}
+                      />
+                    </div>
+
+                    {grupo.agrupado ? (
+                      <p className="summary-group-note">Agrupado automáticamente por producto igual.</p>
+                    ) : null}
+
                     {itemEsCafeteria ? (
                       <>
                         <p>Categoría: Cafetería{item.tipo ? ` / ${item.tipo}` : ""}</p>

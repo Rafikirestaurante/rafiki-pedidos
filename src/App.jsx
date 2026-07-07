@@ -18,6 +18,7 @@ import {
   obtenerCliente,
   obtenerEstadoPedido
 } from "./shared/utils/pedidos";
+import { consolidarItemsResumenPedido, normalizarCantidadResumen } from "./shared/utils/resumenPedido";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import CargandoModulo from "./shared/components/CargandoModulo";
 import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
@@ -95,9 +96,11 @@ export default function App() {
     if (vista !== "cliente") return;
 
     setItemsPedido((actual) =>
-      normalizarItemsParaDestinoCliente(actual, { comerRestauranteCliente })
+      consolidarItemsResumenPedido(
+        normalizarItemsParaDestinoCliente(actual, { comerRestauranteCliente })
+      )
     );
-  }, [vista, comerRestauranteCliente]);
+  }, [vista, comerRestauranteCliente, itemsPedido]);
 
 
   const {
@@ -576,8 +579,47 @@ export default function App() {
   }
 
   function eliminarAlmuerzo(id) {
+    eliminarGrupoResumen([id]);
+  }
+
+  function actualizarCantidadGrupoResumen(ids = [], cantidad) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0) return;
+
+    const cantidadNormalizada = normalizarCantidadResumen(cantidad);
+
     setItemsPedido((actual) => {
-      const restantes = actual.filter((item) => item.id !== id);
+      let primerItemActualizado = false;
+      const siguientesItems = [];
+
+      actual.forEach((item) => {
+        if (!idsGrupo.has(item.id)) {
+          siguientesItems.push(item);
+          return;
+        }
+
+        if (!primerItemActualizado) {
+          siguientesItems.push({
+            ...item,
+            cantidad: cantidadNormalizada,
+            paraLlevar: !comerRestauranteCliente
+          });
+          primerItemActualizado = true;
+        }
+      });
+
+      return siguientesItems.length === 0
+        ? [crearItemClienteInicial({ comerRestaurante: comerRestauranteCliente })]
+        : siguientesItems;
+    });
+  }
+
+  function eliminarGrupoResumen(ids = []) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0) return;
+
+    setItemsPedido((actual) => {
+      const restantes = actual.filter((item) => !idsGrupo.has(item.id));
       return restantes.length === 0 ? [crearItemClienteInicial({ comerRestaurante: comerRestauranteCliente })] : restantes;
     });
   }
@@ -897,6 +939,8 @@ export default function App() {
                 actualizarItem={actualizarItem}
                 agregarAlmuerzo={agregarAlmuerzo}
                 eliminarAlmuerzo={eliminarAlmuerzo}
+                actualizarCantidadGrupoResumen={actualizarCantidadGrupoResumen}
+                eliminarGrupoResumen={eliminarGrupoResumen}
                 reiniciarPedido={reiniciarPedido}
                 irAElemento={irAElemento}
                 registrarPedido={registrarPedido}
