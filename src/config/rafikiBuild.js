@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "126.3-FASE35A3-RESUMEN-PEDIDO-AGRUPADO-CANTIDADES-2026-07-07",
-  phase: "Fase 35A.3 - Resumen del pedido agrupado y cantidades editables",
-  date: "2026-07-07",
-  fase: "35A3-RESUMEN-PEDIDO-AGRUPADO-CANTIDADES",
+  version: "126.4-FASE35A4-EDITAR-ACOMPANANTES-RESUMEN-2026-07-08",
+  phase: "Fase 35A.4 - Editar acompañantes desde resumen del pedido",
+  date: "2026-07-08",
+  fase: "35A4-EDITAR-ACOMPANANTES-RESUMEN",
   notes:
-    "Agrupa productos iguales en el resumen de /cliente y /mesas, consolida duplicados antes de guardar y permite editar cantidades directamente desde el resumen del pedido."
+    "Agrega un modal reutilizable para editar acompañantes desde el resumen del pedido en /cliente y /mesas, respetando agrupación, reglas de cliente especial y productos sin acompañantes manuales."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
