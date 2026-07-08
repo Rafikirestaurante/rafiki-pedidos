@@ -500,3 +500,7 @@ Se reforzó el contraste del motor de impresión térmica administrativa sin vol
 ## 126.3-FASE35A3-RESUMEN-PEDIDO-AGRUPADO-CANTIDADES-2026-07-07
 
 Fase 35A.3: se optimizó el Resumen del pedido en `/cliente` y `/mesas`. Los productos realmente iguales ahora se agrupan en una sola línea con cantidad acumulada, siempre que coincidan producto, precio, acompañantes/adicionales y configuración de cafetería o empaque. También se agregó selector de cantidad directamente en el resumen y el borrado por grupo. La consolidación queda aplicada al estado interno antes de guardar para evitar líneas duplicadas. No se tocaron SQL, Caja, Cartera, Pedidos Hoy, informes térmicos, clientes especiales ni service worker/PWA de `/cliente`.
+
+## 126.4-FASE35A4-EDITAR-ACOMPANANTES-RESUMEN-2026-07-08
+
+Fase 35A.4: se agregó la opción **Editar acompañantes** directamente desde el Resumen del pedido en `/cliente` y `/mesas`, mediante un modal reutilizable. El modal permite cambiar acompañantes y observación sin regresar al paso anterior. Si el producto está agrupado, el cambio aplica a todas las unidades del grupo. En `/cliente` se respeta el mínimo de 2 acompañantes salvo cliente especial sin restricción; en `/mesas` se conserva la operación interna sin forzar mínimo. No se tocaron SQL, Caja, Cartera, Pedidos Hoy, informes térmicos, clientes especiales en catálogo ni lógica PWA/service worker de `/cliente`.
