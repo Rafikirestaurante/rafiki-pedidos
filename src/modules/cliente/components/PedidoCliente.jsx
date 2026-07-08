@@ -13,6 +13,7 @@ import {
 import { FORMAS_PAGO_CLIENTE } from "../../../shared/constants/paymentMethods";
 import CodigoClienteEspecial from "./CodigoClienteEspecial";
 import CafeteriaClienteEspecial from "./CafeteriaClienteEspecial";
+import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
 import { agruparItemsResumenPedido } from "../../../shared/utils/resumenPedido";
 
 export default function PedidoCliente({
@@ -48,11 +49,13 @@ export default function PedidoCliente({
   eliminarAlmuerzo,
   actualizarCantidadGrupoResumen,
   eliminarGrupoResumen,
+  actualizarAcompanantesGrupoResumen,
   reiniciarPedido,
   irAElemento,
   registrarPedido,
 }) {
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
+  const [grupoEditandoAcompanantes, setGrupoEditandoAcompanantes] = useState(null);
 
   const clienteEspecialSinMinimoAcompanantes = Boolean(
     clienteEspecialAplicado && clienteEspecialAplicado.sin_restriccion_acompanantes !== false
@@ -467,6 +470,15 @@ export default function PedidoCliente({
                             {!itemEsCafeteria && !itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                               <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                             )}
+                            {!itemEsCafeteria && !itemSinAcompanantes && (
+                              <button
+                                type="button"
+                                className="mini-btn resumen-editar-acompanantes-btn"
+                                onClick={() => setGrupoEditandoAcompanantes(grupo)}
+                              >
+                                Editar acompañantes
+                              </button>
+                            )}
                             {!itemEsCafeteria && itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
 
                             {!itemEsCafeteria && !itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
@@ -601,6 +613,16 @@ export default function PedidoCliente({
                   </>
                 )}
               </aside>
+              <EditarAcompanantesResumenModal
+                abierto={Boolean(grupoEditandoAcompanantes)}
+                grupo={grupoEditandoAcompanantes}
+                acompanantesDisponibles={menu.acompanantes}
+                maxAcompanantes={MAX_ACOMPANANTES_CLIENTE}
+                minimoAcompanantes={2}
+                exigirMinimo={!clienteEspecialSinMinimoAcompanantes}
+                onCerrar={() => setGrupoEditandoAcompanantes(null)}
+                onGuardar={actualizarAcompanantesGrupoResumen}
+              />
               {modalAlertaRafiki}
             </main>
   );

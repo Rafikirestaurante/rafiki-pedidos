@@ -40,6 +40,7 @@ import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService"
 import { asegurarClienteCredito, listarClientesCreditoActivos } from "../../../services/clientesCreditoService";
 import { SelectorCantidad } from "../../../shared/components/common";
 import ConfirmacionPedidoMesa from "./ConfirmacionPedidoMesa";
+import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
 import MesaTabs from "./MesaTabs";
 import DatosMesa from "./DatosMesa";
 import {
@@ -141,6 +142,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [catalogoProductosMesa, setCatalogoProductosMesa] = useState(() => leerProductosCatalogoStorageMesas());
   const [adicionalesAlmuerzoAbiertos, setAdicionalesAlmuerzoAbiertos] = useState({});
   const [clientesCreditoMesa, setClientesCreditoMesa] = useState(() => leerClientesCreditoGuardados());
+  const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -280,6 +282,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   );
   const total = useMemo(() => calcularTotalItems(itemsConModoLlevar), [itemsConModoLlevar]);
   const gruposResumenMesa = useMemo(() => agruparItemsResumenPedido(itemsConModoLlevar), [itemsConModoLlevar]);
+  const acompanantesMesaDisponiblesResumen = useMemo(
+    () => ["Con todo", ...(Array.isArray(menu.acompanantes) ? menu.acompanantes.filter((acompanante) => acompanante !== "Con todo") : [])],
+    [menu.acompanantes]
+  );
   const itemAlmuerzoActivo = itemsAlmuerzoMesa[itemsAlmuerzoMesa.length - 1];
   const itemNavMesa = itemAlmuerzoActivo || itemsAlmuerzoMesa[0] || itemsMesa[0];
 
@@ -468,6 +474,28 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       const filtrados = actual.filter((item) => !idsGrupo.has(item.id));
       return filtrados.length > 0 ? filtrados : [crearItemNuevo()];
     });
+    setErrorMesa("");
+  }
+
+  function actualizarAcompanantesGrupoMesa(ids = [], cambios = {}) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0) return;
+
+    const acompanantes = Array.isArray(cambios.acompanantes) ? cambios.acompanantes : [];
+    const observacionAcompanantes = String(cambios.observacionAcompanantes || "").trim().slice(0, 60);
+
+    setItemsMesa((actual) =>
+      actual.map((item) => {
+        if (!idsGrupo.has(item.id)) return item;
+        if (esProductoSinAcompanantes(item)) return { ...item, acompanantes: [], observacionAcompanantes: "" };
+
+        return {
+          ...item,
+          acompanantes,
+          observacionAcompanantes
+        };
+      })
+    );
     setErrorMesa("");
   }
 
@@ -1371,6 +1399,15 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                         {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
                           <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                         )}
+                        {!itemSinAcompanantes && (
+                          <button
+                            type="button"
+                            className="mini-btn resumen-editar-acompanantes-btn"
+                            onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}
+                          >
+                            Editar acompañantes
+                          </button>
+                        )}
                         {itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
                         {!itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
                       </>
@@ -1427,6 +1464,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
         )}
       </aside>
     </main>
+    <EditarAcompanantesResumenModal
+      abierto={Boolean(grupoEditandoAcompanantesMesa)}
+      grupo={grupoEditandoAcompanantesMesa}
+      acompanantesDisponibles={acompanantesMesaDisponiblesResumen}
+      maxAcompanantes={MAX_ACOMPANANTES_CLIENTE}
+      minimoAcompanantes={1}
+      exigirMinimo={false}
+      onCerrar={() => setGrupoEditandoAcompanantesMesa(null)}
+      onGuardar={actualizarAcompanantesGrupoMesa}
+    />
     {modalAlertaRafiki}
     </>
   );

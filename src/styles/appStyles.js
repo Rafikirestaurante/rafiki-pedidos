@@ -209,6 +209,16 @@ export const appStyles = `
         .summary-qty-row .quantity button { width: 32px; height: 32px; font-size: 18px; }
         .summary-qty-row .quantity strong { min-width: 22px; text-align: center; }
         .summary-group-note { display: inline-flex; background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 900; margin: 0 0 8px; }
+        .resumen-editar-acompanantes-btn { margin: 4px 0 8px; background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+        .resumen-editar-acompanantes-btn:hover { background: #ffedd5; border-color: #fdba74; }
+        .resumen-acompanantes-modal .rafiki-ui-modal-body { display: grid; gap: 12px; }
+        .resumen-acompanantes-aviso { margin: 0; font-weight: 800; color: #57534e; }
+        .resumen-acompanantes-contador { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 10px 12px; }
+        .resumen-acompanantes-contador strong { color: #1c1917; }
+        .resumen-acompanantes-contador span { color: #78716c; font-size: 13px; font-weight: 900; }
+        .resumen-acompanantes-chips { margin-top: 0; }
+        .resumen-acompanantes-observacion { margin-bottom: 0; }
+        .resumen-acompanantes-error { margin: 0; }
         .mini-danger { border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 900; cursor: pointer; white-space: nowrap; }
         .mini-danger:hover { background: #fee2e2; border-color: #fca5a5; }
         .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }
@@ -2596,6 +2606,12 @@ body.rafiki-modal-open {
   .producto-solicitud textarea,
   .editar-pedido-form textarea {
     min-height: 88px;
+  }
+
+  .resumen-acompanantes-contador {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .admin-top-row,

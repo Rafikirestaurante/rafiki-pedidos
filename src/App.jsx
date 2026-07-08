@@ -624,6 +624,28 @@ export default function App() {
     });
   }
 
+  function actualizarAcompanantesGrupoResumen(ids = [], cambios = {}) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0) return;
+
+    const acompanantes = Array.isArray(cambios.acompanantes) ? cambios.acompanantes : [];
+    const observacionAcompanantes = String(cambios.observacionAcompanantes || "").trim().slice(0, 60);
+
+    setItemsPedido((actual) =>
+      actual.map((item) => {
+        if (!idsGrupo.has(item.id)) return item;
+        if (esProductoSinAcompanantes(item)) return { ...item, acompanantes: [], observacionAcompanantes: "" };
+
+        return {
+          ...item,
+          acompanantes,
+          observacionAcompanantes,
+          paraLlevar: !comerRestauranteCliente
+        };
+      })
+    );
+  }
+
   function reiniciarPedido() {
     setItemsPedido([crearItemClienteInicial()]);
     setCliente("");
@@ -941,6 +963,7 @@ export default function App() {
                 eliminarAlmuerzo={eliminarAlmuerzo}
                 actualizarCantidadGrupoResumen={actualizarCantidadGrupoResumen}
                 eliminarGrupoResumen={eliminarGrupoResumen}
+                actualizarAcompanantesGrupoResumen={actualizarAcompanantesGrupoResumen}
                 reiniciarPedido={reiniciarPedido}
                 irAElemento={irAElemento}
                 registrarPedido={registrarPedido}
