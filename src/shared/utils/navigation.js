@@ -65,6 +65,10 @@ export function obtenerVistaInicial() {
     return "cliente";
   }
 
+  if (ruta === "/mesas-beta") {
+    return "mesasBeta";
+  }
+
   if (ruta === "/mesas") {
     // En la PWA instalada pedimos inicio de sesión al arrancar si no hay
     // sesión administrativa local. Eso permite saber si se deben mostrar
