@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "126.6-FASE35B2-MESAS-BETA-RESUMEN-PERMANENTE-2026-07-09",
-  phase: "Fase 35B.2 - Mesas Beta con resumen permanente",
+  version: "126.7-FASE35B3-CLIENTE-BETA-VISUAL-MODALES-2026-07-09",
+  phase: "Fase 35B.3 - Cliente Beta visual con resumen permanente",
   date: "2026-07-09",
-  fase: "35B2-MESAS-BETA-RESUMEN-PERMANENTE",
+  fase: "35B3-CLIENTE-BETA-VISUAL-MODALES",
   notes:
-    "Ajusta /mesas-beta para eliminar el paso modal de resumen, dejar el Resumen del pedido como panel permanente y habilitar agregar varios almuerzos desde ese resumen sin guardar pedidos reales."
+    "Crea /cliente-beta como ruta visual paralela inspirada en /mesas-beta: flujo por modales para proteína, acompañantes y datos del cliente, resumen permanente con agrupación, cantidades editables y edición de acompañantes, sin guardar pedidos reales."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
