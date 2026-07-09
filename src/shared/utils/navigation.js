@@ -65,6 +65,10 @@ export function obtenerVistaInicial() {
     return "cliente";
   }
 
+  if (ruta === "/cliente-beta") {
+    return "clienteBeta";
+  }
+
   if (ruta === "/mesas-beta") {
     return "mesasBeta";
   }

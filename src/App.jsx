@@ -42,6 +42,7 @@ const SolicitudProductos = lazyConReintento(() => import("./modules/catalogo/com
 const GeneradorMenu = lazyConReintento(() => import("./modules/catalogo/components/GeneradorMenu"), "GeneradorMenu");
 const PanelMesasPOS = lazyConReintento(() => import("./modules/mesas/components/PanelMesas"), "PanelMesas");
 const PanelMesasBeta = lazyConReintento(() => import("./modules/mesas/components/PanelMesasBeta"), "PanelMesasBeta");
+const PanelClienteBeta = lazyConReintento(() => import("./modules/cliente/components/PanelClienteBeta"), "PanelClienteBeta");
 const PanelRafaPrivado = lazyConReintento(() => import("./modules/dashboard/components/PanelRafaPrivado"), "PanelRafaPrivado");
 const CatalogoRafa = lazyConReintento(() => import("./modules/catalogo/components/CatalogoRafa"), "CatalogoRafa");
 const InventarioAdmin = lazyConReintento(() => import("./modules/inventario/components/InventarioAdmin"), "InventarioAdmin");
@@ -747,9 +748,9 @@ export default function App() {
       <div className={`app ${vista === "mesas" || vista === "mesasBeta" ? "mesas-pos-activo" : ""}`}>
         <div className="container">
           {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && vista !== "mesas" && vista !== "mesasBeta" && (
-            <header className={`topbar ${vista === "cliente" || vista === "confirmacion" ? "cliente-topbar" : ""}`}>
+            <header className={`topbar ${vista === "cliente" || vista === "clienteBeta" || vista === "confirmacion" ? "cliente-topbar" : ""}`}>
               <div>
-                <div className="brand">{vista === "cliente" || vista === "confirmacion" ? "Rafiki Pedidos" : "🍽️ Rafiki Pedidos"}</div>
+                <div className="brand">{vista === "cliente" || vista === "clienteBeta" || vista === "confirmacion" ? "Rafiki Pedidos" : "🍽️ Rafiki Pedidos"}</div>
               </div>
 
               {vista === "mesas" && (
@@ -970,6 +971,19 @@ export default function App() {
                 registrarPedido={registrarPedido}
               />
             </>
+          )}
+
+          {!cargando && vista === "clienteBeta" && (
+            <ErrorBoundary nombreModulo="Cliente Beta" onReset={() => setRecargaMenu((actual) => actual + 1)}>
+              <Suspense fallback={<CargandoModulo texto="Cargando cliente beta..." />}>
+                <PanelClienteBeta
+                  menu={menu}
+                  platosAgrupados={platosAgrupados}
+                  cargandoMenu={cargandoMenu}
+                  onSalirBeta={() => navegar("/cliente", "cliente")}
+                />
+              </Suspense>
+            </ErrorBoundary>
           )}
 
           {!cargando && vista === "confirmacion" && pedidoFinalizado && (
