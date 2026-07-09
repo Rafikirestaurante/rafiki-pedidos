@@ -27,8 +27,7 @@ import {
 const PASOS_BETA = [
   { id: "proteina", numero: 1, titulo: "Selecciona tu proteína aquí" },
   { id: "acompanantes", numero: 2, titulo: "Selecciona tu acompañante" },
-  { id: "datos", numero: 3, titulo: "Datos de mesa" },
-  { id: "resumen", numero: 4, titulo: "Resumen del pedido" }
+  { id: "datos", numero: 3, titulo: "Datos de mesa" }
 ];
 
 function crearItemAlmuerzoBeta() {
@@ -232,7 +231,7 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
       return;
     }
 
-    abrirPaso("resumen", itemActivo?.id);
+    setPasoModal(null);
   }
 
   function agregarOtroAlmuerzo() {
@@ -328,18 +327,24 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
 
           <div className="mesas-beta-actions">
             <button type="button" className="button" onClick={() => abrirPaso("proteina")}>Iniciar prueba de almuerzo</button>
-            {hayResumen && <button type="button" className="button light" onClick={() => abrirPaso("resumen")}>Ver resumen</button>}
             <button type="button" className="button light" onClick={reiniciarPrueba}>Reiniciar prueba</button>
             {onSalirBeta && <button type="button" className="mini-btn" onClick={onSalirBeta}>Volver a /mesas oficial</button>}
           </div>
         </section>
 
         <aside className="card card-pad mesas-beta-preview">
-          <h2>Resumen rápido</h2>
+          <h2>Resumen del pedido</h2>
           {!hayResumen ? (
             <div className="box soft"><strong>Empieza seleccionando una proteína.</strong></div>
           ) : (
             <>
+              <div className="box soft mesas-beta-datos-resumen">
+                <strong>{modoLlevar ? "Pedido para llevar" : `Mesa ${mesaLocal || "sin seleccionar"}`}</strong>
+                <span>Mesero: {meseroLocal || "sin seleccionar"}</span>
+                <span>Pago: {tipoPagoMesa}</span>
+                {clientePedido ? <span>Cliente: {clientePedido}</span> : null}
+              </div>
+
               {gruposResumenMesa.map((grupo) => {
                 const item = grupo.item;
                 const itemSinAcompanantes = esProductoSinAcompanantes(item);
@@ -352,12 +357,34 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
                       <p><strong>{grupo.cantidad} x {nombreItem}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
                       <button type="button" className="mini-danger" onClick={() => quitarGrupoPedidoMesa(grupo.ids)}>Borrar</button>
                     </div>
+
+                    <div className="summary-qty-row">
+                      <span>Cantidad</span>
+                      <SelectorCantidad cantidad={grupo.cantidad} onChange={(cantidad) => actualizarCantidadGrupoMesa(grupo.ids, cantidad)} />
+                    </div>
+
+                    {grupo.agrupado ? <p className="summary-group-note">Agrupado automáticamente por producto igual.</p> : null}
                     {itemSinAcompanantes ? <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p> : <p>{acompanantes.join(", ") || "Sin acompañantes"}</p>}
-                    {item.observacionAcompanantes?.trim() && <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
+                    {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
+                    <div className="total-row compact-total-row">
+                      <span>Subtotal</span>
+                      <strong>{dinero(calcularTotalItem(item))}</strong>
+                    </div>
+                    {!itemSinAcompanantes && (
+                      <button type="button" className="mini-btn resumen-editar-acompanantes-btn" onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}>
+                        Editar acompañantes
+                      </button>
+                    )}
                   </div>
                 );
               })}
-              <div className="total-row"><span>Total visual</span><strong>{dinero(total)}</strong></div>
+
+              <div className="total-row mesas-beta-total"><span>Total visual</span><strong>{dinero(total)}</strong></div>
+              <div className="mesas-beta-actions resumen-actions-inline">
+                <button type="button" className="button light" onClick={agregarOtroAlmuerzo}>+ Agregar otro almuerzo</button>
+                <button type="button" className="button light" onClick={() => abrirPaso("datos")}>Editar datos</button>
+                <button type="button" className="button" onClick={finalizarPruebaVisual}>Finalizar prueba visual</button>
+              </div>
             </>
           )}
         </aside>
@@ -375,8 +402,7 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
             <button type="button" className="button light" onClick={() => setPasoModal(null)}>Cerrar</button>
             {pasoModal === "proteina" && <button type="button" className="button" onClick={continuarDesdeProteina}>Continuar a acompañantes</button>}
             {pasoModal === "acompanantes" && <button type="button" className="button" onClick={continuarDesdeAcompanantes}>Continuar a datos de mesa</button>}
-            {pasoModal === "datos" && <button type="button" className="button" onClick={continuarDesdeDatos}>Continuar al resumen</button>}
-            {pasoModal === "resumen" && <button type="button" className="button" onClick={finalizarPruebaVisual}>Finalizar prueba visual</button>}
+            {pasoModal === "datos" && <button type="button" className="button" onClick={continuarDesdeDatos}>Guardar datos y ver resumen</button>}
           </>
         )}
       >
@@ -535,62 +561,6 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
           </div>
         )}
 
-        {pasoModal === "resumen" && (
-          <div className="mesas-beta-modal-section">
-            {!hayResumen ? (
-              <div className="box soft">Aún no hay productos en el resumen.</div>
-            ) : (
-              <>
-                <div className="box soft mesas-beta-datos-resumen">
-                  <strong>{modoLlevar ? "Pedido para llevar" : `Mesa ${mesaLocal || "sin seleccionar"}`}</strong>
-                  <span>Mesero: {meseroLocal || "sin seleccionar"}</span>
-                  <span>Pago: {tipoPagoMesa}</span>
-                  {clientePedido ? <span>Cliente: {clientePedido}</span> : null}
-                </div>
-
-                {gruposResumenMesa.map((grupo) => {
-                  const item = grupo.item;
-                  const itemSinAcompanantes = esProductoSinAcompanantes(item);
-                  const acompanantes = Array.isArray(item.acompanantes) ? item.acompanantes : [];
-                  const nombreItem = obtenerNombreItem(item);
-
-                  return (
-                    <div key={grupo.key} className="summary-item">
-                      <div className="summary-item-header">
-                        <p><strong>{grupo.cantidad} x {nombreItem}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
-                        <button type="button" className="mini-danger" onClick={() => quitarGrupoPedidoMesa(grupo.ids)}>Borrar</button>
-                      </div>
-
-                      <div className="summary-qty-row">
-                        <span>Cantidad</span>
-                        <SelectorCantidad cantidad={grupo.cantidad} onChange={(cantidad) => actualizarCantidadGrupoMesa(grupo.ids, cantidad)} />
-                      </div>
-
-                      {grupo.agrupado ? <p className="summary-group-note">Agrupado automáticamente por producto igual.</p> : null}
-                      {itemSinAcompanantes ? <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p> : <p>{acompanantes.join(", ") || "Sin acompañantes"}</p>}
-                      {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
-                      <div className="total-row compact-total-row">
-                        <span>Subtotal</span>
-                        <strong>{dinero(calcularTotalItem(item))}</strong>
-                      </div>
-                      {!itemSinAcompanantes && (
-                        <button type="button" className="mini-btn resumen-editar-acompanantes-btn" onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}>
-                          Editar acompañantes
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-
-                <div className="total-row mesas-beta-total"><span>Total visual</span><strong>{dinero(total)}</strong></div>
-                <div className="mesas-beta-actions resumen-actions-inline">
-                  <button type="button" className="button light" onClick={agregarOtroAlmuerzo}>+ Agregar otro almuerzo</button>
-                  <button type="button" className="button light" onClick={() => abrirPaso("datos")}>Editar datos</button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
       </RafikiModal>
 
       <EditarAcompanantesResumenModal
