@@ -202,16 +202,29 @@ export const appStyles = `
         .quantity button:hover { border-color: var(--rafiki-brand); color: var(--rafiki-brand); }
         .summary-item { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; margin-bottom: 10px; font-weight: 700; }
         .summary-item-header { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-        .summary-item-header p { margin-top: 0; }
+        .summary-item-header p { margin: 0; display: grid; gap: 2px; }
+        .summary-main-name { color: #1c1917; font-size: 16px; line-height: 1.2; letter-spacing: -0.01em; }
+        .summary-main-price { color: #ea580c; font-size: 13px; font-weight: 900; }
+        .summary-detail-list { display: grid; gap: 4px; margin: 8px 0; color: #57534e; font-size: 13px; font-weight: 800; line-height: 1.25; }
+        .summary-detail-list span { display: block; }
+        .summary-acompanantes-list { border-left: 3px solid #fed7aa; padding-left: 9px; }
+        .summary-note { margin: 6px 0; color: #78716c; font-size: 12px; font-weight: 800; line-height: 1.25; }
+        .summary-edit-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0 4px; }
+        .summary-edit-actions .mini-btn { width: 100%; justify-content: center; text-align: center; }
         .summary-qty-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f8fafc; border: 1px solid #e7e5e4; border-radius: 14px; padding: 8px 10px; margin: 8px 0 10px; }
         .summary-qty-row span { font-size: 13px; font-weight: 900; color: #57534e; }
         .summary-qty-row .quantity { gap: 8px; }
         .summary-qty-row .quantity button { width: 32px; height: 32px; font-size: 18px; }
         .summary-qty-row .quantity strong { min-width: 22px; text-align: center; }
         .summary-group-note { display: inline-flex; background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 900; margin: 0 0 8px; }
-        .resumen-editar-acompanantes-btn { margin: 4px 0 8px; background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+        .resumen-editar-acompanantes-btn { margin: 0; background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
         .resumen-editar-acompanantes-btn:hover { background: #ffedd5; border-color: #fdba74; }
-        .resumen-acompanantes-modal .rafiki-ui-modal-body { display: grid; gap: 12px; }
+        .resumen-editar-proteina-btn { margin: 0; background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+        .resumen-editar-proteina-btn:hover { background: #dbeafe; border-color: #93c5fd; }
+        .resumen-proteina-modal .rafiki-ui-modal-body, .resumen-acompanantes-modal .rafiki-ui-modal-body { display: grid; gap: 12px; }
+        .resumen-proteina-chips { margin-top: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); }
+        .resumen-proteina-chip { justify-content: space-between; gap: 8px; }
+        .resumen-proteina-chip small { font-weight: 900; opacity: 0.8; }
         .resumen-acompanantes-aviso { margin: 0; font-weight: 800; color: #57534e; }
         .resumen-acompanantes-contador { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 10px 12px; }
         .resumen-acompanantes-contador strong { color: #1c1917; }
@@ -219,8 +232,8 @@ export const appStyles = `
         .resumen-acompanantes-chips { margin-top: 0; }
         .resumen-acompanantes-observacion { margin-bottom: 0; }
         .resumen-acompanantes-error { margin: 0; }
-        .mini-danger { border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 900; cursor: pointer; white-space: nowrap; }
-        .mini-danger:hover { background: #fee2e2; border-color: #fca5a5; }
+        .mini-danger { border: 1px solid transparent; background: transparent; color: #b91c1c; border-radius: 999px; padding: 3px 5px; font-size: 10px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+        .mini-danger:hover { background: #fee2e2; border-color: #fecaca; }
         .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e7e5e4; margin-top: 14px; padding-top: 14px; font-weight: 900; }
         .total-row strong { color: #ea580c; font-size: 26px; }
         .compact-total-row { margin-top: 2px; padding-top: 10px; }

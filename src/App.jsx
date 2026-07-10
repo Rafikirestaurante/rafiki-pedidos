@@ -626,6 +626,31 @@ export default function App() {
     });
   }
 
+  function actualizarProteinaGrupoResumen(ids = [], platoSeleccionado = {}) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0 || !platoSeleccionado?.nombre) return;
+
+    const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
+
+    setItemsPedido((actual) =>
+      actual.map((item) => {
+        if (!idsGrupo.has(item.id)) return item;
+
+        return {
+          ...item,
+          categoria: platoSeleccionado.categoria || "",
+          plato: platoSeleccionado.nombre || "",
+          proteina: platoSeleccionado.nombre || "",
+          precioPlato: Number(platoSeleccionado.precio) || 0,
+          precioProteina: Number(platoSeleccionado.precio) || 0,
+          paraLlevar: !comerRestauranteCliente,
+          acompanantes: sinAcompanantes ? [] : item.acompanantes || [],
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || ""
+        };
+      })
+    );
+  }
+
   function actualizarAcompanantesGrupoResumen(ids = [], cambios = {}) {
     const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
     if (idsGrupo.size === 0) return;
@@ -966,6 +991,7 @@ export default function App() {
                 actualizarCantidadGrupoResumen={actualizarCantidadGrupoResumen}
                 eliminarGrupoResumen={eliminarGrupoResumen}
                 actualizarAcompanantesGrupoResumen={actualizarAcompanantesGrupoResumen}
+                actualizarProteinaGrupoResumen={actualizarProteinaGrupoResumen}
                 reiniciarPedido={reiniciarPedido}
                 irAElemento={irAElemento}
                 registrarPedido={registrarPedido}
