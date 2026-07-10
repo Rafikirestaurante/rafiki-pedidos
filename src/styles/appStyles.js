@@ -228,6 +228,27 @@ export const appStyles = `
         .resumen-acompanantes-aviso { margin: 0; font-weight: 800; color: #57534e; }
         .resumen-acompanantes-contador { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 10px 12px; }
         .resumen-acompanantes-contador strong { color: #1c1917; }
+        .summary-item-clean { padding: 13px; border-radius: 18px; background: #fff; }
+        .summary-product-title-clean { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; margin-bottom: 8px; }
+        .summary-product-title-clean .summary-main-name { font-size: 17px; font-weight: 1000; color: #1c1917; letter-spacing: -0.02em; }
+        .summary-product-title-clean .summary-main-price { font-size: 13px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+        .summary-section-label { display: block; margin: 4px 0 5px; color: #57534e; font-size: 12px; font-weight: 1000; text-transform: none; }
+        .summary-clean-acompanantes-list, .summary-cafeteria-detail-list { margin: 4px 0 8px; gap: 5px; color: #57534e; font-size: 13px; font-weight: 850; }
+        .summary-clean-acompanantes-list span, .summary-cafeteria-detail-list span { display: block; }
+        .summary-clean-acompanantes-list { border-left: 3px solid #fed7aa; padding-left: 10px; }
+        .summary-cafeteria-detail-list { border-left: 3px solid #bbf7d0; padding-left: 10px; }
+        .summary-item-clean .summary-qty-row { margin: 8px 0; }
+        .summary-item-clean .summary-edit-actions { margin-top: 9px; }
+        .summary-edit-actions-single { grid-template-columns: 1fr; }
+        .summary-item-footer-actions { display: flex; justify-content: flex-end; margin: 4px 0 6px; }
+        .summary-delete-small { font-size: 11px; padding: 4px 8px; min-height: 0; line-height: 1; border-radius: 999px; background: #fff; }
+        .summary-item-subtotal { margin-top: 6px; }
+        @media (max-width: 520px) {
+          .summary-product-title-clean { grid-template-columns: 1fr; gap: 5px; }
+          .summary-product-title-clean .summary-main-price { justify-self: start; }
+          .summary-edit-actions { gap: 6px; }
+          .summary-edit-actions .mini-btn { font-size: 12px; padding: 8px 7px; }
+        }
         .resumen-acompanantes-contador span { color: #78716c; font-size: 13px; font-weight: 900; }
         .resumen-acompanantes-chips { margin-top: 0; }
         .resumen-acompanantes-observacion { margin-bottom: 0; }

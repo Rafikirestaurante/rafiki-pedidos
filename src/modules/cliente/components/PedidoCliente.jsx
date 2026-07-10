@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { CampoTexto, SelectorCantidad, useAlertaRafiki } from "../../../shared/components/common";
+import ResumenPedidoItem from "../../../shared/components/ResumenPedidoItem";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   calcularTotalItem,
@@ -7,7 +8,6 @@ import {
   esItemCafeteria,
   esProductoSinAcompanantes,
   MENSAJE_ACOMPANANTES_DEL_DIA,
-  textoParaLlevarItem,
   valorParaLlevarItem,
 } from "../../../shared/utils/pedidos";
 import { FORMAS_PAGO_CLIENTE } from "../../../shared/constants/paymentMethods";
@@ -430,91 +430,16 @@ export default function PedidoCliente({
                     <div className="box soft u-mb-12">
                       <h3>Resumen del pedido</h3>
 
-                      {gruposResumenPedido.map((grupo) => {
-                        const item = grupo.item;
-                        const itemEsCafeteria = esItemCafeteria(item);
-                        const itemSinAcompanantes = itemEsCafeteria || esProductoSinAcompanantes(item);
-                        const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
-                        const nombreItem = item.plato || item.proteina || item.producto;
-
-                        return (
-                          <div key={grupo.key} className="summary-item">
-                            <div className="summary-item-header">
-                              <p>
-                                <strong className="summary-main-name">{grupo.cantidad} x {nombreItem}</strong> <span className="summary-main-price">{dinero(item.precioPlato || item.precioProteina || item.precio)}</span>
-                              </p>
-                              <button
-                                type="button"
-                                className="mini-danger"
-                                onClick={() => eliminarGrupoResumen?.(grupo.ids)}
-                                aria-label={`Borrar ${nombreItem || "producto"} del pedido`}
-                              >
-                                Borrar
-                              </button>
-                            </div>
-
-                            <div className="summary-qty-row">
-                              <span>Cantidad</span>
-                              <SelectorCantidad
-                                cantidad={grupo.cantidad}
-                                onChange={(cantidad) => actualizarCantidadGrupoResumen?.(grupo.ids, cantidad)}
-                              />
-                            </div>
-
-                            {grupo.agrupado ? (
-                              <p className="summary-group-note">Agrupado automáticamente por producto igual.</p>
-                            ) : null}
-
-                            {itemEsCafeteria ? (
-                              <div className="summary-detail-list">
-                                {item.tipo ? <span>{item.tipo}</span> : null}
-                                {item.tamano ? <span>{item.tamano}</span> : null}
-                                {Array.isArray(item.frutas) && item.frutas.length > 0 ? item.frutas.map((fruta) => <span key={fruta}>{fruta}</span>) : null}
-                                {Number(item.extraFrutas) > 0 ? <span>Extra 3 frutas: {dinero(item.extraFrutas)}</span> : null}
-                                {item.base ? <span>{item.base}</span> : null}
-                                {item.acompanante ? <span>{item.acompanante}</span> : null}
-                                {Array.isArray(item.adicionales) && item.adicionales.length > 0 ? item.adicionales.map((extra) => <span key={extra.nombre || extra}>{extra.nombre || extra}</span>) : null}
-                              </div>
-                            ) : null}
-
-                            {!itemEsCafeteria && !itemSinAcompanantes && (
-                              <div className="summary-detail-list summary-acompanantes-list">
-                                {acompanantesItem.length > 0 ? acompanantesItem.map((acompanante) => (
-                                  <span key={acompanante}>{acompanante}</span>
-                                )) : <span>Sin acompañantes</span>}
-                              </div>
-                            )}
-                            {!itemEsCafeteria && !itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
-                              <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
-                            )}
-                            {!itemEsCafeteria && !itemSinAcompanantes && (
-                              <div className="summary-edit-actions">
-                                <button
-                                  type="button"
-                                  className="mini-btn resumen-editar-proteina-btn"
-                                  onClick={() => setGrupoEditandoProteina(grupo)}
-                                >
-                                  Editar proteína
-                                </button>
-                                <button
-                                  type="button"
-                                  className="mini-btn resumen-editar-acompanantes-btn"
-                                  onClick={() => setGrupoEditandoAcompanantes(grupo)}
-                                >
-                                  Editar acompañantes
-                                </button>
-                              </div>
-                            )}
-                            {!itemEsCafeteria && itemSinAcompanantes && (
-                              <div className="summary-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div>
-                            )}
-
-                            {!itemEsCafeteria && !itemSinAcompanantes && <p className="summary-note">Sopa + bebida incluida</p>}
-
-                            <p className="summary-note">{textoParaLlevarItem(item)}</p>
-                          </div>
-                        );
-                      })}
+                      {gruposResumenPedido.map((grupo) => (
+                        <ResumenPedidoItem
+                          key={grupo.key}
+                          grupo={grupo}
+                          onBorrar={(ids) => eliminarGrupoResumen?.(ids)}
+                          onCambiarCantidad={(ids, cantidad) => actualizarCantidadGrupoResumen?.(ids, cantidad)}
+                          onEditarProteina={(grupoActual) => setGrupoEditandoProteina(grupoActual)}
+                          onEditarAcompanantes={(grupoActual) => setGrupoEditandoAcompanantes(grupoActual)}
+                        />
+                      ))}
 
                       <div className="total-row">
                         <span>Total</span>

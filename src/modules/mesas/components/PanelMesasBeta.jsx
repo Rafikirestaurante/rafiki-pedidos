@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  calcularTotalItem,
   calcularTotalItems,
   crearItemNuevo,
   dinero,
@@ -12,10 +11,11 @@ import {
   consolidarItemsResumenPedido,
   normalizarCantidadResumen
 } from "../../../shared/utils/resumenPedido";
-import { CampoTexto, SelectorCantidad, useAlertaRafiki } from "../../../shared/components/common";
+import { CampoTexto, useAlertaRafiki } from "../../../shared/components/common";
 import RafikiModal from "../../../shared/components/RafikiModal";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
 import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
+import ResumenPedidoItem from "../../../shared/components/ResumenPedidoItem";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   FORMA_PAGO_CREDITO,
@@ -371,48 +371,18 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
                 {clientePedido ? <span>Cliente: {clientePedido}</span> : null}
               </div>
 
-              {gruposResumenMesa.map((grupo) => {
-                const item = grupo.item;
-                const itemSinAcompanantes = esProductoSinAcompanantes(item);
-                const acompanantes = Array.isArray(item.acompanantes) ? item.acompanantes : [];
-                const nombreItem = obtenerNombreItem(item);
-
-                return (
-                  <div key={grupo.key} className="summary-item mesas-beta-preview-item">
-                    <div className="summary-item-header">
-                      <p><strong className="summary-main-name">{grupo.cantidad} x {nombreItem}</strong> <span className="summary-main-price">{dinero(item.precioPlato || item.precioProteina || item.precio)}</span></p>
-                      <button type="button" className="mini-danger" onClick={() => quitarGrupoPedidoMesa(grupo.ids)}>Borrar</button>
-                    </div>
-
-                    <div className="summary-qty-row">
-                      <span>Cantidad</span>
-                      <SelectorCantidad cantidad={grupo.cantidad} onChange={(cantidad) => actualizarCantidadGrupoMesa(grupo.ids, cantidad)} />
-                    </div>
-
-                    {grupo.agrupado ? <p className="summary-group-note">Agrupado automáticamente por producto igual.</p> : null}
-                    {itemSinAcompanantes ? <div className="summary-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div> : (
-                      <div className="summary-detail-list summary-acompanantes-list">
-                        {acompanantes.length > 0 ? acompanantes.map((acompanante) => <span key={acompanante}>{acompanante}</span>) : <span>Sin acompañantes</span>}
-                      </div>
-                    )}
-                    {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
-                    <div className="total-row compact-total-row">
-                      <span>Subtotal</span>
-                      <strong>{dinero(calcularTotalItem(item))}</strong>
-                    </div>
-                    {!itemSinAcompanantes && (
-                      <div className="summary-edit-actions">
-                        <button type="button" className="mini-btn resumen-editar-proteina-btn" onClick={() => setGrupoEditandoProteinaMesa(grupo)}>
-                          Editar proteína
-                        </button>
-                        <button type="button" className="mini-btn resumen-editar-acompanantes-btn" onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}>
-                          Editar acompañantes
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {gruposResumenMesa.map((grupo) => (
+                <ResumenPedidoItem
+                  key={grupo.key}
+                  grupo={grupo}
+                  className="mesas-beta-preview-item"
+                  onBorrar={(ids) => quitarGrupoPedidoMesa(ids)}
+                  onCambiarCantidad={(ids, cantidad) => actualizarCantidadGrupoMesa(ids, cantidad)}
+                  onEditarProteina={(grupoActual) => setGrupoEditandoProteinaMesa(grupoActual)}
+                  onEditarAcompanantes={(grupoActual) => setGrupoEditandoAcompanantesMesa(grupoActual)}
+                  mostrarTextoParaLlevar={false}
+                />
+              ))}
 
               <div className="total-row mesas-beta-total"><span>Total visual</span><strong>{dinero(total)}</strong></div>
               <div className="mesas-beta-actions resumen-actions-inline">

@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "126.8-FASE35B4-RESUMEN-PEDIDO-LIMPIO-EDITAR-PROTEINA-2026-07-10",
-  phase: "Fase 35B.4 - Resumen del pedido limpio y edición de proteína",
+  version: "126.9-FASE35B5-RESUMEN-PEDIDO-ESTILO-FINAL-2026-07-10",
+  phase: "Fase 35B.5 - Resumen del pedido estilo final",
   date: "2026-07-10",
-  fase: "35B4-RESUMEN-PEDIDO-LIMPIO-EDITAR-PROTEINA",
+  fase: "35B5-RESUMEN-PEDIDO-ESTILO-FINAL",
   notes:
-    "Ajusta el Resumen del pedido en /cliente, /mesas, /cliente-beta y /mesas-beta: acompañantes uno por línea, sin etiquetas de categoría/base, botón Borrar más discreto, plato principal destacado y edición de proteína/plato desde modal junto a edición de acompañantes."
+    "Aplica el estilo final del Resumen del pedido en /cliente, /mesas, /cliente-beta y /mesas-beta: plato principal destacado, acompañantes uno debajo del otro, cafetería/parfait más limpios, sin textos de categoría/base, botón Borrar más pequeño y acciones de edición organizadas."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

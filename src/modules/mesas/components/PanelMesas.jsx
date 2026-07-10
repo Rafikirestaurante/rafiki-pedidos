@@ -42,6 +42,7 @@ import { SelectorCantidad } from "../../../shared/components/common";
 import ConfirmacionPedidoMesa from "./ConfirmacionPedidoMesa";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
 import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
+import ResumenPedidoItem from "../../../shared/components/ResumenPedidoItem";
 import MesaTabs from "./MesaTabs";
 import DatosMesa from "./DatosMesa";
 import {
@@ -1372,91 +1373,18 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
             <div className="box soft" style={{ marginBottom: 12 }}>
               <h3>Resumen del pedido</h3>
 
-              {gruposResumenMesa.map((grupo) => {
-                const item = grupo.item;
-                const itemEsCafeteria = item.categoria === "cafeteria";
-                const itemSinAcompanantes = esProductoSinAcompanantes(item);
-                const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
-                const nombreItem = item.producto || item.plato || item.proteina;
-
-                return (
-                  <div key={grupo.key} className="summary-item">
-                    <div className="summary-item-header">
-                      <p><strong className="summary-main-name">{grupo.cantidad} x {nombreItem}</strong> <span className="summary-main-price">{dinero(item.precioPlato || item.precioProteina || item.precio)}</span></p>
-                      <button
-                        type="button"
-                        className="mini-danger"
-                        onClick={() => quitarGrupoPedidoMesa(grupo.ids)}
-                        aria-label={`Borrar ${nombreItem || "producto"} del pedido`}
-                      >
-                        Borrar
-                      </button>
-                    </div>
-
-                    <div className="summary-qty-row">
-                      <span>Cantidad</span>
-                      <SelectorCantidad
-                        cantidad={grupo.cantidad}
-                        onChange={(cantidad) => actualizarCantidadGrupoMesa(grupo.ids, cantidad)}
-                      />
-                    </div>
-
-                    {grupo.agrupado ? (
-                      <p className="summary-group-note">Agrupado automáticamente por producto igual.</p>
-                    ) : null}
-
-                    {itemEsCafeteria ? (
-                      <div className="summary-detail-list">
-                        {item.tipo ? <span>{item.tipo}</span> : null}
-                        {item.tamano ? <span>{item.tamano}</span> : null}
-                        {Array.isArray(item.frutas) && item.frutas.length > 0 ? item.frutas.map((fruta) => <span key={fruta}>{fruta}</span>) : null}
-                        {Number(item.extraFrutas) > 0 ? <span>Extra 3 frutas: {dinero(item.extraFrutas)}</span> : null}
-                        {item.base ? <span>{item.base}</span> : null}
-                        {item.acompanante ? <span>{item.acompanante}</span> : null}
-                        {Array.isArray(item.adicionales) && item.adicionales.length > 0 ? item.adicionales.map((x) => <span key={x.nombre || x}>{x.nombre || x}</span>) : null}
-                      </div>
-                    ) : (
-                      <>
-                        {!itemSinAcompanantes && (
-                          <div className="summary-detail-list summary-acompanantes-list">
-                            {acompanantesItem.length > 0 ? acompanantesItem.map((acompanante) => (
-                              <span key={acompanante}>{acompanante}</span>
-                            )) : <span>Sin acompañantes</span>}
-                          </div>
-                        )}
-                        {!itemSinAcompanantes && Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length > 0 && (
-                          <div className="summary-detail-list">
-                            {item.adicionalesAlmuerzo.map((x) => <span key={x.nombre}>{x.nombre} {dinero(x.precio)}</span>)}
-                          </div>
-                        )}
-                        {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
-                          <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
-                        )}
-                        {!itemSinAcompanantes && (
-                          <div className="summary-edit-actions">
-                            <button
-                              type="button"
-                              className="mini-btn resumen-editar-proteina-btn"
-                              onClick={() => setGrupoEditandoProteinaMesa(grupo)}
-                            >
-                              Editar proteína
-                            </button>
-                            <button
-                              type="button"
-                              className="mini-btn resumen-editar-acompanantes-btn"
-                              onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}
-                            >
-                              Editar acompañantes
-                            </button>
-                          </div>
-                        )}
-                        {itemSinAcompanantes && <div className="summary-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div>}
-                        {!itemSinAcompanantes && <p className="summary-note">Sopa + bebida incluida</p>}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+              {gruposResumenMesa.map((grupo) => (
+                <ResumenPedidoItem
+                  key={grupo.key}
+                  grupo={grupo}
+                  className="mesas-resumen-item"
+                  onBorrar={(ids) => quitarGrupoPedidoMesa(ids)}
+                  onCambiarCantidad={(ids, cantidad) => actualizarCantidadGrupoMesa(ids, cantidad)}
+                  onEditarProteina={(grupoActual) => setGrupoEditandoProteinaMesa(grupoActual)}
+                  onEditarAcompanantes={(grupoActual) => setGrupoEditandoAcompanantesMesa(grupoActual)}
+                  mostrarTextoParaLlevar={false}
+                />
+              ))}
 
               <div className="total-row">
                 <span>Total</span>
