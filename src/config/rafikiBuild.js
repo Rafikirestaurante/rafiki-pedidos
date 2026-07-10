@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "126.7-FASE35B3-CLIENTE-BETA-VISUAL-MODALES-2026-07-09",
-  phase: "Fase 35B.3 - Cliente Beta visual con resumen permanente",
-  date: "2026-07-09",
-  fase: "35B3-CLIENTE-BETA-VISUAL-MODALES",
+  version: "126.8-FASE35B4-RESUMEN-PEDIDO-LIMPIO-EDITAR-PROTEINA-2026-07-10",
+  phase: "Fase 35B.4 - Resumen del pedido limpio y edición de proteína",
+  date: "2026-07-10",
+  fase: "35B4-RESUMEN-PEDIDO-LIMPIO-EDITAR-PROTEINA",
   notes:
-    "Crea /cliente-beta como ruta visual paralela inspirada en /mesas-beta: flujo por modales para proteína, acompañantes y datos del cliente, resumen permanente con agrupación, cantidades editables y edición de acompañantes, sin guardar pedidos reales."
+    "Ajusta el Resumen del pedido en /cliente, /mesas, /cliente-beta y /mesas-beta: acompañantes uno por línea, sin etiquetas de categoría/base, botón Borrar más discreto, plato principal destacado y edición de proteína/plato desde modal junto a edición de acompañantes."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

@@ -14,6 +14,7 @@ import { FORMAS_PAGO_CLIENTE } from "../../../shared/constants/paymentMethods";
 import CodigoClienteEspecial from "./CodigoClienteEspecial";
 import CafeteriaClienteEspecial from "./CafeteriaClienteEspecial";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
+import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
 import { agruparItemsResumenPedido } from "../../../shared/utils/resumenPedido";
 
 export default function PedidoCliente({
@@ -50,12 +51,14 @@ export default function PedidoCliente({
   actualizarCantidadGrupoResumen,
   eliminarGrupoResumen,
   actualizarAcompanantesGrupoResumen,
+  actualizarProteinaGrupoResumen,
   reiniciarPedido,
   irAElemento,
   registrarPedido,
 }) {
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [grupoEditandoAcompanantes, setGrupoEditandoAcompanantes] = useState(null);
+  const [grupoEditandoProteina, setGrupoEditandoProteina] = useState(null);
 
   const clienteEspecialSinMinimoAcompanantes = Boolean(
     clienteEspecialAplicado && clienteEspecialAplicado.sin_restriccion_acompanantes !== false
@@ -438,8 +441,7 @@ export default function PedidoCliente({
                           <div key={grupo.key} className="summary-item">
                             <div className="summary-item-header">
                               <p>
-                                <strong>{grupo.cantidad} x {nombreItem}</strong> - {" "}
-                                {dinero(item.precioPlato || item.precioProteina || item.precio)}
+                                <strong className="summary-main-name">{grupo.cantidad} x {nombreItem}</strong> <span className="summary-main-price">{dinero(item.precioPlato || item.precioProteina || item.precio)}</span>
                               </p>
                               <button
                                 type="button"
@@ -463,27 +465,53 @@ export default function PedidoCliente({
                               <p className="summary-group-note">Agrupado automáticamente por producto igual.</p>
                             ) : null}
 
-                            {item.categoria && <p>Categoría: {item.categoria}</p>}
+                            {itemEsCafeteria ? (
+                              <div className="summary-detail-list">
+                                {item.tipo ? <span>{item.tipo}</span> : null}
+                                {item.tamano ? <span>{item.tamano}</span> : null}
+                                {Array.isArray(item.frutas) && item.frutas.length > 0 ? item.frutas.map((fruta) => <span key={fruta}>{fruta}</span>) : null}
+                                {Number(item.extraFrutas) > 0 ? <span>Extra 3 frutas: {dinero(item.extraFrutas)}</span> : null}
+                                {item.base ? <span>{item.base}</span> : null}
+                                {item.acompanante ? <span>{item.acompanante}</span> : null}
+                                {Array.isArray(item.adicionales) && item.adicionales.length > 0 ? item.adicionales.map((extra) => <span key={extra.nombre || extra}>{extra.nombre || extra}</span>) : null}
+                              </div>
+                            ) : null}
 
-                            {itemEsCafeteria && <p>Cafetería: {item.tipo || item.categoria || "Producto"}</p>}
-                            {!itemEsCafeteria && !itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                            {!itemEsCafeteria && !itemSinAcompanantes && (
+                              <div className="summary-detail-list summary-acompanantes-list">
+                                {acompanantesItem.length > 0 ? acompanantesItem.map((acompanante) => (
+                                  <span key={acompanante}>{acompanante}</span>
+                                )) : <span>Sin acompañantes</span>}
+                              </div>
+                            )}
                             {!itemEsCafeteria && !itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
-                              <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
+                              <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                             )}
                             {!itemEsCafeteria && !itemSinAcompanantes && (
-                              <button
-                                type="button"
-                                className="mini-btn resumen-editar-acompanantes-btn"
-                                onClick={() => setGrupoEditandoAcompanantes(grupo)}
-                              >
-                                Editar acompañantes
-                              </button>
+                              <div className="summary-edit-actions">
+                                <button
+                                  type="button"
+                                  className="mini-btn resumen-editar-proteina-btn"
+                                  onClick={() => setGrupoEditandoProteina(grupo)}
+                                >
+                                  Editar proteína
+                                </button>
+                                <button
+                                  type="button"
+                                  className="mini-btn resumen-editar-acompanantes-btn"
+                                  onClick={() => setGrupoEditandoAcompanantes(grupo)}
+                                >
+                                  Editar acompañantes
+                                </button>
+                              </div>
                             )}
-                            {!itemEsCafeteria && itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
+                            {!itemEsCafeteria && itemSinAcompanantes && (
+                              <div className="summary-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div>
+                            )}
 
-                            {!itemEsCafeteria && !itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
+                            {!itemEsCafeteria && !itemSinAcompanantes && <p className="summary-note">Sopa + bebida incluida</p>}
 
-                            <p>{textoParaLlevarItem(item)}</p>
+                            <p className="summary-note">{textoParaLlevarItem(item)}</p>
                           </div>
                         );
                       })}
@@ -613,6 +641,14 @@ export default function PedidoCliente({
                   </>
                 )}
               </aside>
+              <EditarProteinaResumenModal
+                abierto={Boolean(grupoEditandoProteina)}
+                grupo={grupoEditandoProteina}
+                platosAgrupados={platosAgrupados}
+                onCerrar={() => setGrupoEditandoProteina(null)}
+                onGuardar={actualizarProteinaGrupoResumen}
+              />
+
               <EditarAcompanantesResumenModal
                 abierto={Boolean(grupoEditandoAcompanantes)}
                 grupo={grupoEditandoAcompanantes}

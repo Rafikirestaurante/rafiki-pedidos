@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { CampoTexto, SelectorCantidad, useAlertaRafiki } from "../../../shared/components/common";
 import RafikiModal from "../../../shared/components/RafikiModal";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
+import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   calcularTotalItem,
@@ -54,6 +55,7 @@ export default function PanelClienteBeta({ menu, platosAgrupados, cargandoMenu =
   const [tipoPago, setTipoPago] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [grupoEditandoAcompanantes, setGrupoEditandoAcompanantes] = useState(null);
+  const [grupoEditandoProteina, setGrupoEditandoProteina] = useState(null);
 
   const itemsConProducto = useMemo(
     () => itemsCliente.filter((item) => item.plato || item.proteina || item.producto),
@@ -164,6 +166,30 @@ export default function PanelClienteBeta({ menu, platosAgrupados, cargandoMenu =
       setItemActivoId(siguiente[siguiente.length - 1]?.id || null);
       return siguiente;
     });
+  }
+
+  function actualizarProteinaGrupo(ids = [], platoSeleccionado = {}) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0 || !platoSeleccionado?.nombre) return;
+
+    const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
+
+    setItemsCliente((actual) =>
+      actual.map((item) => {
+        if (!idsGrupo.has(item.id)) return item;
+        return {
+          ...item,
+          categoria: platoSeleccionado.categoria || "",
+          plato: platoSeleccionado.nombre || "",
+          proteina: platoSeleccionado.nombre || "",
+          precioPlato: Number(platoSeleccionado.precio) || 0,
+          precioProteina: Number(platoSeleccionado.precio) || 0,
+          acompanantes: sinAcompanantes ? [] : item.acompanantes || [],
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || "",
+          paraLlevar: !comerRestaurante
+        };
+      })
+    );
   }
 
   function actualizarAcompanantesGrupo(ids = [], cambios = {}) {
@@ -373,7 +399,7 @@ export default function PanelClienteBeta({ menu, platosAgrupados, cargandoMenu =
                 return (
                   <div key={grupo.key} className="summary-item mesas-beta-preview-item">
                     <div className="summary-item-header">
-                      <p><strong>{grupo.cantidad} x {nombreItem}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
+                      <p><strong className="summary-main-name">{grupo.cantidad} x {nombreItem}</strong> <span className="summary-main-price">{dinero(item.precioPlato || item.precioProteina || item.precio)}</span></p>
                       <button type="button" className="mini-danger" onClick={() => quitarGrupoPedido(grupo.ids)}>Borrar</button>
                     </div>
 
@@ -383,20 +409,28 @@ export default function PanelClienteBeta({ menu, platosAgrupados, cargandoMenu =
                     </div>
 
                     {grupo.agrupado ? <p className="summary-group-note">Agrupado automáticamente por producto igual.</p> : null}
-                    {item.categoria ? <p>Categoría: {item.categoria}</p> : null}
-                    {itemSinAcompanantes ? <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p> : <p>{acompanantes.join(", ") || "Sin acompañantes"}</p>}
-                    {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
-                    {!itemSinAcompanantes ? <p>Sopa + bebida incluida</p> : null}
-                    <p>{textoParaLlevarItem(item)}</p>
+                    {itemSinAcompanantes ? <div className="summary-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div> : (
+                      <div className="summary-detail-list summary-acompanantes-list">
+                        {acompanantes.length > 0 ? acompanantes.map((acompanante) => <span key={acompanante}>{acompanante}</span>) : <span>Sin acompañantes</span>}
+                      </div>
+                    )}
+                    {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
+                    {!itemSinAcompanantes ? <p className="summary-note">Sopa + bebida incluida</p> : null}
+                    <p className="summary-note">{textoParaLlevarItem(item)}</p>
                     {adicionalLlevar > 0 ? <p className="muted">Adicional incluido: {dinero(adicionalLlevar)} por unidad.</p> : null}
                     <div className="total-row compact-total-row">
                       <span>Subtotal</span>
                       <strong>{dinero(calcularTotalItem(item))}</strong>
                     </div>
                     {!itemSinAcompanantes && (
-                      <button type="button" className="mini-btn resumen-editar-acompanantes-btn" onClick={() => setGrupoEditandoAcompanantes(grupo)}>
-                        Editar acompañantes
-                      </button>
+                      <div className="summary-edit-actions">
+                        <button type="button" className="mini-btn resumen-editar-proteina-btn" onClick={() => setGrupoEditandoProteina(grupo)}>
+                          Editar proteína
+                        </button>
+                        <button type="button" className="mini-btn resumen-editar-acompanantes-btn" onClick={() => setGrupoEditandoAcompanantes(grupo)}>
+                          Editar acompañantes
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
@@ -569,6 +603,14 @@ export default function PanelClienteBeta({ menu, platosAgrupados, cargandoMenu =
           </div>
         )}
       </RafikiModal>
+
+      <EditarProteinaResumenModal
+        abierto={Boolean(grupoEditandoProteina)}
+        grupo={grupoEditandoProteina}
+        platosAgrupados={platosAgrupados}
+        onCerrar={() => setGrupoEditandoProteina(null)}
+        onGuardar={actualizarProteinaGrupo}
+      />
 
       <EditarAcompanantesResumenModal
         abierto={Boolean(grupoEditandoAcompanantes)}

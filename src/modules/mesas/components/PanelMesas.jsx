@@ -41,6 +41,7 @@ import { asegurarClienteCredito, listarClientesCreditoActivos } from "../../../s
 import { SelectorCantidad } from "../../../shared/components/common";
 import ConfirmacionPedidoMesa from "./ConfirmacionPedidoMesa";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
+import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
 import MesaTabs from "./MesaTabs";
 import DatosMesa from "./DatosMesa";
 import {
@@ -143,6 +144,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [adicionalesAlmuerzoAbiertos, setAdicionalesAlmuerzoAbiertos] = useState({});
   const [clientesCreditoMesa, setClientesCreditoMesa] = useState(() => leerClientesCreditoGuardados());
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
+  const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -474,6 +476,32 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       const filtrados = actual.filter((item) => !idsGrupo.has(item.id));
       return filtrados.length > 0 ? filtrados : [crearItemNuevo()];
     });
+    setErrorMesa("");
+  }
+
+  function actualizarProteinaGrupoMesa(ids = [], platoSeleccionado = {}) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0 || !platoSeleccionado?.nombre) return;
+
+    const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
+
+    setItemsMesa((actual) =>
+      actual.map((item) => {
+        if (!idsGrupo.has(item.id)) return item;
+
+        return {
+          ...item,
+          categoria: platoSeleccionado.categoria || "",
+          plato: platoSeleccionado.nombre || "",
+          proteina: platoSeleccionado.nombre || "",
+          precioPlato: Number(platoSeleccionado.precio) || 0,
+          precioProteina: Number(platoSeleccionado.precio) || 0,
+          acompanantes: sinAcompanantes ? [] : item.acompanantes || [],
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || "",
+          paraLlevar: false
+        };
+      })
+    );
     setErrorMesa("");
   }
 
@@ -1354,7 +1382,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                 return (
                   <div key={grupo.key} className="summary-item">
                     <div className="summary-item-header">
-                      <p><strong>{grupo.cantidad} x {nombreItem}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
+                      <p><strong className="summary-main-name">{grupo.cantidad} x {nombreItem}</strong> <span className="summary-main-price">{dinero(item.precioPlato || item.precioProteina || item.precio)}</span></p>
                       <button
                         type="button"
                         className="mini-danger"
@@ -1378,38 +1406,52 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                     ) : null}
 
                     {itemEsCafeteria ? (
-                      <>
-                        <p>Categoría: Cafetería{item.tipo ? ` / ${item.tipo}` : ""}</p>
-                        {item.tamano && <p>Tamaño: {item.tamano}</p>}
-                        {Array.isArray(item.frutas) && item.frutas.length > 0 && <p>Frutas: {item.frutas.join(", ")}</p>}
-                        {Number(item.extraFrutas) > 0 && <p>Extra 3 frutas: {dinero(item.extraFrutas)}</p>}
-                        {item.base && <p>Base: {item.base}</p>}
-                        {item.acompanante && <p>Acompañante: {item.acompanante}</p>}
-                        {Array.isArray(item.adicionales) && item.adicionales.length > 0 && (
-                          <p>Adicionales: {item.adicionales.map((x) => x.nombre || x).join(", ")}</p>
-                        )}
-                      </>
+                      <div className="summary-detail-list">
+                        {item.tipo ? <span>{item.tipo}</span> : null}
+                        {item.tamano ? <span>{item.tamano}</span> : null}
+                        {Array.isArray(item.frutas) && item.frutas.length > 0 ? item.frutas.map((fruta) => <span key={fruta}>{fruta}</span>) : null}
+                        {Number(item.extraFrutas) > 0 ? <span>Extra 3 frutas: {dinero(item.extraFrutas)}</span> : null}
+                        {item.base ? <span>{item.base}</span> : null}
+                        {item.acompanante ? <span>{item.acompanante}</span> : null}
+                        {Array.isArray(item.adicionales) && item.adicionales.length > 0 ? item.adicionales.map((x) => <span key={x.nombre || x}>{x.nombre || x}</span>) : null}
+                      </div>
                     ) : (
                       <>
-                        {item.categoria && <p>Categoría: {item.categoria}</p>}
-                        {!itemSinAcompanantes && <p>{acompanantesItem.join(", ") || "Sin acompañantes"}</p>}
+                        {!itemSinAcompanantes && (
+                          <div className="summary-detail-list summary-acompanantes-list">
+                            {acompanantesItem.length > 0 ? acompanantesItem.map((acompanante) => (
+                              <span key={acompanante}>{acompanante}</span>
+                            )) : <span>Sin acompañantes</span>}
+                          </div>
+                        )}
                         {!itemSinAcompanantes && Array.isArray(item.adicionalesAlmuerzo) && item.adicionalesAlmuerzo.length > 0 && (
-                          <p>Adicionales: {item.adicionalesAlmuerzo.map((x) => `${x.nombre} ${dinero(x.precio)}`).join(", ")}</p>
+                          <div className="summary-detail-list">
+                            {item.adicionalesAlmuerzo.map((x) => <span key={x.nombre}>{x.nombre} {dinero(x.precio)}</span>)}
+                          </div>
                         )}
                         {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && (
-                          <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
+                          <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
                         )}
                         {!itemSinAcompanantes && (
-                          <button
-                            type="button"
-                            className="mini-btn resumen-editar-acompanantes-btn"
-                            onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}
-                          >
-                            Editar acompañantes
-                          </button>
+                          <div className="summary-edit-actions">
+                            <button
+                              type="button"
+                              className="mini-btn resumen-editar-proteina-btn"
+                              onClick={() => setGrupoEditandoProteinaMesa(grupo)}
+                            >
+                              Editar proteína
+                            </button>
+                            <button
+                              type="button"
+                              className="mini-btn resumen-editar-acompanantes-btn"
+                              onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}
+                            >
+                              Editar acompañantes
+                            </button>
+                          </div>
                         )}
-                        {itemSinAcompanantes && <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p>}
-                        {!itemSinAcompanantes && <p>Sopa + bebida incluida</p>}
+                        {itemSinAcompanantes && <div className="summary-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div>}
+                        {!itemSinAcompanantes && <p className="summary-note">Sopa + bebida incluida</p>}
                       </>
                     )}
                   </div>
@@ -1464,6 +1506,14 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
         )}
       </aside>
     </main>
+    <EditarProteinaResumenModal
+      abierto={Boolean(grupoEditandoProteinaMesa)}
+      grupo={grupoEditandoProteinaMesa}
+      platosAgrupados={platosAgrupados}
+      onCerrar={() => setGrupoEditandoProteinaMesa(null)}
+      onGuardar={actualizarProteinaGrupoMesa}
+    />
+
     <EditarAcompanantesResumenModal
       abierto={Boolean(grupoEditandoAcompanantesMesa)}
       grupo={grupoEditandoAcompanantesMesa}

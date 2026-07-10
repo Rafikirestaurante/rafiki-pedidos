@@ -15,6 +15,7 @@ import {
 import { CampoTexto, SelectorCantidad, useAlertaRafiki } from "../../../shared/components/common";
 import RafikiModal from "../../../shared/components/RafikiModal";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
+import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   FORMA_PAGO_CREDITO,
@@ -61,6 +62,7 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
   const [tipoPagoMesa, setTipoPagoMesa] = useState(FORMAS_PAGO_MESA[0]);
   const [observacionesLocal, setObservacionesLocal] = useState("");
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
+  const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
 
   const itemsConProducto = useMemo(
     () => itemsMesa.filter((item) => item.plato || item.proteina || item.producto),
@@ -182,6 +184,30 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
       setItemActivoId(siguiente[siguiente.length - 1]?.id || null);
       return siguiente;
     });
+  }
+
+  function actualizarProteinaGrupoMesa(ids = [], platoSeleccionado = {}) {
+    const idsGrupo = new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean));
+    if (idsGrupo.size === 0 || !platoSeleccionado?.nombre) return;
+
+    const sinAcompanantes = esProductoSinAcompanantes(platoSeleccionado);
+
+    setItemsMesa((actual) =>
+      actual.map((item) => {
+        if (!idsGrupo.has(item.id)) return item;
+        return {
+          ...item,
+          categoria: platoSeleccionado.categoria || "",
+          plato: platoSeleccionado.nombre || "",
+          proteina: platoSeleccionado.nombre || "",
+          precioPlato: Number(platoSeleccionado.precio) || 0,
+          precioProteina: Number(platoSeleccionado.precio) || 0,
+          acompanantes: sinAcompanantes ? [] : item.acompanantes || [],
+          observacionAcompanantes: sinAcompanantes ? "" : item.observacionAcompanantes || "",
+          paraLlevar: false
+        };
+      })
+    );
   }
 
   function actualizarAcompanantesGrupoMesa(ids = [], cambios = {}) {
@@ -354,7 +380,7 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
                 return (
                   <div key={grupo.key} className="summary-item mesas-beta-preview-item">
                     <div className="summary-item-header">
-                      <p><strong>{grupo.cantidad} x {nombreItem}</strong> - {dinero(item.precioPlato || item.precioProteina || item.precio)}</p>
+                      <p><strong className="summary-main-name">{grupo.cantidad} x {nombreItem}</strong> <span className="summary-main-price">{dinero(item.precioPlato || item.precioProteina || item.precio)}</span></p>
                       <button type="button" className="mini-danger" onClick={() => quitarGrupoPedidoMesa(grupo.ids)}>Borrar</button>
                     </div>
 
@@ -364,16 +390,25 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
                     </div>
 
                     {grupo.agrupado ? <p className="summary-group-note">Agrupado automáticamente por producto igual.</p> : null}
-                    {itemSinAcompanantes ? <p>{MENSAJE_ACOMPANANTES_DEL_DIA}</p> : <p>{acompanantes.join(", ") || "Sin acompañantes"}</p>}
-                    {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && <p>Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
+                    {itemSinAcompanantes ? <div className="summary-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div> : (
+                      <div className="summary-detail-list summary-acompanantes-list">
+                        {acompanantes.length > 0 ? acompanantes.map((acompanante) => <span key={acompanante}>{acompanante}</span>) : <span>Sin acompañantes</span>}
+                      </div>
+                    )}
+                    {!itemSinAcompanantes && item.observacionAcompanantes?.trim() && <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>}
                     <div className="total-row compact-total-row">
                       <span>Subtotal</span>
                       <strong>{dinero(calcularTotalItem(item))}</strong>
                     </div>
                     {!itemSinAcompanantes && (
-                      <button type="button" className="mini-btn resumen-editar-acompanantes-btn" onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}>
-                        Editar acompañantes
-                      </button>
+                      <div className="summary-edit-actions">
+                        <button type="button" className="mini-btn resumen-editar-proteina-btn" onClick={() => setGrupoEditandoProteinaMesa(grupo)}>
+                          Editar proteína
+                        </button>
+                        <button type="button" className="mini-btn resumen-editar-acompanantes-btn" onClick={() => setGrupoEditandoAcompanantesMesa(grupo)}>
+                          Editar acompañantes
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
@@ -562,6 +597,14 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
         )}
 
       </RafikiModal>
+
+      <EditarProteinaResumenModal
+        abierto={Boolean(grupoEditandoProteinaMesa)}
+        grupo={grupoEditandoProteinaMesa}
+        platosAgrupados={platosAgrupados}
+        onCerrar={() => setGrupoEditandoProteinaMesa(null)}
+        onGuardar={actualizarProteinaGrupoMesa}
+      />
 
       <EditarAcompanantesResumenModal
         abierto={Boolean(grupoEditandoAcompanantesMesa)}
