@@ -19,7 +19,8 @@
     "thermal-tabla:check": "node scripts/validate-thermal-tabla-compacta.mjs",
     "thermal-cierre:check": "node scripts/validate-thermal-cierre.mjs",
     "thermal-ahorro:check": "node scripts/validate-thermal-ahorro-papel.mjs",
-    "thermal-contraste:check": "node scripts/validate-thermal-contraste.mjs"
+    "thermal-contraste:check": "node scripts/validate-thermal-contraste.mjs",
+    "gmail-api:check": "node scripts/validate-gmail-api-infra.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

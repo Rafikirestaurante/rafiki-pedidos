@@ -7,6 +7,22 @@ export default [
   },
   js.configs.recommended,
   {
+    files: ["**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        ...globals.es2021
+      }
+    },
+    rules: {
+      "no-console": "off",
+      "no-undef": "off",
+      "no-redeclare": "off"
+    }
+  },
+  {
     files: ["**/*.{js,jsx}"],
     languageOptions: {
       ecmaVersion: "latest",
@@ -23,9 +39,10 @@ export default [
       }
     },
     rules: {
-      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "no-console": "off",
       "no-undef": "off",
+      "no-extra-boolean-cast": "warn",
       "no-useless-escape": "warn",
       "react/react-in-jsx-scope": "off"
     }

@@ -1,6 +1,6 @@
 {
-  "version": "126.4-FASE35A4-EDITAR-ACOMPANANTES-RESUMEN-2026-07-08",
-  "phase": "Fase 35A.4 - Editar acompañantes desde resumen del pedido",
-  "date": "2026-07-08",
-  "notes": "Agrega un modal reutilizable para editar acompañantes desde el resumen del pedido en /cliente y /mesas, respetando agrupación, reglas de cliente especial y productos sin acompañantes manuales."
+  "version": "127.0-FASE36A-INFRAESTRUCTURA-GMAIL-API-SUPABASE-2026-07-11",
+  "phase": "Fase 36A - Infraestructura Gmail API desde Supabase",
+  "date": "2026-07-11",
+  "notes": "Agrega conexión segura de Gmail mediante OAuth 2.0 y Supabase Edge Functions, con credencial cifrada, prueba de conexión y desconexión desde Gerencia. No usa Google Sheets y no afecta Caja, Cartera, Gastos ni Pedidos."
 }

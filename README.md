@@ -1,3 +1,29 @@
+## 127.0 — Fase 36A Infraestructura Gmail API desde Supabase
+
+Versión: `127.0-FASE36A-INFRAESTRUCTURA-GMAIL-API-SUPABASE-2026-07-11`
+
+Se inicia el módulo informativo **Gerencia > Consignaciones y facturas** con conexión directa a Gmail mediante OAuth 2.0 y Supabase Edge Functions. Se elimina Google Sheets de la arquitectura de Rafiki. La credencial reutilizable se cifra antes de almacenarse y el administrador puede conectar, probar y desconectar la cuenta.
+
+Esta entrega todavía no escanea correos ni registra movimientos. Tampoco modifica Caja, Cartera, Gastos, Pedidos, arqueos o saldos.
+
+Documentación e instalación: `docs/FASE36A-INFRAESTRUCTURA-GMAIL-API-SUPABASE.md`.
+
+---
+
+## 126.9 — Fase 35B.5 Resumen del pedido estilo final
+
+Versión: `126.9-FASE35B5-RESUMEN-PEDIDO-ESTILO-FINAL-2026-07-10`
+
+Se aplica de forma uniforme el nuevo estilo del **Resumen del pedido** en `/cliente`, `/mesas`, `/cliente-beta` y `/mesas-beta`.
+
+El resumen queda más limpio: el plato principal aparece con mayor jerarquía, los acompañantes se muestran uno debajo del otro, los productos de cafetería como Parfait muestran detalles sin textos de categoría/base, y el botón **Borrar** queda pequeño, rojo y discreto.
+
+También se reutiliza el componente compartido `ResumenPedidoItem` para alinear la presentación entre versión oficial y beta. No se tocaron SQL, Caja, Cartera, Pedidos Hoy, impresión térmica, service worker ni reglas PWA.
+
+Validación: `npm run build` correcto; ESLint sin errores en archivos modificados, solo advertencias no bloqueantes.
+
+---
+
 ## 126.2 — Fase 35A.2 Insumos pendientes móvil y señal AM/PM
 
 Versión: 126.2-FASE35A2-INSUMOS-PENDIENTES-MOBILE-AMPM-2026-07-06
@@ -86,7 +112,6 @@ Validación recomendada: `npm run thermal-pedidos-hoy:check`, `npm run thermal-r
 
 Versión: 125.1-FASE35B-PEDIDOS-HOY-TERMICO-FILTROS-2026-06-30
 
-
 ## 124.45 — Hotfix 34F.1 Cliente para llevar blindado
 
 Se corrigió de raíz el flujo público `/cliente` para que los pedidos queden para llevar por defecto, sumen el adicional correspondiente y se guarden como `tipo_pedido: "llevar"`, salvo cuando el cliente marque explícitamente “Registrar este pedido para comer en el restaurante”. También se agregó una validación estática con `npm run cliente-para-llevar:check`.
@@ -102,13 +127,11 @@ Versión: 124.41-HOTFIX34E1-CAFETERIA-VISIBLE-CLIENTE-2026-06-26
 - Se guarda una referencia segura del cliente especial dentro del JSON de cada item del pedido para preparar promociones, regalos o descuentos futuros.
 - No modifica `/mesas`, Caja, Cartera ni Pedidos Hoy.
 
-
 ## 124.39 — Hotfix 34D.9 mensaje bienvenida cliente especial
 
 - Ajusta el texto del modal de bienvenida mostrado al aplicar un código válido en `/cliente`.
 - Nuevo texto secundario: `Gracias por preferirnos. Ya puedes continuar con tu pedido.`
 - No modifica `/mesas`, Caja, Cartera, Pedidos Hoy ni reglas 34E.
-
 
 ## 124.37 - Hotfix 34D.7: Código cliente discreto y bienvenida destacada
 
@@ -116,7 +139,6 @@ Versión: 124.41-HOTFIX34E1-CAFETERIA-VISIBLE-CLIENTE-2026-06-26
 - Elimina el bloque posterior con nombre, código y texto de precarga.
 - Mantiene un mensaje de bienvenida más grande y limpio.
 - No modifica `/mesas`, Caja, Cartera, Pedidos Hoy ni reglas de 34E.
-
 
 ## 124.36-HOTFIX-PASTAS-EN-PLATOS-ACOMPANANTES-DIA-2026-06-26
 
@@ -328,8 +350,6 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se agregan estados vacíos y encabezados pegajosos en el listado de inventario.
 - No se agrega SQL nuevo y no se modifica lógica de inventario, descuentos, catálogo, gastos ni Supabase.
 
-
-
 ## 121.3 — Fase 31E: Limpieza visual de Pedidos Hoy
 
 - Se aplica el sistema visual Rafiki al módulo `Pedidos Hoy` sin modificar consultas, paginación ni lógica de cambio de estado.
@@ -342,7 +362,6 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se agrega estado vacío amigable cuando no hay pedidos en la vista seleccionada.
 - Se agregan estilos específicos para tabs, filtros colapsados, badges y menú de acciones en Pedidos Hoy.
 - No se agrega SQL nuevo y no se modifican servicios, auditoría, cartera, pagos, edición administrativa ni carga optimizada.
-
 
 ## 121.4 — Fase 31F: Uniformidad visual final
 
@@ -370,7 +389,6 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se ajustan grids y formularios a una sola columna en pantallas pequeñas para reducir cortes, overflow y botones incómodos.
 - Se mantiene intacta la lógica de pedidos, cartera, caja, inventario, gastos, Supabase, auditoría y PWA.
 
-
 ## 121.6 — Fase 31H.1: Correcciones críticas de componentes reutilizables
 
 - Se corrige `RafikiActionMenu` para renderizar el menú desplegable mediante React Portal directamente en `document.body`, evitando que `overflow: auto` de tablas o contenedores corte las opciones.
@@ -382,8 +400,6 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se mejora `RafikiTabs` con navegación por teclado usando flechas, Home y End, manteniendo `tabIndex` accesible según la pestaña activa.
 - Se agrega navegación por teclado en `RafikiActionMenu` con flechas, Home, End, Escape y Tab.
 - No se modifica lógica de negocio, servicios, SQL, pedidos, cartera, caja, gastos, inventario ni cálculos financieros.
-
-
 
 ## 121.8 — Fase 31H.3: Ajustes específicos en pantallas operativas
 
@@ -403,7 +419,6 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - Se evitó que botones de navegación, tabs y chips hereden ancho completo en móvil.
 - Se eliminaron bloques CSS duplicados de Caja para reducir riesgo de divergencia futura.
 - No se modificó lógica de negocio, servicios, SQL, pedidos, cartera, caja, inventario ni Supabase.
-
 
 ## 121.10 — Hotfix navegación Panel Mesas
 
@@ -433,7 +448,6 @@ No se agregó SQL nuevo. Esta fase solo mejora arquitectura de errores y experie
 - No se modifica `src/modules/cliente`, `src/modules/mesas` ni `src/App.jsx`.
 - Esta fase deja lista la prueba previa para Fase 34D, donde se podrá incorporar el recuadro de código en `/cliente` de manera segura.
 
-
 ## Fase 34D.1 — Hotfix recuadro código cliente visible
 
 Versión: `124.32-HOTFIX34D2-CLIENTE-LINK-PUBLICO-SIN-PWA-2026-06-26`
@@ -442,11 +456,9 @@ Se movió el recuadro **“⭐ ¿Tienes código de cliente?”** al inicio visib
 
 No se modificó `/mesas`.
 
-
 ## 124.33-HOTFIX34D3-RECUADRO-CLIENTE-DESDE-APP-2026-06-26
 
 Hotfix 34D.3: el recuadro `⭐ ¿Tienes código de cliente?` se renderiza directamente desde `App.jsx` cuando la vista es `/cliente`, antes del formulario de pedido. Se retiró el render duplicable desde `PedidoCliente.jsx`. No se modificó `/mesas`, Caja, Cartera ni reglas de pedidos.
-
 
 ## 124.38 - Hotfix 34D.8 - Bienvenida cliente especial en modal
 
@@ -455,7 +467,6 @@ Hotfix 34D.3: el recuadro `⭐ ¿Tienes código de cliente?` se renderiza direct
 - Se elimina el mensaje fijo de bienvenida dentro de la tarjeta para no ocupar espacio permanente.
 - Se corrigió la ubicación de estilos del hotfix visual anterior dentro de `appStyles`.
 - No se tocaron `/mesas`, Caja, Cartera, Pedidos Hoy ni reglas pendientes de 34E.
-
 
 ## 124.42-HOTFIX34E2-CLIENTE-RESTAURANTE-CAFETERIA-TABS-2026-06-26
 
@@ -477,21 +488,17 @@ Fase 35A: se agregó una base central para impresión térmica de informes admin
 
 Fase 35C: se reforzó la impresión térmica de `Gerencia > Caja > Informe Caja` en 58 mm y 80 mm. Ambos formatos imprimen la misma información; solo cambia la optimización visual por ancho. El informe ahora incluye resumen operativo, ajustes de Caja, ventas y gastos por método de pago, saldos de inicio, saldos del último arqueo, detalle enriquecido de gastos, arqueos realizados con saldos y fórmula validada opción 2. No se tocaron `/cliente`, `/mesas`, Pedidos Hoy, Cartera, Dashboard, SQL, guardado de pedidos ni impresión de comandas.
 
-
 ## 125.3-FASE35D-GASTOS-CARTERA-TERMICO-2026-07-01
 
 Fase 35D: se agregó impresión térmica administrativa para `Gastos Diarios` y `Cartera` en 58 mm y 80 mm. Ambos formatos imprimen la misma información; solo cambia la optimización visual por ancho. En Gastos se imprime fecha, total, resumen por categoría, resumen por método de pago y detalle de gastos. En Cartera se agregó impresión de resumen general y movimientos filtrados, incluyendo indicadores, filtros, resumen por estado, abonos por método y detalle de movimientos. No se tocaron `/cliente`, `/mesas`, Caja, Pedidos Hoy, Dashboard, SQL, guardado de pedidos ni comandas.
-
 
 ## 125.7-FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA-2026-07-01
 
 Fase 35F: cierre de impresión térmica administrativa. Se agregó ajuste fino al motor central de impresión para tablas compactas: fuente monoespaciada, tamaños diferenciados para 58 mm y 80 mm, menor padding por fila y menor separación entre columnas. Se agregó el comando `npm run thermal-cierre:check` y documentación de pruebas manuales para Pedidos Hoy, Caja, Gastos y Cartera. No se tocaron `/cliente`, `/mesas`, guardado de pedidos, SQL, comandas ni cálculos internos.
 
-
 ## 125.9 — Hotfix 35F.2: impresión térmica con letra normal 1x1
 
 Se corrigió el motor de informes térmicos administrativos para evitar letra demasiado pequeña o borrosa en 58 mm. Ahora los listados térmicos usan letra normal equivalente a ESC/POS 1x1, texto preformateado y ancho fijo, sin reducir excesivamente el tamaño. Pedidos Hoy conserva tabla compacta con Pedido, Cliente, Ubicación y Total. No se modificaron /cliente, /mesas, guardado de pedidos, SQL ni cálculos financieros.
-
 
 ## 125.10 — Hotfix 35F.3: contraste térmico 1x1
 
@@ -504,3 +511,28 @@ Fase 35A.3: se optimizó el Resumen del pedido en `/cliente` y `/mesas`. Los pro
 ## 126.4-FASE35A4-EDITAR-ACOMPANANTES-RESUMEN-2026-07-08
 
 Fase 35A.4: se agregó la opción **Editar acompañantes** directamente desde el Resumen del pedido en `/cliente` y `/mesas`, mediante un modal reutilizable. El modal permite cambiar acompañantes y observación sin regresar al paso anterior. Si el producto está agrupado, el cambio aplica a todas las unidades del grupo. En `/cliente` se respeta el mínimo de 2 acompañantes salvo cliente especial sin restricción; en `/mesas` se conserva la operación interna sin forzar mínimo. No se tocaron SQL, Caja, Cartera, Pedidos Hoy, informes térmicos, clientes especiales en catálogo ni lógica PWA/service worker de `/cliente`.
+
+## Fase 35B.1 — Mesas Beta visual por modales
+
+Se agregó `/mesas-beta` como ruta paralela de prueba visual. Permite probar un flujo de almuerzos por ventanas modales en este orden: proteína, acompañantes, datos de mesa y resumen. La beta conserva agrupación automática, edición de cantidad y edición de acompañantes desde resumen. No guarda pedidos, no imprime, no toca Supabase y no afecta `/mesas`, `/cliente`, Caja, Cartera ni Pedidos Hoy.
+
+## 126.6-FASE35B2-MESAS-BETA-RESUMEN-PERMANENTE-2026-07-09
+
+Fase 35B.2: se ajustó `/mesas-beta` para quitar el paso modal 4 de resumen y evitar duplicidad con el panel lateral. El flujo beta queda en tres pasos por modal: proteína, acompañantes y datos de mesa. El `Resumen del pedido` queda permanente en pantalla, con agrupación automática, edición de cantidad, edición de acompañantes, borrado por grupo, subtotal, total visual y botón `+ Agregar otro almuerzo`. La ruta sigue siendo solo visual: no guarda pedidos, no imprime, no toca Supabase y no afecta `/mesas`, `/cliente`, Caja, Cartera ni Pedidos Hoy.
+
+---
+
+## Fase 35B.3 — Cliente Beta visual con resumen permanente
+
+Se creó la ruta paralela `/cliente-beta` para probar una versión visual del flujo público de cliente sin afectar `/cliente` oficial. La beta usa modales para proteína, acompañantes y datos del cliente, mantiene el resumen permanente, permite agregar varios almuerzos, agrupar productos iguales, editar cantidades y editar acompañantes desde modal. La ruta es solo visual: no guarda pedidos, no imprime, no envía a cocina y no afecta Caja, Cartera ni Pedidos Hoy.
+
+## 126.8 - Fase 35B.4 - Resumen del pedido limpio y edición de proteína
+
+- Ajuste visual del Resumen del pedido en `/cliente`, `/mesas`, `/cliente-beta` y `/mesas-beta`.
+- Los acompañantes se muestran uno debajo del otro para facilitar verificación.
+- Se retiran del resumen etiquetas de categoría y textos tipo `Base:`.
+- El plato principal queda con mayor jerarquía visual que los acompañantes.
+- El botón `Borrar` queda rojo pero más discreto.
+- Se agregan acciones partidas: `Editar proteína` y `Editar acompañantes`.
+- Nuevo modal para editar proteína/plato desde el resumen sin regresar al flujo inicial.
+- No toca SQL, Caja, Cartera, Pedidos Hoy, impresión térmica ni service worker.
