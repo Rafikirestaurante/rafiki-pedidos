@@ -1,34 +1,43 @@
 import React from "react";
-import "./styles/pwaMobile.css";
-import { createRoot } from "react-dom/client";
+import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
-import InstallPWA from "./shared/components/InstallPWA.jsx";
-import PWAUpdatePrompt from "./shared/components/PWAUpdatePrompt.jsx";
-import PWAOfflineNotice from "./shared/components/PWAOfflineNotice.jsx";
-import PWAOldVersionGuard from "./shared/components/PWAOldVersionGuard.jsx";
-import PedidosOfflineStatus from "./modules/pedidos/components/PedidosOfflineStatus.jsx";
-import { registerServiceWorker } from "./registerSW.js";
-import { esRutaPublicaCliente, prepararClientePublicoSinServiceWorker } from "./shared/utils/clientePublicoRuntime.js";
-import { activarRecuperacionPWA } from "./shared/utils/pwaRecovery.js";
-import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
+import EmployeePublicPage from "./pages/EmployeePublicPage.jsx";
+import "./styles/app.css";
+import { registerSW } from "virtual:pwa-register";
 
-activarRecuperacionPWA();
+const employeeSurface = window.location.pathname.replace(/\/$/, "") === "/empleados";
 
-if (esRutaPublicaCliente()) {
-  prepararClientePublicoSinServiceWorker().catch((error) => {
-    console.warn("No se pudo preparar /cliente como link público sin service worker:", error);
-  });
-} else {
-  registerServiceWorker();
+function configureInstallSurface() {
+  const manifest = document.querySelector('link[rel="manifest"]') || document.createElement("link");
+  manifest.setAttribute("rel", "manifest");
+  manifest.setAttribute("href", employeeSurface ? "/empleados.webmanifest" : "/manifest.webmanifest");
+  if (!manifest.parentNode) document.head.appendChild(manifest);
+
+  const favicon = document.querySelector('link[rel="icon"]');
+  if (favicon && employeeSurface) favicon.setAttribute("href", "/empleados-icon.svg");
+
+  const touchIcon = document.querySelector('link[rel="apple-touch-icon"]') || document.createElement("link");
+  touchIcon.setAttribute("rel", "apple-touch-icon");
+  touchIcon.setAttribute("href", employeeSurface ? "/empleados-icon-192.png" : "/icon-192.png");
+  if (!touchIcon.parentNode) document.head.appendChild(touchIcon);
+
+  const theme = document.querySelector('meta[name="theme-color"]');
+  if (theme) theme.setAttribute("content", employeeSurface ? "#0f5132" : "#102a43");
+
+  const description = document.querySelector('meta[name="description"]');
+  if (description && employeeSurface) description.setAttribute("content", "Consulta y confirmación de pagos recientes para empleados de Rafiki.");
+
+  if (employeeSurface) {
+    document.title = "Rafiki Empleados";
+    document.documentElement.dataset.surface = "employees";
+  }
 }
 
-createRoot(document.getElementById("root")).render(
-  <ErrorBoundary nombreModulo="Rafiki Pedidos" usarRecuperacionPWA>
-    <App />
-    <InstallPWA />
-    <PWAUpdatePrompt />
-    <PWAOfflineNotice />
-    <PWAOldVersionGuard />
-    <PedidosOfflineStatus />
-  </ErrorBoundary>
+configureInstallSurface();
+registerSW({ immediate: true });
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    {employeeSurface ? <EmployeePublicPage /> : <App />}
+  </React.StrictMode>
 );

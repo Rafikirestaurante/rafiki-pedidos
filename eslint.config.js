@@ -2,49 +2,26 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  {
-    ignores: ["dist/**", "node_modules/**", "coverage/**"]
-  },
+  { ignores: ["dist", "node_modules", "supabase/functions"] },
   js.configs.recommended,
   {
-    files: ["**/*.mjs"],
+    files: ["src/**/*.{js,jsx}"],
     languageOptions: {
-      ecmaVersion: "latest",
+      ecmaVersion: 2022,
       sourceType: "module",
-      globals: {
-        ...globals.node,
-        ...globals.es2021
-      }
+      parserOptions: { ecmaFeatures: { jsx: true } },
+      globals: { ...globals.browser }
     },
     rules: {
-      "no-console": "off",
-      "no-undef": "off",
-      "no-redeclare": "off"
+      "no-unused-vars": "off"
     }
   },
   {
-    files: ["**/*.{js,jsx}"],
+    files: ["scripts/**/*.mjs", "*.js"],
     languageOptions: {
-      ecmaVersion: "latest",
+      ecmaVersion: 2022,
       sourceType: "module",
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true
-        }
-      },
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-        ...globals.es2021
-      }
-    },
-    rules: {
-      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "no-console": "off",
-      "no-undef": "off",
-      "no-extra-boolean-cast": "warn",
-      "no-useless-escape": "warn",
-      "react/react-in-jsx-scope": "off"
+      globals: { ...globals.node }
     }
   }
 ];

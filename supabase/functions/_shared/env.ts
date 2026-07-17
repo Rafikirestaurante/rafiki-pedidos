@@ -5,9 +5,9 @@ export function requiredEnv(name: string): string {
 }
 
 export function appRedirectUrl(result: "connected" | "error" | "disconnected", detail = ""): string {
-  const appUrl = requiredEnv("RAFIKI_APP_URL").replace(/\/$/, "");
-  const url = new URL("/gerencia", appUrl);
+  const url = new URL("/", requiredEnv("APP_PUBLIC_URL").replace(/\/$/, ""));
   url.searchParams.set("gmail", result);
   if (detail) url.searchParams.set("gmail_detail", detail.slice(0, 180));
+  url.hash = "configuracion";
   return url.toString();
 }

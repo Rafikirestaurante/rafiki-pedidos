@@ -1,5 +1,4 @@
-# Fase 36A: el callback debe ser público porque Google redirige al navegador
-# sin un JWT de Supabase. La seguridad se valida mediante un state aleatorio,
-# de un solo uso y con vencimiento corto.
+project_id = "rafiki-movimientos-facturas"
+
 [functions.gmail-oauth-callback]
 verify_jwt = false
