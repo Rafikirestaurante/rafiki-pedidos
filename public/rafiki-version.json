@@ -1,6 +1,6 @@
 {
-  "version": "127.0-FASE36A-INFRAESTRUCTURA-GMAIL-API-SUPABASE-2026-07-11",
-  "phase": "Fase 36A - Infraestructura Gmail API desde Supabase",
-  "date": "2026-07-11",
-  "notes": "Agrega conexión segura de Gmail mediante OAuth 2.0 y Supabase Edge Functions, con credencial cifrada, prueba de conexión y desconexión desde Gerencia. No usa Google Sheets y no afecta Caja, Cartera, Gastos ni Pedidos."
+  "version": "126.9-FASE35B5-RESUMEN-PEDIDO-ESTILO-FINAL-2026-07-10",
+  "phase": "Fase 35B.5 - Resumen del pedido estilo final",
+  "date": "2026-07-10",
+  "notes": "Aplica el estilo final del Resumen del pedido en /cliente, /mesas, /cliente-beta y /mesas-beta: plato principal destacado, acompañantes uno debajo del otro, cafetería/parfait más limpios, sin textos de categoría/base, botón Borrar más pequeño y acciones de edición organizadas."
 }

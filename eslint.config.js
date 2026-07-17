@@ -2,26 +2,32 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  { ignores: ["dist", "node_modules", "supabase/functions"] },
+  {
+    ignores: ["dist/**", "node_modules/**", "coverage/**"]
+  },
   js.configs.recommended,
   {
-    files: ["src/**/*.{js,jsx}"],
+    files: ["**/*.{js,jsx}"],
     languageOptions: {
-      ecmaVersion: 2022,
+      ecmaVersion: "latest",
       sourceType: "module",
-      parserOptions: { ecmaFeatures: { jsx: true } },
-      globals: { ...globals.browser }
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2021
+      }
     },
     rules: {
-      "no-unused-vars": "off"
-    }
-  },
-  {
-    files: ["scripts/**/*.mjs", "*.js"],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: "module",
-      globals: { ...globals.node }
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "no-console": "off",
+      "no-undef": "off",
+      "no-useless-escape": "warn",
+      "react/react-in-jsx-scope": "off"
     }
   }
 ];

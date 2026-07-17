@@ -13,74 +13,18 @@ const caja = read("src/modules/caja/components/CajaAdmin.jsx");
 const service = read("src/modules/impresion/thermalReportService.js");
 const version = read("src/config/rafikiBuild.js");
 
-check(
-  "Caja usa servicio térmico central",
-  caja.includes("imprimirReporteTermico") && caja.includes("imprimirInformeCajaTermico")
-);
-check(
-  "Caja conserva impresión 58 y 80 mediante selector",
-  caja.includes("ThermalPrintControls") && caja.includes("onPrint={imprimirInformeCajaTermico}")
-);
-check(
-  "Caja declara misma información para ambos formatos",
-  caja.includes("misma información") && caja.includes("58/80 optimizado por ancho")
-);
-check(
-  "Caja imprime resumen operativo reforzado",
-  ["Resumen operativo", "Caja esperada", "Fin / arqueo contado", "Ingresos días anteriores"].every((texto) =>
-    caja.includes(texto)
-  )
-);
-check(
-  "Caja imprime ajustes de caja",
-  ["Ajustes de Caja", "Gastos Rafa", "Cuentas por cobrar", "Ajustes egresos"].every((texto) =>
-    caja.includes(texto)
-  )
-);
-check(
-  "Caja imprime ventas y gastos por método",
-  caja.includes("Ventas por método") &&
-    caja.includes("Gastos por método") &&
-    caja.includes("crearFilasPorMetodoTermico")
-);
-check(
-  "Caja imprime saldos de inicio y último arqueo",
-  caja.includes("Inicio del día - saldos") &&
-    caja.includes("Saldos último arqueo") &&
-    caja.includes("crearFilasSaldosTermicos")
-);
-check(
-  "Caja imprime arqueos realizados con saldos",
-  caja.includes("crearFilasArqueosTermicos") &&
-    caja.includes("Registradora / Azul") &&
-    caja.includes("Rafa / Datafono")
-);
-check(
-  "Caja imprime detalle de gastos enriquecido",
-  caja.includes("gasto.metodoPago") && caja.includes("Detalle gastos")
-);
-check(
-  "Caja conserva fórmula opción 2",
-  caja.includes("Arqueo + ingresos ant. - caja esperada") &&
-    caja.includes("Ingresos días anteriores no suben ventas ni caja esperada")
-);
-check(
-  "Servicio térmico sigue compartiendo data para 58/80",
-  service.includes("renderSecciones(secciones)") && service.includes("normalizarFormatoTermico")
-);
-check(
-  "Versión conserva Informe Caja térmico reforzado",
-  version.includes("FASE35C-INFORME-CAJA-TERMICO-REFORZADO") ||
-    version.includes("FASE35D-GASTOS-CARTERA-TERMICO") ||
-    version.includes("FASE35E-SELECTOR-TERMICO") ||
-    version.includes("HOTFIX35E1-PEDIDOS-HOY-TERMICO-COMPACTO") ||
-    version.includes("HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS") ||
-    version.includes("FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA") ||
-    version.includes("35F1-AHORRO-PAPEL-TERMICO-ESC-POS") ||
-    version.includes("35F2-TERMICO-LETRA-NORMAL-1X1") ||
-    version.includes("35F3-CONTRASTE-TERMICO-1X1") ||
-    /127\.[0-9]+-/.test(version)
-);
+check("Caja usa servicio térmico central", caja.includes("imprimirReporteTermico") && caja.includes("imprimirInformeCajaTermico"));
+check("Caja conserva impresión 58 y 80 mediante selector", caja.includes("ThermalPrintControls") && caja.includes("onPrint={imprimirInformeCajaTermico}"));
+check("Caja declara misma información para ambos formatos", caja.includes("misma información") && caja.includes("58/80 optimizado por ancho"));
+check("Caja imprime resumen operativo reforzado", ["Resumen operativo", "Caja esperada", "Fin / arqueo contado", "Ingresos días anteriores"].every((texto) => caja.includes(texto)));
+check("Caja imprime ajustes de caja", ["Ajustes de Caja", "Gastos Rafa", "Cuentas por cobrar", "Ajustes egresos"].every((texto) => caja.includes(texto)));
+check("Caja imprime ventas y gastos por método", caja.includes("Ventas por método") && caja.includes("Gastos por método") && caja.includes("crearFilasPorMetodoTermico"));
+check("Caja imprime saldos de inicio y último arqueo", caja.includes("Inicio del día - saldos") && caja.includes("Saldos último arqueo") && caja.includes("crearFilasSaldosTermicos"));
+check("Caja imprime arqueos realizados con saldos", caja.includes("crearFilasArqueosTermicos") && caja.includes("Registradora / Azul") && caja.includes("Rafa / Datafono"));
+check("Caja imprime detalle de gastos enriquecido", caja.includes("gasto.metodoPago") && caja.includes("Detalle gastos"));
+check("Caja conserva fórmula opción 2", caja.includes("Arqueo + ingresos ant. - caja esperada") && caja.includes("Ingresos días anteriores no suben ventas ni caja esperada"));
+check("Servicio térmico sigue compartiendo data para 58/80", service.includes("renderSecciones(secciones)") && service.includes("normalizarFormatoTermico"));
+check("Versión conserva Informe Caja térmico reforzado", version.includes("FASE35C-INFORME-CAJA-TERMICO-REFORZADO") || version.includes("FASE35D-GASTOS-CARTERA-TERMICO") || version.includes("FASE35E-SELECTOR-TERMICO") || version.includes("HOTFIX35E1-PEDIDOS-HOY-TERMICO-COMPACTO") || version.includes("HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS") || version.includes("FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA") || version.includes("35F1-AHORRO-PAPEL-TERMICO-ESC-POS") || version.includes("35F2-TERMICO-LETRA-NORMAL-1X1") || version.includes("35F3-CONTRASTE-TERMICO-1X1"));
 
 const errores = checks.filter((item) => !item.condicion);
 if (errores.length) {
