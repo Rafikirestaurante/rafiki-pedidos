@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.0-FASE36A-INFRAESTRUCTURA-GMAIL-API-SUPABASE-2026-07-11",
-  phase: "Fase 36A - Infraestructura Gmail API desde Supabase",
-  date: "2026-07-11",
-  fase: "36A-INFRAESTRUCTURA-GMAIL-API-SUPABASE",
+  version: "126.9-FASE35B5-RESUMEN-PEDIDO-ESTILO-FINAL-2026-07-10",
+  phase: "Fase 35B.5 - Resumen del pedido estilo final",
+  date: "2026-07-10",
+  fase: "35B5-RESUMEN-PEDIDO-ESTILO-FINAL",
   notes:
-    "Agrega la conexión segura de una cuenta Gmail mediante OAuth 2.0 y Supabase Edge Functions, con refresh token cifrado, prueba de conexión, desconexión y panel inicial en Gerencia. No usa Google Sheets, no escanea correos todavía y no modifica Caja, Cartera, Gastos ni Pedidos."
+    "Aplica el estilo final del Resumen del pedido en /cliente, /mesas, /cliente-beta y /mesas-beta: plato principal destacado, acompañantes uno debajo del otro, cafetería/parfait más limpios, sin textos de categoría/base, botón Borrar más pequeño y acciones de edición organizadas."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

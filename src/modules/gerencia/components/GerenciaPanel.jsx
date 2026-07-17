@@ -3,31 +3,12 @@ import CargandoModulo from "../../../shared/components/CargandoModulo.jsx";
 import ErrorBoundary from "../../../shared/components/ErrorBoundary.jsx";
 import { lazyConReintento } from "../../../shared/utils/lazyConReintento.js";
 
-const PanelRafaPrivado = lazyConReintento(
-  () => import("../../dashboard/components/PanelRafaPrivado.jsx"),
-  "GerenciaInformes"
-);
+const PanelRafaPrivado = lazyConReintento(() => import("../../dashboard/components/PanelRafaPrivado.jsx"), "GerenciaInformes");
 const CajaAdmin = lazyConReintento(() => import("../../caja/components/CajaAdmin.jsx"), "GerenciaCaja");
-const InventarioAdmin = lazyConReintento(
-  () => import("../../inventario/components/InventarioAdmin.jsx"),
-  "GerenciaInventario"
-);
-const CatalogoRafa = lazyConReintento(
-  () => import("../../catalogo/components/CatalogoRafa.jsx"),
-  "GerenciaCatalogo"
-);
-const GastosDiarios = lazyConReintento(
-  () => import("../../gastos/components/GastosDiarios.jsx"),
-  "GerenciaGastos"
-);
-const CarteraClientesCredito = lazyConReintento(
-  () => import("../../cartera/components/CarteraClientesCredito.jsx"),
-  "GerenciaCartera"
-);
-const ConsignacionesFacturasAdmin = lazyConReintento(
-  () => import("../../documentos/components/ConsignacionesFacturasAdmin.jsx"),
-  "GerenciaConsignacionesFacturas"
-);
+const InventarioAdmin = lazyConReintento(() => import("../../inventario/components/InventarioAdmin.jsx"), "GerenciaInventario");
+const CatalogoRafa = lazyConReintento(() => import("../../catalogo/components/CatalogoRafa.jsx"), "GerenciaCatalogo");
+const GastosDiarios = lazyConReintento(() => import("../../gastos/components/GastosDiarios.jsx"), "GerenciaGastos");
+const CarteraClientesCredito = lazyConReintento(() => import("../../cartera/components/CarteraClientesCredito.jsx"), "GerenciaCartera");
 
 const TABS_GERENCIA = [
   { id: "inicio", label: "Inicio" },
@@ -35,7 +16,6 @@ const TABS_GERENCIA = [
   { id: "caja", label: "Caja" },
   { id: "gastos", label: "Gastos" },
   { id: "cartera", label: "Cartera" },
-  { id: "documentos", label: "Consignaciones y facturas" },
   { id: "inventario", label: "Inventario" },
   { id: "catalogo", label: "Catálogo" }
 ];
@@ -50,10 +30,7 @@ export default function GerenciaPanel({
   cerrarPanelAdmin,
   navegar
 }) {
-  const [tabActiva, setTabActiva] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.has("gmail") ? "documentos" : "inicio";
-  });
+  const [tabActiva, setTabActiva] = useState("inicio");
 
   const tarjetasInicio = useMemo(
     () => [
@@ -79,12 +56,6 @@ export default function GerenciaPanel({
         titulo: "Cartera",
         texto: "Directorio de clientes crédito y base para cuentas por cobrar.",
         tab: "cartera",
-        disponible: true
-      },
-      {
-        titulo: "Consignaciones y facturas",
-        texto: "Conecta Gmail y prepara la revisión documental de movimientos y facturas.",
-        tab: "documentos",
         disponible: true
       },
       {
@@ -183,14 +154,6 @@ export default function GerenciaPanel({
         </ErrorBoundary>
       )}
 
-      {tabActiva === "documentos" && (
-        <ErrorBoundary nombreModulo="Consignaciones y facturas" usarRecuperacionPWA>
-          <Suspense fallback={<CargandoModulo texto="Cargando conexión con Gmail..." />}>
-            <ConsignacionesFacturasAdmin />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
       {tabActiva === "inventario" && puedeVerInventario && (
         <ErrorBoundary nombreModulo="Inventario gerencial" usarRecuperacionPWA>
           <Suspense fallback={<CargandoModulo texto="Cargando inventario gerencial..." />}>
@@ -217,7 +180,6 @@ export default function GerenciaPanel({
 
       {tabActiva !== "inicio" &&
         tabActiva !== "cartera" &&
-        tabActiva !== "documentos" &&
         ((tabActiva === "informes" && !puedeVerInformes) ||
           (tabActiva === "caja" && !puedeVerCaja) ||
           (tabActiva === "gastos" && !puedeVerGastos) ||
