@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import "../styles/carteraClientesCredito.css";
 import {
   activarClienteCredito,
   crearClienteCredito,
@@ -13,227 +14,45 @@ import {
   sincronizarCarteraCompleta,
 } from "../../../services/carteraService";
 import RafikiActionMenu from "../../../shared/components/RafikiActionMenu";
+import CarteraModals from "./CarteraModals";
 import RafikiBadge from "../../../shared/components/RafikiBadge";
 import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
-import RafikiModal from "../../../shared/components/RafikiModal";
 import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
-import { FORMAS_PAGO_ABONO_CARTERA, METODOS_PAGO } from "../../../shared/constants/paymentMethods";
 import { aPesosEnteros } from "../../../shared/utils/money";
 import {
   esHoyColombia,
   fechaColombiaHaceDias,
   fechaColombiaYYYYMMDD,
-  fechaDentroRangoColombia,
-  formatearFechaColombia,
-  formatearFechaHoraColombia,
 } from "../../../shared/utils/fechasColombia";
 import { listarPedidosPorCliente } from "../../../services/pedidosService";
 import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
 import ThermalPrintControls from "../../impresion/ThermalPrintControls";
 
-const FORM_INICIAL = {
-  nombre: "",
-  telefono: "",
-  observaciones: "",
-};
-
-const FILTROS_INICIALES = {
-  texto: "",
-  estado: "todos",
-  clienteId: "",
-  fechaInicio: "",
-  fechaFin: "",
-  soloConSaldo: true,
-};
-
-const METODOS_ABONO = FORMAS_PAGO_ABONO_CARTERA;
-
-const VISTA_CARTERA_INICIAL = "resumen";
-
-const ABONO_INICIAL = {
-  valorAbono: "",
-  metodoPago: METODOS_PAGO.EFECTIVO,
-  observacion: "",
-  fechaAbono: fechaColombiaYYYYMMDD(),
-};
-
-function dinero(valor) {
-  return Number(valor || 0).toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  });
-}
-
-function resumirPorEstadoMovimientos(movimientos = []) {
-  const mapa = new Map();
-  (Array.isArray(movimientos) ? movimientos : []).forEach((movimiento) => {
-    const estado = estadoCartera(movimiento);
-    const actual = mapa.get(estado) || { cantidad: 0, valor: 0, saldo: 0 };
-    actual.cantidad += 1;
-    if (estado !== "anulado") actual.valor += aPesosEnteros(movimiento.valor);
-    if (movimientoPendiente(movimiento)) actual.saldo += saldoMovimiento(movimiento);
-    mapa.set(estado, actual);
-  });
-
-  return Array.from(mapa.entries())
-    .sort(([a], [b]) => String(a).localeCompare(String(b), "es", { sensitivity: "base" }))
-    .map(([estado, datos]) => ({
-      etiqueta: `${estado} (${datos.cantidad})`,
-      valor: `${dinero(datos.valor)} · saldo ${dinero(datos.saldo)}`,
-    }));
-}
-
-function resumirAbonosPorMetodo(abonos = []) {
-  const mapa = new Map();
-  (Array.isArray(abonos) ? abonos : []).forEach((abono) => {
-    const metodo = String(abono.metodo_pago || abono.metodoPago || "Sin método").trim() || "Sin método";
-    const actual = mapa.get(metodo) || { cantidad: 0, total: 0 };
-    actual.cantidad += 1;
-    actual.total += aPesosEnteros(abono.valor_abono);
-    mapa.set(metodo, actual);
-  });
-
-  return Array.from(mapa.entries())
-    .sort(([a], [b]) => String(a).localeCompare(String(b), "es", { sensitivity: "base" }))
-    .map(([metodo, datos]) => ({
-      etiqueta: `${metodo} (${datos.cantidad})`,
-      valor: dinero(datos.total),
-    }));
-}
-
-
-function escaparHtmlExcel(valor) {
-  return String(valor ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function descargarArchivo(nombreArchivo, contenido, tipo = "application/vnd.ms-excel;charset=utf-8") {
-  const blob = new Blob([contenido], { type: tipo });
-  const url = URL.createObjectURL(blob);
-  const enlace = document.createElement("a");
-  enlace.href = url;
-  enlace.download = nombreArchivo;
-  document.body.appendChild(enlace);
-  enlace.click();
-  enlace.remove();
-  URL.revokeObjectURL(url);
-}
-
-function nombreArchivoSeguro(valor) {
-  return normalizarTexto(valor || "cartera")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "cartera";
-}
-
-function normalizarTexto(valor) {
-  return String(valor || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function formatearFecha(valor) {
-  return formatearFechaColombia(valor);
-}
-
-function formatearFechaHora(valor) {
-  return formatearFechaHoraColombia(valor);
-}
-
-function fechaDentroRango(valor, fechaInicio, fechaFin) {
-  return fechaDentroRangoColombia(valor, fechaInicio, fechaFin);
-}
-
-function estadoCartera(movimiento) {
-  return String(movimiento?.estado || "pendiente").trim().toLowerCase();
-}
-
-function saldoMovimiento(movimiento) {
-  return Number(movimiento?.saldo_movimiento ?? movimiento?.valor ?? 0) || 0;
-}
-
-function movimientoPendiente(movimiento) {
-  const estado = estadoCartera(movimiento);
-  return estado !== "pagado" && estado !== "anulado" && saldoMovimiento(movimiento) > 0;
-}
-
-function telefonoWhatsApp(telefono) {
-  const digitos = String(telefono || "").replace(/\D/g, "");
-  if (!digitos) return "";
-  if (digitos.length === 10) return `57${digitos}`;
-  return digitos;
-}
-
-function resumirLineaPedidoTexto(texto = "") {
-  return String(texto || "")
-    .split(/\n+/)
-    .map((linea) => linea.replace(/^[-•*\s]+/, "").trim())
-    .filter(Boolean)
-    .slice(0, 3)
-    .join(" · ");
-}
-
-function nombreItemPedidoCompacto(item = {}) {
-  const nombre = item.detalle_impresion
-    || item.producto
-    || item.nombre
-    || item.plato
-    || item.proteina
-    || item.tipo
-    || "Producto";
-  const cantidad = Number(item.cantidad) || 1;
-  const acompanantes = Array.isArray(item.acompanantes) && item.acompanantes.length > 0
-    ? ` · ${item.acompanantes.slice(0, 3).join(", ")}`
-    : "";
-  const tamano = item.tamano ? ` · ${item.tamano}` : "";
-  return `${cantidad} x ${nombre}${tamano}${acompanantes}`;
-}
-
-function resumenPedidoMovimiento(movimiento = {}) {
-  const items = Array.isArray(movimiento.pedido_items) ? movimiento.pedido_items : [];
-  if (items.length > 0) {
-    const resumen = items.slice(0, 3).map(nombreItemPedidoCompacto).join(" + ");
-    const restantes = items.length > 3 ? ` + ${items.length - 3} más` : "";
-    return `${resumen}${restantes}`;
-  }
-
-  const textoPedido = resumirLineaPedidoTexto(movimiento.pedido_texto_detalle);
-  if (textoPedido) return textoPedido;
-
-  return movimiento.concepto || "Pedido crédito";
-}
-
-function textoBusquedaMovimiento(movimiento) {
-  return [
-    movimiento.numero_pedido,
-    movimiento.cliente_nombre,
-    movimiento.concepto,
-    resumenPedidoMovimiento(movimiento),
-    movimiento.estado,
-    movimiento.observaciones,
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function conTiempoMaximo(promesa, ms = 18000, nombre = "consulta") {
-  let timerId = null;
-  const timeout = new Promise((_, reject) => {
-    timerId = window.setTimeout(() => {
-      reject(new Error(`${nombre} tardó demasiado en responder. Revisa la conexión e intenta actualizar nuevamente.`));
-    }, ms);
-  });
-
-  return Promise.race([promesa, timeout]).finally(() => {
-    if (timerId) window.clearTimeout(timerId);
-  });
-}
+import {
+  ABONO_INICIAL,
+  FILTROS_INICIALES,
+  FORM_INICIAL,
+  METODOS_ABONO,
+  VISTA_CARTERA_INICIAL,
+  conTiempoMaximo,
+  descargarArchivo,
+  dinero,
+  escaparHtmlExcel,
+  estadoCartera,
+  fechaDentroRango,
+  formatearFecha,
+  formatearFechaHora,
+  movimientoPendiente,
+  nombreArchivoSeguro,
+  normalizarTexto,
+  resumenPedidoMovimiento,
+  resumirAbonosPorMetodo,
+  resumirPorEstadoMovimientos,
+  saldoMovimiento,
+  telefonoWhatsApp,
+  textoBusquedaMovimiento,
+} from "../utils/carteraViewUtils";
 
 export default function CarteraClientesCredito() {
   const [clientes, setClientes] = useState([]);
@@ -937,60 +756,7 @@ export default function CarteraClientesCredito() {
 
   return (
     <section className="cartera-clientes-panel cartera-profesional-panel cartera-ui-limpia">
-      <style>{`
-        .cartera-profesional-panel .cartera-indicadores { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
-        .cartera-profesional-panel .cartera-indicador { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 12px; box-shadow: 0 8px 18px rgba(249,115,22,0.06); }
-        .cartera-profesional-panel .cartera-indicador small { display: block; color: #9a3412; font-weight: 800; margin-bottom: 4px; }
-        .cartera-profesional-panel .cartera-indicador strong { display: block; font-size: 18px; color: #431407; line-height: 1.15; }
-        .cartera-profesional-panel .cartera-indicador.neutral { background: #f8fafc; border-color: #e2e8f0; }
-        .cartera-profesional-panel .cartera-indicador.neutral small { color: #475569; }
-        .cartera-profesional-panel .cartera-indicador.neutral strong { color: #0f172a; }
-        .cartera-profesional-panel .cartera-form { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; align-items: end; margin-top: 10px; }
-        .cartera-profesional-panel .abono-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; }
-        .cartera-profesional-panel .cartera-form textarea { grid-column: 1 / -1; }
-        .cartera-profesional-panel input, .cartera-profesional-panel textarea, .cartera-profesional-panel select { width: 100%; min-height: 44px; border: 1px solid #e7e5e4; border-radius: 14px; padding: 10px 12px; font: inherit; background: #fff; }
-        .cartera-profesional-panel textarea { min-height: 76px; resize: vertical; }
-        .cartera-profesional-panel .cartera-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        .cartera-profesional-panel .cartera-quick-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; padding: 10px; border: 1px dashed #fed7aa; border-radius: 16px; background: #fffaf5; }
-        .cartera-profesional-panel .cartera-movimientos-resumen { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 8px; color: #475569; font-size: 12px; min-width: min(100%, 520px); }
-        .cartera-profesional-panel .cartera-resumen-chip { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 8px 10px; min-width: 0; }
-        .cartera-profesional-panel .section-heading .cartera-resumen-chip span { display: block; background: transparent !important; color: #64748b; min-width: 0; height: auto; border-radius: 0; box-shadow: none; padding: 0; font-size: 11px; font-weight: 800; line-height: 1.15; text-align: left; }
-        .cartera-profesional-panel .section-heading .cartera-resumen-chip strong { display: block; background: transparent !important; color: #0f172a; box-shadow: none; border-radius: 0; padding: 0; font-size: 13px; line-height: 1.2; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cartera-profesional-panel .cartera-export-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.8fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
-        .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 1040px; }
-        .cartera-profesional-panel .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 8; background: #fff7ed; box-shadow: 0 1px 0 #fed7aa; }
-        .cartera-profesional-panel .detalle-cartera { margin-top: 14px; border: 1px solid #fed7aa; border-radius: 18px; background: #fffaf5; padding: 12px; }
-        .cartera-profesional-panel .detalle-cartera h3 { margin: 0 0 8px; }
-        .cartera-profesional-panel .detalle-cartera table { min-width: 780px; }
-        .cartera-profesional-panel .ranking-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
-        .cartera-profesional-panel .ranking-card { border: 1px solid #e7e5e4; background: #fff; border-radius: 16px; padding: 12px; box-shadow: 0 8px 18px rgba(28,25,23,0.04); }
-        .cartera-profesional-panel .ranking-card h3 { margin: 0 0 8px; font-size: 16px; }
-        .cartera-profesional-panel .ranking-list { display: grid; gap: 8px; }
-        .cartera-profesional-panel .ranking-item { display: flex; justify-content: space-between; gap: 10px; border-top: 1px dashed #e7e5e4; padding-top: 8px; }
-        .cartera-profesional-panel .ranking-item:first-child { border-top: 0; padding-top: 0; }
-        .cartera-profesional-panel .ranking-item strong, .cartera-profesional-panel td strong { display: block; }
-        .cartera-profesional-panel .ranking-item small, .cartera-profesional-panel td small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
-        .cartera-profesional-panel .td-acciones { min-width: 160px; }
-        .cartera-profesional-panel .td-pedido-detalle { min-width: 260px; max-width: 420px; white-space: normal; line-height: 1.35; }
-        .cartera-profesional-panel .td-pedido-detalle small { display: block; color: #78716c; font-size: 11px; margin-top: 2px; }
-        .cartera-profesional-panel .subtle-row { background: #fffaf5; }
-        .cartera-profesional-panel .auditoria-resumen { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 16px; padding: 10px 12px; margin-top: 10px; }
-        .cartera-profesional-panel .auditoria-resumen strong { display: block; margin-bottom: 4px; }
-        .cartera-profesional-panel .auditoria-resumen span { display: inline-block; margin-right: 12px; font-size: 12px; font-weight: 800; }
-        .cartera-profesional-panel .saldo-pendiente { color: #991b1b; font-weight: 900; }
-        .cartera-profesional-panel .saldo-cero { color: #78716c; font-weight: 900; }
-        .cartera-profesional-panel .pedidos-cliente-bloque { margin-top: 14px; border: 1px solid #dbeafe; background: #f8fbff; border-radius: 18px; padding: 12px; }
-        .cartera-profesional-panel .abono-valor { color: #166534; font-weight: 900; }
-        .cartera-ui-limpia .cartera-resumen-card { margin-top: 12px; }
-        .cartera-ui-limpia .cartera-resumen-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
-        .cartera-ui-limpia .cartera-resumen-header h3 { margin: 0; color: #9a3412; }
-        .cartera-ui-limpia .cartera-table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-        @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid, .cartera-profesional-panel .cartera-movimientos-resumen { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } }
-      `}</style>
-
-      <div className="section-heading section-heading-pedidos-unificados">
+<div className="section-heading section-heading-pedidos-unificados">
         <div>
           <h2>Cartera</h2>
           <p className="muted small">Control gerencial de clientes crédito, saldos pendientes y pedidos asociados.</p>
@@ -1021,86 +787,24 @@ export default function CarteraClientesCredito() {
 
       <RafikiTabs tabs={tabsCartera} activeTab={vistaCartera} onChange={setVistaCartera} ariaLabel="Secciones de cartera" />
 
-      <RafikiModal
-        open={mostrarFormulario}
-        title={clienteEditando ? "Editar cliente crédito" : "Nuevo cliente crédito"}
-        description="Guarda solo la información básica del cliente. Los saldos se actualizan automáticamente desde pedidos y abonos."
-        onClose={limpiarFormulario}
-        size="md"
-      >
-        <form onSubmit={guardarCliente}>
-          <div className="cartera-form">
-            <input value={formulario.nombre} onChange={(e) => cambiarCampo("nombre", e.target.value)} placeholder="Nombre del cliente" />
-            <input value={formulario.telefono} onChange={(e) => cambiarCampo("telefono", e.target.value)} placeholder="Teléfono" />
-            <textarea value={formulario.observaciones} onChange={(e) => cambiarCampo("observaciones", e.target.value)} placeholder="Observaciones" />
-          </div>
-          <div className="cartera-actions">
-            <button type="submit" className="button" disabled={guardando}>{guardando ? "Guardando..." : clienteEditando ? "Guardar cambios" : "Crear cliente"}</button>
-            <button type="button" className="button light" onClick={limpiarFormulario}>Cancelar</button>
-          </div>
-        </form>
-      </RafikiModal>
-
-      <RafikiModal
-        open={Boolean(clienteAbono)}
-        title="Registrar abono"
-        description={clienteAbono ? `${clienteAbono.nombre} debe actualmente ${dinero(clienteAbono.saldo_pendiente)}. El abono se aplica automáticamente a los pedidos más antiguos.` : ""}
-        onClose={cerrarAbono}
-        size="lg"
-      >
-        {clienteAbono && (
-          <form onSubmit={guardarAbono}>
-            <div className="abono-form-grid">
-              <label>
-                Valor del abono
-                <input type="number" min="0" step="100" value={formularioAbono.valorAbono} onChange={(e) => cambiarCampoAbono("valorAbono", e.target.value)} placeholder="Ej. 50000" required />
-              </label>
-              <label>
-                Método de pago
-                <select value={formularioAbono.metodoPago} onChange={(e) => cambiarCampoAbono("metodoPago", e.target.value)}>
-                  {METODOS_ABONO.map((metodo) => <option key={metodo} value={metodo}>{metodo}</option>)}
-                </select>
-              </label>
-              <label>
-                Fecha
-                <input type="date" value={formularioAbono.fechaAbono} onChange={(e) => cambiarCampoAbono("fechaAbono", e.target.value)} />
-              </label>
-              <label>
-                Observación
-                <input value={formularioAbono.observacion} onChange={(e) => cambiarCampoAbono("observacion", e.target.value)} placeholder="Opcional" />
-              </label>
-            </div>
-            <div className="cartera-actions">
-              <button type="submit" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} disabled={guardando}>{guardando ? "Guardando..." : "Guardar abono"}</button>
-              <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAbono} disabled={guardando}>Cancelar</button>
-            </div>
-          </form>
-        )}
-      </RafikiModal>
-
-      <RafikiModal
-        open={Boolean(abonoPendienteConfirmacion)}
-        title="Confirmar abono"
-        description={abonoPendienteConfirmacion ? `Vas a registrar un abono de ${dinero(abonoPendienteConfirmacion.valor)} para ${abonoPendienteConfirmacion.clienteNombre}.` : ""}
-        onClose={() => !guardando && setAbonoPendienteConfirmacion(null)}
-        size="sm"
-        footer={(
-          <>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setAbonoPendienteConfirmacion(null)} disabled={guardando}>Cancelar</button>
-            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={confirmarRegistroAbono} disabled={guardando}>{guardando ? "Guardando..." : "Confirmar abono"}</button>
-          </>
-        )}
-      >
-        {abonoPendienteConfirmacion ? (
-          <div className="cartera-correccion-resumen">
-            <p><strong>Cliente:</strong> {abonoPendienteConfirmacion.clienteNombre}</p>
-            <p><strong>Saldo actual:</strong> {dinero(abonoPendienteConfirmacion.saldoPendiente)}</p>
-            <p><strong>Abono:</strong> {dinero(abonoPendienteConfirmacion.valor)}</p>
-            <p><strong>Nuevo saldo estimado:</strong> {dinero(Math.max(0, abonoPendienteConfirmacion.saldoPendiente - abonoPendienteConfirmacion.valor))}</p>
-            <p><strong>Método:</strong> {abonoPendienteConfirmacion.metodoPago}</p>
-          </div>
-        ) : null}
-      </RafikiModal>
+      <CarteraModals
+        mostrarFormulario={mostrarFormulario}
+        clienteEditando={clienteEditando}
+        limpiarFormulario={limpiarFormulario}
+        guardarCliente={guardarCliente}
+        formulario={formulario}
+        cambiarCampo={cambiarCampo}
+        guardando={guardando}
+        clienteAbono={clienteAbono}
+        cerrarAbono={cerrarAbono}
+        guardarAbono={guardarAbono}
+        formularioAbono={formularioAbono}
+        cambiarCampoAbono={cambiarCampoAbono}
+        metodosAbono={METODOS_ABONO}
+        abonoPendienteConfirmacion={abonoPendienteConfirmacion}
+        cerrarConfirmacionAbono={() => !guardando && setAbonoPendienteConfirmacion(null)}
+        confirmarRegistroAbono={confirmarRegistroAbono}
+      />
 
       {vistaCartera === "resumen" && (
         <section className="card card-pad cartera-resumen-card">

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import "../styles/generadorMenu.css";
 import { supabase } from "../../../supabaseClient";
-import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
 import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
 import {
   limpiarLista,
@@ -17,185 +17,25 @@ import {
 import { useAlertaRafiki } from "../../../shared/components/common";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
-const GENERADOR_MENU_DRAFT_KEY = "rafikiGeneradorMenuBorrador21J5";
-
-const PLATOS_GENERADOR_DEFECTO = [];
-
-const ACOMPANANTES_GENERADOR_DEFECTO = "";
-
-const PRODUCTOS_OCULTOS_GENERADOR = [
-  "Pechuga asada sin Salsa",
-  "Cerdo asado sin salsa",
-  "Sopas medianas sin arroz",
-  "Sopas medianas con arroz",
-  "Sancocho de pollo",
-  "Sancocho de pollo con arroz"
-];
-
-function normalizarTextoCatalogo(texto) {
-  return String(texto || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-
-function esProductoOcultoGenerador(producto) {
-  const clave = normalizarTextoCatalogo(producto?.nombre || producto);
-  return PRODUCTOS_OCULTOS_GENERADOR.some((nombre) => normalizarTextoCatalogo(nombre) === clave);
-}
-
-function clasificarPlatoVisual(producto) {
-  const nombre = producto?.nombre || "";
-  const normalizado = normalizarTextoCatalogo(nombre);
-  if (normalizado.startsWith("pechuga o cerdo")) return "pechugaCerdo";
-  if (normalizado.startsWith("pastas")) return "pastas";
-  return "guisos";
-}
-
-function nombreVisualPlato(producto) {
-  const nombre = String(producto?.nombre || "").trim();
-  const tipo = clasificarPlatoVisual(producto);
-
-  if (tipo === "pechugaCerdo") {
-    return nombre
-      .replace(/^Pechuga o cerdo\s+en\s+/i, "")
-      .replace(/^Pechuga o cerdo\s+/i, "")
-      .replace(/^salsa\s+/i, "Salsa ")
-      .trim();
-  }
-
-  if (tipo === "pastas") {
-    return nombre.replace(/^Pastas\s*/i, "").trim();
-  }
-
-  return nombre;
-}
-
-function agruparPlatosVisuales(productos) {
-  return [
-    { key: "pechugaCerdo", titulo: "Pechuga y cerdo", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "pechugaCerdo") },
-    { key: "pastas", titulo: "Pastas", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "pastas") },
-    { key: "guisos", titulo: "Guisos y demás", productos: productos.filter((producto) => clasificarPlatoVisual(producto) === "guisos") }
-  ].filter((grupo) => grupo.productos.length > 0);
-}
-
-
-function esSopaResumen(nombre) {
-  const normalizado = normalizarTextoCatalogo(nombre?.nombre || nombre);
-  return /\b(ajiaco|mote|mondongo|costilla|gallina|paticas|sancocho|sopa|sopas)\b/.test(normalizado);
-}
-
-function ordenPlatoResumen(plato) {
-  const normalizado = normalizarTextoCatalogo(plato?.nombre || plato);
-  if (esSopaResumen(plato)) return 3;
-  if (normalizado.startsWith("pechuga o cerdo") || normalizado.startsWith("pechuga ") || normalizado.startsWith("cerdo ")) return 2;
-  if (normalizado.startsWith("pastas")) return 1;
-  return 0;
-}
-
-function ordenarPlatosResumen(platos = []) {
-  return [...platos].sort((a, b) => {
-    const orden = ordenPlatoResumen(a) - ordenPlatoResumen(b);
-    if (orden !== 0) return orden;
-    return String(a?.nombre || a).localeCompare(String(b?.nombre || b), "es", { sensitivity: "base" });
-  });
-}
-
-function ordenAcompananteResumen(nombre) {
-  const normalizado = normalizarTextoCatalogo(nombre?.nombre || nombre);
-  if (normalizado.startsWith("arroz")) return 0;
-  if (normalizado.startsWith("ensalada")) return 2;
-  return 1;
-}
-
-function ordenarAcompanantesResumen(items = []) {
-  return [...items].sort((a, b) => {
-    const orden = ordenAcompananteResumen(a) - ordenAcompananteResumen(b);
-    if (orden !== 0) return orden;
-    return String(a?.nombre || a).localeCompare(String(b?.nombre || b), "es", { sensitivity: "base" });
-  });
-}
-
-function categoriaRotacionMenu(producto) {
-  const categoria = normalizarTextoCatalogo(producto?.categoria || "");
-  const nombre = normalizarTextoCatalogo(producto?.nombre || producto);
-
-  if (categoria.includes("sopa") || esSopaResumen(nombre)) return "sopas";
-  if (categoria.includes("pasta") || nombre.startsWith("pastas")) return "pastas";
-  if (categoria.includes("guiso")) return "guisos";
-
-  if (categoria.includes("plato")) {
-    if (nombre.startsWith("pechuga") || nombre.startsWith("cerdo") || nombre.startsWith("pechuga o cerdo")) return "platos";
-    return "guisos";
-  }
-
-  return null;
-}
-
-function obtenerNombresHistorialRotacion(registro) {
-  if (!registro) return [];
-  if (Array.isArray(registro.platos)) {
-    return registro.platos
-      .map((plato) => String(plato?.nombre || plato || "").trim())
-      .filter(Boolean);
-  }
-  return obtenerPlatosSinPrecio(registro);
-}
-
-function fechaDentroDeRangoMenu(fecha, dias) {
-  if (!fecha) return false;
-  const fechaRegistro = new Date(`${fecha}T12:00:00`);
-  if (Number.isNaN(fechaRegistro.getTime())) return false;
-
-  const hoy = new Date();
-  const limite = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-  limite.setDate(limite.getDate() - (Number(dias) - 1));
-  return fechaRegistro >= limite;
-}
-
-function productosRestauranteFallback() {
-  return PRODUCTOS_CATALOGO_FALLBACK
-    .filter((item) => item.linea === "Restaurante" && item.activo !== false && item.agotado !== true)
-    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
-}
-
-function filtrarCatalogoMenu(productos, categoria) {
-  return productos
-    .filter((item) => item.linea === "Restaurante" && item.categoria === categoria && item.activo !== false && item.agotado !== true)
-    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
-}
-
-function tipoAlertaGenerador(texto) {
-  const normalizado = String(texto || "").toLowerCase();
-  if (normalizado.includes("no se pudo") || normalizado.includes("error")) return "error";
-  if (normalizado.includes("selecciona") || normalizado.includes("agrega")) return "advertencia";
-  if (normalizado.includes("correctamente") || normalizado.includes("guardad") || normalizado.includes("descargad") || normalizado.includes("copiad")) return "exito";
-  return "info";
-}
-
-function tituloAlertaGenerador(tipo) {
-  if (tipo === "error") return "Revisar generador";
-  if (tipo === "advertencia") return "Falta un paso";
-  if (tipo === "exito") return "Acción realizada";
-  return "Aviso del generador";
-}
-
-function leerBorradorGeneradorMenu() {
-  if (typeof window === "undefined" || !window.localStorage) return null;
-
-  try {
-    const raw = window.localStorage.getItem(GENERADOR_MENU_DRAFT_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data || typeof data !== "object") return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
+import {
+  ACOMPANANTES_GENERADOR_DEFECTO,
+  GENERADOR_MENU_DRAFT_KEY,
+  PLATOS_GENERADOR_DEFECTO,
+  agruparPlatosVisuales,
+  categoriaRotacionMenu,
+  esProductoOcultoGenerador,
+  fechaDentroDeRangoMenu,
+  filtrarCatalogoMenu,
+  leerBorradorGeneradorMenu,
+  nombreVisualPlato,
+  normalizarTextoCatalogo,
+  obtenerNombresHistorialRotacion,
+  ordenarAcompanantesResumen,
+  ordenarPlatosResumen,
+  productosRestauranteFallback,
+  tipoAlertaGenerador,
+  tituloAlertaGenerador,
+} from "../utils/generadorMenuViewUtils";
 
 export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   const borradorInicial = leerBorradorGeneradorMenu();
@@ -1369,114 +1209,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
           </div>
         </div>
       </div>
-
-      <style>{`
-        .generador-menu { width: 100%; max-width: 100%; overflow: visible; }
-        .generador-menu, .generador-menu * { min-width: 0; }
-        .generador-menu h2 { line-height: 1.05; }
-        .generador-menu-grid { width: 100%; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 22px; align-items: start; margin-top: 18px; }
-        .generador-subtabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding: 6px; border-radius: 18px; background: #fff7ed; border: 1px solid #fed7aa; }
-        .generador-subtabs button { border: 1px solid transparent; background: transparent; color: #7c2d12; border-radius: 14px; padding: 10px 14px; font-weight: 950; cursor: pointer; }
-        .generador-subtabs button.active { background: #fff; border-color: #fdba74; box-shadow: 0 4px 12px rgba(124, 45, 18, 0.08); }
-        .historial-inteligente-menu { margin-top: 16px; }
-        .historial-inteligente-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-        .rotacion-menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
-        .rotacion-menu-card { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
-        .rotacion-menu-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-        .rotacion-menu-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
-        .rotacion-menu-columns h4 { margin: 0 0 8px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
-        .rotacion-menu-columns ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
-        .rotacion-menu-columns li { color: #3f2a1d; font-size: 13px; font-weight: 800; line-height: 1.25; }
-        .sugerencias-rotacion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
-        .sugerencia-rotacion-categoria { border: 1px dashed #fdba74; border-radius: 16px; background: #fff; padding: 12px; }
-        .sugerencia-rotacion-categoria h4 { margin: 0 0 6px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
-        .sugerencia-rotacion-categoria ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
-        .sugerencia-rotacion-categoria li { color: #3f2a1d; font-size: 13px; font-weight: 800; line-height: 1.25; }
-        .plato-menu-row { display: grid; grid-template-columns: minmax(0, 1fr) 120px 38px; gap: 8px; margin-top: 10px; align-items: center; }
-        .field { display: grid; gap: 7px; margin-bottom: 12px; }
-        .field span { font-weight: 900; color: #3f2a1d; }
-        .field input, .field textarea, .box input { width: 100%; max-width: 100%; border: 1px solid #fed7aa; border-radius: 14px; padding: 12px 13px; font: inherit; outline: none; background: #fff; box-sizing: border-box; }
-        .field input:focus, .field textarea:focus, .box input:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12); }
-        .texto-editor-menu-box { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
-        .texto-editor-menu-output { width: 100%; margin-top: 12px; border: 1px solid #fed7aa; border-radius: 16px; background: #fff; color: #2f1b10; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 13px; line-height: 1.45; resize: vertical; box-sizing: border-box; white-space: pre; }
-        .texto-editor-menu-output:focus { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12); outline: none; }
-        .preview-menu-frame { width: 100%; max-width: 100%; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 28px rgba(124,45,18,0.16); background: #fff; }
-        .preview-menu-frame img { max-width: 100%; height: auto; }
-        .generador-box-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .informe-menu-acciones { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .selector-informe-menu { margin-top: 14px; display: grid; gap: 10px; padding: 12px; border: 1px dashed #fdba74; border-radius: 16px; background: #fffaf5; }
-        .selector-informe-menu-modos { display: flex; flex-wrap: wrap; gap: 8px; }
-        .selector-informe-menu-modos button { border: 1px solid #fed7aa; background: #fff; color: #7c2d12; border-radius: 999px; padding: 8px 12px; font-weight: 950; cursor: pointer; }
-        .selector-informe-menu-modos button.active { background: #f97316; border-color: #f97316; color: #fff; box-shadow: 0 6px 16px rgba(249, 115, 22, 0.18); }
-        .selector-informe-menu-fecha, .selector-informe-menu-rango label { display: grid; gap: 6px; color: #7c2d12; font-size: 12.5px; font-weight: 950; }
-        .selector-informe-menu-rango { display: grid; grid-template-columns: repeat(2, minmax(0, 180px)); gap: 10px; }
-        .historial-menu-paginacion { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .historial-menu-paginacion span { color: #7c2d12; font-size: 13px; font-weight: 900; }
-        .history-menu-item { width: 100%; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; color: #3f2a1d; }
-        .history-menu-item span { color: #8a5a32; font-size: 13px; font-weight: 800; }
-        .history-menu-item:hover { border-color: #f97316; box-shadow: 0 4px 12px rgba(124,45,18,0.08); }
-        .informe-menu-scroll { width: 100%; max-width: 100%; margin-top: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
-        .informe-menu-tabla { width: max-content; min-width: 1080px; max-width: none; border-collapse: collapse; background: #fff; border: 1px solid #fed7aa; border-radius: 16px; overflow: hidden; }
-        .informe-menu-tabla th { background: #fff7ed; color: #7c2d12; padding: 10px 12px; border: 1px solid #fed7aa; white-space: nowrap; text-align: center; }
-        .informe-menu-dia { display: block; font-size: 13px; font-weight: 950; line-height: 1.15; }
-        .informe-menu-fecha { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 800; color: #9a3412; line-height: 1.15; }
-        .informe-menu-tabla td { vertical-align: top; width: 210px; min-width: 210px; max-width: 210px; padding: 12px 14px; border: 1px solid #fed7aa; color: #3f2a1d; }
-        .informe-menu-tabla ul { margin: 0; padding-left: 16px; display: grid; gap: 6px; }
-        .informe-menu-tabla li { font-size: 12.5px; font-weight: 800; line-height: 1.3; overflow-wrap: normal; word-break: normal; hyphens: none; white-space: normal; }
-        .download-text-button { background: linear-gradient(135deg, #dc2626, #f97316); color: #fff; border: none; box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24); }
-        .download-text-button:hover { transform: translateY(-1px); filter: brightness(1.02); }
-        .acciones-impresion-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-
-        .selector-catalogo-menu { border-color: #fed7aa; background: linear-gradient(135deg, #fff7ed, #ffffff); }
-        .selector-catalogo-lista-limpia { display: flex; flex-direction: column; gap: 18px; margin-top: 14px; }
-        .selector-catalogo-section { padding-top: 2px; border-top: 1px solid #fed7aa; }
-        .selector-catalogo-section:first-child { border-top: 0; padding-top: 0; }
-        .selector-catalogo-section-head { display: grid; grid-template-columns: minmax(160px, 0.45fr) minmax(220px, 1fr); gap: 12px; align-items: end; margin-bottom: 10px; }
-        .selector-catalogo-search { margin: 0; }
-        .selector-catalogo-search input { padding: 10px 12px; }
-        .selector-catalogo-chips { padding: 2px 0; align-content: start; margin-bottom: 8px; }
-        .selector-catalogo-chip { font-size: 12.5px; line-height: 1.2; }
-        .selector-subcategoria-visual { margin-top: 10px; }
-        .selector-subcategoria-visual h4 { margin: 0 0 8px; color: #9a3412; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
-        .resumen-menu-dia { border-color: #fdba74; background: linear-gradient(180deg, #fff7ed, #fff); }
-        .resumen-menu-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
-        .resumen-clear-button { width: auto !important; padding: 8px 10px !important; font-size: 12px; opacity: 0.86; }
-        .resumen-precios-lista { display: grid; gap: 8px; margin-top: 12px; }
-        .resumen-plato-row { margin-top: 0; grid-template-columns: minmax(180px, 1fr) 120px auto; align-items: center; }
-        .resumen-row-actions { display: flex; flex-wrap: nowrap; gap: 4px; justify-content: flex-end; align-items: center; }
-        .resumen-order-button, .resumen-delete-button { width: 30px !important; height: 30px !important; min-height: 30px !important; padding: 0 !important; border-radius: 999px !important; font-size: 14px !important; line-height: 1 !important; }
-        .resumen-order-button:disabled { opacity: 0.35; cursor: not-allowed; }
-        .resumen-delete-button { font-size: 16px !important; }
-        .resumen-acompanantes-box { margin-top: 14px; padding: 12px; border: 1px dashed #fdba74; border-radius: 18px; background: #fff; }
-        .resumen-acompanantes-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .acompanantes-manual-field textarea { min-height: 92px; }
-        @media (max-width: 860px) {
-          .generador-menu-grid { grid-template-columns: 1fr !important; gap: 16px; }
-          .rotacion-menu-grid, .rotacion-menu-columns, .sugerencias-rotacion-grid { grid-template-columns: 1fr; }
-          .selector-catalogo-section-head { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 640px) {
-          .generador-menu.card-pad { padding: 14px !important; border-radius: 22px; }
-          .generador-menu h2 { font-size: 24px; }
-          .generador-subtabs button { flex: 1 1 140px; padding: 10px 8px; }
-          .plato-menu-row { grid-template-columns: minmax(0, 1fr) 92px 34px; gap: 6px; }
-          .box.soft input, .field input, .field textarea { padding: 10px 8px; font-size: 14px; }
-          .acciones-generador .button, .generador-menu .button { width: 100%; justify-content: center; }
-          .acciones-impresion-menu { grid-template-columns: 1fr; }
-          .generador-menu .resumen-clear-button, .generador-menu .resumen-delete-button { width: auto !important; }
-          .history-menu-item { align-items: flex-start; flex-direction: column; }
-          .preview-menu-frame { border-radius: 18px; }
-          .informe-menu-tabla { min-width: 1080px; }
-          .informe-menu-tabla td { width: 165px; min-width: 165px; max-width: 165px; padding: 10px; }
-        }
-        @media (max-width: 420px) {
-          .plato-menu-row { grid-template-columns: minmax(0, 1fr) 88px 30px; }
-          .plato-menu-row .button.resumen-order-button, .plato-menu-row .button.resumen-delete-button { width: 28px !important; height: 28px !important; min-height: 28px !important; }
-          .resumen-plato-row { grid-template-columns: 1fr 92px; }
-          .resumen-row-actions { grid-column: 1 / -1; justify-content: flex-start; }
-        }
-      `}</style>
-      </section>
+</section>
     </>
   );
 }

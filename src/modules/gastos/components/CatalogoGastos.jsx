@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import "../styles/catalogoGastos.css";
 import { supabaseConfigMensaje, supabaseConfigOk } from "../../../supabaseClient";
 import {
   actualizarCategoriaGasto,
@@ -139,26 +140,7 @@ export default function CatalogoGastos() {
         <h3>💸 Catálogo de gastos</h3>
         <button type="button" className="button button-secondary" onClick={cargar} disabled={cargando}>{cargando ? "Cargando..." : "Recargar"}</button>
       </div>
-
-      <style>{`
-        .badge-estado-negro { color: #111827 !important; }
-        .catalogo-gastos-panel .pedidos-tabla-compacta { min-width: 620px; }
-        .catalogo-gastos-panel .catalogo-selector-card small { display: none; }
-        @media (max-width: 720px) {
-          .catalogo-gastos-panel { padding: 10px !important; }
-          .catalogo-gastos-panel .catalogo-selector-tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-          .catalogo-gastos-panel .catalogo-selector-card { padding: 9px 10px; border-radius: 14px; gap: 8px; }
-          .catalogo-gastos-panel .catalogo-selector-icono { width: 32px; height: 32px; border-radius: 11px; font-size: 17px; }
-          .catalogo-gastos-panel .catalogo-selector-card strong { font-size: 12px; line-height: 1.1; }
-          .catalogo-gastos-panel .grid-2 { grid-template-columns: 1fr !important; }
-          .catalogo-gastos-panel .pedidos-tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-          .catalogo-gastos-panel .pedidos-tabla-compacta { min-width: 520px; font-size: 11px; }
-          .catalogo-gastos-panel .pedidos-tabla-compacta th,
-          .catalogo-gastos-panel .pedidos-tabla-compacta td { padding: 7px 6px; }
-          .catalogo-gastos-panel .button-small { padding: 6px 8px; font-size: 11px; }
-        }
-      `}</style>
-      <div className="catalogo-selector-tarjetas" style={{ marginTop: 12 }}>
+<div className="catalogo-selector-tarjetas" style={{ marginTop: 12 }}>
         <button type="button" onClick={() => setTipo("proveedores")} className={`catalogo-selector-card ${tipo === "proveedores" ? "active" : ""}`}>
           <span className="catalogo-selector-icono">🏪</span><span><strong>Proveedores</strong><small>{proveedores.length} registros</small></span>
         </button>

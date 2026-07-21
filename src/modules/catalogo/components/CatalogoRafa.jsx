@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import "../styles/catalogoRafa.css";
 import { PRODUCTOS_CATALOGO_FALLBACK } from "../../../data/catalogoProductosData";
 import { categoriasSolicitudProductos, productosRestauranteBase } from "../../../data/solicitudProductosData";
 import { supabaseConfigOk, supabaseConfigMensaje } from "../../../supabaseClient";
@@ -644,8 +645,7 @@ export default function CatalogoRafa() {
 
   return (
     <div className="soft-box catalogo-rafa" style={{ borderColor: "#bbf7d0", background: "linear-gradient(135deg, #f0fdf4, #ffffff)" }}>
-      <style>{`.catalogo-rafa .badge-estado-negro { color: #111827 !important; }`}</style>
-      <div className="admin-top-row">
+<div className="admin-top-row">
         <h3>🧾 Catálogo Rafa</h3>
         {!esClientesEspeciales && <button type="button" className="button button-secondary" onClick={restaurarBase}>Restaurar base</button>}
       </div>

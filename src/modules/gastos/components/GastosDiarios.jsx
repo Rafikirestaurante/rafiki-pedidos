@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import "../styles/gastosDiarios.css";
 import { useAvisosRafiki, useConfirmacion } from "../../../shared/components/common";
 import { supabaseConfigMensaje, supabaseConfigOk } from "../../../supabaseClient";
 import {
@@ -452,53 +453,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
 
   return (
     <section className={modoRapido ? "card card-pad gastos-diarios-panel gastos-rapidos-panel" : "card card-pad gastos-diarios-panel"}>
-      <style>{`
-        .gastos-diarios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 13px; }
-        .gastos-diarios-panel { font-size: 1rem; }
-        .gastos-diarios-panel h2 { font-size: clamp(1.35rem, 4vw, 1.75rem); margin-bottom: 4px; }
-        .gastos-diarios-panel h3 { font-size: 1.12rem; }
-        .gastos-diarios-panel .field-label { font-size: 0.98rem; font-weight: 800; color: #111827; }
-        .gastos-diarios-panel input, .gastos-diarios-panel textarea, .gastos-diarios-panel select { width: 100%; min-height: 46px; font-size: 1rem; border-radius: 14px; }
-        .gastos-diarios-panel textarea { line-height: 1.35; }
-        .gastos-top-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
-        .gastos-resumen-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
-        .gastos-resumen-card { border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 18px; padding: 12px 14px; background: #ffffff; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045); font-size: 0.98rem; }
-        .gastos-resumen-card strong { display: block; color: #111827; font-size: 1.08rem; }
-        .gastos-tabla-wrap { overflow-x: auto; margin-top: 12px; border-radius: 16px; border: 1px solid rgba(15, 23, 42, 0.08); }
-        .gastos-tabla { width: 100%; border-collapse: collapse; min-width: 760px; background: #fff; }
-        .gastos-tabla th, .gastos-tabla td { padding: 10px 11px; border-bottom: 1px solid rgba(15, 23, 42, 0.08); text-align: left; vertical-align: top; font-size: 0.95rem; }
-        .gastos-tabla th { position: sticky; top: 0; z-index: 2; background: #fff7ed; color: #111827; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
-        .gastos-informe-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
-        .gastos-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
-        .gastos-rapidos-panel { max-width: 720px; margin: 0 auto; }
-        .gastos-rapidos-panel .gastos-formulario-box { padding: 16px; }
-        .gastos-formulario-box { margin-top: 0; }
-        .gastos-boton-guardar { min-height: 52px; font-size: 1.02rem; }
-        .gastos-recurrentes-rapidos { margin-top: 10px; margin-bottom: 12px; border: 1px solid rgba(180, 83, 9, 0.14); border-radius: 14px; padding: 8px; background: #fffaf0; }
-        .gastos-recurrentes-botones { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-        .gastos-recurrente-btn { border: 1px solid rgba(146, 64, 14, 0.20); background: #fff7ed; color: #111827; border-radius: 999px; padding: 8px 12px; cursor: pointer; text-align: center; font-size: 0.92rem; font-weight: 900; line-height: 1; min-height: 34px; }
-        .gastos-inventario-box { margin-top: 12px; border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 16px; padding: 12px; background: #f8fafc; }
-        .gastos-inventario-toggle { display: flex; align-items: flex-start; gap: 10px; font-weight: 900; color: #111827; }
-        .gastos-inventario-toggle input { width: 20px !important; min-height: 20px !important; margin-top: 2px; }
-        .gastos-inventario-linea { display: grid; grid-template-columns: minmax(180px, 1fr) 130px auto; gap: 8px; align-items: end; margin-top: 8px; }
-        .gastos-inventario-linea button { min-height: 42px; }
-        .gastos-valor-negativo { color: #b91c1c; }
-
-        @media (max-width: 720px) {
-          .gastos-diarios-grid { grid-template-columns: 1fr; }
-          .gastos-informe-header { align-items: stretch; }
-          .gastos-informe-header label { width: 100%; }
-          .gastos-top-actions { justify-content: stretch; }
-          .gastos-top-actions .button, .gastos-top-actions .mini-btn { width: 100%; }
-          .gastos-tabla { min-width: 620px; }
-          .gastos-rapidos-panel { border-radius: 18px; padding: 12px; }
-          .gastos-recurrentes-botones { gap: 5px; }
-          .gastos-recurrente-btn { flex: 0 1 auto; padding: 9px 11px; font-size: 0.92rem; }
-          .gastos-inventario-linea { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div className="gastos-rapidos-header section-title-row">
+<div className="gastos-rapidos-header section-title-row">
         <div>
           <h2>{modoRapido ? "💸 Registrar gasto rápido" : "💸 Gastos Diarios"}</h2>
           {!modoRapido ? <p className="muted">Registra gastos en una ventana enfocada y revisa el informe sin sobrecargar la pantalla.</p> : null}
