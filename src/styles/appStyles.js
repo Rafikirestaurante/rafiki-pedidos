@@ -3954,4 +3954,122 @@ body.rafiki-modal-open {
 }
 
 
+/* Fase 36B.1B - Filtros del gráfico de barras */
+.ventas-barras-heading {
+  align-items: center;
+}
+
+.ventas-barras-filtros {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 14px;
+  background: var(--rafiki-bg);
+}
+
+.ventas-barras-filtros button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rafiki-text-soft);
+  font-weight: 900;
+}
+
+.ventas-barras-filtros button:hover,
+.ventas-barras-filtros button:focus-visible {
+  background: var(--rafiki-border-soft);
+}
+
+.ventas-barras-filtros button.active {
+  background: var(--rafiki-brand);
+  color: white;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, .22);
+}
+
+.ventas-barras-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.ventas-barras-resumen > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 14px;
+  background: var(--rafiki-surface-soft);
+}
+
+.ventas-barras-resumen span {
+  color: var(--rafiki-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.ventas-barras-resumen strong {
+  overflow-wrap: anywhere;
+  font-size: clamp(16px, 2vw, 21px);
+  line-height: 1.1;
+}
+
+.ventas-barras-resumen small {
+  color: var(--rafiki-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ventas-barras-ayuda {
+  margin: 10px 0 0;
+  color: var(--rafiki-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ventas-barras.metrica-pedidos .ventas-barra-pista i {
+  background: linear-gradient(180deg, var(--rafiki-brand-warm), var(--rafiki-brand-strong));
+}
+
+.ventas-barras.metrica-ticket .ventas-barra-pista i {
+  background: linear-gradient(180deg, var(--rafiki-brand), var(--rafiki-brand-strong));
+}
+
+@media (max-width: 900px) {
+  .ventas-barras-heading {
+    align-items: flex-start;
+  }
+
+  .ventas-barras-filtros {
+    width: 100%;
+  }
+
+  .ventas-barras-filtros button {
+    flex: 1 1 130px;
+  }
+}
+
+@media (max-width: 560px) {
+  .ventas-barras-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .ventas-barras-filtros {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .ventas-barras-filtros button {
+    width: 100%;
+  }
+}
+
+
 `;
