@@ -3522,4 +3522,436 @@ body.rafiki-modal-open {
 }
 
 
+/* Fase 36B.1 - Calendario y barras mensuales de ventas */
+.ventas-mes-dashboard {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding: 20px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 24px;
+  background: linear-gradient(160deg, var(--rafiki-surface) 0%, var(--rafiki-surface-soft) 100%);
+  box-shadow: 0 14px 34px rgba(120, 53, 15, 0.08);
+}
+
+.ventas-mes-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.ventas-mes-header h3 {
+  margin: 4px 0 5px;
+  font-size: clamp(22px, 3vw, 30px);
+}
+
+.ventas-mes-header p,
+.ventas-mes-panel-heading p {
+  margin: 0;
+  color: var(--rafiki-muted);
+}
+
+.ventas-mes-kicker {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--rafiki-border-soft);
+  color: var(--rafiki-brand-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.ventas-mes-navegacion {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ventas-mes-navegacion > strong {
+  min-width: 150px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.ventas-mes-navegacion .mini-btn {
+  min-width: 42px;
+  min-height: 42px;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.ventas-mes-actual {
+  min-height: 42px;
+  padding: 8px 12px;
+}
+
+.ventas-mes-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+}
+
+.ventas-mes-metrica {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 18px;
+  background: var(--rafiki-surface);
+}
+
+.ventas-mes-metrica span {
+  color: var(--rafiki-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.ventas-mes-metrica strong {
+  overflow-wrap: anywhere;
+  color: var(--rafiki-text);
+  font-size: clamp(19px, 2.4vw, 27px);
+  line-height: 1.05;
+}
+
+.ventas-mes-metrica small {
+  color: var(--rafiki-muted);
+  font-weight: 800;
+}
+
+.ventas-mes-selector {
+  display: inline-flex;
+  width: fit-content;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 16px;
+  background: var(--rafiki-bg);
+}
+
+.ventas-mes-selector button {
+  border: 0;
+  border-radius: 11px;
+  padding: 9px 14px;
+  background: transparent;
+  color: var(--rafiki-text-soft);
+  font-weight: 900;
+}
+
+.ventas-mes-selector button.active {
+  background: var(--rafiki-brand);
+  color: white;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, .24);
+}
+
+.ventas-mes-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 20px;
+  background: var(--rafiki-surface);
+}
+
+.ventas-mes-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.ventas-mes-panel-heading h4 {
+  margin: 0 0 3px;
+  font-size: 18px;
+}
+
+.ventas-mes-leyenda {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--rafiki-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.ventas-mes-leyenda i {
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 5px;
+}
+
+.ventas-calendario-scroll,
+.ventas-barras-scroll {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 5px;
+}
+
+.ventas-calendario {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(100px, 1fr));
+  gap: 7px;
+  min-width: 760px;
+}
+
+.ventas-calendario-dia-semana {
+  padding: 5px;
+  color: var(--rafiki-muted);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ventas-calendario-vacio {
+  min-height: 104px;
+  border-radius: 15px;
+  background: var(--rafiki-bg);
+  opacity: .5;
+}
+
+.ventas-calendario-celda {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  gap: 5px;
+  min-height: 104px;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 15px;
+  background: var(--rafiki-surface);
+  color: var(--rafiki-text);
+  text-align: left;
+}
+
+.ventas-calendario-celda:hover {
+  border-color: var(--rafiki-brand);
+  box-shadow: 0 8px 18px rgba(120, 53, 15, .10);
+  transform: translateY(-1px);
+}
+
+.ventas-calendario-celda.nivel-1,
+.ventas-mes-leyenda .nivel-1 { background: #fff7ed; }
+.ventas-calendario-celda.nivel-2,
+.ventas-mes-leyenda .nivel-2 { background: #ffedd5; }
+.ventas-calendario-celda.nivel-3,
+.ventas-mes-leyenda .nivel-3 { background: #fed7aa; }
+.ventas-calendario-celda.nivel-4,
+.ventas-mes-leyenda .nivel-4 { background: #fdba74; }
+
+.ventas-calendario-celda.es-mejor-dia {
+  border: 2px solid var(--rafiki-brand-strong);
+  box-shadow: 0 8px 22px rgba(194, 65, 12, .18);
+}
+
+.ventas-calendario-numero {
+  width: fit-content;
+  color: var(--rafiki-text-soft);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.ventas-calendario-mejor {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--rafiki-brand-strong);
+  color: white;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ventas-calendario-celda strong {
+  margin-top: auto;
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.ventas-calendario-celda small {
+  color: var(--rafiki-text-soft);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ventas-barras {
+  display: grid;
+  grid-template-columns: repeat(var(--ventas-dias), minmax(42px, 1fr));
+  align-items: end;
+  gap: 7px;
+  min-width: 1100px;
+  height: 310px;
+  padding: 24px 4px 2px;
+  border-bottom: 2px solid var(--rafiki-border-strong);
+  background-image: linear-gradient(to bottom, transparent 24%, var(--rafiki-border-soft) 25%, transparent 26%, transparent 49%, var(--rafiki-border-soft) 50%, transparent 51%, transparent 74%, var(--rafiki-border-soft) 75%, transparent 76%);
+}
+
+.ventas-barra-columna {
+  display: grid;
+  grid-template-rows: 34px 1fr 23px;
+  align-items: end;
+  gap: 4px;
+  height: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--rafiki-text);
+}
+
+.ventas-barra-valor {
+  display: block;
+  overflow: hidden;
+  color: var(--rafiki-muted);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: rotate(-42deg);
+  transform-origin: center;
+}
+
+.ventas-barra-pista {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 9px 9px 3px 3px;
+  background: var(--rafiki-bg);
+}
+
+.ventas-barra-pista i {
+  display: block;
+  width: 72%;
+  min-height: 0;
+  border-radius: 8px 8px 2px 2px;
+  background: linear-gradient(180deg, var(--rafiki-brand-warm), var(--rafiki-brand));
+  transition: height .2s ease, filter .2s ease;
+}
+
+.ventas-barra-columna:hover .ventas-barra-pista i,
+.ventas-barra-columna:focus-visible .ventas-barra-pista i {
+  filter: saturate(1.25) brightness(.96);
+}
+
+.ventas-barra-columna.es-mejor-dia .ventas-barra-pista i {
+  background: linear-gradient(180deg, var(--rafiki-brand-strong), #9a3412);
+  box-shadow: 0 0 0 2px rgba(154, 52, 18, .15);
+}
+
+.ventas-barra-columna > strong {
+  text-align: center;
+  font-size: 11px;
+}
+
+.ventas-mes-vacio {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px dashed var(--rafiki-border-strong);
+  border-radius: 17px;
+  background: var(--rafiki-bg);
+  color: var(--rafiki-muted);
+  text-align: center;
+}
+
+.ventas-mes-vacio strong { color: var(--rafiki-text); }
+
+.ventas-mes-nota {
+  margin: 0;
+  color: var(--rafiki-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ventas-dia-detalle {
+  display: grid;
+  gap: 14px;
+}
+
+.ventas-dia-destacado {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--rafiki-brand), var(--rafiki-brand-warm));
+  color: white;
+}
+
+.ventas-dia-destacado span {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.ventas-dia-destacado strong {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.ventas-dia-resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ventas-dia-resumen-grid > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 14px;
+  background: var(--rafiki-surface);
+}
+
+.ventas-dia-resumen-grid span {
+  color: var(--rafiki-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .ventas-mes-header,
+  .ventas-mes-panel-heading {
+    flex-direction: column;
+  }
+
+  .ventas-mes-navegacion {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .ventas-mes-metricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .ventas-mes-dashboard { padding: 14px; border-radius: 20px; }
+  .ventas-mes-metricas { grid-template-columns: 1fr; }
+  .ventas-mes-selector { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  .ventas-mes-selector button { padding: 9px 7px; font-size: 12px; }
+  .ventas-mes-navegacion > strong { flex: 1 1 120px; min-width: 0; }
+  .ventas-mes-actual { width: 100%; }
+  .ventas-mes-panel { padding: 12px; }
+  .ventas-dia-resumen-grid { grid-template-columns: 1fr; }
+}
+
+
 `;
