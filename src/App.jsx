@@ -18,7 +18,6 @@ import { consolidarItemsResumenPedido, normalizarCantidadResumen } from "./share
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import CargandoModulo from "./shared/components/CargandoModulo";
 import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
-import { lazyConReintento } from "./shared/utils/lazyConReintento.js";
 import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
@@ -29,70 +28,25 @@ import { usePedidosHoy } from "./shared/hooks/usePedidosHoy";
 import { useMenuDiario } from "./shared/hooks/useMenuDiario";
 import { usePedidos } from "./shared/hooks/usePedidos";
 
-const InicioRafiki = lazyConReintento(
-  () =>
-    import("./modules/admin/components/auth/InicioAdmin").then((modulo) => ({
-      default: modulo.InicioRafiki
-    })),
-  "InicioRafiki"
-);
-const AdminLogin = lazyConReintento(
-  () =>
-    import("./modules/admin/components/auth/InicioAdmin").then((modulo) => ({ default: modulo.AdminLogin })),
-  "AdminLogin"
-);
-const AdminHeaderTabs = lazyConReintento(
-  () => import("./modules/admin/components/layout/AdminHeaderTabs"),
-  "AdminHeaderTabs"
-);
-const AdminPedidosSection = lazyConReintento(
-  () => import("./modules/admin/components/pedidos/AdminPedidosSection"),
-  "AdminPedidosSection"
-);
-const MenuDiarioTab = lazyConReintento(() => import("./modules/admin/tabs/MenuDiarioTab"), "MenuDiarioTab");
-const PedidoCliente = lazyConReintento(
-  () => import("./modules/cliente/components/PedidoCliente"),
-  "PedidoCliente"
-);
-const ConfirmacionPedidoCliente = lazyConReintento(
-  () => import("./modules/cliente/components/ConfirmacionPedidoCliente"),
-  "ConfirmacionPedidoCliente"
-);
-
-const SolicitudProductos = lazyConReintento(
-  () => import("./modules/catalogo/components/SolicitudProductos"),
-  "SolicitudProductos"
-);
-const GeneradorMenu = lazyConReintento(
-  () => import("./modules/catalogo/components/GeneradorMenu"),
-  "GeneradorMenu"
-);
-const PanelMesasPOS = lazyConReintento(() => import("./modules/mesas/components/PanelMesas"), "PanelMesas");
-const PanelMesasBeta = lazyConReintento(
-  () => import("./modules/mesas/components/PanelMesasBeta"),
-  "PanelMesasBeta"
-);
-const PanelClienteBeta = lazyConReintento(
-  () => import("./modules/cliente/components/PanelClienteBeta"),
-  "PanelClienteBeta"
-);
-const PanelRafaPrivado = lazyConReintento(
-  () => import("./modules/dashboard/components/PanelRafaPrivado"),
-  "PanelRafaPrivado"
-);
-const CatalogoRafa = lazyConReintento(
-  () => import("./modules/catalogo/components/CatalogoRafa"),
-  "CatalogoRafa"
-);
-const InventarioAdmin = lazyConReintento(
-  () => import("./modules/inventario/components/InventarioAdmin"),
-  "InventarioAdmin"
-);
-const CajaAdmin = lazyConReintento(() => import("./modules/caja/components/CajaAdmin"), "CajaAdmin");
-const GerenciaPanel = lazyConReintento(
-  () => import("./modules/gerencia/components/GerenciaPanel"),
-  "GerenciaPanel"
-);
+import {
+  AdminHeaderTabs,
+  AdminLogin,
+  AdminPedidosSection,
+  CajaAdmin,
+  CatalogoRafa,
+  ConfirmacionPedidoCliente,
+  GeneradorMenu,
+  GerenciaPanel,
+  InicioRafiki,
+  InventarioAdmin,
+  MenuDiarioTab,
+  PanelClienteBeta,
+  PanelMesasBeta,
+  PanelMesasPOS,
+  PanelRafaPrivado,
+  PedidoCliente,
+  SolicitudProductos,
+} from "./app/lazyModules";
 
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
 
