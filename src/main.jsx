@@ -1,20 +1,22 @@
-import React from "react";
+import "./styles/app.css";
 import "./styles/pwaMobile.css";
+import { lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
-import InstallPWA from "./shared/components/InstallPWA.jsx";
-import PWAUpdatePrompt from "./shared/components/PWAUpdatePrompt.jsx";
-import PWAOfflineNotice from "./shared/components/PWAOfflineNotice.jsx";
-import PWAOldVersionGuard from "./shared/components/PWAOldVersionGuard.jsx";
-import PedidosOfflineStatus from "./modules/pedidos/components/PedidosOfflineStatus.jsx";
 import { registerServiceWorker } from "./registerSW.js";
-import { esRutaPublicaCliente, prepararClientePublicoSinServiceWorker } from "./shared/utils/clientePublicoRuntime.js";
+import {
+  esRutaPublicaCliente,
+  prepararClientePublicoSinServiceWorker
+} from "./shared/utils/clientePublicoRuntime.js";
 import { activarRecuperacionPWA } from "./shared/utils/pwaRecovery.js";
 import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
 
+const PWAInternalRuntime = lazy(() => import("./shared/components/PWAInternalRuntime.jsx"));
+const rutaPublicaCliente = esRutaPublicaCliente();
+
 activarRecuperacionPWA();
 
-if (esRutaPublicaCliente()) {
+if (rutaPublicaCliente) {
   prepararClientePublicoSinServiceWorker().catch((error) => {
     console.warn("No se pudo preparar /cliente como link público sin service worker:", error);
   });
@@ -25,10 +27,10 @@ if (esRutaPublicaCliente()) {
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary nombreModulo="Rafiki Pedidos" usarRecuperacionPWA>
     <App />
-    <InstallPWA />
-    <PWAUpdatePrompt />
-    <PWAOfflineNotice />
-    <PWAOldVersionGuard />
-    <PedidosOfflineStatus />
+    {!rutaPublicaCliente && (
+      <Suspense fallback={null}>
+        <PWAInternalRuntime />
+      </Suspense>
+    )}
   </ErrorBoundary>
 );

@@ -1,4 +1,3 @@
-import React from "react";
 
 export default function RafikiEmptyState({ icon = "📋", title = "Sin información", description, action }) {
   return (

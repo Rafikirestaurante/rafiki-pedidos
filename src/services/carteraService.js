@@ -1,6 +1,14 @@
 import { supabase, supabaseConfigOk } from "../supabaseClient";
-import { METODOS_PAGO, esMetodoPagoCredito, normalizarMetodoPago } from "../shared/constants/paymentMethods";
+import { METODOS_PAGO, esMetodoPagoCredito } from "../shared/constants/paymentMethods";
 import { aPesosEnteros, valoresPesosDiferentes } from "../shared/utils/money";
+import {
+  calcularEstadoMovimientoCredito,
+  calcularResumenClienteCredito,
+  evaluarRetiroPedidoCredito,
+  normalizarDatosAbono,
+  pedidoDebeSalirDeCartera,
+  pedidoEstaDescartado,
+} from "../shared/utils/financialFlows";
 import { asegurarClienteCredito, normalizarNombreClienteCredito } from "./clientesCreditoService";
 
 export const SELECT_CARTERA_MOVIMIENTOS = [
@@ -57,32 +65,8 @@ function esPagoCredito(tipoPago) {
   return esMetodoPagoCredito(tipoPago);
 }
 
-function estadoDesdeSaldo(saldo) {
-  return normalizarNumero(saldo) <= 0 ? "pagado" : "parcial";
-}
-
-function movimientoTieneSaldo(movimiento) {
-  const estado = String(movimiento?.estado || "").toLowerCase();
-  if (estado === "pagado" || estado === "anulado") return false;
-  return normalizarNumero(movimiento?.saldo_movimiento ?? movimiento?.valor) > 0;
-}
-
 function movimientoNoAnulado(movimiento) {
   return String(movimiento?.estado || "").toLowerCase() !== "anulado";
-}
-
-function pedidoEstaBorrado(pedido) {
-  return String(pedido?.estado || "").trim().toLowerCase() === "borrado";
-}
-
-function pedidoEstaAnulado(pedido) {
-  return String(pedido?.estado || "").trim().toLowerCase() === "anulado";
-}
-
-function estadoPendienteDesdeAbonos(saldo, abonosAplicados = 0) {
-  const saldoNormalizado = normalizarNumero(saldo);
-  if (saldoNormalizado <= 0) return "pagado";
-  return normalizarNumero(abonosAplicados) > 0 ? "parcial" : "pendiente";
 }
 
 function valoresDiferentes(a, b) {
@@ -243,10 +227,18 @@ export async function sincronizarCarteraPedido(pedido = {}, opciones = {}) {
   const { abonosPorMovimiento } = await cargarAbonosPorMovimientos(movimientos);
   const movimientosNoAnulados = movimientos.filter(movimientoNoAnulado);
   const clientesAfectados = new Set(movimientos.map((movimiento) => movimiento.cliente_credito_id).filter(Boolean));
-  const tieneAbonos = Array.from(abonosPorMovimiento.values()).some((valor) => normalizarNumero(valor) > 0);
-  const debeAnular = pedidoEstaBorrado(pedido) || pedidoEstaAnulado(pedido) || !esPagoCredito(pedido.tipo_pago);
+  const totalAbonos = Array.from(abonosPorMovimiento.values()).reduce(
+    (total, valor) => total + normalizarNumero(valor),
+    0
+  );
+  const evaluacionRetiro = evaluarRetiroPedidoCredito({
+    pedido,
+    movimientosActivos: movimientosNoAnulados,
+    totalAbonos,
+    forzar: Boolean(opciones.forzarAnulacion || opciones.forzar),
+  });
 
-  if (debeAnular) {
+  if (pedidoDebeSalirDeCartera(pedido)) {
     if (movimientosNoAnulados.length === 0) {
       const idsClientes = Array.from(clientesAfectados);
       await Promise.all(idsClientes.map((clienteId) => recalcularResumenClienteCredito(clienteId)));
@@ -258,8 +250,8 @@ export async function sincronizarCarteraPedido(pedido = {}, opciones = {}) {
       };
     }
 
-    if (tieneAbonos && !opciones.forzarAnulacion && !opciones.forzar) {
-      throw new Error("Este pedido ya tiene abonos registrados. Revisa el historial antes de retirarlo de crédito.");
+    if (!evaluacionRetiro.permitido) {
+      throw new Error(evaluacionRetiro.mensaje);
     }
 
     const { anulados } = await anularMovimientosPedido({ movimientos: movimientosNoAnulados, motivo: motivoBase });
@@ -353,8 +345,9 @@ export async function sincronizarCarteraPedido(pedido = {}, opciones = {}) {
   }
 
   const abonosPrincipal = normalizarNumero(abonosPorMovimiento.get(principal.id)) + abonosMovidosValor;
-  const saldoEsperado = Math.max(0, total - abonosPrincipal);
-  const estadoEsperado = estadoPendienteDesdeAbonos(saldoEsperado, abonosPrincipal);
+  const estadoMovimiento = calcularEstadoMovimientoCredito({ total, abonosAplicados: abonosPrincipal });
+  const saldoEsperado = estadoMovimiento.saldo;
+  const estadoEsperado = estadoMovimiento.estado;
   const cambios = {
     ...payloadComun,
     saldo_movimiento: saldoEsperado,
@@ -574,7 +567,7 @@ export async function sincronizarCarteraCompleta({ limite = 2000 } = {}) {
 
     const resultado = await sincronizarCarteraPedido(pedido, {
       accion: "auditoria_cartera",
-      motivo: pedidoEstaBorrado(pedido)
+      motivo: pedidoEstaDescartado(pedido)
         ? "Movimiento anulado automáticamente porque el pedido fue borrado."
         : !esPagoCredito(pedido.tipo_pago)
           ? `Movimiento anulado automáticamente porque el pedido ya no está marcado como crédito. Pago actual: ${pedido.tipo_pago || "Sin pago"}.`
@@ -584,8 +577,8 @@ export async function sincronizarCarteraCompleta({ limite = 2000 } = {}) {
 
     anulados += resultado.anulados || 0;
     duplicadosAnulados += resultado.duplicadosAnulados || 0;
-    if (pedidoEstaBorrado(pedido)) anuladosBorrados += resultado.anulados || 0;
-    if (!pedidoEstaBorrado(pedido) && !esPagoCredito(pedido.tipo_pago)) anuladosNoCredito += resultado.anulados || 0;
+    if (pedidoEstaDescartado(pedido)) anuladosBorrados += resultado.anulados || 0;
+    if (!pedidoEstaDescartado(pedido) && !esPagoCredito(pedido.tipo_pago)) anuladosNoCredito += resultado.anulados || 0;
     if (resultado.actualizado) valoresAjustados += 1;
     (resultado.clientesRecalculados || []).forEach((clienteId) => clientesRecalculados.add(clienteId));
   }
@@ -631,26 +624,14 @@ export async function recalcularResumenClienteCredito(clienteId) {
     return null;
   }
 
-  const lista = Array.isArray(movimientos) ? movimientos : [];
-  const movimientosActivos = lista.filter((movimiento) => String(movimiento.estado || "").toLowerCase() !== "anulado");
-  const pedidos = movimientosActivos.length;
-  const saldo = movimientosActivos.reduce((total, movimiento) => {
-    const estado = String(movimiento.estado || "").toLowerCase();
-    if (estado === "pagado" || estado === "anulado") return total;
-    return total + normalizarNumero(movimiento.saldo_movimiento ?? movimiento.valor);
-  }, 0);
-  const ultimaFecha = movimientosActivos
-    .map((movimiento) => movimiento.fecha_movimiento)
-    .filter(Boolean)
-    .sort()
-    .pop() || null;
+  const resumen = calcularResumenClienteCredito(Array.isArray(movimientos) ? movimientos : []);
 
   const { data, error: errorUpdate } = await supabase
     .from("clientes_credito")
     .update({
-      total_pedidos: pedidos,
-      saldo_pendiente: saldo,
-      fecha_ultimo_pedido: ultimaFecha,
+      total_pedidos: resumen.totalPedidos,
+      saldo_pendiente: resumen.saldoPendiente,
+      fecha_ultimo_pedido: resumen.fechaUltimoPedido,
     })
     .eq("id", clienteId)
     .select("id,nombre,total_pedidos,saldo_pendiente,fecha_ultimo_pedido")
@@ -764,20 +745,16 @@ export async function registrarAbonoClienteCredito({
 } = {}) {
   if (!supabaseConfigOk || !clienteId) return null;
 
-  const valor = normalizarNumero(valorAbono);
-  if (valor <= 0) throw new Error("El valor del abono debe ser mayor a cero.");
-
-  const metodoPagoControlado = normalizarMetodoPago(metodoPago, {
-    permitirCredito: false,
-    fallback: METODOS_PAGO.EFECTIVO,
-  });
+  const datosAbono = normalizarDatosAbono({ valorAbono, metodoPago, observacion });
+  const valor = datosAbono.valor;
+  const metodoPagoControlado = datosAbono.metodoPago;
   const fechaRegistro = fechaAbonoNormalizada(fechaAbono);
 
   const { data, error } = await supabase.rpc("registrar_abono_cliente_credito", {
     p_cliente_id: clienteId,
     p_valor_abono: valor,
     p_metodo_pago: metodoPagoControlado,
-    p_observacion: limpiarTexto(observacion),
+    p_observacion: datosAbono.observacion,
     p_fecha_abono: fechaRegistro,
   });
 

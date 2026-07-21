@@ -25,7 +25,7 @@ export function limpiarTexto(valor, max = 120) {
 
 export function limpiarTelefono(valor) {
   return String(valor || "")
-    .replace(/[^\d\s\+\-\(\)]/g, "")
+    .replace(/[^\d\s+()-]/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 20);
@@ -544,7 +544,7 @@ export function crearMensajePedidoListo(pedido) {
 
 
 export function pedidoClienteVaParaLlevar(comerRestauranteCliente = false) {
-  return !Boolean(comerRestauranteCliente);
+  return !comerRestauranteCliente;
 }
 
 export function normalizarItemParaDestinoCliente(item, { comerRestauranteCliente = false } = {}) {
@@ -1028,14 +1028,12 @@ export function imprimirTicketPedido(pedido) {
 
   const ventana = window.open("", "_blank", "width=420,height=900");
 
-  if (!ventana) {
-    alert("El navegador bloqueó la impresión. Permite ventanas emergentes para Rafiki Pedidos.");
-    return;
-  }
+  if (!ventana) return false;
 
   ventana.document.open();
   ventana.document.write(html);
   ventana.document.close();
+  return true;
 }
 
 export function consolidarPedidos(pedidos) {

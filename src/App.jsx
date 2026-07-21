@@ -1,8 +1,6 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase, supabaseConfigOk } from "./supabaseClient";
-import { appStyles } from "./styles/appStyles";
 import { obtenerVistaInicial, actualizarRuta } from "./shared/utils/navigation";
-import { InicioRafiki, AdminLogin } from "./modules/admin/components/auth/InicioAdmin";
 import { useConfirmacion } from "./shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
@@ -14,9 +12,7 @@ import {
   crearMensajeWhatsAppPedido,
   limpiarTelefonoWhatsApp,
   esProductoSinAcompanantes,
-  normalizarItemsParaDestinoCliente,
-  obtenerCliente,
-  obtenerEstadoPedido
+  normalizarItemsParaDestinoCliente
 } from "./shared/utils/pedidos";
 import { consolidarItemsResumenPedido, normalizarCantidadResumen } from "./shared/utils/resumenPedido";
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
@@ -27,27 +23,76 @@ import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
 } from "./shared/utils/offlinePedidos";
-import AdminHeaderTabs from "./modules/admin/components/layout/AdminHeaderTabs";
-import AdminPedidosSection from "./modules/admin/components/pedidos/AdminPedidosSection";
-import MenuDiarioTab from "./modules/admin/tabs/MenuDiarioTab";
-import PedidoCliente from "./modules/cliente/components/PedidoCliente";
-import ConfirmacionPedidoCliente from "./modules/cliente/components/ConfirmacionPedidoCliente";
 import { useRealtimePedidos } from "./shared/hooks/useRealtimePedidos";
 import { ADMIN_TABS_VALIDAS, guardarAdminTabActiva, useAuthAdmin } from "./shared/hooks/useAuthAdmin";
 import { usePedidosHoy } from "./shared/hooks/usePedidosHoy";
 import { useMenuDiario } from "./shared/hooks/useMenuDiario";
 import { usePedidos } from "./shared/hooks/usePedidos";
 
-const SolicitudProductos = lazyConReintento(() => import("./modules/catalogo/components/SolicitudProductos"), "SolicitudProductos");
-const GeneradorMenu = lazyConReintento(() => import("./modules/catalogo/components/GeneradorMenu"), "GeneradorMenu");
+const InicioRafiki = lazyConReintento(
+  () =>
+    import("./modules/admin/components/auth/InicioAdmin").then((modulo) => ({
+      default: modulo.InicioRafiki
+    })),
+  "InicioRafiki"
+);
+const AdminLogin = lazyConReintento(
+  () =>
+    import("./modules/admin/components/auth/InicioAdmin").then((modulo) => ({ default: modulo.AdminLogin })),
+  "AdminLogin"
+);
+const AdminHeaderTabs = lazyConReintento(
+  () => import("./modules/admin/components/layout/AdminHeaderTabs"),
+  "AdminHeaderTabs"
+);
+const AdminPedidosSection = lazyConReintento(
+  () => import("./modules/admin/components/pedidos/AdminPedidosSection"),
+  "AdminPedidosSection"
+);
+const MenuDiarioTab = lazyConReintento(() => import("./modules/admin/tabs/MenuDiarioTab"), "MenuDiarioTab");
+const PedidoCliente = lazyConReintento(
+  () => import("./modules/cliente/components/PedidoCliente"),
+  "PedidoCliente"
+);
+const ConfirmacionPedidoCliente = lazyConReintento(
+  () => import("./modules/cliente/components/ConfirmacionPedidoCliente"),
+  "ConfirmacionPedidoCliente"
+);
+
+const SolicitudProductos = lazyConReintento(
+  () => import("./modules/catalogo/components/SolicitudProductos"),
+  "SolicitudProductos"
+);
+const GeneradorMenu = lazyConReintento(
+  () => import("./modules/catalogo/components/GeneradorMenu"),
+  "GeneradorMenu"
+);
 const PanelMesasPOS = lazyConReintento(() => import("./modules/mesas/components/PanelMesas"), "PanelMesas");
-const PanelMesasBeta = lazyConReintento(() => import("./modules/mesas/components/PanelMesasBeta"), "PanelMesasBeta");
-const PanelClienteBeta = lazyConReintento(() => import("./modules/cliente/components/PanelClienteBeta"), "PanelClienteBeta");
-const PanelRafaPrivado = lazyConReintento(() => import("./modules/dashboard/components/PanelRafaPrivado"), "PanelRafaPrivado");
-const CatalogoRafa = lazyConReintento(() => import("./modules/catalogo/components/CatalogoRafa"), "CatalogoRafa");
-const InventarioAdmin = lazyConReintento(() => import("./modules/inventario/components/InventarioAdmin"), "InventarioAdmin");
+const PanelMesasBeta = lazyConReintento(
+  () => import("./modules/mesas/components/PanelMesasBeta"),
+  "PanelMesasBeta"
+);
+const PanelClienteBeta = lazyConReintento(
+  () => import("./modules/cliente/components/PanelClienteBeta"),
+  "PanelClienteBeta"
+);
+const PanelRafaPrivado = lazyConReintento(
+  () => import("./modules/dashboard/components/PanelRafaPrivado"),
+  "PanelRafaPrivado"
+);
+const CatalogoRafa = lazyConReintento(
+  () => import("./modules/catalogo/components/CatalogoRafa"),
+  "CatalogoRafa"
+);
+const InventarioAdmin = lazyConReintento(
+  () => import("./modules/inventario/components/InventarioAdmin"),
+  "InventarioAdmin"
+);
 const CajaAdmin = lazyConReintento(() => import("./modules/caja/components/CajaAdmin"), "CajaAdmin");
-const GerenciaPanel = lazyConReintento(() => import("./modules/gerencia/components/GerenciaPanel"), "GerenciaPanel");
+const GerenciaPanel = lazyConReintento(
+  () => import("./modules/gerencia/components/GerenciaPanel"),
+  "GerenciaPanel"
+);
 
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
 
@@ -98,12 +143,9 @@ export default function App() {
     if (vista !== "cliente") return;
 
     setItemsPedido((actual) =>
-      consolidarItemsResumenPedido(
-        normalizarItemsParaDestinoCliente(actual, { comerRestauranteCliente })
-      )
+      consolidarItemsResumenPedido(normalizarItemsParaDestinoCliente(actual, { comerRestauranteCliente }))
     );
   }, [vista, comerRestauranteCliente, itemsPedido]);
-
 
   const {
     adminTab,
@@ -194,7 +236,6 @@ export default function App() {
       setMensaje({ texto: "", tipo: "info" });
     }, 5000);
   }, []);
-
 
   const {
     pedidos,
@@ -347,7 +388,6 @@ export default function App() {
     onCambiosPendientes: marcarCambiosPedidosPendientes
   });
 
-
   const {
     menu,
     setMenu,
@@ -371,7 +411,6 @@ export default function App() {
     setItemsPedido,
     setMensajeMenu
   });
-
 
   useEffect(() => {
     if (vista !== "admin" || !adminAutenticado || adminTab !== "menu") return;
@@ -424,7 +463,6 @@ export default function App() {
     () => agruparPlatosPorCategoria(menu.platos_detalle),
     [menu.platos_detalle]
   );
-
 
   const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
   const whatsappRafikiDisponible = Boolean(limpiarTelefonoWhatsApp(WHATSAPP_RAFIKI));
@@ -497,7 +535,6 @@ export default function App() {
       irAElemento(`paso-acompanantes-${id}`);
     }
   }
-
 
   function agregarProductoCafeteriaCliente(producto) {
     if (!producto?.nombre) return;
@@ -622,7 +659,9 @@ export default function App() {
 
     setItemsPedido((actual) => {
       const restantes = actual.filter((item) => !idsGrupo.has(item.id));
-      return restantes.length === 0 ? [crearItemClienteInicial({ comerRestaurante: comerRestauranteCliente })] : restantes;
+      return restantes.length === 0
+        ? [crearItemClienteInicial({ comerRestaurante: comerRestauranteCliente })]
+        : restantes;
     });
   }
 
@@ -656,12 +695,15 @@ export default function App() {
     if (idsGrupo.size === 0) return;
 
     const acompanantes = Array.isArray(cambios.acompanantes) ? cambios.acompanantes : [];
-    const observacionAcompanantes = String(cambios.observacionAcompanantes || "").trim().slice(0, 60);
+    const observacionAcompanantes = String(cambios.observacionAcompanantes || "")
+      .trim()
+      .slice(0, 60);
 
     setItemsPedido((actual) =>
       actual.map((item) => {
         if (!idsGrupo.has(item.id)) return item;
-        if (esProductoSinAcompanantes(item)) return { ...item, acompanantes: [], observacionAcompanantes: "" };
+        if (esProductoSinAcompanantes(item))
+          return { ...item, acompanantes: [], observacionAcompanantes: "" };
 
         return {
           ...item,
@@ -767,364 +809,134 @@ export default function App() {
 
   return (
     <>
-      <style>{appStyles}</style>
       {modalConfirmacionRafiki}
 
-      <div className={`app ${vista === "mesas" || vista === "mesasBeta" ? "mesas-pos-activo" : ""}`}>
-        <div className="container">
-          {vista !== "inicio" && vista !== "admin" && vista !== "adminLogin" && vista !== "mesas" && vista !== "mesasBeta" && (
-            <header className={`topbar ${vista === "cliente" || vista === "clienteBeta" || vista === "confirmacion" ? "cliente-topbar" : ""}`}>
-              <div>
-                <div className="brand">{vista === "cliente" || vista === "clienteBeta" || vista === "confirmacion" ? "Rafiki Pedidos" : "🍽️ Rafiki Pedidos"}</div>
-              </div>
+      <Suspense fallback={<CargandoModulo texto="Cargando módulo..." />}>
+        <div className={`app ${vista === "mesas" || vista === "mesasBeta" ? "mesas-pos-activo" : ""}`}>
+          <div className="container">
+            {vista !== "inicio" &&
+              vista !== "admin" &&
+              vista !== "adminLogin" &&
+              vista !== "mesas" &&
+              vista !== "mesasBeta" && (
+                <header
+                  className={`topbar ${vista === "cliente" || vista === "clienteBeta" || vista === "confirmacion" ? "cliente-topbar" : ""}`}
+                >
+                  <div>
+                    <div className="brand">
+                      {vista === "cliente" || vista === "clienteBeta" || vista === "confirmacion"
+                        ? "Rafiki Pedidos"
+                        : "🍽️ Rafiki Pedidos"}
+                    </div>
+                  </div>
 
-              {vista === "mesas" && (
-                <div className="nav nav-wrap">
-                  <button
-                    type="button"
-                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
-                  >
-                    Admin
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
-                  >
-                    Pedidos hoy
-                  </button>
-                  {puedeVerRafa && (
-                    <button
-                      type="button"
-                      onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
-                    >
-                      Gerencia
-                    </button>
+                  {vista === "mesas" && (
+                    <div className="nav nav-wrap">
+                      <button
+                        type="button"
+                        onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
+                      >
+                        Admin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
+                      >
+                        Pedidos hoy
+                      </button>
+                      {puedeVerRafa && (
+                        <button
+                          type="button"
+                          onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
+                        >
+                          Gerencia
+                        </button>
+                      )}
+                    </div>
                   )}
-                </div>
+
+                  {vista === "inventario" && (
+                    <div className="nav nav-wrap">
+                      <button
+                        type="button"
+                        onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
+                      >
+                        Admin
+                      </button>
+                      <button type="button" onClick={() => navegar("/mesas", "mesas")}>
+                        Mesas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
+                      >
+                        Pedidos hoy
+                      </button>
+                      {puedeVerRafa && (
+                        <button
+                          type="button"
+                          onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
+                        >
+                          Gerencia
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {vista === "pedidos" && (
+                    <div className="nav nav-wrap">
+                      <button type="button" onClick={() => navegar("/mesas", "mesas")}>
+                        Mesas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
+                      >
+                        Admin
+                      </button>
+                      {puedeVerRafa && (
+                        <button
+                          type="button"
+                          onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
+                        >
+                          Gerencia
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </header>
               )}
 
-              {vista === "inventario" && (
-                <div className="nav nav-wrap">
-                  <button
-                    type="button"
-                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
-                  >
-                    Admin
-                  </button>
-                  <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-                    Mesas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
-                  >
-                    Pedidos hoy
-                  </button>
-                  {puedeVerRafa && (
-                    <button
-                      type="button"
-                      onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
-                    >
-                      Gerencia
-                    </button>
-                  )}
-                </div>
-              )}
+            {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
+            {cargando && <div className="card card-pad">Verificando sesión administrativa...</div>}
 
-              {vista === "pedidos" && (
-                <div className="nav nav-wrap">
-                  <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-                    Mesas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
-                  >
-                    Admin
-                  </button>
-                  {puedeVerRafa && (
-                    <button
-                      type="button"
-                      onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
-                    >
-                      Gerencia
-                    </button>
-                  )}
-                </div>
-              )}
-            </header>
-          )}
+            {!cargando && vista === "inicio" && <InicioRafiki navegar={navegar} />}
 
-          {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
-          {cargando && <div className="card card-pad">Verificando sesión administrativa...</div>}
-
-          {!cargando && vista === "inicio" && <InicioRafiki navegar={navegar} />}
-
-          {!cargando && vista === "inventario" && adminAutenticado && puedeVerInventario && (
-            <ErrorBoundary
-              nombreModulo="Inventario"
-              onReset={() => setRecargaPedidos((actual) => actual + 1)}
-            >
-              <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
-                <InventarioAdmin />
-              </Suspense>
-            </ErrorBoundary>
-          )}
-
-          {!cargando && vista === "inventario" && adminAutenticado && !puedeVerInventario && (
-            <section className="card card-pad">
-              <h2>Acceso restringido</h2>
-              <p className="muted">El módulo de inventario solo está disponible para el rol administrador.</p>
-              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>
-                Volver a Admin
-              </button>
-            </section>
-          )}
-
-          {!cargando && vista === "pedidos" && adminAutenticado && (
-            <main className="admin-layout admin-layout-liviano">
+            {!cargando && vista === "inventario" && adminAutenticado && puedeVerInventario && (
               <ErrorBoundary
-                nombreModulo="Pedidos Hoy"
+                nombreModulo="Inventario"
                 onReset={() => setRecargaPedidos((actual) => actual + 1)}
               >
-                <AdminPedidosSection
-                  tituloPedidos={tituloPedidos}
-                  setRecargaPedidos={setRecargaPedidos}
-                  alertaPedidoNuevo={alertaPedidoNuevo}
-                  setAlertaPedidoNuevo={setAlertaPedidoNuevo}
-                  estadoRealtimePedidos={estadoRealtimePedidos}
-                  realtimeAdminActivo={realtimeAdminActivo}
-                  cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
-                  filtroPedidos={filtroPedidos}
-                  setFiltroPedidos={setFiltroPedidos}
-                  fechaSeleccionada={fechaSeleccionada}
-                  setFechaSeleccionada={setFechaSeleccionada}
-                  fechaInicioRangoPedidos={fechaInicioRangoPedidos}
-                  setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
-                  fechaFinRangoPedidos={fechaFinRangoPedidos}
-                  setFechaFinRangoPedidos={setFechaFinRangoPedidos}
-                  hayBusquedaPedidos={hayBusquedaPedidos}
-                  setBusqueda={setBusqueda}
-                  busqueda={busqueda}
-                  busquedaNumeroPedido={busquedaNumeroPedido}
-                  setBusquedaNumeroPedido={setBusquedaNumeroPedido}
-                  buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
-                  limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
-                  resultadoNumeroPedido={resultadoNumeroPedido}
-                  cargandoNumeroPedido={cargandoNumeroPedido}
-                  errorNumeroPedido={errorNumeroPedido}
-                  cargandoPedidos={cargandoPedidos}
-                  errorCargaPedidos={errorCargaPedidos}
-                  paginacionPedidos={paginacionPedidos}
-                  cargarMasPedidos={cargarMasPedidos}
-                  pedidosFiltrados={pedidosFiltrados}
-                  pedidos={pedidos}
-                  pedidosBorrados={pedidosBorrados}
-                  pedidosPendientes={pedidosPendientes}
-                  puedeFinalizarPendientes={puedeFinalizarPendientes}
-                  finalizarTodosPendientes={finalizarTodosPendientes}
-                  finalizandoPendientes={finalizandoPendientes}
-                  cambiarEstadoPedido={cambiarEstadoPedido}
-                  guardandoEstadoPedidoId={guardandoEstadoPedidoId}
-                  puedeEliminarPedido={puedeEliminarPedido}
-                  eliminarPedidoAdministrador={eliminarPedidoAdministrador}
-                  eliminandoPedidoId={eliminandoPedidoId}
-                  puedeEditarPedido={puedeEditarPedido}
-                  editarPedidoAdministrador={editarPedidoAdministrador}
-                  cambiarFechaPedidoAdministrador={cambiarFechaPedidoAdministrador}
-                  onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
-                  editandoPedidoId={editandoPedidoId}
-                  pedidosFinalizados={pedidosFinalizados}
-                  consolidado={consolidado}
-                  pedidosActivos={pedidosActivos}
-                />
+                <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
+                  <InventarioAdmin />
+                </Suspense>
               </ErrorBoundary>
-            </main>
-          )}
+            )}
 
-          {!cargando && vista === "adminLogin" && (
-            <AdminLogin
-              adminEmail={adminEmail}
-              adminPassword={adminPassword}
-              errorClaveAdmin={errorClaveAdmin}
-              setAdminEmail={setAdminEmail}
-              setAdminPassword={setAdminPassword}
-              setErrorClaveAdmin={setErrorClaveAdmin}
-              validarClaveAdmin={validarClaveAdmin}
-              navegar={navegar}
-            />
-          )}
+            {!cargando && vista === "inventario" && adminAutenticado && !puedeVerInventario && (
+              <section className="card card-pad">
+                <h2>Acceso restringido</h2>
+                <p className="muted">
+                  El módulo de inventario solo está disponible para el rol administrador.
+                </p>
+                <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>
+                  Volver a Admin
+                </button>
+              </section>
+            )}
 
-          {!cargando && vista === "cliente" && (
-            <>
-              <PedidoCliente
-                menu={menu}
-                cargandoMenu={cargandoMenu}
-                itemsPedido={itemsPedidoOperativos}
-                itemsConProducto={itemsConProducto}
-                platosAgrupados={platosAgrupados}
-                hayProductoSeleccionado={hayProductoSeleccionado}
-                totalPedido={totalPedido}
-                cliente={cliente}
-                telefono={telefono}
-                ubicacion={ubicacion}
-                comerRestauranteCliente={comerRestauranteCliente}
-                tipoPago={tipoPago}
-                observaciones={observaciones}
-                errorDatosPedido={errorDatosPedido}
-                guardandoPedido={guardandoPedido}
-                clienteEspecialAplicado={clienteEspecialAplicado}
-                setClienteEspecialAplicado={setClienteEspecialAplicado}
-                agregarProductoCafeteriaCliente={agregarProductoCafeteriaCliente}
-                setCliente={setCliente}
-                setTelefono={setTelefono}
-                setUbicacion={setUbicacion}
-                setComerRestauranteCliente={manejarComerRestauranteCliente}
-                setTipoPago={setTipoPago}
-                setObservaciones={setObservaciones}
-                setErrorDatosPedido={setErrorDatosPedido}
-                cambiarPlatoItem={cambiarPlatoItem}
-                cambiarAcompananteItem={cambiarAcompananteItem}
-                actualizarItem={actualizarItem}
-                agregarAlmuerzo={agregarAlmuerzo}
-                eliminarAlmuerzo={eliminarAlmuerzo}
-                actualizarCantidadGrupoResumen={actualizarCantidadGrupoResumen}
-                eliminarGrupoResumen={eliminarGrupoResumen}
-                actualizarAcompanantesGrupoResumen={actualizarAcompanantesGrupoResumen}
-                actualizarProteinaGrupoResumen={actualizarProteinaGrupoResumen}
-                reiniciarPedido={reiniciarPedido}
-                irAElemento={irAElemento}
-                registrarPedido={registrarPedido}
-              />
-            </>
-          )}
-
-          {!cargando && vista === "clienteBeta" && (
-            <ErrorBoundary nombreModulo="Cliente Beta" onReset={() => setRecargaMenu((actual) => actual + 1)}>
-              <Suspense fallback={<CargandoModulo texto="Cargando cliente beta..." />}>
-                <PanelClienteBeta
-                  menu={menu}
-                  platosAgrupados={platosAgrupados}
-                  cargandoMenu={cargandoMenu}
-                  onSalirBeta={() => navegar("/cliente", "cliente")}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          )}
-
-          {!cargando && vista === "confirmacion" && pedidoFinalizado && (
-            <ConfirmacionPedidoCliente
-              pedidoFinalizado={pedidoFinalizado}
-              whatsappRafikiDisponible={whatsappRafikiDisponible}
-              linkWhatsAppFinal={linkWhatsAppFinal}
-              nuevoPedidoCliente={nuevoPedidoCliente}
-            />
-          )}
-
-          {!cargando && vista === "mesas" && (
-            <ErrorBoundary nombreModulo="Panel Mesas" usarRecuperacionPWA onReset={() => setRecargaMenu((actual) => actual + 1)}>
-              <Suspense fallback={<CargandoModulo texto="Cargando panel mesas..." />}>
-                <PanelMesasPOS
-                  menu={menu}
-                  platosAgrupados={platosAgrupados}
-                  cargandoMenu={cargandoMenu}
-                  guardandoPedido={guardandoPedido}
-                  onEnviar={registrarPedidoMesa}
-                  pedidoEditando={pedidoEditandoEnMesas}
-                  modoEdicionAdmin={Boolean(pedidoEditandoEnMesas)}
-                  onGuardarEdicion={editarPedidoMesaAdministrador}
-                  onCancelarEdicion={cancelarEdicionPedidoEnMesas}
-                  navegacionAdminVisible={adminAutenticado}
-                  puedeVerRafa={puedeVerRafa}
-                  onIrAdmin={() => navegar("/admin", "admin")}
-                  onIrPedidos={() => navegar("/pedidos", "pedidos")}
-                  onIrGerencia={() => navegar("/gerencia", "gerencia")}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          )}
-
-          {!cargando && vista === "mesasBeta" && (
-            <ErrorBoundary nombreModulo="Panel Mesas Beta" onReset={() => setRecargaMenu((actual) => actual + 1)}>
-              <Suspense fallback={<CargandoModulo texto="Cargando mesas beta..." />}>
-                <PanelMesasBeta
-                  menu={menu}
-                  platosAgrupados={platosAgrupados}
-                  cargandoMenu={cargandoMenu}
-                  onSalirBeta={() => navegar("/mesas", "mesas")}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          )}
-
-          {!cargando && vista === "gerencia" && adminAutenticado && puedeVerRafa && (
-            <ErrorBoundary nombreModulo="Gerencia" usarRecuperacionPWA onReset={() => setRecargaPedidos((actual) => actual + 1)}>
-              <Suspense fallback={<CargandoModulo texto="Cargando gerencia..." />}>
-                <GerenciaPanel
-                  adminUsuario={adminUsuario}
-                  adminNombreRol={adminNombreRol}
-                  puedeVerInformes={puedeVerRafa}
-                  puedeVerCaja={puedeVerCaja}
-                  puedeVerGastos={puedeVerGastos}
-                  puedeVerInformeGastos={puedeVerInformeGastos}
-                  puedeVerInventario={puedeVerInventario}
-                  puedeVerCatalogo={puedeVerCatalogo}
-                  cerrarPanelAdmin={cerrarPanelAdmin}
-                  navegar={navegar}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          )}
-
-          {!cargando && vista === "gerencia" && adminAutenticado && !puedeVerRafa && (
-            <section className="card card-pad">
-              <h2>Acceso restringido</h2>
-              <p className="muted">Gerencia solo está disponible para el rol administrador.</p>
-              <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>
-                Volver a Admin
-              </button>
-            </section>
-          )}
-
-          {!cargando && vista === "admin" && adminAutenticado && (
-            <main className="admin-layout">
-              <AdminHeaderTabs
-                adminUsuario={adminUsuario}
-                adminNombreRol={adminNombreRol}
-                adminTab={adminTab}
-                setAdminTab={cambiarAdminTabSeguro}
-                puedeVerMenu={puedeVerMenu}
-                puedeVerProductos={puedeVerProductos}
-                puedeVerGenerador={puedeVerGenerador}
-                puedeVerRafa={puedeVerRafa}
-                puedeVerCatalogo={puedeVerCatalogo}
-                puedeVerInventario={puedeVerInventario}
-                puedeVerCaja={puedeVerCaja}
-                cerrarPanelAdmin={cerrarPanelAdmin}
-                navegar={navegar}
-              />
-
-              {cambiosPedidosPendientes && adminTab !== "pedidos" && (
-                <section className="card card-pad admin-realtime-pending" role="status">
-                  <div>
-                    <strong>🔔 Hay cambios en pedidos</strong>
-                    <p className="muted small">
-                      {mensajeCambiosPedidos ||
-                        "Realtime detectó cambios, pero no interrumpió tu pestaña actual."}
-                    </p>
-                  </div>
-                  <div className="admin-actions-stack horizontal">
-                    <button type="button" className="button" onClick={irAPedidosYActualizar}>
-                      Ir a Pedidos hoy
-                    </button>
-                    <button type="button" className="button light" onClick={descartarAvisoCambiosPedidos}>
-                      Seguir aquí
-                    </button>
-                  </div>
-                </section>
-              )}
-
-              {adminTab === "pedidos" && (
+            {!cargando && vista === "pedidos" && adminAutenticado && (
+              <main className="admin-layout admin-layout-liviano">
                 <ErrorBoundary
                   nombreModulo="Pedidos Hoy"
                   onReset={() => setRecargaPedidos((actual) => actual + 1)}
@@ -1181,93 +993,354 @@ export default function App() {
                     pedidosActivos={pedidosActivos}
                   />
                 </ErrorBoundary>
-              )}
+              </main>
+            )}
 
-              {adminTab === "productos" && puedeVerProductos && (
-                <ErrorBoundary nombreModulo="Solicitud de insumos" usarRecuperacionPWA>
-                  <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
-                    <SolicitudProductos />
-                  </Suspense>
-                </ErrorBoundary>
-              )}
+            {!cargando && vista === "adminLogin" && (
+              <AdminLogin
+                adminEmail={adminEmail}
+                adminPassword={adminPassword}
+                errorClaveAdmin={errorClaveAdmin}
+                setAdminEmail={setAdminEmail}
+                setAdminPassword={setAdminPassword}
+                setErrorClaveAdmin={setErrorClaveAdmin}
+                validarClaveAdmin={validarClaveAdmin}
+                navegar={navegar}
+              />
+            )}
 
-              {adminTab === "generador" && puedeVerGenerador && (
-                <ErrorBoundary nombreModulo="Generador de menú" usarRecuperacionPWA>
-                  <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
-                    <GeneradorMenu pestanaInicial="generador" />
-                  </Suspense>
-                </ErrorBoundary>
-              )}
+            {!cargando && vista === "cliente" && (
+              <>
+                <PedidoCliente
+                  menu={menu}
+                  cargandoMenu={cargandoMenu}
+                  itemsPedido={itemsPedidoOperativos}
+                  itemsConProducto={itemsConProducto}
+                  platosAgrupados={platosAgrupados}
+                  hayProductoSeleccionado={hayProductoSeleccionado}
+                  totalPedido={totalPedido}
+                  cliente={cliente}
+                  telefono={telefono}
+                  ubicacion={ubicacion}
+                  comerRestauranteCliente={comerRestauranteCliente}
+                  tipoPago={tipoPago}
+                  observaciones={observaciones}
+                  errorDatosPedido={errorDatosPedido}
+                  guardandoPedido={guardandoPedido}
+                  clienteEspecialAplicado={clienteEspecialAplicado}
+                  setClienteEspecialAplicado={setClienteEspecialAplicado}
+                  agregarProductoCafeteriaCliente={agregarProductoCafeteriaCliente}
+                  setCliente={setCliente}
+                  setTelefono={setTelefono}
+                  setUbicacion={setUbicacion}
+                  setComerRestauranteCliente={manejarComerRestauranteCliente}
+                  setTipoPago={setTipoPago}
+                  setObservaciones={setObservaciones}
+                  setErrorDatosPedido={setErrorDatosPedido}
+                  cambiarPlatoItem={cambiarPlatoItem}
+                  cambiarAcompananteItem={cambiarAcompananteItem}
+                  actualizarItem={actualizarItem}
+                  agregarAlmuerzo={agregarAlmuerzo}
+                  eliminarAlmuerzo={eliminarAlmuerzo}
+                  actualizarCantidadGrupoResumen={actualizarCantidadGrupoResumen}
+                  eliminarGrupoResumen={eliminarGrupoResumen}
+                  actualizarAcompanantesGrupoResumen={actualizarAcompanantesGrupoResumen}
+                  actualizarProteinaGrupoResumen={actualizarProteinaGrupoResumen}
+                  reiniciarPedido={reiniciarPedido}
+                  irAElemento={irAElemento}
+                  registrarPedido={registrarPedido}
+                />
+              </>
+            )}
 
-              {adminTab === "historialMenu" && puedeVerGenerador && (
-                <ErrorBoundary nombreModulo="Historial de menú" usarRecuperacionPWA>
-                  <Suspense fallback={<CargandoModulo texto="Cargando historial de menú..." />}>
-                    <GeneradorMenu pestanaInicial="historial" />
-                  </Suspense>
-                </ErrorBoundary>
-              )}
-
-              {adminTab === "catalogo" && puedeVerCatalogo && (
-                <ErrorBoundary nombreModulo="Catálogo" usarRecuperacionPWA>
-                  <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
-                    <CatalogoRafa />
-                  </Suspense>
-                </ErrorBoundary>
-              )}
-              {adminTab === "inventario" && puedeVerInventario && (
-                <ErrorBoundary
-                  nombreModulo="Inventario"
-                  onReset={() => setRecargaPedidos((actual) => actual + 1)}
-                >
-                  <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
-                    <InventarioAdmin />
-                  </Suspense>
-                </ErrorBoundary>
-              )}
-
-              {adminTab === "caja" && puedeVerCaja && (
-                <ErrorBoundary nombreModulo="Caja" usarRecuperacionPWA onReset={() => setRecargaPedidos((actual) => actual + 1)}>
-                  <Suspense fallback={<CargandoModulo texto="Cargando caja..." />}>
-                    <CajaAdmin />
-                  </Suspense>
-                </ErrorBoundary>
-              )}
-
-              {adminTab === "rafa" && puedeVerRafa && (
-                <ErrorBoundary
-                  nombreModulo="Informes Rafa"
-                  onReset={() => setRecargaPedidos((actual) => actual + 1)}
-                >
-                  <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
-                    <PanelRafaPrivado />
-                  </Suspense>
-                </ErrorBoundary>
-              )}
-
-              {adminTab === "menu" && puedeVerMenu && (
-                <ErrorBoundary
-                  nombreModulo="Editor de menú diario"
-                  onReset={() => setRecargaMenu((actual) => actual + 1)}
-                >
-                  <MenuDiarioTab
+            {!cargando && vista === "clienteBeta" && (
+              <ErrorBoundary
+                nombreModulo="Cliente Beta"
+                onReset={() => setRecargaMenu((actual) => actual + 1)}
+              >
+                <Suspense fallback={<CargandoModulo texto="Cargando cliente beta..." />}>
+                  <PanelClienteBeta
                     menu={menu}
-                    setMenu={setMenu}
-                    platosTexto={platosTexto}
-                    setPlatosTexto={setPlatosTexto}
-                    acompanantesTexto={acompanantesTexto}
-                    setAcompanantesTexto={setAcompanantesTexto}
-                    traerTextoDesdeGeneradorMenu={traerTextoDesdeGeneradorMenu}
-                    imprimirMenuDiarioTicket={imprimirMenuDiarioTicket}
-                    guardarMenu={guardarMenu}
-                    guardandoMenu={guardandoMenu}
-                    mensajeMenu={mensajeMenu}
+                    platosAgrupados={platosAgrupados}
+                    cargandoMenu={cargandoMenu}
+                    onSalirBeta={() => navegar("/cliente", "cliente")}
                   />
-                </ErrorBoundary>
-              )}
-            </main>
-          )}
+                </Suspense>
+              </ErrorBoundary>
+            )}
+
+            {!cargando && vista === "confirmacion" && pedidoFinalizado && (
+              <ConfirmacionPedidoCliente
+                pedidoFinalizado={pedidoFinalizado}
+                whatsappRafikiDisponible={whatsappRafikiDisponible}
+                linkWhatsAppFinal={linkWhatsAppFinal}
+                nuevoPedidoCliente={nuevoPedidoCliente}
+              />
+            )}
+
+            {!cargando && vista === "mesas" && (
+              <ErrorBoundary
+                nombreModulo="Panel Mesas"
+                usarRecuperacionPWA
+                onReset={() => setRecargaMenu((actual) => actual + 1)}
+              >
+                <Suspense fallback={<CargandoModulo texto="Cargando panel mesas..." />}>
+                  <PanelMesasPOS
+                    menu={menu}
+                    platosAgrupados={platosAgrupados}
+                    cargandoMenu={cargandoMenu}
+                    guardandoPedido={guardandoPedido}
+                    onEnviar={registrarPedidoMesa}
+                    pedidoEditando={pedidoEditandoEnMesas}
+                    modoEdicionAdmin={Boolean(pedidoEditandoEnMesas)}
+                    onGuardarEdicion={editarPedidoMesaAdministrador}
+                    onCancelarEdicion={cancelarEdicionPedidoEnMesas}
+                    navegacionAdminVisible={adminAutenticado}
+                    puedeVerRafa={puedeVerRafa}
+                    onIrAdmin={() => navegar("/admin", "admin")}
+                    onIrPedidos={() => navegar("/pedidos", "pedidos")}
+                    onIrGerencia={() => navegar("/gerencia", "gerencia")}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            )}
+
+            {!cargando && vista === "mesasBeta" && (
+              <ErrorBoundary
+                nombreModulo="Panel Mesas Beta"
+                onReset={() => setRecargaMenu((actual) => actual + 1)}
+              >
+                <Suspense fallback={<CargandoModulo texto="Cargando mesas beta..." />}>
+                  <PanelMesasBeta
+                    menu={menu}
+                    platosAgrupados={platosAgrupados}
+                    cargandoMenu={cargandoMenu}
+                    onSalirBeta={() => navegar("/mesas", "mesas")}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            )}
+
+            {!cargando && vista === "gerencia" && adminAutenticado && puedeVerRafa && (
+              <ErrorBoundary
+                nombreModulo="Gerencia"
+                usarRecuperacionPWA
+                onReset={() => setRecargaPedidos((actual) => actual + 1)}
+              >
+                <Suspense fallback={<CargandoModulo texto="Cargando gerencia..." />}>
+                  <GerenciaPanel
+                    adminUsuario={adminUsuario}
+                    adminNombreRol={adminNombreRol}
+                    puedeVerInformes={puedeVerRafa}
+                    puedeVerCaja={puedeVerCaja}
+                    puedeVerGastos={puedeVerGastos}
+                    puedeVerInformeGastos={puedeVerInformeGastos}
+                    puedeVerInventario={puedeVerInventario}
+                    puedeVerCatalogo={puedeVerCatalogo}
+                    cerrarPanelAdmin={cerrarPanelAdmin}
+                    navegar={navegar}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            )}
+
+            {!cargando && vista === "gerencia" && adminAutenticado && !puedeVerRafa && (
+              <section className="card card-pad">
+                <h2>Acceso restringido</h2>
+                <p className="muted">Gerencia solo está disponible para el rol administrador.</p>
+                <button type="button" className="button" onClick={() => navegar("/admin", "admin")}>
+                  Volver a Admin
+                </button>
+              </section>
+            )}
+
+            {!cargando && vista === "admin" && adminAutenticado && (
+              <main className="admin-layout">
+                <AdminHeaderTabs
+                  adminUsuario={adminUsuario}
+                  adminNombreRol={adminNombreRol}
+                  adminTab={adminTab}
+                  setAdminTab={cambiarAdminTabSeguro}
+                  puedeVerMenu={puedeVerMenu}
+                  puedeVerProductos={puedeVerProductos}
+                  puedeVerGenerador={puedeVerGenerador}
+                  puedeVerRafa={puedeVerRafa}
+                  puedeVerCatalogo={puedeVerCatalogo}
+                  puedeVerInventario={puedeVerInventario}
+                  puedeVerCaja={puedeVerCaja}
+                  cerrarPanelAdmin={cerrarPanelAdmin}
+                  navegar={navegar}
+                />
+
+                {cambiosPedidosPendientes && adminTab !== "pedidos" && (
+                  <section className="card card-pad admin-realtime-pending" role="status">
+                    <div>
+                      <strong>🔔 Hay cambios en pedidos</strong>
+                      <p className="muted small">
+                        {mensajeCambiosPedidos ||
+                          "Realtime detectó cambios, pero no interrumpió tu pestaña actual."}
+                      </p>
+                    </div>
+                    <div className="admin-actions-stack horizontal">
+                      <button type="button" className="button" onClick={irAPedidosYActualizar}>
+                        Ir a Pedidos hoy
+                      </button>
+                      <button type="button" className="button light" onClick={descartarAvisoCambiosPedidos}>
+                        Seguir aquí
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {adminTab === "pedidos" && (
+                  <ErrorBoundary
+                    nombreModulo="Pedidos Hoy"
+                    onReset={() => setRecargaPedidos((actual) => actual + 1)}
+                  >
+                    <AdminPedidosSection
+                      tituloPedidos={tituloPedidos}
+                      setRecargaPedidos={setRecargaPedidos}
+                      alertaPedidoNuevo={alertaPedidoNuevo}
+                      setAlertaPedidoNuevo={setAlertaPedidoNuevo}
+                      estadoRealtimePedidos={estadoRealtimePedidos}
+                      realtimeAdminActivo={realtimeAdminActivo}
+                      cambiarEstadoRealtimeAdmin={cambiarEstadoRealtimeAdmin}
+                      filtroPedidos={filtroPedidos}
+                      setFiltroPedidos={setFiltroPedidos}
+                      fechaSeleccionada={fechaSeleccionada}
+                      setFechaSeleccionada={setFechaSeleccionada}
+                      fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+                      setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+                      fechaFinRangoPedidos={fechaFinRangoPedidos}
+                      setFechaFinRangoPedidos={setFechaFinRangoPedidos}
+                      hayBusquedaPedidos={hayBusquedaPedidos}
+                      setBusqueda={setBusqueda}
+                      busqueda={busqueda}
+                      busquedaNumeroPedido={busquedaNumeroPedido}
+                      setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+                      buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+                      limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+                      resultadoNumeroPedido={resultadoNumeroPedido}
+                      cargandoNumeroPedido={cargandoNumeroPedido}
+                      errorNumeroPedido={errorNumeroPedido}
+                      cargandoPedidos={cargandoPedidos}
+                      errorCargaPedidos={errorCargaPedidos}
+                      paginacionPedidos={paginacionPedidos}
+                      cargarMasPedidos={cargarMasPedidos}
+                      pedidosFiltrados={pedidosFiltrados}
+                      pedidos={pedidos}
+                      pedidosBorrados={pedidosBorrados}
+                      pedidosPendientes={pedidosPendientes}
+                      puedeFinalizarPendientes={puedeFinalizarPendientes}
+                      finalizarTodosPendientes={finalizarTodosPendientes}
+                      finalizandoPendientes={finalizandoPendientes}
+                      cambiarEstadoPedido={cambiarEstadoPedido}
+                      guardandoEstadoPedidoId={guardandoEstadoPedidoId}
+                      puedeEliminarPedido={puedeEliminarPedido}
+                      eliminarPedidoAdministrador={eliminarPedidoAdministrador}
+                      eliminandoPedidoId={eliminandoPedidoId}
+                      puedeEditarPedido={puedeEditarPedido}
+                      editarPedidoAdministrador={editarPedidoAdministrador}
+                      cambiarFechaPedidoAdministrador={cambiarFechaPedidoAdministrador}
+                      onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
+                      editandoPedidoId={editandoPedidoId}
+                      pedidosFinalizados={pedidosFinalizados}
+                      consolidado={consolidado}
+                      pedidosActivos={pedidosActivos}
+                    />
+                  </ErrorBoundary>
+                )}
+
+                {adminTab === "productos" && puedeVerProductos && (
+                  <ErrorBoundary nombreModulo="Solicitud de insumos" usarRecuperacionPWA>
+                    <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
+                      <SolicitudProductos />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+
+                {adminTab === "generador" && puedeVerGenerador && (
+                  <ErrorBoundary nombreModulo="Generador de menú" usarRecuperacionPWA>
+                    <Suspense fallback={<CargandoModulo texto="Cargando generador de menú..." />}>
+                      <GeneradorMenu pestanaInicial="generador" />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+
+                {adminTab === "historialMenu" && puedeVerGenerador && (
+                  <ErrorBoundary nombreModulo="Historial de menú" usarRecuperacionPWA>
+                    <Suspense fallback={<CargandoModulo texto="Cargando historial de menú..." />}>
+                      <GeneradorMenu pestanaInicial="historial" />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+
+                {adminTab === "catalogo" && puedeVerCatalogo && (
+                  <ErrorBoundary nombreModulo="Catálogo" usarRecuperacionPWA>
+                    <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
+                      <CatalogoRafa />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+                {adminTab === "inventario" && puedeVerInventario && (
+                  <ErrorBoundary
+                    nombreModulo="Inventario"
+                    onReset={() => setRecargaPedidos((actual) => actual + 1)}
+                  >
+                    <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
+                      <InventarioAdmin />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+
+                {adminTab === "caja" && puedeVerCaja && (
+                  <ErrorBoundary
+                    nombreModulo="Caja"
+                    usarRecuperacionPWA
+                    onReset={() => setRecargaPedidos((actual) => actual + 1)}
+                  >
+                    <Suspense fallback={<CargandoModulo texto="Cargando caja..." />}>
+                      <CajaAdmin />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+
+                {adminTab === "rafa" && puedeVerRafa && (
+                  <ErrorBoundary
+                    nombreModulo="Informes Rafa"
+                    onReset={() => setRecargaPedidos((actual) => actual + 1)}
+                  >
+                    <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
+                      <PanelRafaPrivado />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+
+                {adminTab === "menu" && puedeVerMenu && (
+                  <ErrorBoundary
+                    nombreModulo="Editor de menú diario"
+                    onReset={() => setRecargaMenu((actual) => actual + 1)}
+                  >
+                    <MenuDiarioTab
+                      menu={menu}
+                      setMenu={setMenu}
+                      platosTexto={platosTexto}
+                      setPlatosTexto={setPlatosTexto}
+                      acompanantesTexto={acompanantesTexto}
+                      setAcompanantesTexto={setAcompanantesTexto}
+                      traerTextoDesdeGeneradorMenu={traerTextoDesdeGeneradorMenu}
+                      imprimirMenuDiarioTicket={imprimirMenuDiarioTicket}
+                      guardarMenu={guardarMenu}
+                      guardandoMenu={guardandoMenu}
+                      mensajeMenu={mensajeMenu}
+                    />
+                  </ErrorBoundary>
+                )}
+              </main>
+            )}
+          </div>
         </div>
-      </div>
+      </Suspense>
     </>
   );
 }

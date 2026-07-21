@@ -71,7 +71,7 @@ export function useRealtimePedidos({
     onCambiosPendientesRef.current?.(detalle);
   }, []);
 
-  const recargarPedidosConControl = useCallback((motivo = "auto") => {
+  const recargarPedidosConControl = useCallback(() => {
     if (!activoRef.current) return;
 
     if (!puedeActualizarAutomaticoRef.current) {

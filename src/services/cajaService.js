@@ -1,7 +1,8 @@
 import { supabase } from "../supabaseClient";
 import { cargarGastosDiarios } from "./gastosDiariosService";
 import { cargarPedidosRango } from "./pedidosService";
-import { obtenerEstadoPedido, obtenerRangoPedidos } from "../shared/utils/pedidos";
+import { obtenerRangoPedidos } from "../shared/utils/pedidos";
+import { resumirMovimientosCaja } from "../shared/utils/financialFlows";
 import { crearErrorSupabaseUsuario, esErrorEsquemaSupabase } from "../shared/utils/supabaseErrors";
 
 const SELECT_CAJA_ARQUEOS = "id, fecha, inicio_data, fin_data, ajustes_data, inicio_total, fin_total, creado_en, actualizado_en";
@@ -43,10 +44,6 @@ function sumarPorMetodo(lista = [], obtenerMetodo, obtenerValor) {
     acc[metodo] = numeroSeguro(acc[metodo]) + numeroSeguro(obtenerValor(item));
     return acc;
   }, {});
-}
-
-function sumarTotal(lista = [], obtenerValor) {
-  return lista.reduce((total, item) => total + numeroSeguro(obtenerValor(item)), 0);
 }
 
 async function exigirSesionSupabaseCaja() {
@@ -268,19 +265,19 @@ export async function cargarCuadreRealCaja(fecha = hoyISOColombia()) {
 
   if (pedidosError) throw pedidosError;
 
-  const pedidosValidos = (pedidosData || []).filter((pedido) => obtenerEstadoPedido(pedido) !== "Borrado");
-  const ventasTotal = sumarTotal(pedidosValidos, (pedido) => pedido.total);
-  const gastosTotal = sumarTotal(gastos, (gasto) => gasto.valor);
+  const resumen = resumirMovimientosCaja({ pedidos: pedidosData, gastos });
+  const pedidosValidos = resumen.pedidosValidos;
+  const gastosValidos = resumen.gastosValidos;
 
   return {
     fecha: fechaConsulta,
-    pedidosCantidad: pedidosValidos.length,
-    gastosCantidad: gastos.length,
-    ventasTotal,
-    gastosTotal,
+    pedidosCantidad: resumen.pedidosCantidad,
+    gastosCantidad: resumen.gastosCantidad,
+    ventasTotal: resumen.ventasTotal,
+    gastosTotal: resumen.gastosTotal,
     ventasPorMetodo: sumarPorMetodo(pedidosValidos, (pedido) => pedido.tipo_pago || pedido.forma_pago || pedido.metodo_pago, (pedido) => pedido.total),
-    gastosPorMetodo: sumarPorMetodo(gastos, (gasto) => gasto.metodoPago, (gasto) => gasto.valor),
-    gastosDetalle: (gastos || []).map((gasto) => ({
+    gastosPorMetodo: sumarPorMetodo(gastosValidos, (gasto) => gasto.metodoPago, (gasto) => gasto.valor),
+    gastosDetalle: gastosValidos.map((gasto) => ({
       id: gasto.id,
       proveedor: gasto.proveedor || "Sin proveedor",
       valor: numeroSeguro(gasto.valor),

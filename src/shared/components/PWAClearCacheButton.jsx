@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { limpiarCachesYRecargar } from '../utils/pwaVersion.js';
+import { useAvisosRafiki, useConfirmacion } from './common.jsx';
 
 export default function PWAClearCacheButton({ className = '', compact = false }) {
   const [limpiando, setLimpiando] = useState(false);
+  const [mostrarAvisoRafiki, avisosRafiki] = useAvisosRafiki();
+  const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
 
   const manejarClick = async () => {
     if (limpiando) return;
 
-    const confirmar = window.confirm(
-      '¿Limpiar caché y actualizar Rafiki? Hazlo cuando no estés registrando un pedido.'
-    );
+    const confirmar = await confirmarRafiki({
+      tipo: 'advertencia',
+      titulo: 'Actualizar Rafiki en este dispositivo',
+      mensaje: 'Se limpiará la caché y se cargará la versión más reciente.\nHazlo cuando no estés registrando un pedido.',
+      textoConfirmar: 'Limpiar y actualizar'
+    });
 
     if (!confirmar) return;
 
@@ -18,11 +24,17 @@ export default function PWAClearCacheButton({ className = '', compact = false })
       await limpiarCachesYRecargar();
     } catch (error) {
       console.warn('No se pudo limpiar caché completamente:', error);
-      window.location.reload();
+      mostrarAvisoRafiki({
+        tipo: 'warning',
+        titulo: 'Actualización parcial',
+        mensaje: 'No se pudo limpiar toda la caché. Rafiki recargará la página para intentar completar la actualización.'
+      });
+      window.setTimeout(() => window.location.reload(), 900);
     }
   };
 
   return (
+    <>
     <button
       type="button"
       onClick={manejarClick}
@@ -33,5 +45,8 @@ export default function PWAClearCacheButton({ className = '', compact = false })
     >
       {compact ? (limpiando ? '⏳' : '🔄') : (limpiando ? 'Actualizando...' : 'Limpiar caché')}
     </button>
+    {avisosRafiki}
+    {modalConfirmacionRafiki}
+    </>
   );
 }

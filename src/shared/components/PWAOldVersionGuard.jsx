@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { esRutaInternaPWA } from '../utils/pwa.js';
 import { consultarVersionRemota, esVersionRemotaMasNueva, guardarVersionActual, puedeMostrarAvisoNuevaVersion, RAFIKI_APP_VERSION } from '../utils/pwaVersion.js';
 

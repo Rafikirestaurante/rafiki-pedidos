@@ -1,4 +1,3 @@
-import React from "react";
 import { Tarjeta } from "./common";
 import { TEXTOS_APP } from "../../config/textos";
 
