@@ -1,4 +1,3 @@
-import React from "react";
 import { obtenerCodigoPedido } from "../../../shared/utils/pedidos";
 
 export default function ConfirmacionPedidoMesa({ pedido, modoLlevar, mesaLocal, onReiniciar }) {

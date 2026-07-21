@@ -11,6 +11,7 @@ import { listarClientesCreditoActivos } from "../../../../services/clientesCredi
 import RafikiEmptyState from "../../../../shared/components/RafikiEmptyState";
 import RafikiTabs from "../../../../shared/components/RafikiTabs";
 import RafikiModal from "../../../../shared/components/RafikiModal";
+import { useAlertaRafiki } from "../../../../shared/components/common";
 import { formatearFechaTermica, imprimirReporteTermico } from "../../../impresion/thermalReportService";
 import ThermalPrintControls from "../../../impresion/ThermalPrintControls";
 
@@ -111,18 +112,6 @@ function textoItemsPedidoHoy(pedido) {
 function pedidoSinItemsPareceCafeteria(pedido) {
   const texto = normalizarTexto([pedido?.pedido_texto, pedido?.cliente, pedido?.observaciones, textoItemsPedidoHoy(pedido)].filter(Boolean).join(" "));
   return ["parfait", "batido", "jugo", "cafe", "capuchino", "desayuno", "sandwich", "sanduche", "postre", "bebida", "fresas con crema", "ensalada de frutas"].some((palabra) => texto.includes(palabra));
-}
-
-function pedidoTieneCafeteria(pedido) {
-  const items = pedidoItemsPedidoHoy(pedido);
-  if (items.length === 0) return pedidoSinItemsPareceCafeteria(pedido);
-  return items.some(itemEsCafeteriaPedidoHoy);
-}
-
-function pedidoTieneRestaurante(pedido) {
-  const items = pedidoItemsPedidoHoy(pedido);
-  if (items.length === 0) return !pedidoSinItemsPareceCafeteria(pedido);
-  return items.some(itemEsRestaurantePedidoHoy);
 }
 
 function pedidoCumpleFiltroTipoPedido(pedido, filtro) {
@@ -784,8 +773,6 @@ function AdminPedidosSectionBase({
   cambiarFechaPedidoAdministrador,
   onEditarPedidoEnMesas,
   editandoPedidoId,
-  pedidosFinalizados,
-  consolidado,
   pedidosActivos,
 }) {
   const [pedidoEditando, setPedidoEditando] = useState(null);
@@ -804,6 +791,7 @@ function AdminPedidosSectionBase({
   const [filtroTipoPagoRapido, setFiltroTipoPagoRapido] = useState("");
   const [mostrarModalFiltrosRapidos, setMostrarModalFiltrosRapidos] = useState(false);
   const [mostrarFiltrosPedidos, setMostrarFiltrosPedidos] = useState(true);
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [ahoraPedidosHoy, setAhoraPedidosHoy] = useState(() => new Date());
   const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
   const hayMasPedidos = Boolean(paginacionPedidos?.hayMas);
@@ -1003,8 +991,14 @@ function AdminPedidosSectionBase({
       totalCargados: totalCargadosServidor,
       formato,
     });
-    if (!ok) window.alert("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
-  }, [fechaReferenciaImpresion, hayFiltrosRapidosActivos, ordenPedidosHoy, pedidosVisiblesTabla, rangoBusquedaPedidosTermico, resumenFiltrosRapidos, totalCargadosServidor]);
+    if (!ok) {
+      mostrarAlertaRafiki({
+        tipo: "error",
+        titulo: "Impresión bloqueada",
+        mensaje: "No se pudo abrir la ventana de impresión. Permite las ventanas emergentes para Rafiki Pedidos e inténtalo nuevamente."
+      });
+    }
+  }, [fechaReferenciaImpresion, hayFiltrosRapidosActivos, mostrarAlertaRafiki, ordenPedidosHoy, pedidosVisiblesTabla, rangoBusquedaPedidosTermico, resumenFiltrosRapidos, totalCargadosServidor]);
 
   return (
     <section className="card card-pad">
@@ -1339,6 +1333,8 @@ function AdminPedidosSectionBase({
           />
         </div>
       </RafikiModal>
+
+      {modalAlertaRafiki}
 
       {pedidoEditando && (
         <EditarPedidoModal

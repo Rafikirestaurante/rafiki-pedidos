@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAlertaRafiki } from "../../../shared/components/common";
+import { useAvisosRafiki, useConfirmacion } from "../../../shared/components/common";
 import { supabaseConfigMensaje, supabaseConfigOk } from "../../../supabaseClient";
 import {
   CATEGORIAS_GASTOS,
@@ -68,20 +68,12 @@ function crearFilasResumenObjeto(objeto = {}) {
     }));
 }
 
-function textoGastoDetalle(gasto = {}) {
-  const articulos = String(gasto.articulos || "").replace(/\s+/g, " ").trim();
-  const observacion = String(gasto.observacion || "").replace(/\s+/g, " ").trim();
-  if (articulos && observacion) return `${articulos} · Obs: ${observacion}`;
-  return articulos || observacion || "Sin detalle";
-}
-
 export default function GastosDiarios({ esAdministrador = false, modoRapido = false, mostrarInforme = true }) {
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL);
   const [fechaInforme, setFechaInforme] = useState(obtenerFechaGastoHoy());
   const [gastos, setGastos] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [editandoId, setEditandoId] = useState(null);
   const [categoriasCatalogo, setCategoriasCatalogo] = useState(CATEGORIAS_GASTOS);
@@ -92,11 +84,23 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   const [modalFormularioAbierto, setModalFormularioAbierto] = useState(false);
   const [mostrarResumenDetallado, setMostrarResumenDetallado] = useState(false);
   const formularioGastoRef = useRef(null);
-  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
+  const [mostrarAvisoRafiki, avisosRafiki] = useAvisosRafiki();
+  const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
 
   const totalGastos = useMemo(() => gastos.reduce((total, gasto) => total + Number(gasto.valor || 0), 0), [gastos]);
   const resumenCategorias = useMemo(() => resumirPorCampo(gastos, "categoria"), [gastos]);
   const resumenPagos = useMemo(() => resumirPorCampo(gastos, "metodoPago"), [gastos]);
+
+  const mostrarMensaje = useCallback((texto, tipoForzado) => {
+    const mensajeLimpio = String(texto || "").trim();
+    if (!mensajeLimpio) return;
+    const tipo = tipoForzado || (/no se pudo|revisa|activa inventario|respaldo/i.test(mensajeLimpio) ? "warning" : "success");
+    mostrarAvisoRafiki({
+      tipo,
+      titulo: tipo === "success" ? "Gastos actualizados" : "Revisa el registro de gastos",
+      mensaje: mensajeLimpio
+    });
+  }, [mostrarAvisoRafiki]);
 
   useEffect(() => {
     let activo = true;
@@ -212,7 +216,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   function abrirFormularioNuevo() {
     limpiarFormulario();
     setError("");
-    setMensaje("");
+    mostrarMensaje("");
     setModalFormularioAbierto(true);
   }
 
@@ -251,7 +255,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       metodoPago: prev.metodoPago || "Efectivo",
       observacion: "Gasto recurrente rápido"
     }));
-    setMensaje(`${trabajador.nombre} cargado.`);
+    mostrarMensaje(`${trabajador.nombre} cargado.`);
     setError("");
     if (!modoRapido) setModalFormularioAbierto(true);
   }
@@ -260,13 +264,13 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     event.preventDefault();
     setGuardando(true);
     setError("");
-    setMensaje("");
+    mostrarMensaje("");
 
     try {
       let gastoGuardado = null;
       if (editandoId) {
         gastoGuardado = await actualizarGastoDiario(editandoId, formulario);
-        setMensaje("Gasto actualizado correctamente.");
+        mostrarMensaje("Gasto actualizado correctamente.");
       } else {
         gastoGuardado = await crearGastoDiario(formulario);
         if (actualizarInventario) {
@@ -286,12 +290,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
           })));
         }
         const mensajeExito = actualizarInventario ? "Gasto guardado e inventario actualizado." : "Gasto guardado correctamente.";
-        setMensaje(mensajeExito);
-        mostrarAlertaRafiki({
-          tipo: "success",
-          titulo: "Gasto guardado",
-          mensaje: "Gasto guardado correctamente"
-        });
+        mostrarMensaje(mensajeExito);
       }
       const fechaGuardada = formulario.fecha || obtenerFechaGastoHoy();
       limpiarFormulario();
@@ -327,7 +326,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     setActualizarInventario(false);
     setLineasInventario([{ insumoId: "", cantidad: "" }]);
     setError("");
-    setMensaje("");
+    mostrarMensaje("");
     if (!modoRapido) setModalFormularioAbierto(true);
     if (modoRapido) {
       window.requestAnimationFrame(() => {
@@ -341,13 +340,18 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   }
 
   async function eliminarGasto(gasto) {
-    const confirmar = window.confirm(`¿Eliminar el gasto de ${gasto.proveedor} por $${dinero(gasto.valor)}?`);
+    const confirmar = await confirmarRafiki({
+      tipo: "eliminar",
+      titulo: "Eliminar gasto",
+      mensaje: `Se eliminará el gasto de ${gasto.proveedor || "Sin proveedor"} por $${dinero(gasto.valor)}.\nEsta acción no se puede deshacer.`,
+      textoConfirmar: "Eliminar gasto"
+    });
     if (!confirmar) return;
     setError("");
-    setMensaje("");
+    mostrarMensaje("");
     try {
       await eliminarGastoDiario(gasto.id);
-      setMensaje("Gasto eliminado correctamente.");
+      mostrarMensaje("Gasto eliminado correctamente.");
       await cargar(fechaInforme);
     } catch (err) {
       registrarErrorSupabase("eliminar gasto diario", err);
@@ -508,7 +512,6 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       </div>
 
       {!supabaseConfigOk && <div className="alert alert-warning">{supabaseConfigMensaje}</div>}
-      {mensaje && <div className="alert alert-success">{mensaje}</div>}
       {error && <div className="alert alert-error">{error}</div>}
 
       {modoRapido ? formularioGasto : null}
@@ -523,7 +526,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         {formularioGasto}
       </RafikiModal>
 
-      {modalAlertaRafiki}
+      {avisosRafiki}
+      {modalConfirmacionRafiki}
 
       {mostrarInforme && (
       <section className="box" style={{ marginTop: 16 }}>

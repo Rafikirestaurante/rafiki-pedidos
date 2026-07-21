@@ -629,10 +629,7 @@ export function crearDetalleDashboardSeleccionado(tipo, contexto) {
     resumenVentas,
     totalVentas,
     totalItemsVendidos,
-    dashboardRafa,
-    finalizados,
-    pendientes,
-    totalPedidos
+    dashboardRafa
   } = contexto;
 
   const columnasPedidos = ["Pedido", "Fecha", "Cliente", "Ubicación", "Productos", "Estado", "Pago", "Total"];

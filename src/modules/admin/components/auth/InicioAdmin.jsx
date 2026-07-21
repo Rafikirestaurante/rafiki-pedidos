@@ -1,4 +1,3 @@
-import React from "react";
 import { Aviso, Boton, Tarjeta } from "../../../../shared/components/common";
 import { BOTONES, TEXTOS_APP } from "../../../../config/textos";
 

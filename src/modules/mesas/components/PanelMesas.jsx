@@ -19,7 +19,6 @@ import { CampoTexto, useAlertaRafiki } from "../../../shared/components/common";
 import {
   CAFETERIA_ACOMPANANTES_DESAYUNO,
   CAFETERIA_BEBIDAS_DESAYUNO,
-  CAFETERIA_ADICIONALES_DESAYUNO,
   CAFETERIA_BATIDOS_BASES,
   CAFETERIA_BATIDOS_CREMOSOS_SABORES,
   CAFETERIA_BATIDOS_CREMOSOS_TAMANOS,
@@ -620,13 +619,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     });
   }
 
-  function toggleAdicionalDesayuno(adicional) {
-    setAdicionalesDesayuno((actual) => {
-      const existe = actual.some((item) => item.nombre === adicional.nombre);
-      return existe ? actual.filter((item) => item.nombre !== adicional.nombre) : [...actual, adicional];
-    });
-  }
-
   function agregarParfaitMesa(destino = "categorias") {
     if (!tamanoParfait) {
       mostrarErrorMesa("Selecciona el tamaño del parfait.");
@@ -888,12 +880,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
             <div className="box soft">No hay menú diario configurado.</div>
           ) : (
             <>
-              {itemsAlmuerzoMesa.map((item, index) => {
+              {itemsAlmuerzoMesa.map((item) => {
               const tienePlato = Boolean(item.plato || item.proteina);
               const itemSinAcompanantes = esProductoSinAcompanantes(item);
               const acompanantesItem = Array.isArray(item.acompanantes) ? item.acompanantes : [];
               const acompanantesMesaDisponibles = ["Con todo", ...menu.acompanantes.filter((acompanante) => acompanante !== "Con todo")];
-              const tieneAcompanantes = itemSinAcompanantes || acompanantesItem.length > 0;
               return (
                 <div key={item.id} id={`mesa-producto-${item.id}`} className="product-card">
                   {itemsAlmuerzoMesa.length > 1 && (

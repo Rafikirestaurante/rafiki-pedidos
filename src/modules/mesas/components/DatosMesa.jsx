@@ -1,4 +1,3 @@
-import React from "react";
 import { CampoTexto } from "../../../shared/components/common";
 import { dinero } from "../../../shared/utils/pedidos";
 import { FORMA_PAGO_CREDITO, FORMAS_PAGO_MESA, MESAS_DISPONIBLES, MESEROS_DISPONIBLES } from "../../../shared/utils/mesas";

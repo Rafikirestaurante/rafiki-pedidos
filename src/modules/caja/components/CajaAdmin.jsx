@@ -6,6 +6,7 @@ import RafikiModal from "../../../shared/components/RafikiModal";
 import RafikiTabs from "../../../shared/components/RafikiTabs";
 import { dinero } from "../../../shared/utils/pedidos";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
+import { calcularCuadreCaja } from "../../../shared/utils/financialFlows";
 import { cargarCajaArqueoPorFecha, cargarCuadreRealCaja, cargarHistorialArqueosCaja, cargarUltimoArqueoDiaAnterior, guardarAjustesCaja, guardarArqueoHistorialCaja, guardarFinCaja, guardarInicioCaja, limpiarUltimoArqueoCaja, obtenerFechaCajaHoy } from "../../../services/cajaService";
 import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
 import ThermalPrintControls from "../../impresion/ThermalPrintControls";
@@ -402,7 +403,13 @@ export default function CajaAdmin() {
   const ingresosDiasAnterioresTotal = useMemo(() => limpiarNumero(ajustesCaja.ingresosDiasAnteriores), [ajustesCaja.ingresosDiasAnteriores]);
   const ajustesEgresosTotal = useMemo(() => gastosRafaTotal + cuentasPorCobrarTotal, [gastosRafaTotal, cuentasPorCobrarTotal]);
   const ajustesNetosTotal = useMemo(() => ingresosDiasAnterioresTotal + ajustesEgresosTotal, [ingresosDiasAnterioresTotal, ajustesEgresosTotal]);
-  const dineroEsperado = useMemo(() => totalInicio + ventasTotal - gastosTotal - gastosRafaTotal - cuentasPorCobrarTotal, [totalInicio, ventasTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
+  const dineroEsperado = useMemo(() => calcularCuadreCaja({
+    inicio: totalInicio,
+    ventas: ventasTotal,
+    gastosOperativos: gastosTotal,
+    gastosRafa: gastosRafaTotal,
+    cuentasPorCobrar: cuentasPorCobrarTotal,
+  }).cajaEsperada, [totalInicio, ventasTotal, gastosTotal, gastosRafaTotal, cuentasPorCobrarTotal]);
   const arqueoVigenteInforme = useMemo(() => {
     if (ultimoArqueoGuardado?.arqueoData) return ultimoArqueoGuardado;
     return historialArqueos[0] || null;
@@ -418,7 +425,23 @@ export default function CajaAdmin() {
     if (arqueoVigenteInforme?.arqueoData) return limpiarNumero(arqueoVigenteInforme.arqueoTotal);
     return totalFin;
   }, [arqueoVigenteInforme, totalFin]);
-  const diferenciaReal = useMemo(() => totalUltimoArqueoInforme + ingresosDiasAnterioresTotal - dineroEsperado, [totalUltimoArqueoInforme, ingresosDiasAnterioresTotal, dineroEsperado]);
+  const diferenciaReal = useMemo(() => calcularCuadreCaja({
+    inicio: totalInicio,
+    ventas: ventasTotal,
+    gastosOperativos: gastosTotal,
+    gastosRafa: gastosRafaTotal,
+    cuentasPorCobrar: cuentasPorCobrarTotal,
+    ingresosDiasAnteriores: ingresosDiasAnterioresTotal,
+    arqueoContado: totalUltimoArqueoInforme,
+  }).diferencia, [
+    totalInicio,
+    ventasTotal,
+    gastosTotal,
+    gastosRafaTotal,
+    cuentasPorCobrarTotal,
+    ingresosDiasAnterioresTotal,
+    totalUltimoArqueoInforme,
+  ]);
   const estadoDiferencia = useMemo(() => estadoDiferenciaCaja(diferenciaReal), [diferenciaReal]);
   const tabsCaja = useMemo(() => ([
     { id: "inicio", label: "Inicio", icon: "🌅" },
@@ -801,7 +824,13 @@ export default function CajaAdmin() {
       pie: "Misma información · 58/80 optimizado por ancho",
     });
 
-    if (!ok) window.alert("No se pudo abrir la ventana de impresión. Revisa si el navegador bloqueó ventanas emergentes.");
+    if (!ok) {
+      mostrarAlertaRafiki({
+        tipo: "error",
+        titulo: "Impresión bloqueada",
+        mensaje: "No se pudo abrir la ventana de impresión. Permite las ventanas emergentes para Rafiki Pedidos e inténtalo nuevamente."
+      });
+    }
   }
 
   return (

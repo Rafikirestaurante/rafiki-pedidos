@@ -1,4 +1,3 @@
-import React from "react";
 import { CampoTexto } from "../../../shared/components/common";
 
 export default function MenuDiarioTab({

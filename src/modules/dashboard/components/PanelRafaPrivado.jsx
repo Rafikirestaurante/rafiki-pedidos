@@ -232,7 +232,6 @@ export default function PanelRafaPrivado() {
   }
 
   const totalBaseHoras = Math.max(...dashboardRafa.horas.map((item) => item.total), 0);
-  const totalBaseProductos = Math.max(...dashboardRafa.productosTop.map((item) => item.cantidad), 0);
   const totalBaseMesas = Math.max(...dashboardRafa.mesasTop.map((item) => item.total), 0);
   const gastosPorCategoria = gastosRafa.reduce((acc, gasto) => {
     const clave = gasto.categoria || "Sin definir";
@@ -248,9 +247,6 @@ export default function PanelRafaPrivado() {
   }
 
   function aplicarPeriodoRapido(tipo) {
-    const base = new Date(`${hoy}T00:00:00-05:00`);
-    const iso = (fecha) => fechaISOColombia(fecha);
-
     if (tipo === "hoy") {
       setModoFecha("dia");
       setFechaRafa(hoy);
@@ -604,7 +600,6 @@ export default function PanelRafaPrivado() {
           totalPedidos={totalPedidos}
           totalItemsVendidos={totalItemsVendidos}
           totalBaseHoras={totalBaseHoras}
-          totalBaseProductos={totalBaseProductos}
           totalBaseMesas={totalBaseMesas}
           totalGastos={totalGastos}
           utilidadAproximada={utilidadAproximada}

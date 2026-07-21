@@ -79,7 +79,7 @@ export default function SolicitudProductos() {
   const [observacionesSolicitud, setObservacionesSolicitud] = useState(() => borradorInicial?.observacionesSolicitud || "");
   const [mensajeSolicitud, setMensajeSolicitud] = useState({ texto: "", tipo: "info" });
   const [guardandoSolicitud, setGuardandoSolicitud] = useState(false);
-  const [solicitudFinalizada, setSolicitudFinalizada] = useState(null);
+  const [, setSolicitudFinalizada] = useState(null);
   const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState(() => borradorInicial?.nuevoProductoSolicitudNombre || "");
   const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState(() => borradorInicial?.nuevoProductoSolicitudCategoria || CATEGORIA_SOLICITUD_DEFECTO);
   const [productoSolicitudEliminarId, setProductoSolicitudEliminarId] = useState("");
@@ -89,7 +89,7 @@ export default function SolicitudProductos() {
   const [estadoPendientesCompra, setEstadoPendientesCompra] = useState(cargarEstadoPendientesCompra);
   const [mensajePendientes, setMensajePendientes] = useState({ texto: "", tipo: "info" });
   const [fechaConsultaSolicitudes, setFechaConsultaSolicitudes] = useState(fechaISOColombia());
-  const [yaExisteSolicitudHoy, setYaExisteSolicitudHoy] = useState(false);
+  const [, setYaExisteSolicitudHoy] = useState(false);
   const [catalogoInsumos, setCatalogoInsumos] = useState({
     cargando: true,
     fuente: "local",
@@ -371,14 +371,6 @@ export default function SolicitudProductos() {
     } finally {
       setCargandoPendientes(false);
     }
-  }
-
-  function actualizarProductoSolicitud(id, cambios) {
-    setProductosSolicitud((actual) =>
-      actual.map((producto) => (producto.id === id ? { ...producto, ...cambios } : producto))
-    );
-    setMensajeSolicitud({ texto: "", tipo: "info" });
-    setSolicitudFinalizada(null);
   }
 
   function alternarProductoSolicitud(id) {

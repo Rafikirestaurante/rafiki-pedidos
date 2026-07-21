@@ -9,7 +9,6 @@ import {
   normalizarPlatos,
   formatearFechaInformeMenu,
   obtenerPlatosSinPrecio,
-  crearSvgMenu,
   crearSvgMenuSoloTexto,
   generarTextoEditorMenu,
   generarTextoAcompanantesEditor,
@@ -169,11 +168,6 @@ function filtrarCatalogoMenu(productos, categoria) {
     .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre)));
 }
 
-function precioTextoProducto(producto, precioPorDefecto = "") {
-  const precio = producto?.precio === null || producto?.precio === undefined || producto?.precio === "" ? precioPorDefecto : producto.precio;
-  return precio === null || precio === undefined ? "" : String(precio);
-}
-
 function tipoAlertaGenerador(texto) {
   const normalizado = String(texto || "").toLowerCase();
   if (normalizado.includes("no se pudo") || normalizado.includes("error")) return "error";
@@ -210,7 +204,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
   const [mensaje, setMensaje] = useState("");
   const [fechaMenu, setFechaMenu] = useState(() => fechaHoyISO());
-  const [observaciones, setObservaciones] = useState("");
   const [guardandoHistorial, setGuardandoHistorial] = useState(false);
   const [historial, setHistorial] = useState([]);
   const [paginaHistorial, setPaginaHistorial] = useState(1);
@@ -296,17 +289,11 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
     return q ? catalogoAcompanantes.filter((item) => normalizarTextoCatalogo(item.nombre).includes(q)) : catalogoAcompanantes;
   }, [catalogoAcompanantes, busquedaAcompanantes]);
 
-  const svg = useMemo(
-    () => crearSvgMenu({ platos: platosLimpios, acompanantes: listaAcompanantes }),
-    [platos, acompanantes]
-  );
-
   const svgTexto = useMemo(
     () => crearSvgMenuSoloTexto({ platos: platosLimpios, acompanantes: listaAcompanantes }),
     [platos, acompanantes]
   );
 
-  const svgUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, [svg]);
   const svgTextoUrl = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgTexto)}`, [svgTexto]);
 
 
@@ -718,7 +705,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
       </style></head><body>
         <h1>${esc(titulo)}</h1>
         ${contenido}
-        <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 400); };<\/script>
+        <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 400); };</script>
       </body></html>`);
     ventana.document.close();
     setMensaje(`${titulo} del catálogo enviados a impresión.`);

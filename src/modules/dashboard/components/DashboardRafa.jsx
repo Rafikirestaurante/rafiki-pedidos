@@ -1,4 +1,3 @@
-import React from "react";
 import { dinero } from "../../../shared/utils/pedidos";
 
 function porcentaje(valor, total) {
@@ -269,7 +268,6 @@ export default function DashboardRafa({
   totalPedidos = 0,
   totalItemsVendidos,
   totalBaseHoras,
-  totalBaseProductos,
   totalBaseMesas,
   totalGastos = 0,
   utilidadAproximada = 0,

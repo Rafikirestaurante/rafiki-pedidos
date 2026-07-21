@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import RafikiActionMenu from "../../../shared/components/RafikiActionMenu";
 import RafikiBadge from "../../../shared/components/RafikiBadge";
+import { useAlertaRafiki } from "../../../shared/components/common";
 import {
   calcularTotalItem,
   crearLinkWhatsApp,
@@ -49,7 +50,7 @@ function renderDetalleCafeteria(item) {
   return filas;
 }
 
-function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, onMarcarRevisado, puedeEditarPedido = false, onEditarPedido, editandoPedido = false }) {
+function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, puedeEditarPedido = false, onEditarPedido, editandoPedido = false }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
@@ -285,6 +286,7 @@ function obtenerTipoBadgePagoPedido(pedido) {
 }
 
 function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCambiarFechaPedido, cambiandoFechaPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
+  const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [paginaActual, setPaginaActual] = useState(1);
   const tablaRef = useRef(null);
   const totalPaginas = Math.max(1, Math.ceil((pedidos?.length || 0) / pedidosPorPagina));
@@ -327,8 +329,20 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
     cambiarPaginaSinScroll(totalPaginas);
   }, [cambiarPaginaSinScroll, totalPaginas]);
 
+  const imprimirPedido = useCallback((pedido) => {
+    const ok = imprimirTicketPedido(pedido);
+    if (!ok) {
+      mostrarAlertaRafiki({
+        tipo: "error",
+        titulo: "Impresión bloqueada",
+        mensaje: "No se pudo abrir la ventana de impresión. Permite las ventanas emergentes para Rafiki Pedidos e inténtalo nuevamente."
+      });
+    }
+  }, [mostrarAlertaRafiki]);
+
   return (
     <>
+    {modalAlertaRafiki}
     <div className="pedidos-tabla-wrap" ref={tablaRef}>
       <table className="pedidos-tabla-compacta">
         <thead>
@@ -400,7 +414,7 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                         id: "imprimir",
                         label: "Imprimir ticket",
                         icon: "🖨️",
-                        onClick: () => imprimirTicketPedido(pedido),
+                        onClick: () => imprimirPedido(pedido),
                       },
                       onCambiarFechaPedido && estadoNormalizado !== "Borrado"
                         ? {
