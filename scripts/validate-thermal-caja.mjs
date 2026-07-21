@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { obtenerVersionBuild, obtenerVersionPublica, versionRafikiEsAlMenos } from "./validation-utils.mjs";
 
 const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
@@ -11,7 +12,6 @@ function check(nombre, condicion, detalle = "") {
 
 const caja = read("src/modules/caja/components/CajaAdmin.jsx");
 const service = read("src/modules/impresion/thermalReportService.js");
-const version = read("src/config/rafikiBuild.js");
 
 check("Caja usa servicio térmico central", caja.includes("imprimirReporteTermico") && caja.includes("imprimirInformeCajaTermico"));
 check("Caja conserva impresión 58 y 80 mediante selector", caja.includes("ThermalPrintControls") && caja.includes("onPrint={imprimirInformeCajaTermico}"));
@@ -24,7 +24,8 @@ check("Caja imprime arqueos realizados con saldos", caja.includes("crearFilasArq
 check("Caja imprime detalle de gastos enriquecido", caja.includes("gasto.metodoPago") && caja.includes("Detalle gastos"));
 check("Caja conserva fórmula opción 2", caja.includes("Arqueo + ingresos ant. - caja esperada") && caja.includes("Ingresos días anteriores no suben ventas ni caja esperada"));
 check("Servicio térmico sigue compartiendo data para 58/80", service.includes("renderSecciones(secciones)") && service.includes("normalizarFormatoTermico"));
-check("Versión conserva Informe Caja térmico reforzado", version.includes("FASE35C-INFORME-CAJA-TERMICO-REFORZADO") || version.includes("FASE35D-GASTOS-CARTERA-TERMICO") || version.includes("FASE35E-SELECTOR-TERMICO") || version.includes("HOTFIX35E1-PEDIDOS-HOY-TERMICO-COMPACTO") || version.includes("HOTFIX35E2-TABLAS-TERMICAS-COMPACTAS") || version.includes("FASE35F-PRUEBAS-CIERRE-IMPRESION-TERMICA") || version.includes("35F1-AHORRO-PAPEL-TERMICO-ESC-POS") || version.includes("35F2-TERMICO-LETRA-NORMAL-1X1") || version.includes("35F3-CONTRASTE-TERMICO-1X1"));
+check("Versión posterior al cierre térmico 125.9", versionRafikiEsAlMenos(obtenerVersionBuild(), "125.9"));
+check("Metadatos de versión sincronizados", obtenerVersionBuild() === obtenerVersionPublica());
 
 const errores = checks.filter((item) => !item.condicion);
 if (errores.length) {

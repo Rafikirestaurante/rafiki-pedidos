@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import { versionRafikiEsAlMenos } from "./validation-utils.mjs";
 
 const root = process.cwd();
 const leer = (archivo) => fs.readFileSync(path.join(root, archivo), "utf8");
 const archivos = {
   componente: leer("src/modules/dashboard/components/VentasMensualesDashboard.jsx"),
-  estilos: leer("src/styles/appStyles.js"),
+  estilos: leer("src/styles/app.css"),
   version: leer("src/config/rafikiBuild.js"),
   documento: leer("docs/FASE36B1B-GRAFICO-BARRAS-FILTROS.md")
 };
@@ -31,7 +32,7 @@ const validaciones = [
   ["Hay estilos responsivos de filtros", archivos.estilos.includes(".ventas-barras-filtros")],
   ["Hay estilos para el resumen de barras", archivos.estilos.includes(".ventas-barras-resumen")],
   ["Existe documentación de la subfase", archivos.documento.includes("Fase 36B.1B")],
-  ["Versión corresponde a 127.1", archivos.version.includes("127.1-FASE36B1B-GRAFICO-BARRAS-FILTROS")]
+  ["Versión es 127.1 o posterior", versionRafikiEsAlMenos(archivos.version, "127.1")]
 ];
 
 let fallos = 0;

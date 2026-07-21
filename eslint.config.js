@@ -1,5 +1,20 @@
 import js from "@eslint/js";
 import globals from "globals";
+import react from "eslint-plugin-react";
+
+const reglasComunes = {
+  "no-unused-vars": [
+    "warn",
+    {
+      argsIgnorePattern: "^_",
+      varsIgnorePattern: "^_",
+      caughtErrors: "none",
+      ignoreRestSiblings: true
+    }
+  ],
+  "no-console": "off",
+  "no-useless-escape": "warn"
+};
 
 export default [
   {
@@ -7,7 +22,10 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ["**/*.{js,jsx}"],
+    files: ["src/**/*.{js,jsx}"],
+    plugins: {
+      react
+    },
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -18,16 +36,25 @@ export default [
       },
       globals: {
         ...globals.browser,
-        ...globals.node,
         ...globals.es2021
       }
     },
     rules: {
-      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
-      "no-console": "off",
-      "no-undef": "off",
-      "no-useless-escape": "warn",
-      "react/react-in-jsx-scope": "off"
+      ...reglasComunes,
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error"
     }
+  },
+  {
+    files: ["scripts/**/*.mjs", "*.config.js", "eslint.config.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        ...globals.es2021
+      }
+    },
+    rules: reglasComunes
   }
 ];

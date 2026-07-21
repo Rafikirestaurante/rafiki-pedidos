@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { obtenerVersionBuild, obtenerVersionPublica, versionRafikiEsAlMenos } from './validation-utils.mjs';
 
 const root = process.cwd();
 let errores = 0;
@@ -65,8 +66,10 @@ const panelMesas = leer('src/modules/mesas/components/PanelMesas.jsx');
 ok(!panelMesas.includes('clienteEspecialAplicado'), '/mesas no depende de clienteEspecialAplicado');
 ok(!panelMesas.includes('CodigoClienteEspecial'), '/mesas no renderiza recuadro de código especial');
 
-contieneRegex('src/config/rafikiBuild.js', /(124\.(44|45)|125\.[0-9]+)-/, 'versión de build mantiene línea 124.44 o versión posterior');
-contieneRegex('public/rafiki-version.json', /(124\.(44|45)|125\.[0-9]+)-/, 'versión pública mantiene línea 124.44 o versión posterior');
+const versionBuild = obtenerVersionBuild();
+const versionPublica = obtenerVersionPublica();
+ok(versionRafikiEsAlMenos(versionBuild, '124.44'), 'versión de build es 124.44 o posterior');
+ok(versionBuild === versionPublica, 'versión de build y versión pública están sincronizadas');
 
 if (errores > 0) {
   console.error(`\nValidación Clientes Especiales FALLÓ: ${errores} problema(s).`);

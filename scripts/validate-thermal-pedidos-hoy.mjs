@@ -17,7 +17,7 @@ const camposEnd = pedidos.indexOf("function imprimirResumenPedidosFiltradosTermi
 const bloqueCampos = camposStart >= 0 && camposEnd > camposStart ? pedidos.slice(camposStart, camposEnd) : "";
 
 check("Servicio térmico conserva misma data para 58 y 80", service.includes("renderSecciones(secciones)") && service.includes("renderListado(listado, claveFormato, cfg)") && service.includes("tableChars"));
-check("Pedidos Hoy define clasificación robusta", pedidos.includes("pedidoCumpleFiltroTipoPedido") && pedidos.includes("pedidoPareceParaLlevar") && pedidos.includes("pedidoTieneCafeteria"));
+check("Pedidos Hoy define clasificación robusta", pedidos.includes("pedidoCumpleFiltroTipoPedido") && pedidos.includes("pedidoPareceParaLlevar") && pedidos.includes("pedidoSinItemsPareceCafeteria") && pedidos.includes("itemEsCafeteriaPedidoHoy") && pedidos.includes("itemEsRestaurantePedidoHoy"));
 check("Pedidos Hoy imprime rango y búsqueda", pedidos.includes("describirRangoBusquedaPedidosTermico") && pedidos.includes("rangoBusquedaPedidosTermico"));
 check("Pedidos Hoy conserva resumen compacto", pedidos.includes("titulo: \"Resumen\"") && pedidos.includes("{ etiqueta: \"Pedidos\"") && pedidos.includes("{ etiqueta: \"Total\""));
 check("Pedidos Hoy imprime listado compacto", bloqueCampos.includes("Pedido") && bloqueCampos.includes("Cliente") && bloqueCampos.includes("Ubicación") && bloqueCampos.includes("Total"));

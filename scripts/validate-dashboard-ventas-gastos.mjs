@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { versionRafikiEsAlMenos } from "./validation-utils.mjs";
 
 const root = process.cwd();
 const leer = (archivo) => fs.readFileSync(path.join(root, archivo), "utf8");
@@ -35,8 +36,8 @@ const validaciones = [
   ["Excluye pedidos borrados", archivos.utilidad.includes('obtenerEstadoPedido(pedido) === "Borrado"')],
   ["Servicio expone carga de gastos", archivos.servicio.includes("cargarGastosDashboardRango")],
   [
-    "Versión conserva y amplía el Dashboard mensual",
-    archivos.version.includes("127.1-FASE36B1B-GRAFICO-BARRAS-FILTROS")
+    "Versión es 127.0 o posterior",
+    versionRafikiEsAlMenos(archivos.version, "127.0")
   ]
 ];
 

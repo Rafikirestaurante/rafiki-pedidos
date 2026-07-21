@@ -1,3 +1,54 @@
+## 127.5 — Fase 36B.5 Rendimiento y división del paquete principal
+
+Versión: `127.5-FASE36B5-RENDIMIENTO-DIVISION-PAQUETE-2026-07-21`
+
+El paquete principal se reduce de aproximadamente 799 KB a 166 KB. Los estilos globales pasan a CSS independiente; React, Supabase y Workbox quedan separados; y Cliente, Pedidos Hoy, Login, cabecera administrativa, editor de menú y runtime PWA se cargan únicamente cuando se necesitan.
+
+Se agrega `npm run performance:check`, integrado en `npm run check`, para controlar el tamaño de los paquetes. No se modifican flujos operativos, datos ni cálculos.
+
+---
+
+## 127.4 — Fase 36B.4 Modales y mensajes uniformes
+
+Versión: `127.4-FASE36B4-MODALES-MENSAJES-UNIFORMES-2026-07-21`
+
+Se reemplazan las ventanas nativas `window.confirm`, `window.alert`, `confirm` y `alert` por componentes visuales de Rafiki. Las acciones peligrosas continúan exigiendo confirmación mediante modal, mientras que los resultados cotidianos se muestran como avisos breves no bloqueantes.
+
+La primera cobertura incluye eliminación de gastos, ocultamiento y restauración de catálogo, limpieza de caché PWA y bloqueos de impresión en Pedidos Hoy, Caja y tickets individuales. Gastos y Catálogo usan avisos uniformes para éxitos, advertencias y respaldos locales. Los botones mantienen estado de proceso para evitar dobles ejecuciones.
+
+Se agrega `npm run feedback:check`, integrado en `npm run check`, para impedir que vuelvan a introducirse alertas o confirmaciones nativas y verificar la presencia del sistema uniforme de mensajes. No se modifican permisos, cálculos financieros, servicios ni base de datos.
+
+---
+
+## 127.3 — Fase 36B.3 Pruebas de flujos financieros críticos
+
+Versión: `127.3-FASE36B3-PRUEBAS-FLUJOS-FINANCIEROS-2026-07-21`
+
+Se incorporan 25 escenarios específicos para proteger pedidos a crédito, cambios de forma de pago, abonos, anulaciones, borrados, recálculo de Cartera, ventas, gastos, ingresos de días anteriores, caja esperada y diferencia final del arqueo.
+
+Las reglas probadas son usadas directamente por Cartera y Caja. El nuevo control `npm run financial-flows:check` también valida el contrato del RPC transaccional de abonos, su bloqueo `FOR UPDATE`, distribución FIFO, rechazo de sobreabonos y la conexión de los flujos de Pedidos con Cartera.
+
+La suite completa aumenta de 22 a 47 pruebas. No se agregan migraciones SQL ni se escriben datos reales durante las verificaciones.
+
+---
+
+## 127.2 — Fase 36B.2 Saneamiento y verificación automática
+
+Versión: `127.2-FASE36B2-SANEAMIENTO-VERIFICACION-AUTOMATICA-2026-07-21`
+
+Se corrigen validadores heredados que rechazaban versiones nuevas o dependían de cadenas exactas. ESLint ahora distingue correctamente React/JSX y scripts Node, y la base queda sin errores ni advertencias de código sin uso.
+
+Se incorpora `package-lock.json` y un comando único de control:
+
+```bash
+npm install
+npm run check
+```
+
+`npm run check` ejecuta metadatos, lint estricto, 22 pruebas, compilación, PWA, Dashboard, Clientes Especiales, `/cliente` para llevar y todos los validadores térmicos. No se modifican cálculos ni flujos operativos.
+
+---
+
 ## 127.1 — Fase 36B.1B Gráfico de barras con filtros
 
 Versión: `127.1-FASE36B1B-GRAFICO-BARRAS-FILTROS-2026-07-21`

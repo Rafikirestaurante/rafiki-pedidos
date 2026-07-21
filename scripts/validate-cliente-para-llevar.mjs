@@ -29,7 +29,7 @@ exigir(
 );
 
 exigir(
-  app.includes("setItemsPedido((actual) =>\n      normalizarItemsParaDestinoCliente(actual, { comerRestauranteCliente })"),
+  /setItemsPedido\s*\(\s*\(actual\)\s*=>[\s\S]{0,320}normalizarItemsParaDestinoCliente\s*\(\s*actual\s*,\s*\{\s*comerRestauranteCliente(?:\s*:\s*comerEnRestaurante)?\s*\}\s*\)/s.test(app),
   "App sincroniza el estado visual de /cliente con para llevar/restaurante."
 );
 
