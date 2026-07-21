@@ -22,6 +22,7 @@ import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
 } from "./shared/utils/offlinePedidos";
+import { registrarSincronizacionDiagnostico } from "./shared/utils/diagnosticoRafiki";
 import { useRealtimePedidos } from "./shared/hooks/useRealtimePedidos";
 import { ADMIN_TABS_VALIDAS, guardarAdminTabActiva, useAuthAdmin } from "./shared/hooks/useAuthAdmin";
 import { usePedidosHoy } from "./shared/hooks/usePedidosHoy";
@@ -152,6 +153,14 @@ export default function App() {
               });
             }
           }
+        });
+
+        registrarSincronizacionDiagnostico({
+          origen: "Pedidos",
+          estado: "ok",
+          detalle: resultado.enviados > 0
+            ? `${resultado.enviados} pedido${resultado.enviados === 1 ? "" : "s"} pendiente${resultado.enviados === 1 ? "" : "s"} sincronizado${resultado.enviados === 1 ? "" : "s"}.`
+            : "Conexión verificada; no había pedidos pendientes por sincronizar."
         });
 
         if (resultado.enviados > 0) {

@@ -1,4 +1,5 @@
 import { SelectorCantidad } from "./common";
+import { detalleCafeteriaEstaEnTitulo, nombreCafeteriaResumen } from "../utils/resumenPedidoDisplay";
 import {
   calcularTotalItem,
   dinero,
@@ -27,8 +28,9 @@ function nombreItemResumen(item = {}) {
     const tipo = textoLimpio(item.tipo);
     const producto = textoLimpio(item.producto || item.plato || item.proteina || item.nombre);
 
-    if (tipo === "Parfait") return "Parfait";
-    if (["Batido cremoso", "Batido refrescante", "Jugo tradicional"].includes(tipo)) return tipo;
+    const nombreEspecial = nombreCafeteriaResumen(item);
+    if (nombreEspecial) return nombreEspecial;
+    if (["Batido refrescante", "Jugo tradicional"].includes(tipo)) return tipo;
     if (tipo === "Desayuno") return producto || "Desayuno";
     return producto || tipo || "Producto";
   }
@@ -46,12 +48,9 @@ function detallesCafeteria(item = {}, titulo = "") {
   const tipo = textoLimpio(item.tipo);
   const producto = textoLimpio(item.producto || item.plato || item.proteina || item.nombre);
 
-  if (tipo === "Parfait") {
-    agregarUnico(detalles, item.tamano);
-    if (Array.isArray(item.frutas) && item.frutas.length > 0) {
-      agregarUnico(detalles, item.frutas.map(textoLimpio).filter(Boolean).join(" / "));
-    }
-  } else if (["Batido cremoso", "Batido refrescante", "Jugo tradicional"].includes(tipo)) {
+  if (detalleCafeteriaEstaEnTitulo(item)) {
+    if (tipo !== "Parfait") agregarUnico(detalles, item.base);
+  } else if (["Batido refrescante", "Jugo tradicional"].includes(tipo)) {
     agregarUnico(detalles, producto);
     agregarUnico(detalles, item.base);
   } else {
