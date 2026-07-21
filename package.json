@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "pwa:check": "node scripts/validate-pwa.mjs",
+    "dashboard-ventas:check": "node scripts/validate-dashboard-ventas-gastos.mjs",
     "clientes-especiales:check": "node scripts/validate-clientes-especiales.mjs",
     "cliente-para-llevar:check": "node scripts/validate-cliente-para-llevar.mjs",
     "thermal-reports:check": "node scripts/validate-thermal-reports.mjs",
@@ -19,7 +20,8 @@
     "thermal-tabla:check": "node scripts/validate-thermal-tabla-compacta.mjs",
     "thermal-cierre:check": "node scripts/validate-thermal-cierre.mjs",
     "thermal-ahorro:check": "node scripts/validate-thermal-ahorro-papel.mjs",
-    "thermal-contraste:check": "node scripts/validate-thermal-contraste.mjs"
+    "thermal-contraste:check": "node scripts/validate-thermal-contraste.mjs",
+    "dashboard-barras:check": "node scripts/validate-dashboard-barras-filtros.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

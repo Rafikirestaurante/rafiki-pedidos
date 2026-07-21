@@ -1,6 +1,6 @@
 {
-  "version": "126.9-FASE35B5-RESUMEN-PEDIDO-ESTILO-FINAL-2026-07-10",
-  "phase": "Fase 35B.5 - Resumen del pedido estilo final",
-  "date": "2026-07-10",
-  "notes": "Aplica el estilo final del Resumen del pedido en /cliente, /mesas, /cliente-beta y /mesas-beta: plato principal destacado, acompañantes uno debajo del otro, cafetería/parfait más limpios, sin textos de categoría/base, botón Borrar más pequeño y acciones de edición organizadas."
+  "version": "127.1-FASE36B1B-GRAFICO-BARRAS-FILTROS-2026-07-21",
+  "phase": "Fase 36B.1B - Gráfico de barras con filtros",
+  "date": "2026-07-21",
+  "notes": "Agrega filtros por ventas, pedidos y ticket promedio al gráfico mensual de barras, con escala dinámica, resumen del indicador y detalle al tocar cada día."
 }
