@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.0-FASE36B1-DASHBOARD-VENTAS-GASTOS-2026-07-21",
-  phase: "Fase 36B.1 - Dashboard mensual de ventas y gastos",
+  version: "127.1-FASE36B1B-GRAFICO-BARRAS-FILTROS-2026-07-21",
+  phase: "Fase 36B.1B - Gráfico de barras con filtros",
   date: "2026-07-21",
-  fase: "36B1-DASHBOARD-VENTAS-GASTOS",
+  fase: "36B1B-GRAFICO-BARRAS-FILTROS",
   notes:
-    "Agrega al Dashboard un calendario mensual de ventas, gráfica diaria de barras, navegación entre meses, indicadores comerciales y detalle por día con total vendido, total de gastos, resultado ventas menos gastos, pedidos y ticket promedio. No muestra desglose por métodos de pago."
+    "Amplía el gráfico mensual de barras con filtros por ventas, pedidos y ticket promedio. Cada indicador recalcula la escala, muestra acumulado, promedio y mejor día, y conserva el detalle diario con ventas, gastos y resultado."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
