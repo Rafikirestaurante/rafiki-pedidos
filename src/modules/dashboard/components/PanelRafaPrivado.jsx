@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardRafa from "./DashboardRafa";
+import VentasMensualesDashboard from "./VentasMensualesDashboard";
 import DiagnosticoRafiki, { iniciarDiagnosticoRafikiLigero } from "./DiagnosticoRafiki";
 import { crearDetalleDashboardSeleccionado } from "../utils/dashboardStats";
 import {
@@ -585,6 +586,15 @@ export default function PanelRafaPrivado() {
       {cargandoRafa && <div className="alert alert-info">Cargando informe...</div>}
 
       {pestanaRafa === "dashboard" && (
+        <>
+        <VentasMensualesDashboard
+          onSeleccionarDia={(fecha) => {
+            if (!fecha) return;
+            setModoFecha("dia");
+            setFechaRafa(fecha);
+            setPestanaRafa("informe");
+          }}
+        />
         <DashboardRafa
           dashboardRafa={dashboardRafa}
           resumenVentas={resumenVentas}
@@ -618,6 +628,7 @@ export default function PanelRafaPrivado() {
           })}
           onCerrarDetalle={() => setDetalleDashboard("")}
         />
+        </>
       )}
 
       {pestanaRafa === "diagnostico" && <DiagnosticoRafiki />}

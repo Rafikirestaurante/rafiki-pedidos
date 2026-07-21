@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "126.9-FASE35B5-RESUMEN-PEDIDO-ESTILO-FINAL-2026-07-10",
-  phase: "Fase 35B.5 - Resumen del pedido estilo final",
-  date: "2026-07-10",
-  fase: "35B5-RESUMEN-PEDIDO-ESTILO-FINAL",
+  version: "127.0-FASE36B1-DASHBOARD-VENTAS-GASTOS-2026-07-21",
+  phase: "Fase 36B.1 - Dashboard mensual de ventas y gastos",
+  date: "2026-07-21",
+  fase: "36B1-DASHBOARD-VENTAS-GASTOS",
   notes:
-    "Aplica el estilo final del Resumen del pedido en /cliente, /mesas, /cliente-beta y /mesas-beta: plato principal destacado, acompañantes uno debajo del otro, cafetería/parfait más limpios, sin textos de categoría/base, botón Borrar más pequeño y acciones de edición organizadas."
+    "Agrega al Dashboard un calendario mensual de ventas, gráfica diaria de barras, navegación entre meses, indicadores comerciales y detalle por día con total vendido, total de gastos, resultado ventas menos gastos, pedidos y ticket promedio. No muestra desglose por métodos de pago."
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
