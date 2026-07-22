@@ -3,6 +3,7 @@ import {
   actualizarClienteEspecial,
   crearClienteEspecial,
   crearReglasClienteEspecialBase,
+  diasEnMesCumpleanos,
   listarClientesEspeciales,
   normalizarCodigoClienteEspecial,
   validarCodigoClienteEspecial
@@ -14,6 +15,9 @@ const FORM_INICIAL = {
   nombre: "",
   telefono: "",
   ubicacion: "",
+  cumple_mes: "",
+  cumple_dia: "",
+  origen_registro: "administracion",
   mensaje_bienvenida: "",
   observaciones: "",
   activo: true,
@@ -26,12 +30,24 @@ function limpiarTexto(valor) {
   return String(valor || "").trim().replace(/\s+/g, " ");
 }
 
+const MESES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+function formatearCumpleanos(cliente = {}) {
+  const mes = Number(cliente.cumple_mes);
+  const dia = Number(cliente.cumple_dia);
+  if (!mes || !dia || !MESES_CORTOS[mes - 1]) return "—";
+  return `${dia} ${MESES_CORTOS[mes - 1]}`;
+}
+
 function formDesdeCliente(cliente = {}) {
   return {
     codigo: String(cliente.codigo || ""),
     nombre: String(cliente.nombre || ""),
     telefono: String(cliente.telefono || ""),
     ubicacion: String(cliente.ubicacion || ""),
+    cumple_mes: cliente.cumple_mes || "",
+    cumple_dia: cliente.cumple_dia || "",
+    origen_registro: cliente.origen_registro === "cliente" ? "cliente" : "administracion",
     mensaje_bienvenida: String(cliente.mensaje_bienvenida || ""),
     observaciones: String(cliente.observaciones || ""),
     activo: cliente.activo !== false,
@@ -48,6 +64,9 @@ function prepararPayload(form) {
     nombre,
     telefono: String(form.telefono || "").trim(),
     ubicacion: limpiarTexto(form.ubicacion),
+    cumple_mes: form.cumple_mes ? Number(form.cumple_mes) : null,
+    cumple_dia: form.cumple_dia ? Number(form.cumple_dia) : null,
+    origen_registro: form.origen_registro === "cliente" ? "cliente" : "administracion",
     mensaje_bienvenida: limpiarTexto(form.mensaje_bienvenida) || (nombre ? `Bienvenido, ${nombre}` : ""),
     observaciones: limpiarTexto(form.observaciones),
     activo: form.activo !== false,
@@ -74,6 +93,7 @@ function ClienteEspecialTabla({ clientes, onEditar, onToggleActivo }) {
               <th>Cliente</th>
               <th>Teléfono</th>
               <th>Ubicación</th>
+              <th>Cumpleaños</th>
               <th>Reglas</th>
               <th>Acciones</th>
             </tr>
@@ -99,6 +119,12 @@ function ClienteEspecialTabla({ clientes, onEditar, onToggleActivo }) {
                 </td>
                 <td>{cliente.telefono || "—"}</td>
                 <td>{cliente.ubicacion || "—"}</td>
+                <td>
+                  {formatearCumpleanos(cliente)}
+                  {cliente.origen_registro === "cliente" ? (
+                    <small style={{ display: "block", color: "#6b7280" }}>Registro web</small>
+                  ) : null}
+                </td>
                 <td>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {cliente.sin_restriccion_acompanantes && <span className="badge badge-estado-negro">Sin mínimo</span>}
@@ -132,6 +158,8 @@ function ClienteEspecialTabla({ clientes, onEditar, onToggleActivo }) {
               <span>Código: {cliente.codigo}</span>
               {cliente.telefono && <span>{cliente.telefono}</span>}
               {cliente.ubicacion && <span>{cliente.ubicacion}</span>}
+              {cliente.cumple_mes && cliente.cumple_dia ? <span>🎂 {formatearCumpleanos(cliente)}</span> : null}
+              {cliente.origen_registro === "cliente" ? <span>Registro web</span> : null}
             </div>
             {cliente.mensaje_bienvenida && <p style={{ margin: "8px 0 0", color: "#4b5563" }}>{cliente.mensaje_bienvenida}</p>}
             <div className="catalogo-card-meta" style={{ marginTop: 8 }}>
@@ -204,10 +232,18 @@ export default function ClientesEspecialesCatalogo() {
   }, []);
 
   function cambiarCampo(campo, valor) {
-    setForm((prev) => ({
-      ...prev,
-      [campo]: campo === "codigo" ? normalizarCodigoClienteEspecial(valor) : valor
-    }));
+    setForm((prev) => {
+      const siguiente = {
+        ...prev,
+        [campo]: campo === "codigo" ? normalizarCodigoClienteEspecial(valor) : valor
+      };
+
+      if (campo === "cumple_mes" && Number(siguiente.cumple_dia) > diasEnMesCumpleanos(valor)) {
+        siguiente.cumple_dia = "";
+      }
+
+      return siguiente;
+    });
   }
 
   function limpiarFormulario() {
@@ -292,12 +328,12 @@ export default function ClientesEspecialesCatalogo() {
   return (
     <div style={{ marginTop: 12 }}>
       <div className="alert alert-info">
-        Esta pantalla solo administra la base de clientes especiales. En esta subfase todavía no cambia el comportamiento de <strong>/cliente</strong> ni <strong>/mesas</strong>.
+        Administra clientes registrados y clientes especiales. Los registros realizados desde <strong>/cliente</strong> no reciben privilegios VIP automáticamente.
       </div>
 
       {!supabaseConfigOk && (
         <div className="alert alert-warning" style={{ marginTop: 12 }}>
-          Catálogo sin conexión a Supabase: {supabaseConfigMensaje}. Ejecuta el SQL de Fase 34A y revisa las variables de entorno antes de administrar clientes especiales.
+          Catálogo sin conexión a Supabase: {supabaseConfigMensaje}. Ejecuta las migraciones pendientes y revisa las variables de entorno.
         </div>
       )}
 
@@ -371,6 +407,8 @@ export default function ClientesEspecialesCatalogo() {
                 <span>Código: <strong>{resultadoValidacion.cliente.codigo}</strong></span>
                 <span>Teléfono: <strong>{resultadoValidacion.cliente.telefono || "—"}</strong></span>
                 <span>Ubicación: <strong>{resultadoValidacion.cliente.ubicacion || "—"}</strong></span>
+                <span>Cumpleaños: <strong>{formatearCumpleanos(resultadoValidacion.cliente)}</strong></span>
+                <span>{resultadoValidacion.cliente.origen_registro === "cliente" ? "Registro web" : "Registro administrativo"}</span>
                 <span>{resultadoValidacion.cliente.sin_restriccion_acompanantes ? "Sin restricción de acompañantes" : "Mantiene restricción"}</span>
                 <span>{resultadoValidacion.cliente.habilita_cafeteria ? "Cafetería habilitada" : "Cafetería no habilitada"}</span>
                 <span>{resultadoValidacion.cliente.permite_modificar_datos ? "Datos editables" : "Datos bloqueados"}</span>
@@ -416,6 +454,28 @@ export default function ClientesEspecialesCatalogo() {
               onChange={(e) => cambiarCampo("ubicacion", e.target.value)}
               placeholder="Ej: Oficina, apartamento, recepción"
             />
+          </label>
+          <label className="field-label">
+            Mes de cumpleaños
+            <select value={form.cumple_mes} onChange={(e) => cambiarCampo("cumple_mes", e.target.value)}>
+              <option value="">Sin registrar</option>
+              {MESES_CORTOS.map((mes, indice) => (
+                <option key={mes} value={indice + 1}>{mes}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field-label">
+            Día de cumpleaños
+            <select
+              value={form.cumple_dia}
+              onChange={(e) => cambiarCampo("cumple_dia", e.target.value)}
+              disabled={!form.cumple_mes}
+            >
+              <option value="">Sin registrar</option>
+              {Array.from({ length: diasEnMesCumpleanos(form.cumple_mes) }, (_, indice) => indice + 1).map((dia) => (
+                <option key={dia} value={dia}>{dia}</option>
+              ))}
+            </select>
           </label>
           <label className="field-label">
             Mensaje de bienvenida

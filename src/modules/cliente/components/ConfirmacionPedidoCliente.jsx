@@ -8,6 +8,10 @@ export default function ConfirmacionPedidoCliente({
   nuevoPedidoCliente,
 }) {
   const clienteEspecial = obtenerClienteEspecialPedido(pedidoFinalizado);
+  const tienePrivilegiosEspeciales = Boolean(
+    clienteEspecial?.reglas?.sin_restriccion_acompanantes
+      || clienteEspecial?.reglas?.habilita_cafeteria
+  );
 
   return (
 <main style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -21,8 +25,8 @@ export default function ConfirmacionPedidoCliente({
                 <div className="card-pad">
                   {clienteEspecial ? (
                     <div className="confirmacion-cliente-especial">
-                      <span>⭐ Cliente especial aplicado</span>
-                      <strong>{clienteEspecial.nombre || clienteEspecial.codigo || "Cliente especial"}</strong>
+                      <span>{tienePrivilegiosEspeciales ? "⭐ Cliente especial aplicado" : "✓ Cliente registrado"}</span>
+                      <strong>{clienteEspecial.nombre || clienteEspecial.codigo || "Cliente"}</strong>
                     </div>
                   ) : null}
 

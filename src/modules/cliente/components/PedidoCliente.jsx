@@ -137,6 +137,9 @@ export default function PedidoCliente({
                   <CodigoClienteEspecial
                     clienteEspecialAplicado={clienteEspecialAplicado}
                     setClienteEspecialAplicado={setClienteEspecialAplicado}
+                    cliente={cliente}
+                    telefono={telefono}
+                    ubicacion={ubicacion}
                     setCliente={setCliente}
                     setTelefono={setTelefono}
                     setUbicacion={setUbicacion}

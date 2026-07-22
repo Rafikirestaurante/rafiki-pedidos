@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.6-FASE36B6-MODULARIZACION-PROGRESIVA-2026-07-21",
-  phase: "Fase 36B.6 - Modularización progresiva",
+  version: "127.8-FASE37A-REGISTRO-CLIENTES-CUMPLEANOS-2026-07-21",
+  phase: "Fase 37A - Registro de clientes y cumpleaños",
   date: "2026-07-21",
-  fase: "36B6-MODULARIZACION-PROGRESIVA",
+  fase: "37A-REGISTRO-CLIENTES-CUMPLEANOS",
   notes:
-    "Separa carga diferida, utilidades, estilos y modales de componentes grandes para facilitar mantenimiento sin modificar la lógica funcional.",
+    "Hace discreto el acceso por código en /cliente y agrega registro con celular, ubicación y cumpleaños sin otorgar privilegios VIP automáticos.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
