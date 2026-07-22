@@ -7364,3 +7364,202 @@ body.rafiki-modal-open {
     grid-template-columns: 32px minmax(0, 1fr) 28px;
   }
 }
+
+/* Fase 37A - Acceso y registro de cliente mucho más discreto en /cliente */
+.cliente-especial-box.cliente-especial-box-discreta {
+  margin: 0 0 12px;
+  padding: 9px 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 13px;
+  background: #fafaf9;
+  box-shadow: none;
+}
+
+.cliente-especial-heading-discreta {
+  align-items: center;
+  margin: 0 0 7px;
+  gap: 8px;
+}
+
+.cliente-especial-heading-discreta strong {
+  color: #57534e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cliente-especial-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #c2410c;
+  padding: 2px 0;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.cliente-especial-box-discreta .cliente-especial-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.cliente-especial-box-discreta .cliente-especial-form input {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-width: 1px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.cliente-especial-box-discreta .cliente-especial-form .button {
+  min-height: 36px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.cliente-especial-identidad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cliente-especial-identidad > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.cliente-especial-identidad small {
+  color: #78716c;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cliente-especial-identidad strong {
+  overflow: hidden;
+  color: #44403c;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cliente-especial-box-discreta .cliente-especial-message {
+  margin-top: 7px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cliente-registro-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.cliente-registro-form .field-label {
+  display: grid;
+  gap: 6px;
+  color: #44403c;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.cliente-registro-form .field-label small {
+  color: #78716c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cliente-registro-form input,
+.cliente-registro-form select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d6d3d1;
+  border-radius: 11px;
+  background: #fff;
+  padding: 9px 11px;
+  color: #292524;
+}
+
+.cliente-registro-ubicacion,
+.cliente-registro-cumpleanos,
+.cliente-registro-consentimiento,
+.cliente-registro-form > .cliente-especial-message {
+  grid-column: 1 / -1;
+}
+
+.cliente-registro-cumpleanos {
+  margin: 0;
+  padding: 11px;
+  border: 1px solid #fed7aa;
+  border-radius: 13px;
+  background: #fff7ed;
+}
+
+.cliente-registro-cumpleanos legend {
+  padding: 0 5px;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.cliente-registro-cumpleanos > p {
+  margin: 0 0 9px;
+  color: #78716c;
+  font-size: 12px;
+}
+
+.cliente-registro-cumpleanos > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 0.55fr);
+  gap: 10px;
+}
+
+.cliente-registro-consentimiento {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #57534e;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.cliente-registro-consentimiento input {
+  flex: 0 0 auto;
+  width: 18px;
+  min-height: 18px;
+  margin-top: 1px;
+  padding: 0;
+}
+
+@media (max-width: 620px) {
+  .cliente-especial-box-discreta .cliente-especial-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .cliente-especial-box-discreta .cliente-especial-form .button {
+    width: auto;
+  }
+
+  .cliente-registro-form {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-registro-ubicacion,
+  .cliente-registro-cumpleanos,
+  .cliente-registro-consentimiento,
+  .cliente-registro-form > .cliente-especial-message {
+    grid-column: auto;
+  }
+}

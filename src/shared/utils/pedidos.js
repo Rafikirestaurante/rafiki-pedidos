@@ -43,12 +43,13 @@ export function normalizarClienteEspecialParaPedido(clienteEspecial = null) {
     id: clienteEspecial.id || null,
     codigo,
     nombre,
+    origen_registro: clienteEspecial.origen_registro === "cliente" ? "cliente" : "administracion",
     reglas: {
       sin_restriccion_acompanantes: clienteEspecial.sin_restriccion_acompanantes !== false,
       habilita_cafeteria: clienteEspecial.habilita_cafeteria !== false,
       permite_modificar_datos: clienteEspecial.permite_modificar_datos !== false
     },
-    origen: "cliente"
+    origen: clienteEspecial.origen_registro === "cliente" ? "registro_cliente" : "cliente_especial"
   };
 }
 
@@ -64,6 +65,7 @@ export function obtenerClienteEspecialPedido(pedido = {}) {
         id: clienteEspecial.id,
         codigo: clienteEspecial.codigo,
         nombre: clienteEspecial.nombre,
+        origen_registro: clienteEspecial.origen_registro,
         sin_restriccion_acompanantes: reglas.sin_restriccion_acompanantes ?? clienteEspecial.sin_restriccion_acompanantes,
         habilita_cafeteria: reglas.habilita_cafeteria ?? clienteEspecial.habilita_cafeteria,
         permite_modificar_datos: reglas.permite_modificar_datos ?? clienteEspecial.permite_modificar_datos
