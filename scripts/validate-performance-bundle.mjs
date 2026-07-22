@@ -12,6 +12,7 @@ function controlar(nombre, condicion, detalle = "") {
 }
 const app = fs.readFileSync(path.join(ROOT, "src/App.jsx"), "utf8");
 const main = fs.readFileSync(path.join(ROOT, "src/main.jsx"), "utf8");
+const lazyModules = fs.readFileSync(path.join(ROOT, "src/app/lazyModules.js"), "utf8");
 const vite = fs.readFileSync(path.join(ROOT, "vite.config.js"), "utf8");
 const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const version = obtenerVersionBuild();
@@ -29,19 +30,19 @@ controlar(
 );
 controlar(
   "Pedidos Hoy se carga bajo demanda",
-  app.includes('import("./modules/admin/components/pedidos/AdminPedidosSection")')
+  lazyModules.includes('import("../modules/admin/components/pedidos/AdminPedidosSection")')
 );
 controlar(
   "Pedido Cliente se carga bajo demanda",
-  app.includes('import("./modules/cliente/components/PedidoCliente")')
+  lazyModules.includes('import("../modules/cliente/components/PedidoCliente")')
 );
 controlar(
   "Editor de menú se carga bajo demanda",
-  app.includes('import("./modules/admin/tabs/MenuDiarioTab")')
+  lazyModules.includes('import("../modules/admin/tabs/MenuDiarioTab")')
 );
 controlar(
   "Cabecera Admin se carga bajo demanda",
-  app.includes('import("./modules/admin/components/layout/AdminHeaderTabs")')
+  lazyModules.includes('import("../modules/admin/components/layout/AdminHeaderTabs")')
 );
 controlar(
   "Runtime PWA interno está separado",

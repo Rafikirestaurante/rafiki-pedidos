@@ -1,3 +1,37 @@
+## 127.8 — Fase 37A Registro de clientes y cumpleaños
+
+Versión: `127.8-FASE37A-REGISTRO-CLIENTES-CUMPLEANOS-2026-07-21`
+
+El acceso por código de `/cliente` se convierte en una franja mucho más discreta. Se agrega registro de clientes con nombre, celular, ubicación y cumpleaños sin año; el celular queda como código para próximos pedidos.
+
+Los registros públicos no reciben privilegios VIP automáticamente: conservan el mínimo de acompañantes y no habilitan Cafetería. Gerencia puede consultar y editar el cumpleaños y decidir posteriormente si activa reglas especiales.
+
+Requiere ejecutar `supabase/2026-07-21-fase37a-registro-clientes-cumpleanos.sql`. Se agrega `npm run registro-clientes:check`, integrado en la verificación general, que ahora contiene 24 controles.
+
+---
+
+## 127.7 — Fase 36B.7 Diagnóstico técnico reforzado y resumen de Cafetería
+
+Versión: `127.7-FASE36B7-DIAGNOSTICO-TECNICO-RESUMEN-CAFETERIA-2026-07-21`
+
+El panel de diagnóstico ahora muestra versión instalada y publicada, conexión, Supabase, estado del Service Worker, cachés PWA, última sincronización, último error y rendimiento del dispositivo. También permite copiar un informe técnico listo para compartir y conserva únicamente los ocho errores locales más recientes.
+
+En el Resumen del pedido se elimina la repetición del título genérico exclusivamente para **Cafetería → Parfait** y **Cafetería → Batidos**. Los parfait se muestran en una sola línea con tamaño y frutas; los batidos muestran directamente sabor y tamaño. Jugos, desayunos, bebidas, postres, restaurante y demás categorías conservan su formato actual.
+
+Se agregan 7 pruebas específicas, elevando la suite a 64 pruebas, y el comando `npm run diagnostic:check`, integrado en `npm run check`. La verificación integral queda en 23 controles. No se modifican Supabase, SQL, precios, cálculos, permisos ni guardado de pedidos.
+
+---
+
+## 127.6 — Fase 36B.6 Modularización progresiva
+
+Versión: `127.6-FASE36B6-MODULARIZACION-PROGRESIVA-2026-07-21`
+
+Se separan responsabilidades de los archivos más grandes sin reescribir la aplicación: el registro de módulos diferidos sale de `App.jsx`; Cartera extrae utilidades, estilos y modales; el Generador de menú y Panel Mesas extraen sus reglas auxiliares; y Gastos, Catálogo e Inventario trasladan estilos internos a CSS por módulo.
+
+Se agregan 10 pruebas nuevas para los módulos extraídos y el comando `npm run modularization:check`, integrado en `npm run check`, controla estructura y límites de tamaño. No se modifican flujos operativos, datos, cálculos, permisos ni diseño visible.
+
+---
+
 ## 127.5 — Fase 36B.5 Rendimiento y división del paquete principal
 
 Versión: `127.5-FASE36B5-RENDIMIENTO-DIVISION-PAQUETE-2026-07-21`

@@ -23,12 +23,15 @@
     "thermal-cierre:check": "node scripts/validate-thermal-cierre.mjs",
     "thermal-ahorro:check": "node scripts/validate-thermal-ahorro-papel.mjs",
     "thermal-contraste:check": "node scripts/validate-thermal-contraste.mjs",
+    "registro-clientes:check": "node scripts/validate-registro-clientes.mjs",
     "check": "node scripts/verify-project.mjs",
     "verify": "npm run check",
     "verificar": "npm run check",
     "financial-flows:check": "node scripts/validate-financial-flows.mjs",
     "feedback:check": "node scripts/validate-feedback-uniforme.mjs",
-    "performance:check": "node scripts/validate-performance-bundle.mjs"
+    "performance:check": "node scripts/validate-performance-bundle.mjs",
+    "modularization:check": "node scripts/validate-modularizacion-progresiva.mjs",
+    "diagnostic:check": "node scripts/validate-diagnostico-resumen.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
@@ -48,6 +51,6 @@
   },
   "type": "module",
   "name": "rafiki-pedidos",
-  "version": "127.5.0",
+  "version": "127.8.0",
   "private": true
 }

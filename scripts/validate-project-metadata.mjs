@@ -81,11 +81,13 @@ const scriptsRequeridos = [
   "build",
   "pwa:check",
   "clientes-especiales:check",
+  "registro-clientes:check",
   "cliente-para-llevar:check",
   "dashboard-ventas:check",
   "dashboard-barras:check",
   "financial-flows:check",
   "performance:check",
+  "diagnostic:check",
   "thermal-reports:check",
   "thermal-pedidos-hoy:check",
   "thermal-caja:check",
@@ -121,6 +123,14 @@ exigir(
 exigir(
   fs.existsSync(path.join(ROOT, "docs/FASE36B5-RENDIMIENTO-DIVISION-PAQUETE.md")),
   "Falta la documentación de la Fase 36B.5."
+);
+exigir(
+  fs.existsSync(path.join(ROOT, "docs/FASE36B7-DIAGNOSTICO-TECNICO-RESUMEN-CAFETERIA.md")),
+  "Falta la documentación de la Fase 36B.7."
+);
+exigir(
+  fs.existsSync(path.join(ROOT, "docs/FASE37A-REGISTRO-CLIENTES-CUMPLEANOS.md")),
+  "Falta la documentación de la Fase 37A."
 );
 
 if (avisos.length) {
