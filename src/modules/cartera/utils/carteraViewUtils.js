@@ -6,6 +6,7 @@ import {
   formatearFechaColombia,
   formatearFechaHoraColombia,
 } from "../../../shared/utils/fechasColombia";
+import { obtenerNombreCafeteria } from "../../../shared/utils/resumenPedidoDisplay";
 
 export const FORM_INICIAL = {
   nombre: "",
@@ -155,6 +156,13 @@ export function resumirLineaPedidoTexto(texto = "") {
 }
 
 export function nombreItemPedidoCompacto(item = {}) {
+  const cantidad = Number(item.cantidad) || 1;
+  const esCafeteria = item?.categoria === "cafeteria" || item?.area === "cafeteria";
+
+  if (esCafeteria) {
+    return `${cantidad} x ${obtenerNombreCafeteria(item)}`;
+  }
+
   const nombre = item.detalle_impresion
     || item.producto
     || item.nombre
@@ -162,7 +170,6 @@ export function nombreItemPedidoCompacto(item = {}) {
     || item.proteina
     || item.tipo
     || "Producto";
-  const cantidad = Number(item.cantidad) || 1;
   const acompanantes = Array.isArray(item.acompanantes) && item.acompanantes.length > 0
     ? ` · ${item.acompanantes.slice(0, 3).join(", ")}`
     : "";

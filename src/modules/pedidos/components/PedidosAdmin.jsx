@@ -18,15 +18,19 @@ import {
   obtenerItemsPedido,
   imprimirTicketPedido
 } from "../../../shared/utils/pedidos";
+import {
+  esBatidoResumen,
+  esJugoTradicionalResumen,
+  esParfaitResumen,
+  obtenerNombreCafeteria
+} from "../../../shared/utils/resumenPedidoDisplay";
 
 function esItemCafeteria(item) {
   return item?.categoria === "cafeteria" || item?.area === "cafeteria";
 }
 
 function obtenerNombreItemCafeteria(item) {
-  const tipo = item.tipo || "Producto cafetería";
-  const producto = item.producto || item.nombre || item.plato || item.proteina || "";
-  return producto ? `${tipo} — ${producto}` : tipo;
+  return obtenerNombreCafeteria(item);
 }
 
 function obtenerPrecioUnitarioItem(item) {
@@ -35,10 +39,13 @@ function obtenerPrecioUnitarioItem(item) {
 
 function renderDetalleCafeteria(item) {
   const filas = [];
+  const parfait = esParfaitResumen(item);
+  const batido = esBatidoResumen(item);
+  const jugoTradicional = esJugoTradicionalResumen(item);
 
-  if (item.base) filas.push(["Base", item.base]);
-  if (item.tamano) filas.push(["Tamaño", item.tamano]);
-  if (Array.isArray(item.frutas) && item.frutas.length > 0) filas.push(["Frutas", item.frutas.join(", ")]);
+  if (!jugoTradicional && item.base) filas.push(["Base", item.base]);
+  if (!parfait && !batido && !jugoTradicional && item.tamano) filas.push(["Tamaño", item.tamano]);
+  if (!parfait && Array.isArray(item.frutas) && item.frutas.length > 0) filas.push(["Frutas", item.frutas.join(", ")]);
   if (Number(item.extraFrutas) > 0) filas.push(["Extra frutas", dinero(item.extraFrutas)]);
   if (item.acompanante) filas.push(["Acompañante", item.acompanante]);
   if (item.bebida) filas.push(["Bebida", item.bebida]);
@@ -230,11 +237,11 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
 
 function resumirItemCafeteriaCompacto(item) {
   const cantidad = Number(item.cantidad) || 1;
-  const nombre = item.detalle_impresion || item.producto || item.nombre || item.plato || item.proteina || "Producto cafetería";
+  const nombre = obtenerNombreCafeteria(item);
   const precio = obtenerPrecioUnitarioItem(item);
   const precioTexto = precio > 0 ? ` (${dinero(precio)})` : "";
 
-  return `${cantidad} ${nombre}${precioTexto}`;
+  return `${cantidad} x ${nombre}${precioTexto}`;
 }
 
 export function resumirItemsPedidoCompacto(pedido) {
