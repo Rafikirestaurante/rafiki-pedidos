@@ -129,14 +129,34 @@ export function precioPorNombre(lista, nombre) {
 }
 
 export function crearItemCafeteria({ tipo, producto, precio = 0, cantidad = 1, ...extra }) {
+  const tipoTexto = String(tipo || "").trim();
+  const esParfait = normalizarTexto(tipoTexto).includes("parfait");
+  const productoOriginal = String(producto || "").replace(/\s+/g, " ").trim();
+  const productoNormalizado = esParfait
+    ? productoOriginal.replace(/^(?:parfait\s+){2,}/i, "Parfait ").trim()
+    : productoOriginal;
+  const extraNormalizado = { ...extra };
+
+  if (esParfait) {
+    const coincidenciaTamano = String(extraNormalizado.tamano || productoNormalizado).match(/\b(\d{1,2})\s*oz\b/i);
+    if (coincidenciaTamano) extraNormalizado.tamano = `${coincidenciaTamano[1]} oz`;
+
+    if (extraNormalizado.detalle_impresion) {
+      extraNormalizado.detalle_impresion = String(extraNormalizado.detalle_impresion)
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/^(?:parfait\s+){2,}/i, "Parfait ");
+    }
+  }
+
   return {
     id: generarId("cafeteria"),
     categoria: "cafeteria",
     area: "cafeteria",
-    tipo,
-    producto,
-    plato: producto,
-    proteina: producto,
+    tipo: tipoTexto,
+    producto: productoNormalizado,
+    plato: productoNormalizado,
+    proteina: productoNormalizado,
     precio: Number(precio) || 0,
     precioPlato: Number(precio) || 0,
     precioProteina: Number(precio) || 0,
@@ -144,7 +164,7 @@ export function crearItemCafeteria({ tipo, producto, precio = 0, cantidad = 1, .
     acompanantes: [],
     observacionAcompanantes: "",
     paraLlevar: false,
-    ...extra
+    ...extraNormalizado
   };
 }
 

@@ -15,7 +15,20 @@ function categoriaCafeteria(item = {}) {
     .filter(Boolean);
 
   if (referencias.length === 0) return true;
-  return referencias.some((referencia) => referencia.includes("cafeteria"));
+
+  const categoriasCafeteria = [
+    "cafeteria",
+    "parfait",
+    "batido",
+    "batidos cremosos",
+    "batidos refrescantes",
+    "jugo tradicional",
+    "jugos tradicionales"
+  ];
+
+  return referencias.some((referencia) =>
+    categoriasCafeteria.some((categoria) => referencia.includes(categoria))
+  );
 }
 
 function tipoNormalizado(item = {}) {
@@ -28,6 +41,8 @@ function productoOriginal(item = {}) {
 
 function extraerTamano(item = {}, producto = "") {
   const declarado = textoLimpio(item.tamano);
+  const coincidenciaDeclarado = declarado.match(/\b(\d{1,2})\s*oz\b/i);
+  if (coincidenciaDeclarado) return `${coincidenciaDeclarado[1]} oz`;
   if (declarado) return declarado;
 
   const coincidencia = textoLimpio(producto).match(/\b(\d{1,2})\s*oz\b/i);
