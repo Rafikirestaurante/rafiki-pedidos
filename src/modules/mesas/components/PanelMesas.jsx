@@ -581,14 +581,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     const precioBase = precioPorNombre(cafeteriaParfaitTamanos, tamanoParfait);
     const extraFrutas = frutasParfait.length === 3 ? 1000 : 0;
     const frutasSeleccionadas = [...frutasParfait];
-    const descripcionParfait = `Parfait ${tamanoParfait} - Frutas: ${frutasSeleccionadas.join(", ")}`;
+    const coincidenciaTamano = String(tamanoParfait || "").match(/\b(\d{1,2})\s*oz\b/i);
+    const tamanoParfaitLimpio = coincidenciaTamano ? `${coincidenciaTamano[1]} oz` : String(tamanoParfait || "").replace(/^parfait\s+/i, "").trim();
+    const descripcionParfait = `Parfait ${tamanoParfaitLimpio} - Frutas: ${frutasSeleccionadas.join(", ")}`;
 
     agregarItemCafeteria(crearItemCafeteria({
       tipo: "Parfait",
       producto: descripcionParfait,
       precio: precioBase + extraFrutas,
       cantidad: cantidadCafeteria,
-      tamano: tamanoParfait,
+      tamano: tamanoParfaitLimpio,
       frutas: frutasSeleccionadas,
       extraFrutas,
       detalle_impresion: descripcionParfait
