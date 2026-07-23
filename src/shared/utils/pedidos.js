@@ -9,6 +9,12 @@ import {
   CAFETERIA_BEBIDAS_CALIENTES,
   CAFETERIA_POSTRES
 } from "../../data/menuCafeteria";
+import {
+  esBatidoResumen,
+  esJugoTradicionalResumen,
+  esParfaitResumen,
+  obtenerNombreCafeteria
+} from "./resumenPedidoDisplay";
 
 const STORAGE_PEDIDOS_REVISADOS = "rafikiPedidosRevisados";
 const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
@@ -654,16 +660,18 @@ export function calcularTotalItems(items) {
 }
 
 export function crearTextoItem(item) {
-  if (item.categoria === "cafeteria") {
-    const nombreProducto = item.producto || item.plato || item.proteina || "Producto cafetería";
+  if (item.categoria === "cafeteria" || item.area === "cafeteria") {
+    const nombreProducto = obtenerNombreCafeteria(item);
     const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
     const partes = [`${item.cantidad} ${nombreProducto} (${dinero(precio)})`];
+    const parfait = esParfaitResumen(item);
+    const batido = esBatidoResumen(item);
+    const jugoTradicional = esJugoTradicionalResumen(item);
 
-    if (item.tipo) partes.push(`Cafetería: ${item.tipo}`);
-    if (item.tamano) partes.push(`Tamaño: ${item.tamano}`);
-    if (Array.isArray(item.frutas) && item.frutas.length > 0) partes.push(`Frutas: ${item.frutas.join(", ")}`);
+    if (!parfait && !batido && !jugoTradicional && item.tamano) partes.push(`Tamaño: ${item.tamano}`);
+    if (!parfait && Array.isArray(item.frutas) && item.frutas.length > 0) partes.push(`Frutas: ${item.frutas.join(", ")}`);
     if (Number(item.extraFrutas) > 0) partes.push(`Extra 3 frutas: ${dinero(item.extraFrutas)}`);
-    if (item.base) partes.push(`Base: ${item.base}`);
+    if (!jugoTradicional && item.base) partes.push(`Base: ${item.base}`);
     if (item.acompanante) partes.push(`Acompañante: ${item.acompanante}`);
     if (item.bebida) partes.push(`Bebida: ${item.bebida}`);
     if (Array.isArray(item.adicionales) && item.adicionales.length > 0) {
@@ -800,21 +808,20 @@ export function crearDatosTicketPedido(pedido, opciones = {}) {
     const nombreBase = item.plato || item.proteina || item.producto || item.nombre || "Producto";
 
     if (esCafeteria) {
-      const tipo = textoMayusculasTicket(item.tipo || "Cafetería");
-      const tamano = textoMayusculasTicket(item.tamano || "");
-      const producto = textoMayusculasTicket(item.producto || item.nombre || "");
-      const lineaPrincipal = item.tipo === "Parfait"
-        ? `${cantidad} PARFAIT${tamano ? ` ${tamano}` : ""}`
-        : `${cantidad} ${tipo}${producto ? ` - ${producto}` : ""}`;
+      const parfait = esParfaitResumen(item);
+      const batido = esBatidoResumen(item);
+      const jugoTradicional = esJugoTradicionalResumen(item);
+      const nombreCafeteria = textoMayusculasTicket(obtenerNombreCafeteria(item));
 
-      productos.push(lineaPrincipal);
+      productos.push(`${cantidad} ${nombreCafeteria}`);
 
-      if (Array.isArray(item.frutas) && item.frutas.length) {
+      if (!parfait && Array.isArray(item.frutas) && item.frutas.length) {
         productos.push(`  FRUTAS: ${item.frutas.map(textoMayusculasTicket).join(", ")}`);
       }
 
       if (Number(item.extraFrutas) > 0) productos.push("  EXTRA FRUTAS: +$1.000");
-      if (item.base) productos.push(`  BASE: ${textoMayusculasTicket(item.base)}`);
+      if (!jugoTradicional && item.base) productos.push(`  BASE: ${textoMayusculasTicket(item.base)}`);
+      if (!parfait && !batido && !jugoTradicional && item.tamano) productos.push(`  TAMAÑO: ${textoMayusculasTicket(item.tamano)}`);
       if (item.acompanante) productos.push(`  ACOMPAÑANTE: ${textoMayusculasTicket(item.acompanante)}`);
       if (item.bebida) productos.push(`  BEBIDA: ${textoMayusculasTicket(item.bebida)}`);
 

@@ -1,5 +1,10 @@
 import { SelectorCantidad } from "./common";
-import { detalleCafeteriaEstaEnTitulo, nombreCafeteriaResumen } from "../utils/resumenPedidoDisplay";
+import {
+  esBatidoResumen,
+  esJugoTradicionalResumen,
+  esParfaitResumen,
+  obtenerNombreCafeteria
+} from "../utils/resumenPedidoDisplay";
 import {
   calcularTotalItem,
   dinero,
@@ -24,17 +29,7 @@ function detalleConPrecio(detalle) {
 }
 
 function nombreItemResumen(item = {}) {
-  if (esItemCafeteria(item)) {
-    const tipo = textoLimpio(item.tipo);
-    const producto = textoLimpio(item.producto || item.plato || item.proteina || item.nombre);
-
-    const nombreEspecial = nombreCafeteriaResumen(item);
-    if (nombreEspecial) return nombreEspecial;
-    if (["Batido refrescante", "Jugo tradicional"].includes(tipo)) return tipo;
-    if (tipo === "Desayuno") return producto || "Desayuno";
-    return producto || tipo || "Producto";
-  }
-
+  if (esItemCafeteria(item)) return obtenerNombreCafeteria(item);
   return item.producto || item.plato || item.proteina || item.nombre || "Producto";
 }
 
@@ -45,13 +40,12 @@ function agregarUnico(detalles, valor) {
 
 function detallesCafeteria(item = {}, titulo = "") {
   const detalles = [];
-  const tipo = textoLimpio(item.tipo);
   const producto = textoLimpio(item.producto || item.plato || item.proteina || item.nombre);
 
-  if (detalleCafeteriaEstaEnTitulo(item)) {
-    if (tipo !== "Parfait") agregarUnico(detalles, item.base);
-  } else if (["Batido refrescante", "Jugo tradicional"].includes(tipo)) {
-    agregarUnico(detalles, producto);
+  if (esParfaitResumen(item) || esJugoTradicionalResumen(item)) {
+    // Parfait: tamaño/frutas en el título. Jugo: sabor/tamaño/base en el título.
+  } else if (esBatidoResumen(item)) {
+    // En batidos, sabor/tamaño van en el título y la base se conserva como detalle.
     agregarUnico(detalles, item.base);
   } else {
     if (producto && producto !== titulo) agregarUnico(detalles, producto);

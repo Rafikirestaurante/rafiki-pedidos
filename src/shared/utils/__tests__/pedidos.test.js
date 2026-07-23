@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  crearDatosTicketPedido,
+  crearTextoItem,
   dinero,
   esItemCafeteria,
   formatoNumeroPedido,
@@ -48,4 +50,24 @@ describe("utils/pedidos", () => {
       `Para llevar +${dinero(1500)}`
     );
   });
+  it("genera texto limpio para jugos tradicionales", () => {
+    const item = { categoria: "cafeteria", area: "cafeteria", tipo: "Jugo tradicional", producto: "Fresa 12 oz", tamano: "12 oz", base: "Agua", precio: 8500, cantidad: 1 };
+    expect(crearTextoItem(item)).toContain("1 Fresa 12 oz · Agua");
+    expect(crearTextoItem(item)).not.toContain("Cafetería: Jugo tradicional");
+    expect(crearTextoItem(item)).not.toContain("Base: Agua");
+  });
+
+  it("genera comanda de jugo en una sola línea sin repetir tipo ni base", () => {
+    const item = { categoria: "cafeteria", area: "cafeteria", tipo: "Jugo tradicional", producto: "Fresa 12 oz", tamano: "12 oz", base: "Agua", precio: 8500, cantidad: 1 };
+    const ticket = crearDatosTicketPedido({ numero_pedido: 1, cliente: "Prueba", items: [item] }, { area: "cafeteria", items: [item] });
+    expect(ticket.productos).toEqual(["1 FRESA 12 OZ · AGUA"]);
+  });
+
+  it("genera comanda de parfait sin duplicar Parfait ni separar frutas", () => {
+    const item = { categoria: "cafeteria", area: "cafeteria", tipo: "Parfait", producto: "Parfait Parfait 12 oz - Frutas: Banano, Arándanos, Uva", tamano: "12 oz", frutas: ["Banano", "Arándanos", "Uva"], precio: 12500, cantidad: 1 };
+    const ticket = crearDatosTicketPedido({ numero_pedido: 2, cliente: "Prueba", items: [item] }, { area: "cafeteria", items: [item] });
+    expect(ticket.productos[0]).toBe("1 PARFAIT 12 OZ · BANANO, ARÁNDANOS, UVA");
+    expect(ticket.productos.some((linea) => linea.includes("FRUTAS:"))).toBe(false);
+  });
+
 });
