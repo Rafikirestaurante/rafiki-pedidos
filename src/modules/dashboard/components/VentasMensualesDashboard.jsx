@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import RafikiModal from "../../../shared/components/RafikiModal";
 import { dinero } from "../../../shared/utils/pedidos";
 import { formatearFechaColombia } from "../../../shared/utils/fechasColombia";
@@ -22,9 +22,46 @@ function TarjetaMetrica({ etiqueta, valor, ayuda }) {
   );
 }
 
-function CalendarioVentas({ resumen, onSeleccionarDia }) {
+function RejillaCalendarioVentas({ resumen, onSeleccionarDia, className = "" }) {
   const celdasVacias = Array.from({ length: resumen.offsetInicio }, (_, index) => `vacio-${index}`);
 
+  return (
+    <div className={["ventas-calendario", className].filter(Boolean).join(" ")}>
+      {resumen.encabezados.map((dia) => (
+        <div key={dia} className="ventas-calendario-dia-semana">
+          {dia}
+        </div>
+      ))}
+
+      {celdasVacias.map((clave) => (
+        <div key={clave} className="ventas-calendario-vacio" aria-hidden="true" />
+      ))}
+
+      {resumen.dias.map((dia) => {
+        const nivel = obtenerNivelVentaDia(dia.total, resumen.maximoDiario);
+        const esMejorDia = resumen.mejorDia?.fecha === dia.fecha && dia.total > 0;
+        return (
+          <button
+            key={dia.fecha}
+            type="button"
+            className={`ventas-calendario-celda nivel-${nivel}${esMejorDia ? " es-mejor-dia" : ""}`}
+            onClick={() => onSeleccionarDia(dia)}
+            aria-label={`${formatearFechaColombia(dia.fecha)}: ${dinero(dia.total)}, ${dia.pedidos} pedidos`}
+          >
+            <span className="ventas-calendario-numero">{dia.dia}</span>
+            {esMejorDia ? <span className="ventas-calendario-mejor">★ Mejor</span> : null}
+            <strong>{dinero(dia.total)}</strong>
+            <small>
+              {dia.pedidos} {dia.pedidos === 1 ? "pedido" : "pedidos"}
+            </small>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CalendarioVentas({ resumen, onSeleccionarDia, onAmpliar }) {
   return (
     <section className="ventas-mes-panel" aria-label={`Calendario de ventas de ${resumen.nombreMes}`}>
       <div className="ventas-mes-panel-heading">
@@ -32,50 +69,226 @@ function CalendarioVentas({ resumen, onSeleccionarDia }) {
           <h4>Calendario de ventas</h4>
           <p>Cada casilla muestra el total vendido y la cantidad de pedidos del día.</p>
         </div>
-        <div className="ventas-mes-leyenda" aria-label="Intensidad de ventas">
-          <span>Baja</span>
-          {[1, 2, 3, 4].map((nivel) => (
-            <i key={nivel} className={`nivel-${nivel}`} />
-          ))}
-          <span>Alta</span>
+        <div className="ventas-calendario-heading-acciones">
+          <button type="button" className="mini-btn ventas-calendario-ampliar" onClick={onAmpliar}>
+            🔍 Ampliar
+          </button>
+          <div className="ventas-mes-leyenda" aria-label="Intensidad de ventas">
+            <span>Baja</span>
+            {[1, 2, 3, 4].map((nivel) => (
+              <i key={nivel} className={`nivel-${nivel}`} />
+            ))}
+            <span>Alta</span>
+          </div>
         </div>
       </div>
 
       <div className="ventas-calendario-scroll">
-        <div className="ventas-calendario">
-          {resumen.encabezados.map((dia) => (
-            <div key={dia} className="ventas-calendario-dia-semana">
-              {dia}
-            </div>
-          ))}
-
-          {celdasVacias.map((clave) => (
-            <div key={clave} className="ventas-calendario-vacio" aria-hidden="true" />
-          ))}
-
-          {resumen.dias.map((dia) => {
-            const nivel = obtenerNivelVentaDia(dia.total, resumen.maximoDiario);
-            const esMejorDia = resumen.mejorDia?.fecha === dia.fecha && dia.total > 0;
-            return (
-              <button
-                key={dia.fecha}
-                type="button"
-                className={`ventas-calendario-celda nivel-${nivel}${esMejorDia ? " es-mejor-dia" : ""}`}
-                onClick={() => onSeleccionarDia(dia)}
-                aria-label={`${formatearFechaColombia(dia.fecha)}: ${dinero(dia.total)}, ${dia.pedidos} pedidos`}
-              >
-                <span className="ventas-calendario-numero">{dia.dia}</span>
-                {esMejorDia ? <span className="ventas-calendario-mejor">★ Mejor</span> : null}
-                <strong>{dinero(dia.total)}</strong>
-                <small>
-                  {dia.pedidos} {dia.pedidos === 1 ? "pedido" : "pedidos"}
-                </small>
-              </button>
-            );
-          })}
-        </div>
+        <RejillaCalendarioVentas resumen={resumen} onSeleccionarDia={onSeleccionarDia} />
       </div>
     </section>
+  );
+}
+
+const ZOOM_CALENDARIO_MINIMO = 0.4;
+const ZOOM_CALENDARIO_MAXIMO = 2;
+const ZOOM_CALENDARIO_PASO = 0.15;
+
+function limitarZoomCalendario(valor) {
+  return Math.min(ZOOM_CALENDARIO_MAXIMO, Math.max(ZOOM_CALENDARIO_MINIMO, valor));
+}
+
+function calcularZoomCalendarioAjustado() {
+  if (typeof window === "undefined") return 0.5;
+  const anchoDisponible = Math.max(window.innerWidth - 30, 280);
+  return limitarZoomCalendario(Math.min(anchoDisponible / 780, 0.85));
+}
+
+function distanciaEntreToques(touches) {
+  if (!touches || touches.length < 2) return 0;
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+function CalendarioVentasAmpliado({
+  open,
+  resumen,
+  onClose,
+  onSeleccionarDia,
+  onMesAnterior,
+  onMesSiguiente,
+  onMesActual,
+  mostrarMesActual
+}) {
+  const viewportRef = useRef(null);
+  const gestoRef = useRef(null);
+  const [zoom, setZoom] = useState(calcularZoomCalendarioAjustado);
+
+  function ajustarCalendario() {
+    setZoom(calcularZoomCalendarioAjustado());
+    if (viewportRef.current) {
+      viewportRef.current.scrollLeft = 0;
+      viewportRef.current.scrollTop = 0;
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    ajustarCalendario();
+  }, [open, resumen.nombreMes]);
+
+  function cambiarZoom(diferencia) {
+    setZoom((actual) => limitarZoomCalendario(Number((actual + diferencia).toFixed(2))));
+  }
+
+  function manejarTouchStart(event) {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    if (event.touches.length >= 2) {
+      gestoRef.current = {
+        tipo: "zoom",
+        distancia: distanciaEntreToques(event.touches),
+        zoom
+      };
+      return;
+    }
+
+    if (event.touches.length === 1) {
+      gestoRef.current = {
+        tipo: "pan",
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY,
+        scrollLeft: viewport.scrollLeft,
+        scrollTop: viewport.scrollTop
+      };
+    }
+  }
+
+  function manejarTouchMove(event) {
+    const viewport = viewportRef.current;
+    const gesto = gestoRef.current;
+    if (!viewport || !gesto) return;
+
+    if (event.touches.length >= 2 && gesto.tipo === "zoom") {
+      event.preventDefault();
+      const distancia = distanciaEntreToques(event.touches);
+      if (!distancia || !gesto.distancia) return;
+      setZoom(limitarZoomCalendario(gesto.zoom * (distancia / gesto.distancia)));
+      return;
+    }
+
+    if (event.touches.length === 1 && gesto.tipo === "pan") {
+      const desplazamientoX = gesto.x - event.touches[0].clientX;
+      const desplazamientoY = gesto.y - event.touches[0].clientY;
+      if (Math.abs(desplazamientoX) + Math.abs(desplazamientoY) < 3) return;
+      event.preventDefault();
+      viewport.scrollLeft = gesto.scrollLeft + desplazamientoX;
+      viewport.scrollTop = gesto.scrollTop + desplazamientoY;
+    }
+  }
+
+  function manejarTouchEnd(event) {
+    const viewport = viewportRef.current;
+    if (!viewport) {
+      gestoRef.current = null;
+      return;
+    }
+
+    if (event.touches.length === 1) {
+      gestoRef.current = {
+        tipo: "pan",
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY,
+        scrollLeft: viewport.scrollLeft,
+        scrollTop: viewport.scrollTop
+      };
+    } else {
+      gestoRef.current = null;
+    }
+  }
+
+  function seleccionarDia(dia) {
+    onClose?.();
+    onSeleccionarDia?.(dia);
+  }
+
+  return (
+    <RafikiModal
+      open={open}
+      title={`Calendario · ${resumen.nombreMes}`}
+      description="Amplía con dos dedos o usa los controles. Arrastra el calendario para recorrerlo."
+      onClose={onClose}
+      size="lg"
+      className="ventas-calendario-modal"
+    >
+      <div className="ventas-calendario-modal-toolbar">
+        <div className="ventas-calendario-modal-meses" aria-label="Navegación del mes">
+          <button type="button" className="mini-btn" onClick={onMesAnterior} aria-label="Mes anterior">
+            ‹
+          </button>
+          <strong>{resumen.nombreMes}</strong>
+          <button type="button" className="mini-btn" onClick={onMesSiguiente} aria-label="Mes siguiente">
+            ›
+          </button>
+          {mostrarMesActual ? (
+            <button type="button" className="mini-btn" onClick={onMesActual}>
+              Hoy
+            </button>
+          ) : null}
+        </div>
+
+        <div className="ventas-calendario-zoom-controles" aria-label="Controles de zoom">
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={() => cambiarZoom(-ZOOM_CALENDARIO_PASO)}
+            disabled={zoom <= ZOOM_CALENDARIO_MINIMO}
+            aria-label="Alejar calendario"
+          >
+            −
+          </button>
+          <strong>{Math.round(zoom * 100)}%</strong>
+          <button
+            type="button"
+            className="mini-btn"
+            onClick={() => cambiarZoom(ZOOM_CALENDARIO_PASO)}
+            disabled={zoom >= ZOOM_CALENDARIO_MAXIMO}
+            aria-label="Acercar calendario"
+          >
+            +
+          </button>
+          <button type="button" className="mini-btn ventas-calendario-ajustar" onClick={ajustarCalendario}>
+            Ajustar
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={viewportRef}
+        className="ventas-calendario-zoom-viewport"
+        onTouchStart={manejarTouchStart}
+        onTouchMove={manejarTouchMove}
+        onTouchEnd={manejarTouchEnd}
+        onTouchCancel={() => {
+          gestoRef.current = null;
+        }}
+      >
+        <div className="ventas-calendario-zoom-lienzo" style={{ zoom: `${Math.round(zoom * 100)}%` }}>
+          <RejillaCalendarioVentas
+            resumen={resumen}
+            onSeleccionarDia={seleccionarDia}
+            className="ventas-calendario-en-zoom"
+          />
+        </div>
+      </div>
+
+      <p className="ventas-calendario-zoom-ayuda">
+        Toca un día para ver ventas, gastos, pedidos y ticket promedio. El calendario conserva toda su
+        información; solo cambia el nivel de ampliación.
+      </p>
+    </RafikiModal>
   );
 }
 
@@ -305,6 +518,7 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
   const [error, setError] = useState("");
   const [vista, setVista] = useState("ambos");
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
+  const [calendarioAmpliado, setCalendarioAmpliado] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -473,7 +687,11 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
       ) : null}
 
       {vista === "calendario" || vista === "ambos" ? (
-        <CalendarioVentas resumen={resumen} onSeleccionarDia={setDiaSeleccionado} />
+        <CalendarioVentas
+          resumen={resumen}
+          onSeleccionarDia={setDiaSeleccionado}
+          onAmpliar={() => setCalendarioAmpliado(true)}
+        />
       ) : null}
 
       {vista === "barras" || vista === "ambos" ? (
@@ -489,6 +707,17 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
         dia={diaSeleccionado}
         onClose={() => setDiaSeleccionado(null)}
         onAbrirInforme={abrirInformeDia}
+      />
+
+      <CalendarioVentasAmpliado
+        open={calendarioAmpliado}
+        resumen={resumen}
+        onClose={() => setCalendarioAmpliado(false)}
+        onSeleccionarDia={setDiaSeleccionado}
+        onMesAnterior={() => setMes((actual) => desplazarMes(actual, -1))}
+        onMesSiguiente={() => setMes((actual) => desplazarMes(actual, 1))}
+        onMesActual={() => setMes(mesActual)}
+        mostrarMesActual={mes !== mesActual}
       />
     </section>
   );
