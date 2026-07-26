@@ -6813,6 +6813,17 @@ body.rafiki-modal-open {
   border-radius: 5px;
 }
 
+.ventas-calendario-heading-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ventas-calendario-ampliar {
+  display: none;
+  white-space: nowrap;
+}
+
 .ventas-calendario-scroll,
 .ventas-barras-scroll {
   overflow-x: auto;
@@ -6916,6 +6927,83 @@ body.rafiki-modal-open {
   color: var(--rafiki-text-soft);
   font-size: 10px;
   font-weight: 800;
+}
+
+/* Fase 37B - Calendario móvil ampliable tipo imagen */
+.ventas-calendario-modal.rafiki-ui-modal-card {
+  width: min(1180px, calc(100vw - 24px));
+  max-width: 1180px;
+}
+
+.ventas-calendario-modal .rafiki-ui-modal-body {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.ventas-calendario-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ventas-calendario-modal-meses,
+.ventas-calendario-zoom-controles {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ventas-calendario-modal-meses > strong {
+  min-width: 120px;
+  text-align: center;
+}
+
+.ventas-calendario-zoom-controles > strong {
+  min-width: 44px;
+  color: var(--rafiki-text-soft);
+  text-align: center;
+  font-size: 12px;
+}
+
+.ventas-calendario-zoom-viewport {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  max-height: min(72vh, 760px);
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 18px;
+  background: var(--rafiki-bg);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: none;
+  cursor: grab;
+}
+
+.ventas-calendario-zoom-viewport:active {
+  cursor: grabbing;
+}
+
+.ventas-calendario-zoom-lienzo {
+  width: max-content;
+  transform-origin: top left;
+}
+
+.ventas-calendario-en-zoom {
+  width: 760px;
+  min-width: 760px;
+}
+
+.ventas-calendario-zoom-ayuda {
+  margin: 0;
+  color: var(--rafiki-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
 }
 
 .ventas-barras {
@@ -7080,6 +7168,11 @@ body.rafiki-modal-open {
     flex-direction: column;
   }
 
+  .ventas-calendario-heading-acciones {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .ventas-mes-navegacion {
     width: 100%;
     justify-content: flex-start;
@@ -7087,6 +7180,84 @@ body.rafiki-modal-open {
 
   .ventas-mes-metricas {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .ventas-calendario-ampliar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+  }
+
+  .ventas-calendario-modal.rafiki-ui-modal-card {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .ventas-calendario-modal .rafiki-ui-modal-header {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  .ventas-calendario-modal .rafiki-ui-modal-header p {
+    font-size: 11px;
+  }
+
+  .ventas-calendario-modal .rafiki-ui-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    padding: 10px max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+    overflow: hidden;
+  }
+
+  .ventas-calendario-modal-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .ventas-calendario-modal-meses,
+  .ventas-calendario-zoom-controles {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ventas-calendario-modal-meses > strong {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ventas-calendario-zoom-controles .mini-btn {
+    min-width: 38px;
+  }
+
+  .ventas-calendario-ajustar {
+    flex: 1;
+  }
+
+  .ventas-calendario-zoom-viewport {
+    min-height: 0;
+    max-height: none;
+    height: 100%;
+    padding: 7px;
+    border-radius: 14px;
+  }
+
+  .ventas-calendario-en-zoom .ventas-calendario-celda,
+  .ventas-calendario-en-zoom .ventas-calendario-vacio {
+    min-height: 104px;
   }
 }
 
