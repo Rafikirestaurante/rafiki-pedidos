@@ -1,6 +1,13 @@
 import { fechaISOColombia, generarId, normalizarTexto } from "./pedidos";
 import { categoriasSolicitudProductos, productosRestauranteBase, STORAGE_INSUMOS_PENDIENTES } from "../../data/solicitudProductosData";
 
+export const FILTROS_JORNADA_INSUMOS = Object.freeze({
+  TODO: "todo",
+  AM: "am",
+  PM: "pm",
+  PM_ANTERIOR_AM_ACTUAL: "pm-anterior-am-actual"
+});
+
 export function ordenarProductosPorNombre(productos) {
   return [...(productos || [])].sort((a, b) =>
     String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" })
@@ -172,6 +179,46 @@ function obtenerJornadaProductoSolicitud(producto = {}, solicitud = {}) {
   return hora < 12 ? "AM" : "PM";
 }
 
+export function desplazarFechaISOColombia(fechaISO, dias = 0) {
+  const fechaBase = String(fechaISO || fechaISOColombia()).slice(0, 10);
+  const base = new Date(`${fechaBase}T00:00:00-05:00`);
+  if (Number.isNaN(base.getTime())) return fechaISOColombia();
+  base.setDate(base.getDate() + Number(dias || 0));
+  return fechaISOColombia(base);
+}
+
+export function describirFiltroJornadaInsumos(filtro, fechaBase = fechaISOColombia()) {
+  const fechaActual = String(fechaBase || fechaISOColombia()).slice(0, 10);
+  const fechaAnterior = desplazarFechaISOColombia(fechaActual, -1);
+
+  if (filtro === FILTROS_JORNADA_INSUMOS.AM) return `AM del ${fechaActual}`;
+  if (filtro === FILTROS_JORNADA_INSUMOS.PM) return `PM del ${fechaActual}`;
+  if (filtro === FILTROS_JORNADA_INSUMOS.PM_ANTERIOR_AM_ACTUAL) {
+    return `PM del ${fechaAnterior} + AM del ${fechaActual}`;
+  }
+  return `todo el día ${fechaActual}`;
+}
+
+function incluirProductoEnFiltroJornada({ fechaSolicitud, jornada, filtro, fechaBase }) {
+  const fechaActual = String(fechaBase || fechaISOColombia()).slice(0, 10);
+  const fechaAnterior = desplazarFechaISOColombia(fechaActual, -1);
+
+  if (filtro === FILTROS_JORNADA_INSUMOS.AM) {
+    return fechaSolicitud === fechaActual && jornada === "AM";
+  }
+
+  if (filtro === FILTROS_JORNADA_INSUMOS.PM) {
+    return fechaSolicitud === fechaActual && jornada === "PM";
+  }
+
+  if (filtro === FILTROS_JORNADA_INSUMOS.PM_ANTERIOR_AM_ACTUAL) {
+    return (fechaSolicitud === fechaAnterior && jornada === "PM") ||
+      (fechaSolicitud === fechaActual && jornada === "AM");
+  }
+
+  return fechaSolicitud === fechaActual;
+}
+
 export function guardarEstadoPendientesCompra(estado) {
   try {
     localStorage.setItem(STORAGE_INSUMOS_PENDIENTES, JSON.stringify(estado));
@@ -187,7 +234,11 @@ export function obtenerInsumosDeSolicitud(solicitud) {
   return [];
 }
 
-export function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBase = fechaISOColombia()) {
+export function obtenerProductosPendientesDesdeSolicitudes(
+  solicitudes,
+  fechaBase = fechaISOColombia(),
+  filtroJornada = FILTROS_JORNADA_INSUMOS.TODO
+) {
   const mapa = new Map();
 
   (solicitudes || []).forEach((solicitud) => {
@@ -198,6 +249,15 @@ export function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBas
       if (!nombre) return;
 
       const fechaSolicitudBase = String(solicitud.fecha_solicitud || solicitud.created_at || fechaBase).slice(0, 10);
+      const jornada = obtenerJornadaProductoSolicitud(producto, solicitud);
+
+      if (!incluirProductoEnFiltroJornada({
+        fechaSolicitud: fechaSolicitudBase,
+        jornada,
+        filtro: filtroJornada,
+        fechaBase
+      })) return;
+
       const claveProducto = crearClaveProducto(nombre);
       const clave = `${fechaSolicitudBase}-${claveProducto}`;
       const existente = mapa.get(clave) || {
@@ -217,7 +277,6 @@ export function obtenerProductosPendientesDesdeSolicitudes(solicitudes, fechaBas
         existente.fechas.push(fecha);
       }
 
-      const jornada = obtenerJornadaProductoSolicitud(producto, solicitud);
       if (jornada && !existente.jornadas.includes(jornada)) {
         existente.jornadas.push(jornada);
       }

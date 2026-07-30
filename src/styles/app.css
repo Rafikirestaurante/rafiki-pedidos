@@ -7759,3 +7759,129 @@ body.rafiki-modal-open {
     grid-column: auto;
   }
 }
+
+/* Fase 37C: filtros AM/PM en insumos y llave de transferencia en /cliente */
+.insumos-filtros-jornada {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.insumos-filtro-jornada {
+  appearance: none;
+  border: 1px solid var(--rafiki-border);
+  background: var(--rafiki-surface);
+  color: var(--rafiki-text);
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.insumos-filtro-jornada:hover:not(:disabled) {
+  border-color: var(--rafiki-brand);
+  transform: translateY(-1px);
+}
+
+.insumos-filtro-jornada.active {
+  border-color: var(--rafiki-brand);
+  background: #fff7ed;
+  color: var(--rafiki-brand-strong);
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+}
+
+.insumos-filtro-jornada:disabled {
+  opacity: 0.58;
+  cursor: wait;
+}
+
+.insumos-filtro-resumen {
+  margin: 10px 0 0;
+  color: var(--rafiki-muted);
+  font-size: 12px;
+}
+
+.cliente-transferencia-info {
+  margin: 10px 0 14px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 16px;
+  padding: 12px;
+  color: #1e3a8a;
+}
+
+.cliente-transferencia-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cliente-transferencia-copy > div {
+  min-width: 0;
+}
+
+.cliente-transferencia-label {
+  display: block;
+  margin-bottom: 3px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cliente-transferencia-llave {
+  display: block;
+  color: #0f172a;
+  font-size: clamp(18px, 4.8vw, 22px);
+  letter-spacing: 0.055em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.cliente-transferencia-boton {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 11px;
+  border-color: #93c5fd;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.cliente-transferencia-info small {
+  display: block;
+  margin-top: 8px;
+  color: #475569;
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .insumos-filtros-jornada {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .insumos-filtro-jornada {
+    width: 100%;
+    padding-inline: 8px;
+  }
+
+  .insumos-filtro-jornada:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .cliente-transferencia-copy {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cliente-transferencia-boton {
+    width: 100%;
+  }
+}
