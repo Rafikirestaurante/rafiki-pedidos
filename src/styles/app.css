@@ -6690,29 +6690,71 @@ body.rafiki-modal-open {
 }
 
 .ventas-mes-navegacion {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
 }
 
-.ventas-mes-navegacion > strong {
-  min-width: 150px;
+.ventas-mes-control {
+  display: grid;
+  grid-template-columns: 32px minmax(118px, auto) 32px;
+  align-items: center;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 2px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 999px;
+  background: var(--rafiki-surface);
+  box-shadow: 0 3px 10px rgba(120, 53, 15, 0.06);
+}
+
+.ventas-mes-control > strong {
+  min-width: 0;
+  padding: 0 6px;
+  overflow: hidden;
+  color: var(--rafiki-text);
   text-align: center;
-  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 1.1;
 }
 
-.ventas-mes-navegacion .mini-btn {
-  min-width: 42px;
-  min-height: 42px;
-  font-size: 25px;
+.ventas-mes-flecha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--rafiki-brand-strong);
+  font-size: 24px;
+  font-weight: 900;
   line-height: 1;
+  cursor: pointer;
 }
 
-.ventas-mes-actual {
-  min-height: 42px;
-  padding: 8px 12px;
+.ventas-mes-flecha:hover,
+.ventas-mes-flecha:focus-visible {
+  background: var(--rafiki-border-soft);
+  outline: none;
+}
+
+.ventas-mes-hoy {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 999px;
+  background: var(--rafiki-bg);
+  color: var(--rafiki-text-soft);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .ventas-mes-metricas {
@@ -6944,28 +6986,12 @@ body.rafiki-modal-open {
 .ventas-calendario-modal-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
+  justify-content: center;
+  min-width: 0;
 }
 
-.ventas-calendario-modal-meses,
-.ventas-calendario-zoom-controles {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ventas-calendario-modal-meses > strong {
-  min-width: 120px;
-  text-align: center;
-}
-
-.ventas-calendario-zoom-controles > strong {
-  min-width: 44px;
-  color: var(--rafiki-text-soft);
-  text-align: center;
-  font-size: 12px;
+.ventas-calendario-modal-meses {
+  justify-content: center;
 }
 
 .ventas-calendario-zoom-viewport {
@@ -7174,7 +7200,8 @@ body.rafiki-modal-open {
   }
 
   .ventas-mes-navegacion {
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
     justify-content: flex-start;
   }
 
@@ -7223,28 +7250,23 @@ body.rafiki-modal-open {
   }
 
   .ventas-calendario-modal-toolbar {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .ventas-calendario-modal-meses,
-  .ventas-calendario-zoom-controles {
     width: 100%;
     justify-content: center;
   }
 
-  .ventas-calendario-modal-meses > strong {
-    flex: 1;
-    min-width: 0;
+  .ventas-calendario-modal-meses {
+    width: auto;
+    max-width: 100%;
   }
 
-  .ventas-calendario-zoom-controles .mini-btn {
-    min-width: 38px;
+  .ventas-calendario-modal-meses .ventas-mes-control {
+    grid-template-columns: 30px minmax(112px, 1fr) 30px;
+    width: min(220px, calc(100vw - 92px));
   }
 
-  .ventas-calendario-ajustar {
-    flex: 1;
+  .ventas-calendario-modal-meses .ventas-mes-flecha {
+    width: 30px;
+    height: 30px;
   }
 
   .ventas-calendario-zoom-viewport {
@@ -7278,12 +7300,15 @@ body.rafiki-modal-open {
     padding: 9px 7px;
     font-size: 12px;
   }
-  .ventas-mes-navegacion > strong {
-    flex: 1 1 120px;
-    min-width: 0;
+  .ventas-mes-navegacion {
+    align-self: flex-start;
   }
-  .ventas-mes-actual {
-    width: 100%;
+  .ventas-mes-control {
+    grid-template-columns: 30px minmax(108px, auto) 30px;
+  }
+  .ventas-mes-flecha {
+    width: 30px;
+    height: 30px;
   }
   .ventas-mes-panel {
     padding: 12px;

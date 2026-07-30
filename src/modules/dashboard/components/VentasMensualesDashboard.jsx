@@ -61,6 +61,47 @@ function RejillaCalendarioVentas({ resumen, onSeleccionarDia, className = "" }) 
   );
 }
 
+
+function NavegacionMesCompacta({
+  nombreMes,
+  onMesAnterior,
+  onMesSiguiente,
+  onMesActual,
+  mostrarMesActual,
+  className = ""
+}) {
+  return (
+    <div className={["ventas-mes-navegacion", className].filter(Boolean).join(" ")}>
+      <div className="ventas-mes-control" aria-label="Navegación del mes">
+        <button
+          type="button"
+          className="ventas-mes-flecha"
+          onClick={onMesAnterior}
+          aria-label="Mes anterior"
+          title="Mes anterior"
+        >
+          ‹
+        </button>
+        <strong>{nombreMes}</strong>
+        <button
+          type="button"
+          className="ventas-mes-flecha"
+          onClick={onMesSiguiente}
+          aria-label="Mes siguiente"
+          title="Mes siguiente"
+        >
+          ›
+        </button>
+      </div>
+      {mostrarMesActual ? (
+        <button type="button" className="ventas-mes-hoy" onClick={onMesActual}>
+          Hoy
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function CalendarioVentas({ resumen, onSeleccionarDia, onAmpliar }) {
   return (
     <section className="ventas-mes-panel" aria-label={`Calendario de ventas de ${resumen.nombreMes}`}>
@@ -92,7 +133,6 @@ function CalendarioVentas({ resumen, onSeleccionarDia, onAmpliar }) {
 
 const ZOOM_CALENDARIO_MINIMO = 0.4;
 const ZOOM_CALENDARIO_MAXIMO = 2;
-const ZOOM_CALENDARIO_PASO = 0.15;
 
 function limitarZoomCalendario(valor) {
   return Math.min(ZOOM_CALENDARIO_MAXIMO, Math.max(ZOOM_CALENDARIO_MINIMO, valor));
@@ -137,10 +177,6 @@ function CalendarioVentasAmpliado({
     if (!open) return;
     ajustarCalendario();
   }, [open, resumen.nombreMes]);
-
-  function cambiarZoom(diferencia) {
-    setZoom((actual) => limitarZoomCalendario(Number((actual + diferencia).toFixed(2))));
-  }
 
   function manejarTouchStart(event) {
     const viewport = viewportRef.current;
@@ -218,51 +254,20 @@ function CalendarioVentasAmpliado({
     <RafikiModal
       open={open}
       title={`Calendario · ${resumen.nombreMes}`}
-      description="Amplía con dos dedos o usa los controles. Arrastra el calendario para recorrerlo."
+      description="Amplía con dos dedos y arrastra el calendario para recorrerlo."
       onClose={onClose}
       size="lg"
       className="ventas-calendario-modal"
     >
       <div className="ventas-calendario-modal-toolbar">
-        <div className="ventas-calendario-modal-meses" aria-label="Navegación del mes">
-          <button type="button" className="mini-btn" onClick={onMesAnterior} aria-label="Mes anterior">
-            ‹
-          </button>
-          <strong>{resumen.nombreMes}</strong>
-          <button type="button" className="mini-btn" onClick={onMesSiguiente} aria-label="Mes siguiente">
-            ›
-          </button>
-          {mostrarMesActual ? (
-            <button type="button" className="mini-btn" onClick={onMesActual}>
-              Hoy
-            </button>
-          ) : null}
-        </div>
-
-        <div className="ventas-calendario-zoom-controles" aria-label="Controles de zoom">
-          <button
-            type="button"
-            className="mini-btn"
-            onClick={() => cambiarZoom(-ZOOM_CALENDARIO_PASO)}
-            disabled={zoom <= ZOOM_CALENDARIO_MINIMO}
-            aria-label="Alejar calendario"
-          >
-            −
-          </button>
-          <strong>{Math.round(zoom * 100)}%</strong>
-          <button
-            type="button"
-            className="mini-btn"
-            onClick={() => cambiarZoom(ZOOM_CALENDARIO_PASO)}
-            disabled={zoom >= ZOOM_CALENDARIO_MAXIMO}
-            aria-label="Acercar calendario"
-          >
-            +
-          </button>
-          <button type="button" className="mini-btn ventas-calendario-ajustar" onClick={ajustarCalendario}>
-            Ajustar
-          </button>
-        </div>
+        <NavegacionMesCompacta
+          nombreMes={resumen.nombreMes}
+          onMesAnterior={onMesAnterior}
+          onMesSiguiente={onMesSiguiente}
+          onMesActual={onMesActual}
+          mostrarMesActual={mostrarMesActual}
+          className="ventas-calendario-modal-meses"
+        />
       </div>
 
       <div
@@ -598,34 +603,13 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
             registrados del mes.
           </p>
         </div>
-        <div className="ventas-mes-navegacion">
-          <button
-            type="button"
-            className="mini-btn"
-            onClick={() => setMes((actual) => desplazarMes(actual, -1))}
-            aria-label="Mes anterior"
-          >
-            ‹
-          </button>
-          <strong>{resumen.nombreMes}</strong>
-          <button
-            type="button"
-            className="mini-btn"
-            onClick={() => setMes((actual) => desplazarMes(actual, 1))}
-            aria-label="Mes siguiente"
-          >
-            ›
-          </button>
-          {mes !== mesActual ? (
-            <button
-              type="button"
-              className="button-secondary ventas-mes-actual"
-              onClick={() => setMes(mesActual)}
-            >
-              Mes actual
-            </button>
-          ) : null}
-        </div>
+        <NavegacionMesCompacta
+          nombreMes={resumen.nombreMes}
+          onMesAnterior={() => setMes((actual) => desplazarMes(actual, -1))}
+          onMesSiguiente={() => setMes((actual) => desplazarMes(actual, 1))}
+          onMesActual={() => setMes(mesActual)}
+          mostrarMesActual={mes !== mesActual}
+        />
       </div>
 
       {error ? <div className="alert alert-error">{error}</div> : null}
