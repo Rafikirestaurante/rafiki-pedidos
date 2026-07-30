@@ -13,6 +13,9 @@ import {
 import {
   agruparProductosSolicitud,
   cargarEstadoPendientesCompra,
+  describirFiltroJornadaInsumos,
+  desplazarFechaISOColombia,
+  FILTROS_JORNADA_INSUMOS,
   crearMensajeCompraProveedores,
   crearMensajeSolicitudProductos,
   guardarEstadoPendientesCompra,
@@ -89,6 +92,7 @@ export default function SolicitudProductos() {
   const [estadoPendientesCompra, setEstadoPendientesCompra] = useState(cargarEstadoPendientesCompra);
   const [mensajePendientes, setMensajePendientes] = useState({ texto: "", tipo: "info" });
   const [fechaConsultaSolicitudes, setFechaConsultaSolicitudes] = useState(fechaISOColombia());
+  const [filtroJornadaPendientes, setFiltroJornadaPendientes] = useState(FILTROS_JORNADA_INSUMOS.TODO);
   const [, setYaExisteSolicitudHoy] = useState(false);
   const [catalogoInsumos, setCatalogoInsumos] = useState({
     cargando: true,
@@ -164,14 +168,23 @@ export default function SolicitudProductos() {
   }, [productosSolicitud]);
 
   const productosPendientesCompra = useMemo(() => {
-    const pendientesBase = obtenerProductosPendientesDesdeSolicitudes(solicitudesGuardadas, fechaConsultaSolicitudes);
+    const pendientesBase = obtenerProductosPendientesDesdeSolicitudes(
+      solicitudesGuardadas,
+      fechaConsultaSolicitudes,
+      filtroJornadaPendientes
+    );
 
     return pendientesBase.map((producto) => ({
       ...producto,
       comprado: Boolean(estadoPendientesCompra[producto.id]?.comprado),
       cantidadComprar: estadoPendientesCompra[producto.id]?.cantidadComprar || ""
     }));
-  }, [solicitudesGuardadas, estadoPendientesCompra, fechaConsultaSolicitudes]);
+  }, [solicitudesGuardadas, estadoPendientesCompra, fechaConsultaSolicitudes, filtroJornadaPendientes]);
+
+  const descripcionFiltroPendientes = useMemo(
+    () => describirFiltroJornadaInsumos(filtroJornadaPendientes, fechaConsultaSolicitudes),
+    [filtroJornadaPendientes, fechaConsultaSolicitudes]
+  );
 
   const productosParaEnviarProveedor = useMemo(
     () => productosPendientesCompra.filter((producto) => !producto.comprado && estadoPendientesCompra[producto.id]?.enviarProveedor !== false),
@@ -224,9 +237,9 @@ export default function SolicitudProductos() {
 
   useEffect(() => {
     if (vistaSolicitud === "pendientes") {
-      cargarSolicitudesPendientesCompra(fechaConsultaSolicitudes);
+      cargarSolicitudesPendientesCompra(fechaConsultaSolicitudes, filtroJornadaPendientes);
     }
-  }, [vistaSolicitud, fechaConsultaSolicitudes]);
+  }, [vistaSolicitud, fechaConsultaSolicitudes, filtroJornadaPendientes]);
 
   async function verificarSolicitudDelDia() {
     // Ya no se bloquea toda la solicitud del día.
@@ -250,17 +263,27 @@ export default function SolicitudProductos() {
     );
   }
 
-  async function cargarSolicitudesPendientesCompra(fecha = fechaConsultaSolicitudes) {
+  async function cargarSolicitudesPendientesCompra(
+    fecha = fechaConsultaSolicitudes,
+    filtro = filtroJornadaPendientes
+  ) {
     setCargandoPendientes(true);
     setMensajePendientes({ texto: "", tipo: "info" });
 
     try {
-      const { data, error } = await supabase
+      let consulta = supabase
         .from("solicitudes_insumos")
         .select("id, fecha_solicitud, fecha_para, insumos, observaciones, mensaje")
-        .eq("fecha_solicitud", fecha)
         .order("id", { ascending: false })
-        .limit(80);
+        .limit(160);
+
+      if (filtro === FILTROS_JORNADA_INSUMOS.PM_ANTERIOR_AM_ACTUAL) {
+        consulta = consulta.in("fecha_solicitud", [desplazarFechaISOColombia(fecha, -1), fecha]);
+      } else {
+        consulta = consulta.eq("fecha_solicitud", fecha);
+      }
+
+      const { data, error } = await consulta;
 
       if (error) {
         registrarErrorSupabase("cargar solicitudes de insumos", error);
@@ -271,7 +294,7 @@ export default function SolicitudProductos() {
       setSolicitudesGuardadas(data || []);
 
       if (!data || data.length === 0) {
-        setMensajePendientes({ texto: `No hay solicitudes guardadas para el día ${fecha}.`, tipo: "info" });
+        setMensajePendientes({ texto: `No hay solicitudes guardadas para ${describirFiltroJornadaInsumos(filtro, fecha)}.`, tipo: "info" });
       }
     } catch (error) {
       registrarErrorSupabase("cargar pendientes de compra", error);
@@ -812,7 +835,7 @@ export default function SolicitudProductos() {
               >
                 Ayer
               </button>
-              <button type="button" onClick={() => cargarSolicitudesPendientesCompra(fechaConsultaSolicitudes)} className="button light" disabled={cargandoPendientes}>
+              <button type="button" onClick={() => cargarSolicitudesPendientesCompra(fechaConsultaSolicitudes, filtroJornadaPendientes)} className="button light" disabled={cargandoPendientes}>
                 {cargandoPendientes ? "Cargando..." : "Actualizar"}
               </button>
               <button type="button" onClick={limpiarCompradosPendientes} className="button light">
@@ -831,7 +854,7 @@ export default function SolicitudProductos() {
 
           <div className="box soft" style={{ marginBottom: 12 }}>
             <CampoTexto
-              etiqueta="Ver solicitudes del día"
+              etiqueta="Fecha base de la consulta"
               type="date"
               value={fechaConsultaSolicitudes}
               onChange={(valor) => {
@@ -840,8 +863,32 @@ export default function SolicitudProductos() {
               }}
             />
             <p className="muted small" style={{ marginTop: 6 }}>
-              Cambia la fecha para consultar solicitudes anteriores y consolidar solo ese día.
+              Para el filtro combinado, esta fecha funciona como el día actual y se incluye automáticamente la tarde del día anterior.
             </p>
+
+            <div className="insumos-filtros-jornada" role="group" aria-label="Filtrar insumos por jornada">
+              {[
+                [FILTROS_JORNADA_INSUMOS.TODO, "Todo el día"],
+                [FILTROS_JORNADA_INSUMOS.AM, "AM"],
+                [FILTROS_JORNADA_INSUMOS.PM, "PM"],
+                [FILTROS_JORNADA_INSUMOS.PM_ANTERIOR_AM_ACTUAL, "PM anterior + AM actual"]
+              ].map(([valor, etiqueta]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  className={`insumos-filtro-jornada${filtroJornadaPendientes === valor ? " active" : ""}`}
+                  aria-pressed={filtroJornadaPendientes === valor}
+                  onClick={() => {
+                    setFiltroJornadaPendientes(valor);
+                    setMensajePendientes({ texto: "", tipo: "info" });
+                  }}
+                  disabled={cargandoPendientes}
+                >
+                  {etiqueta}
+                </button>
+              ))}
+            </div>
+            <p className="insumos-filtro-resumen">Mostrando: <strong>{descripcionFiltroPendientes}</strong></p>
           </div>
 
           {mensajePendientes.texto && (
@@ -851,7 +898,7 @@ export default function SolicitudProductos() {
           )}
 
           <div className="box soft" style={{ marginBottom: 12 }}>
-            <strong>{productosParaEnviarProveedor.length} insumos seleccionados para enviar del día {fechaConsultaSolicitudes}</strong>
+            <strong>{productosParaEnviarProveedor.length} insumos seleccionados para enviar · {descripcionFiltroPendientes}</strong>
             <p className="muted small" style={{ marginTop: 6 }}>
               Marca la columna Enviar para escoger qué insumos van por WhatsApp. Los insumos comprados no se envían.
             </p>

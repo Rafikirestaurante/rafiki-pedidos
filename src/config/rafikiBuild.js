@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.12-FASE37B1-ZOOM-GESTOS-NAVEGACION-COMPACTA-2026-07-30",
-  phase: "Fase 37B.1 - Zoom por gestos y navegación compacta",
+  version: "127.13-FASE37C-FILTROS-INSUMOS-LLAVE-TRANSFERENCIA-2026-07-30",
+  phase: "Fase 37C - Filtros de insumos y llave de transferencia",
   date: "2026-07-30",
-  fase: "37B1-ZOOM-GESTOS-NAVEGACION-COMPACTA",
+  fase: "37C-FILTROS-INSUMOS-LLAVE-TRANSFERENCIA",
   notes:
-    "La vista ampliada del calendario conserva únicamente el zoom con dos dedos y el desplazamiento táctil. Se retiraron los controles −, + y Ajustar, y la navegación entre meses se compactó tanto en el Dashboard como dentro de la vista ampliada para encajar mejor en celulares.",
+    "Solicitud de insumos incorpora filtros Todo el día, AM, PM y PM anterior + AM actual usando una fecha base. En /cliente, al seleccionar Transferencia se muestra la llave 0090381033 con botón para copiarla.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

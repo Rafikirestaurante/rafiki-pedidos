@@ -4,6 +4,7 @@ import RafikiModal from "../../../shared/components/RafikiModal";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
 import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
 import ResumenPedidoItem from "../../../shared/components/ResumenPedidoItem";
+import TransferenciaPagoInfo from "../../../shared/components/TransferenciaPagoInfo";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
 import {
   calcularTotalItems,
@@ -554,6 +555,8 @@ export default function PanelClienteBeta({ menu, platosAgrupados, cargandoMenu =
                   ))}
                 </select>
               </label>
+
+              {tipoPago === "Transferencia" ? <TransferenciaPagoInfo /> : null}
 
               <CampoTexto
                 etiqueta="Observaciones generales"

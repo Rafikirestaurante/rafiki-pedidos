@@ -15,6 +15,7 @@ import CodigoClienteEspecial from "./CodigoClienteEspecial";
 import CafeteriaClienteEspecial from "./CafeteriaClienteEspecial";
 import EditarAcompanantesResumenModal from "../../../shared/components/EditarAcompanantesResumenModal";
 import EditarProteinaResumenModal from "../../../shared/components/EditarProteinaResumenModal";
+import TransferenciaPagoInfo from "../../../shared/components/TransferenciaPagoInfo";
 import { agruparItemsResumenPedido } from "../../../shared/utils/resumenPedido";
 
 export default function PedidoCliente({
@@ -534,6 +535,8 @@ export default function PedidoCliente({
                         ))}
                       </select>
                     </label>
+
+                    {tipoPago === "Transferencia" ? <TransferenciaPagoInfo /> : null}
 
                     <CampoTexto
                       etiqueta="Observaciones generales"
