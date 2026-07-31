@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  calcularTotalItem,
   crearDatosTicketPedido,
   crearTextoItem,
   dinero,
+  esAdicionalAlmuerzo,
   esItemCafeteria,
   formatoNumeroPedido,
   limpiarTelefono,
@@ -68,6 +70,23 @@ describe("utils/pedidos", () => {
     const ticket = crearDatosTicketPedido({ numero_pedido: 2, cliente: "Prueba", items: [item] }, { area: "cafeteria", items: [item] });
     expect(ticket.productos[0]).toBe("1 PARFAIT 12 OZ · BANANO, ARÁNDANOS, UVA");
     expect(ticket.productos.some((linea) => linea.includes("FRUTAS:"))).toBe(false);
+  });
+
+  it("maneja adicionales de almuerzo como productos independientes", () => {
+    const adicional = {
+      categoria: "Adicionales almuerzo",
+      area: "cocina",
+      tipo: "adicional_almuerzo",
+      plato: "Papas Fritas",
+      precioPlato: 5000,
+      cantidad: 3,
+      paraLlevar: true
+    };
+
+    expect(esAdicionalAlmuerzo(adicional)).toBe(true);
+    expect(calcularTotalItem(adicional)).toBe(15000);
+    expect(valorParaLlevarItem(adicional)).toBe(0);
+    expect(crearTextoItem(adicional)).toBe("3 Papas Fritas ($ 5.000)");
   });
 
 });

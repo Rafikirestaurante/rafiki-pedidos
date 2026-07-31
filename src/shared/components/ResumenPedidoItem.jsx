@@ -8,6 +8,7 @@ import {
 import {
   calcularTotalItem,
   dinero,
+  esAdicionalAlmuerzo,
   esItemCafeteria,
   esProductoSinAcompanantes,
   MENSAJE_ACOMPANANTES_DEL_DIA,
@@ -87,11 +88,12 @@ export default function ResumenPedidoItem({
   const cantidad = Number(grupo?.cantidad || item.cantidad || 1) || 1;
   const nombre = nombreItemResumen(item);
   const itemEsCafeteria = esItemCafeteria(item);
+  const itemEsAdicionalAlmuerzo = esAdicionalAlmuerzo(item);
   const itemSinAcompanantes = itemEsCafeteria || esProductoSinAcompanantes(item);
   const acompanantes = Array.isArray(item.acompanantes) ? item.acompanantes.filter(Boolean) : [];
   const detallesCafe = itemEsCafeteria ? detallesCafeteria(item, nombre) : [];
-  const puedeEditarProteina = Boolean(onEditarProteina) && !itemEsCafeteria;
-  const puedeEditarAcompanantes = Boolean(onEditarAcompanantes) && !itemEsCafeteria && !itemSinAcompanantes;
+  const puedeEditarProteina = Boolean(onEditarProteina) && !itemEsCafeteria && !itemEsAdicionalAlmuerzo;
+  const puedeEditarAcompanantes = Boolean(onEditarAcompanantes) && !itemEsCafeteria && !itemEsAdicionalAlmuerzo && !itemSinAcompanantes;
   const adicionalLlevar = valorParaLlevarItem(item);
   const idsGrupo = grupo?.ids || [];
 
@@ -119,7 +121,7 @@ export default function ResumenPedidoItem({
         </div>
       ) : null}
 
-      {!itemEsCafeteria && itemSinAcompanantes ? (
+      {!itemEsCafeteria && itemSinAcompanantes && !itemEsAdicionalAlmuerzo ? (
         <div className="summary-detail-list summary-clean-detail-list"><span>{MENSAJE_ACOMPANANTES_DEL_DIA}</span></div>
       ) : null}
 
@@ -136,11 +138,11 @@ export default function ResumenPedidoItem({
         <p className="summary-note">Obs. acompañantes: {item.observacionAcompanantes.trim()}</p>
       ) : null}
 
-      {!itemEsCafeteria && !itemSinAcompanantes && mostrarSopaBebida ? (
+      {!itemEsCafeteria && !itemEsAdicionalAlmuerzo && !itemSinAcompanantes && mostrarSopaBebida ? (
         <p className="summary-note">Sopa + bebida incluida</p>
       ) : null}
 
-      {mostrarTextoParaLlevar ? <p className="summary-note">{textoParaLlevarItem(item)}</p> : null}
+      {mostrarTextoParaLlevar && !itemEsAdicionalAlmuerzo ? <p className="summary-note">{textoParaLlevarItem(item)}</p> : null}
       {mostrarAdicionalLlevar && adicionalLlevar > 0 ? <p className="summary-note">Adicional incluido: {dinero(adicionalLlevar)} por unidad.</p> : null}
 
       <div className="summary-qty-row">

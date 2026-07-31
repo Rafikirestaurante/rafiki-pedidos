@@ -293,10 +293,21 @@ export function esCategoriaSopa(categoria) {
   return normalizarTexto(categoria).includes("sopa");
 }
 
+export function esAdicionalAlmuerzo(item = {}) {
+  const categoria = normalizarTexto(item?.categoria);
+  const tipo = normalizarTexto(item?.tipo);
+  const area = normalizarTexto(item?.area);
+
+  return categoria.includes("adicionales almuerzo")
+    || tipo === "adicional_almuerzo"
+    || area === "adicionales_almuerzo";
+}
+
 export function esProductoSinAcompanantes(item = {}) {
   const categoria = normalizarTexto(item?.categoria);
   const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre || item?.producto);
 
+  if (esAdicionalAlmuerzo(item)) return true;
   if (categoria.includes("sopa") || nombre.includes("sopa")) return true;
   if (categoria.includes("pasta") || nombre.includes("pasta")) return true;
   if (nombre.startsWith("arroz de ")) return true;
@@ -358,6 +369,7 @@ export function esDesayunoCafeteria(item) {
 
 export function valorParaLlevarItem(item) {
   if (!item?.paraLlevar) return 0;
+  if (esAdicionalAlmuerzo(item)) return 0;
 
   if (esItemCafeteria(item)) {
     return esDesayunoCafeteria(item) ? VALOR_PARA_LLEVAR_DESAYUNO : 0;
@@ -705,6 +717,7 @@ export function crearTextoItem(item) {
   const nombrePlato = item.plato || item.proteina || "Plato";
   const precio = Number(item.precioPlato || item.precioProteina || item.precio || 0);
   const partes = [`${item.cantidad} ${nombrePlato} (${dinero(precio)})`];
+  const adicionalAlmuerzo = esAdicionalAlmuerzo(item);
   const sinAcompanantes = esProductoSinAcompanantes(item);
   const acompanantes = sinAcompanantes ? [] : limpiarAcompanantesCliente(item.acompanantes || []);
 
@@ -720,7 +733,7 @@ export function crearTextoItem(item) {
     partes.push(INCLUIDOS_FIJOS);
   }
 
-  if (item.paraLlevar) {
+  if (item.paraLlevar && !adicionalAlmuerzo) {
     const valor = valorParaLlevarItem(item);
     partes.push(valor === 0 ? "Para llevar sin costo adicional" : `Para llevar +${dinero(valor)}`);
   }
@@ -871,7 +884,7 @@ export function crearDatosTicketPedido(pedido, opciones = {}) {
       }
     }
 
-    if (!esPedidoMesa && item.paraLlevar) {
+    if (!esPedidoMesa && item.paraLlevar && !esAdicionalAlmuerzo(item)) {
       const textoEmpaque = valorParaLlevarItem(item) > 0 ? "PARA LLEVAR" : "PARA LLEVAR SIN COSTO";
       observaciones.push(`${textoMayusculasTicket(nombreBase)}: ${textoEmpaque}`);
     }
