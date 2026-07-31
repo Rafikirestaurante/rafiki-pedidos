@@ -8,6 +8,7 @@ import {
   crearMensajePedidoListo,
   crearTextoItem,
   dinero,
+  esAdicionalAlmuerzo,
   esProductoSinAcompanantes,
   textoParaLlevarItem,
   formatearFechaHora,
@@ -267,7 +268,7 @@ export function resumirItemsPedidoCompacto(pedido) {
     const obsAcomp = !esProductoSinAcompanantes(item) && item.observacionAcompanantes?.trim()
       ? ` · Obs: ${item.observacionAcompanantes.trim()}`
       : "";
-    const empaque = textoParaLlevarItem(item) ? ` · ${textoParaLlevarItem(item)}` : "";
+    const empaque = !esAdicionalAlmuerzo(item) && textoParaLlevarItem(item) ? ` · ${textoParaLlevarItem(item)}` : "";
     return `${cantidad} x ${nombre}${acomp}${adicionalesAlmuerzo}${obsAcomp}${empaque}`;
   }).join(" + ");
 }
