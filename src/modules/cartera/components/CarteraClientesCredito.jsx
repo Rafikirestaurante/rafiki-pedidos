@@ -77,6 +77,7 @@ export default function CarteraClientesCredito() {
   const [formularioAbono, setFormularioAbono] = useState(ABONO_INICIAL);
   const [abonoPendienteConfirmacion, setAbonoPendienteConfirmacion] = useState(null);
   const [vistaCartera, setVistaCartera] = useState(VISTA_CARTERA_INICIAL);
+  const [soloProteinaEstadoCuenta, setSoloProteinaEstadoCuenta] = useState(false);
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -331,9 +332,14 @@ export default function CarteraClientesCredito() {
   }, [abonosClienteDetalle, movimientosClienteDetalle]);
 
   const estadoCuentaCliente = useMemo(
-    () => construirEstadoCuenta(movimientosClienteDetalle, abonosClienteDetalle),
-    [abonosClienteDetalle, movimientosClienteDetalle]
+    () => construirEstadoCuenta(movimientosClienteDetalle, abonosClienteDetalle, { soloProteina: soloProteinaEstadoCuenta }),
+    [abonosClienteDetalle, movimientosClienteDetalle, soloProteinaEstadoCuenta]
   );
+
+  function abrirEstadoCuenta(clienteId) {
+    setClienteDetalleId(clienteId || null);
+    setVistaCartera("estado-cuenta");
+  }
 
   function limpiarFormulario() {
     setFormulario(FORM_INICIAL);
@@ -451,8 +457,8 @@ export default function CarteraClientesCredito() {
 
   function exportarEstadoCuentaExcel() {
     if (!clienteDetalle) return;
-    const encabezados = ["Fecha", "Movimiento", "Referencia", "Descripción", "Pedido a crédito", "Pago recibido", "Saldo pendiente"];
-    const filas = estadoCuentaCliente.map((linea) => [formatearFechaHora(linea.fecha), linea.tipo, linea.referencia, linea.descripcion, linea.pedido || "", linea.pago || "", linea.saldo]);
+    const encabezados = ["Fecha", "Referencia", "Descripción", "Pedido a crédito", "Pago recibido", "Saldo pendiente"];
+    const filas = estadoCuentaCliente.map((linea) => [formatearFechaHora(linea.fecha), linea.referencia, linea.descripcion, linea.pedido || "", linea.pago || "", linea.saldo]);
     const tabla = [encabezados, ...filas].map((fila, indice) => `<tr>${fila.map((celda) => `<${indice === 0 ? "th" : "td"}>${escaparHtmlExcel(celda)}</${indice === 0 ? "th" : "td"}>`).join("")}</tr>`).join("");
     descargarArchivo(`estado-cuenta-${nombreArchivoSeguro(clienteDetalle.nombre)}-${fechaColombiaYYYYMMDD()}.xls`, `<!doctype html><html><head><meta charset="utf-8" /></head><body><h2>Estado de cuenta: ${escaparHtmlExcel(clienteDetalle.nombre)}</h2><p>Saldo actual: ${escaparHtmlExcel(dinero(clienteDetalle.saldo_pendiente))}</p><table border="1">${tabla}</table></body></html>`);
   }
@@ -749,6 +755,7 @@ export default function CarteraClientesCredito() {
 
   const tabsCartera = [
     { id: "cartera", label: "Cartera actual", icon: "👥", count: clientesVisibles.length },
+    { id: "estado-cuenta", label: "Estado de cuenta", icon: "📄", count: clienteDetalle ? estadoCuentaCliente.length : null },
     { id: "historial", label: "Historial", icon: "🧾", count: indicadores.movimientosFiltrados },
   ];
 
@@ -886,7 +893,7 @@ export default function CarteraClientesCredito() {
                         <RafikiActionMenu
                           disabled={guardando}
                           items={[
-                            { id: "ver", label: "Ver estado de cuenta", icon: "🔎", variant: "info", onClick: () => setClienteDetalleId(cliente.id) },
+                            { id: "ver", label: "Ver estado de cuenta", icon: "🔎", variant: "info", onClick: () => abrirEstadoCuenta(cliente.id) },
                             { id: "editar", label: "Editar cliente", icon: "✏️", onClick: () => editar(cliente) },
                             whatsapp ? { id: "whatsapp", label: "Enviar WhatsApp", icon: "💬", variant: "success", disabled: saldoPendiente <= 0, onClick: () => abrirWhatsApp(cliente) } : null,
                             { id: "estado", label: cliente.activo === false ? "Activar cliente" : "Desactivar cliente", icon: cliente.activo === false ? "✅" : "🚫", variant: cliente.activo === false ? "success" : "danger", onClick: () => cambiarEstado(cliente) },
@@ -1006,15 +1013,21 @@ export default function CarteraClientesCredito() {
         </section>
       )}
 
-      {clienteDetalle && (
+      {vistaCartera === "estado-cuenta" && (
         <section className="detalle-cartera">
           {!clienteDetalle ? (
-            <RafikiEmptyState
-              icon="🔎"
-              title="Selecciona un cliente"
-              description="Desde la pestaña Clientes puedes abrir la cartera individual de cualquier cliente crédito."
-              action={<button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={() => setVistaCartera("clientes")}>Ir a clientes</button>}
-            />
+            <div className="card card-pad">
+              <div className="section-heading section-heading-pedidos-unificados">
+                <div><h3>Estado de cuenta</h3><p className="muted small">Selecciona un cliente para consultar sus pedidos a crédito y pagos recibidos.</p></div>
+              </div>
+              <div className="cartera-filtros">
+                <select value="" onChange={(e) => abrirEstadoCuenta(e.target.value)} aria-label="Seleccionar cliente para estado de cuenta">
+                  <option value="">Seleccionar cliente</option>
+                  {clientesParaFiltroMovimientos.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>)}
+                </select>
+              </div>
+              <RafikiEmptyState icon="🔎" title="Selecciona un cliente" description="También puedes abrir esta pestaña desde la opción Ver estado de cuenta en Cartera actual." />
+            </div>
           ) : (
             <>
               <div className="section-heading section-heading-pedidos-unificados">
@@ -1023,9 +1036,14 @@ export default function CarteraClientesCredito() {
                   <p className="muted small">Pedidos a crédito y pagos recibidos en una sola secuencia.</p>
                 </div>
                 <div className="cartera-actions" style={{ marginTop: 0 }}>
+                  <select value={clienteDetalleId || ""} onChange={(e) => abrirEstadoCuenta(e.target.value)} aria-label="Cambiar cliente del estado de cuenta">
+                    {clientesParaFiltroMovimientos.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>)}
+                  </select>
+                  <button type="button" className={`mini-btn ${soloProteinaEstadoCuenta ? "green" : ""}`} style={{ width: "auto", marginBottom: 0 }} onClick={() => setSoloProteinaEstadoCuenta((actual) => !actual)} aria-pressed={soloProteinaEstadoCuenta}>
+                    {soloProteinaEstadoCuenta ? "✓ Solo proteína" : "Solo proteína"}
+                  </button>
                   <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={() => abrirAbono(clienteDetalle)} disabled={Number(clienteDetalle.saldo_pendiente || 0) <= 0}>Registrar abono</button>
                   <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={exportarEstadoCuentaExcel} disabled={estadoCuentaCliente.length === 0}>Exportar estado de cuenta</button>
-                  <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
                 </div>
               </div>
 
@@ -1041,7 +1059,6 @@ export default function CarteraClientesCredito() {
                   <thead>
                     <tr>
                       <th>Fecha</th>
-                      <th>Movimiento</th>
                       <th>Referencia</th>
                       <th>Descripción</th>
                       <th>Pedido a crédito</th>
@@ -1051,11 +1068,10 @@ export default function CarteraClientesCredito() {
                   </thead>
                   <tbody>
                     {estadoCuentaCliente.length === 0 ? (
-                      <tr><td colSpan="7"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente aún no tiene pedidos a crédito ni pagos registrados." /></td></tr>
+                      <tr><td colSpan="6"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente aún no tiene pedidos a crédito ni pagos registrados." /></td></tr>
                     ) : estadoCuentaCliente.map((linea) => (
                       <tr key={linea.id} className={linea.tipo === "Pago recibido" ? "subtle-row" : ""}>
                         <td>{formatearFechaHora(linea.fecha)}</td>
-                        <td><RafikiBadge estado={linea.tipo} /></td>
                         <td>{linea.referencia}</td>
                         <td className="td-pedido-detalle">{linea.descripcion}</td>
                         <td className="td-total">{linea.pedido ? dinero(linea.pedido) : "—"}</td>

@@ -3,6 +3,7 @@ import {
   construirEstadoCuenta,
   movimientoPendiente,
   resumenPedidoMovimiento,
+  resumenSoloProteinaMovimiento,
   saldoMovimiento,
   resumirAbonosPorMetodo,
 } from "../carteraViewUtils";
@@ -41,6 +42,18 @@ describe("carteraViewUtils", () => {
     expect(resumen).toContain("2 Pechuga");
     expect(resumen).toContain("Arroz");
     expect(resumen).toContain("1 Jugo");
+  });
+
+  it("muestra solo la proteína sin acompañantes cuando se solicita", () => {
+    const movimiento = {
+      pedido_items: [
+        { cantidad: 2, nombre: "Almuerzo", proteina: "Pechuga asada", acompanantes: ["Arroz", "Ensalada"] },
+        { cantidad: 1, nombre: "Almuerzo", proteina: "Carne bistec", acompanantes: ["Papa"] },
+      ],
+    };
+    expect(resumenSoloProteinaMovimiento(movimiento)).toBe("2 Pechuga asada + 1 Carne bistec");
+    expect(construirEstadoCuenta([{ id: "p2", valor: 30000, ...movimiento }], [], { soloProteina: true })[0].descripcion)
+      .toBe("2 Pechuga asada + 1 Carne bistec");
   });
 
   it("agrupa abonos por método", () => {

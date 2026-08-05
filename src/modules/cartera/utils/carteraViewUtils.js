@@ -179,6 +179,21 @@ export function nombreItemPedidoCompacto(item = {}) {
   return `${cantidad} ${nombre}${tamano}${acompanantes}`;
 }
 
+export function nombreItemSoloProteina(item = {}) {
+  const cantidad = Number(item.cantidad) || 1;
+  const esCafeteria = item?.categoria === "cafeteria" || item?.area === "cafeteria";
+
+  if (esCafeteria) return `${cantidad} ${obtenerNombreCafeteria(item)}`;
+
+  const proteina = item.proteina
+    || item.plato
+    || item.producto
+    || item.nombre
+    || item.tipo
+    || "Producto";
+  return `${cantidad} ${proteina}`;
+}
+
 export function resumenPedidoMovimiento(movimiento = {}) {
   const items = Array.isArray(movimiento.pedido_items) ? movimiento.pedido_items : [];
   if (items.length > 0) {
@@ -191,6 +206,15 @@ export function resumenPedidoMovimiento(movimiento = {}) {
   if (textoPedido) return textoPedido;
 
   return movimiento.concepto || "Pedido crédito";
+}
+
+export function resumenSoloProteinaMovimiento(movimiento = {}) {
+  const items = Array.isArray(movimiento.pedido_items) ? movimiento.pedido_items : [];
+  if (items.length === 0) return resumenPedidoMovimiento(movimiento);
+
+  const resumen = items.slice(0, 3).map(nombreItemSoloProteina).join(" + ");
+  const restantes = items.length > 3 ? ` + ${items.length - 3} más` : "";
+  return `${resumen}${restantes}`;
 }
 
 export function textoBusquedaMovimiento(movimiento) {
@@ -206,14 +230,14 @@ export function textoBusquedaMovimiento(movimiento) {
     .join(" ");
 }
 
-export function construirEstadoCuenta(movimientos = [], abonos = []) {
+export function construirEstadoCuenta(movimientos = [], abonos = [], { soloProteina = false } = {}) {
   const lineas = [
     ...(Array.isArray(movimientos) ? movimientos : []).map((movimiento) => ({
       id: `pedido-${movimiento.id}`,
       fecha: movimiento.fecha_movimiento || movimiento.created_at,
       tipo: "Pedido a crédito",
       referencia: movimiento.numero_pedido ? `#${movimiento.numero_pedido}` : "—",
-      descripcion: resumenPedidoMovimiento(movimiento),
+      descripcion: soloProteina ? resumenSoloProteinaMovimiento(movimiento) : resumenPedidoMovimiento(movimiento),
       pedido: estadoCartera(movimiento) === "anulado" ? 0 : aPesosEnteros(movimiento.valor),
       pago: 0,
       estado: estadoCartera(movimiento),

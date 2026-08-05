@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.20-FASE38B-REORGANIZACION-INTEGRAL-CARTERA-2026-08-05",
-  phase: "Fase 38B - Reorganización integral de Cartera",
+  version: "127.21-FASE38C-ESTADO-CUENTA-SEPARADO-SOLO-PROTEINA-2026-08-05",
+  phase: "Fase 38C - Estado de cuenta separado y vista solo proteína",
   date: "2026-08-05",
-  fase: "38B-REORGANIZACION-INTEGRAL-CARTERA",
+  fase: "38C-ESTADO-CUENTA-SEPARADO-SOLO-PROTEINA",
   notes:
-    "Cartera queda organizada en Cartera actual e Historial, con estado de cuenta cronológico unificado y exportaciones independientes.",
+    "Estado de cuenta queda en una pestaña independiente con selector de cliente, tabla simplificada y modo Solo proteína.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
