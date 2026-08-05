@@ -44,6 +44,9 @@ import EditarProteinaResumenModal from "../../../shared/components/EditarProtein
 import ResumenPedidoItem from "../../../shared/components/ResumenPedidoItem";
 import MesaTabs from "./MesaTabs";
 import DatosMesa from "./DatosMesa";
+import SelectorVistaMesas from "./SelectorVistaMesas";
+import PanelMesasCompacto from "./PanelMesasCompacto";
+import ResumenMesaNormal from "./ResumenMesaNormal";
 import {
   FORMA_PAGO_CREDITO,
   FORMAS_PAGO_MESA,
@@ -94,6 +97,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [clientesCreditoMesa, setClientesCreditoMesa] = useState(() => leerClientesCreditoGuardados());
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
   const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
+  const [vistaMesas, setVistaMesas] = useState("normal");
 
   useEffect(() => {
     let cancelado = false;
@@ -773,6 +777,27 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     agregarAlmuerzoRapidoYSiguiente();
   }
 
+  function seleccionarVistaMesas(vista) {
+    const siguienteVista = vista === "compacta" ? "compacta" : "normal";
+    setVistaMesas(siguienteVista);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 40);
+  }
+
+  function crearAlmuerzoVistaCompacta() {
+    const nuevoItem = crearItemNuevo();
+    setItemsMesa((actual) => [...actual, nuevoItem]);
+    setErrorMesa("");
+    return nuevoItem.id;
+  }
+
+  function abrirNormalParaCategoria(categoria) {
+    setVistaMesas("normal");
+    setCategoriaActivaMesa(categoria);
+    if (categoria === "almuerzos") setAdicionalesRestauranteAbiertos(true);
+    setErrorMesa("");
+    window.setTimeout(() => irAElementoMesas("mesa-categorias-top", 80, "start"), 60);
+  }
+
   async function enviarPedidoMesa() {
     if (itemsConProducto.length === 0) {
       mostrarErrorMesa("Agrega al menos un producto.", { elementoId: "mesa-categorias-top" });
@@ -831,6 +856,33 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     }
   }
 
+  const datosMesaProps = {
+    modoLlevar,
+    mesaLocal,
+    clientePedido,
+    telefonoLlevar,
+    ubicacionLlevar,
+    meseroLocal,
+    tipoPagoMesa,
+    observacionesLocal,
+    total,
+    errorMesa,
+    guardandoPedido,
+    itemsConProducto: itemsConModoLlevar,
+    onSeleccionarMesa: seleccionarMesaLocal,
+    onAlternarModoLlevar: alternarModoLlevar,
+    onClienteChange: (valor) => { setClientePedido(valor); setErrorMesa(""); },
+    onTelefonoChange: (valor) => { setTelefonoLlevar(valor); setErrorMesa(""); },
+    onUbicacionChange: (valor) => { setUbicacionLlevar(valor); setErrorMesa(""); },
+    onMeseroChange: (mesero) => { setMeseroLocal(mesero); setErrorMesa(""); },
+    clientesCreditoMesa,
+    onTipoPagoChange: (pago) => { setTipoPagoMesa(pago); setErrorMesa(""); },
+    onObservacionesChange: setObservacionesLocal,
+    onEnviarPedido: enviarPedidoMesa,
+    modoEdicionAdmin,
+    onActualizarItem: actualizarItemMesa
+  };
+
   if (pedidoMesaConfirmado) {
     return (
       <ConfirmacionPedidoMesa
@@ -844,6 +896,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
   return (
     <>
+      <SelectorVistaMesas vista={vistaMesas} onChange={seleccionarVistaMesas} />
+      {vistaMesas === "normal" ? (
     <main className="order-layout mesas-cliente-layout mesas-panel-layout">
       <section className="card card-pad" id="mesa-categorias-top">
         <div className="mesa-panel-title">
@@ -1378,90 +1432,56 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
         )}
       </section>
 
-      <aside className="card card-pad fade-step" id="mesa-confirmacion-final">
-        <h2>{hayProductoSeleccionadoMesa ? "Resumen del pedido" : "Resumen"}</h2>
-
-        {!hayProductoSeleccionadoMesa ? (
-          <div className="box soft">
-            <strong>👈 Empieza seleccionando un almuerzo o un producto de cafetería</strong>
-          </div>
-        ) : (
-          <>
-            <p className="muted">Puedes combinar almuerzos, batidos, parfait, bebidas y cualquier producto de cafetería en una sola orden.</p>
-
-            <div className="mesa-resumen-actions">
-              <button type="button" onClick={agregarAlmuerzoDesdeResumen} className="button add-meal">
-                + Agregar almuerzo
-              </button>
-              <button type="button" onClick={() => agregarProductoCafeteriaDesdePedido()} className="button cafeteria-action">
-                ☕ Agregar cafetería
-              </button>
-            </div>
-
-            <div className="box soft" style={{ marginBottom: 12 }}>
-              <h3>Resumen del pedido</h3>
-
-              {gruposResumenMesa.map((grupo) => (
-                <ResumenPedidoItem
-                  key={grupo.key}
-                  grupo={grupo}
-                  className="mesas-resumen-item"
-                  onBorrar={(ids) => quitarGrupoPedidoMesa(ids)}
-                  onCambiarCantidad={(ids, cantidad) => actualizarCantidadGrupoMesa(ids, cantidad)}
-                  onEditarProteina={(grupoActual) => setGrupoEditandoProteinaMesa(grupoActual)}
-                  onEditarAcompanantes={(grupoActual) => setGrupoEditandoAcompanantesMesa(grupoActual)}
-                  mostrarTextoParaLlevar={false}
-                />
-              ))}
-
-              <div className="total-row">
-                <span>Total</span>
-                <strong>{dinero(total)}</strong>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => irAElementoMesas("mesa-datos-final", 120)}
-              className="button continue-button"
-              style={{ marginTop: 8, background: "#16a34a" }}
-            >
-              continuar
-            </button>
-
-            <button type="button" onClick={reiniciarPedidoMesa} className="button light small-reset">
-              Borrar y volver a empezar
-            </button>
-
-            <DatosMesa
-              modoLlevar={modoLlevar}
-              mesaLocal={mesaLocal}
-              clientePedido={clientePedido}
-              telefonoLlevar={telefonoLlevar}
-              ubicacionLlevar={ubicacionLlevar}
-              meseroLocal={meseroLocal}
-              tipoPagoMesa={tipoPagoMesa}
-              observacionesLocal={observacionesLocal}
-              total={total}
-              errorMesa={errorMesa}
-              guardandoPedido={guardandoPedido}
-              itemsConProducto={itemsConModoLlevar}
-              onSeleccionarMesa={seleccionarMesaLocal}
-              onAlternarModoLlevar={alternarModoLlevar}
-              onClienteChange={(valor) => { setClientePedido(valor); setErrorMesa(""); }}
-              onTelefonoChange={(valor) => { setTelefonoLlevar(valor); setErrorMesa(""); }}
-              onUbicacionChange={(valor) => { setUbicacionLlevar(valor); setErrorMesa(""); }}
-              onMeseroChange={(mesero) => { setMeseroLocal(mesero); setErrorMesa(""); }}
-              clientesCreditoMesa={clientesCreditoMesa}
-              onTipoPagoChange={(pago) => { setTipoPagoMesa(pago); setErrorMesa(""); }}
-              onObservacionesChange={setObservacionesLocal}
-              onEnviarPedido={enviarPedidoMesa}
-              modoEdicionAdmin={modoEdicionAdmin}
-            />
-          </>
-        )}
-      </aside>
+      <ResumenMesaNormal
+        hayProductoSeleccionadoMesa={hayProductoSeleccionadoMesa}
+        gruposResumenMesa={gruposResumenMesa}
+        total={total}
+        onAgregarAlmuerzo={agregarAlmuerzoDesdeResumen}
+        onAgregarCafeteria={() => agregarProductoCafeteriaDesdePedido()}
+        onQuitarGrupo={quitarGrupoPedidoMesa}
+        onCambiarCantidad={actualizarCantidadGrupoMesa}
+        onEditarProteina={setGrupoEditandoProteinaMesa}
+        onEditarAcompanantes={setGrupoEditandoAcompanantesMesa}
+        onContinuar={() => irAElementoMesas("mesa-datos-final", 120)}
+        onReiniciar={reiniciarPedidoMesa}
+        datosMesaProps={datosMesaProps}
+      />
     </main>
+      ) : (
+        <PanelMesasCompacto
+          cargandoMenu={cargandoMenu}
+          platosAgrupados={platosAgrupados}
+          itemsAlmuerzoMesa={itemsAlmuerzoMesa}
+          hayProductoSeleccionadoMesa={hayProductoSeleccionadoMesa}
+          hayAlmuerzoSeleccionadoMesa={hayAlmuerzoSeleccionadoMesa}
+          gruposResumenMesa={gruposResumenMesa}
+          total={total}
+          modoLlevar={modoLlevar}
+          mesaLocal={mesaLocal}
+          meseroLocal={meseroLocal}
+          tipoPagoMesa={tipoPagoMesa}
+          clientePedido={clientePedido}
+          modoEdicionAdmin={modoEdicionAdmin}
+          pedidoEditando={pedidoEditando}
+          onCancelarEdicion={onCancelarEdicion}
+          navegacionAdminVisible={navegacionAdminVisible}
+          puedeVerRafa={puedeVerRafa}
+          onIrAdmin={onIrAdmin}
+          onIrPedidos={onIrPedidos}
+          onIrGerencia={onIrGerencia}
+          acompanantesDisponibles={acompanantesMesaDisponiblesResumen}
+          onCrearAlmuerzo={crearAlmuerzoVistaCompacta}
+          onCambiarPlato={cambiarPlatoMesa}
+          onCambiarAcompanante={cambiarAcompananteMesa}
+          onMostrarError={mostrarErrorMesa}
+          onQuitarGrupo={quitarGrupoPedidoMesa}
+          onCambiarCantidad={actualizarCantidadGrupoMesa}
+          onEditarProteina={setGrupoEditandoProteinaMesa}
+          onEditarAcompanantes={setGrupoEditandoAcompanantesMesa}
+          onAbrirNormalCategoria={abrirNormalParaCategoria}
+          datosMesaProps={datosMesaProps}
+        />
+      )}
     <EditarProteinaResumenModal
       abierto={Boolean(grupoEditandoProteinaMesa)}
       grupo={grupoEditandoProteinaMesa}
