@@ -8014,35 +8014,17 @@ body.rafiki-modal-open {
 .mesas-vista-selector {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  width: min(1180px, calc(100% - 24px));
-  margin: 10px auto 12px;
-  padding: 10px 12px;
+  justify-content: center;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 8px auto 10px;
+  padding: 4px;
   border: 1px solid rgba(249, 115, 22, 0.18);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 8px 22px rgba(120, 53, 15, 0.05);
 }
 
-.mesas-vista-selector-copy {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.mesas-vista-selector-copy strong {
-  color: var(--rafiki-brand-deep);
-  font-size: 13px;
-  font-weight: 1000;
-}
-
-.mesas-vista-selector-copy span {
-  color: var(--rafiki-muted);
-  font-size: 11px;
-  font-weight: 750;
-  line-height: 1.25;
-}
 
 .mesas-vista-selector-opciones {
   display: inline-flex;
@@ -8075,47 +8057,23 @@ body.rafiki-modal-open {
   box-shadow: 0 3px 10px rgba(120, 53, 15, 0.12);
 }
 
-.mesas-vista-selector-opciones small {
-  padding: 2px 5px;
-  border-radius: 999px;
-  background: rgba(249, 115, 22, 0.12);
-  color: #c2410c;
-  font-size: 9px;
-  font-weight: 1000;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
 
 .mesas-compacta-operativa .mesas-beta-steps {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.mesas-compacta-banner {
-  border-style: solid;
-  border-color: rgba(22, 163, 74, 0.25);
-  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(255, 251, 235, 0.92));
-}
-
-.mesas-compacta-banner span {
-  color: #15803d;
-}
 
 .mesas-compacta-accesos {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 7px;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--rafiki-border-soft);
 }
 
-.mesas-compacta-accesos span {
-  flex: 1 1 190px;
-  color: var(--rafiki-muted);
-  font-size: 11px;
-  font-weight: 800;
-}
 
 .mesas-compacta-accesos button {
   min-height: 32px;
@@ -8148,18 +8106,10 @@ body.rafiki-modal-open {
 
 @media (max-width: 700px) {
   .mesas-vista-selector {
-    align-items: stretch;
-    width: calc(100% - 16px);
-    margin: 8px auto 10px;
-    padding: 9px;
-  }
-
-  .mesas-vista-selector-copy span {
-    display: none;
-  }
-
-  .mesas-vista-selector-opciones {
-    flex: 1 1 auto;
+    width: fit-content;
+    max-width: calc(100% - 16px);
+    margin: 7px auto 9px;
+    padding: 3px;
   }
 
   .mesas-vista-selector-opciones button {
@@ -8195,13 +8145,12 @@ body.rafiki-modal-open {
   }
 }
 
-@media (max-width: 390px) {
-  .mesas-vista-selector {
-    display: grid;
-    gap: 7px;
-  }
 
-  .mesas-vista-selector-copy {
-    text-align: center;
-  }
+/* Fase 37E.1 - Cabecera limpia en la vista Compacta */
+.mesas-compacta-title {
+  margin-bottom: 10px;
+}
+
+.mesas-compacta-title h2 {
+  margin: 0;
 }
