@@ -16,6 +16,8 @@ export const FORM_INICIAL = {
 
 export const FILTROS_INICIALES = {
   texto: "",
+  pedido: "",
+  descripcion: "",
   estado: "todos",
   clienteId: "",
   fechaInicio: "",
@@ -160,7 +162,7 @@ export function nombreItemPedidoCompacto(item = {}) {
   const esCafeteria = item?.categoria === "cafeteria" || item?.area === "cafeteria";
 
   if (esCafeteria) {
-    return `${cantidad} x ${obtenerNombreCafeteria(item)}`;
+    return `${cantidad} ${obtenerNombreCafeteria(item)}`;
   }
 
   const nombre = item.detalle_impresion
@@ -174,7 +176,7 @@ export function nombreItemPedidoCompacto(item = {}) {
     ? ` · ${item.acompanantes.slice(0, 3).join(", ")}`
     : "";
   const tamano = item.tamano ? ` · ${item.tamano}` : "";
-  return `${cantidad} x ${nombre}${tamano}${acompanantes}`;
+  return `${cantidad} ${nombre}${tamano}${acompanantes}`;
 }
 
 export function resumenPedidoMovimiento(movimiento = {}) {
@@ -216,4 +218,3 @@ export function conTiempoMaximo(promesa, ms = 18000, nombre = "consulta") {
     if (timerId) window.clearTimeout(timerId);
   });
 }
-

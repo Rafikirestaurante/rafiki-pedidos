@@ -253,6 +253,8 @@ export default function CarteraClientesCredito() {
 
   const movimientosFiltrados = useMemo(() => {
     const texto = normalizarTexto(filtros.texto);
+    const pedido = normalizarTexto(filtros.pedido);
+    const descripcion = normalizarTexto(filtros.descripcion);
 
     return movimientosCartera.filter((movimiento) => {
       const estado = estadoCartera(movimiento);
@@ -260,6 +262,8 @@ export default function CarteraClientesCredito() {
       if (filtros.clienteId && String(movimiento.cliente_credito_id || "") !== String(filtros.clienteId)) return false;
       if (!fechaDentroRango(movimiento.fecha_movimiento || movimiento.created_at, filtros.fechaInicio, filtros.fechaFin)) return false;
       if (texto && !normalizarTexto(textoBusquedaMovimiento(movimiento)).includes(texto)) return false;
+      if (pedido && !normalizarTexto(movimiento.numero_pedido).includes(pedido.replace(/^#/, ""))) return false;
+      if (descripcion && !normalizarTexto(resumenPedidoMovimiento(movimiento)).includes(descripcion)) return false;
       return true;
     });
   }, [filtros, movimientosCartera]);
@@ -424,11 +428,13 @@ export default function CarteraClientesCredito() {
     if (filtros.fechaInicio || filtros.fechaFin) partes.push(`Fechas: ${filtros.fechaInicio || "inicio"} a ${filtros.fechaFin || "hoy"}`);
     if (filtros.estado && filtros.estado !== "todos") partes.push(`Estado: ${filtros.estado}`);
     if (filtros.texto) partes.push(`Búsqueda: ${filtros.texto}`);
+    if (filtros.pedido) partes.push(`Pedido: ${filtros.pedido}`);
+    if (filtros.descripcion) partes.push(`Descripción: ${filtros.descripcion}`);
     return partes.length ? partes.join(" · ") : "Todos los movimientos filtrados";
   }
 
   function exportarMovimientosExcel() {
-    const encabezados = ["Fecha", "Pedido", "Cliente", "Pedido realizado", "Valor", "Estado", "Saldo"];
+    const encabezados = ["Fecha", "Pedido", "Cliente", "Descripción del pedido", "Valor", "Estado", "Saldo"];
     const filas = movimientosFiltrados.map((movimiento) => [
       formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at),
       movimiento.numero_pedido ? `#${movimiento.numero_pedido}` : "—",
@@ -977,7 +983,9 @@ export default function CarteraClientesCredito() {
           </div>
 
           <div className="cartera-filtros">
-            <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Buscar por pedido, cliente o producto" />
+            <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Búsqueda general" />
+            <input value={filtros.pedido} onChange={(e) => cambiarFiltro("pedido", e.target.value)} placeholder="Filtrar por pedido" aria-label="Filtrar por número de pedido" />
+            <input value={filtros.descripcion} onChange={(e) => cambiarFiltro("descripcion", e.target.value)} placeholder="Filtrar por producto" aria-label="Filtrar por descripción del pedido" />
             <select value={filtros.clienteId} onChange={(e) => cambiarFiltro("clienteId", e.target.value)} aria-label="Filtrar movimientos por cliente">
               <option value="">Todos los clientes</option>
               {clientesParaFiltroMovimientos.map((cliente) => (
@@ -1024,7 +1032,7 @@ export default function CarteraClientesCredito() {
                   <th>Fecha</th>
                   <th>Pedido</th>
                   <th>Cliente</th>
-                  <th>Pedido realizado</th>
+                  <th>Descripción del pedido</th>
                   <th>Valor</th>
                   <th>Estado</th>
                   <th>Saldo</th>
@@ -1091,7 +1099,7 @@ export default function CarteraClientesCredito() {
                     <tr>
                       <th>Fecha</th>
                       <th>Pedido</th>
-                      <th>Pedido realizado</th>
+                      <th>Descripción del pedido</th>
                       <th>Valor</th>
                       <th>Estado</th>
                       <th>Saldo</th>

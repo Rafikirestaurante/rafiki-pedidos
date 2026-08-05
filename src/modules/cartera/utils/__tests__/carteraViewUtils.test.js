@@ -25,9 +25,9 @@ describe("carteraViewUtils", () => {
         { cantidad: 1, nombre: "Jugo" },
       ],
     });
-    expect(resumen).toContain("2 x Pechuga");
+    expect(resumen).toContain("2 Pechuga");
     expect(resumen).toContain("Arroz");
-    expect(resumen).toContain("1 x Jugo");
+    expect(resumen).toContain("1 Jugo");
   });
 
   it("agrupa abonos por método", () => {
