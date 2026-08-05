@@ -13,7 +13,9 @@ import {
 import {
   agruparProductosSolicitud,
   cargarEstadoPendientesCompra,
+  clasificarProductosSolicitudPorJornada,
   describirFiltroJornadaInsumos,
+  describirJornadaInsumos,
   desplazarFechaISOColombia,
   FILTROS_JORNADA_INSUMOS,
   crearMensajeCompraProveedores,
@@ -245,22 +247,6 @@ export default function SolicitudProductos() {
     // Ya no se bloquea toda la solicitud del día.
     // La validación se hace producto por producto al guardar.
     setYaExisteSolicitudHoy(false);
-  }
-
-  function obtenerProductosRepetidosDelDia(solicitudesDelDia, productosSeleccionados) {
-    const productosYaSolicitados = new Set();
-
-    (solicitudesDelDia || []).forEach((solicitud) => {
-      const productos = obtenerInsumosDeSolicitud(solicitud);
-      productos.forEach((producto) => {
-        const nombre = normalizarTexto(producto?.nombre || "");
-        if (nombre) productosYaSolicitados.add(nombre);
-      });
-    });
-
-    return productosSeleccionados.filter((producto) =>
-      productosYaSolicitados.has(normalizarTexto(producto.nombre))
-    );
   }
 
   async function cargarSolicitudesPendientesCompra(
@@ -525,7 +511,7 @@ export default function SolicitudProductos() {
       const hoy = fechaISOColombia();
       const { data: solicitudesHoy, error: errorConsultaHoy } = await supabase
         .from("solicitudes_insumos")
-        .select("id, insumos")
+        .select("id, fecha_solicitud, insumos")
         .eq("fecha_solicitud", hoy)
         .order("id", { ascending: false })
         .limit(200);
@@ -536,20 +522,77 @@ export default function SolicitudProductos() {
         return;
       }
 
-      const productosRepetidos = obtenerProductosRepetidosDelDia(solicitudesHoy || [], nuevaSolicitud.insumos);
+      const jornadaActual = nuevaSolicitud.insumos[0]?.jornadaSolicitud || obtenerJornadaInsumos();
+      const {
+        repetidosMismaJornada,
+        repetidosOtraJornada,
+        productosPermitidos
+      } = clasificarProductosSolicitudPorJornada(
+        solicitudesHoy || [],
+        nuevaSolicitud.insumos,
+        jornadaActual
+      );
 
-      if (productosRepetidos.length > 0) {
-        const nombresRepetidos = productosRepetidos.map((producto) => producto.nombre).join(", ");
+      if (repetidosMismaJornada.length > 0) {
+        const nombres = repetidosMismaJornada.map((producto) => producto.nombre).join(", ");
+        const jornadaTexto = describirJornadaInsumos(jornadaActual);
+        const varios = repetidosMismaJornada.length > 1;
+        const continuarSinRepetidos = await confirmarRafiki({
+          tipo: "advertencia",
+          titulo: varios ? `Insumos repetidos en la ${jornadaTexto}` : `Insumo repetido en la ${jornadaTexto}`,
+          mensaje: varios
+            ? `Estos insumos ya fueron solicitados en la ${jornadaTexto}: ${nombres}. Se omitirán y la solicitud continuará únicamente con los productos que no están repetidos.`
+            : `Este insumo ya fue solicitado en la ${jornadaTexto}: ${nombres}. Se omitirá y la solicitud continuará únicamente con los productos que no están repetidos.`,
+          textoConfirmar: "Continuar",
+          mostrarCancelar: false
+        });
+
+        if (!continuarSinRepetidos) return;
+      }
+
+      if (productosPermitidos.length === 0) {
         setMensajeSolicitud({
-          texto: `Estos insumos ya fueron solicitados hoy y no se pueden repetir: ${nombresRepetidos}. Puedes quitar esos insumos y guardar los demás.`,
+          texto: `Todos los insumos seleccionados ya fueron solicitados en la ${describirJornadaInsumos(jornadaActual)}. No hay productos nuevos para guardar ni enviar por WhatsApp.`,
           tipo: "warning"
         });
         return;
       }
 
+      if (repetidosOtraJornada.length > 0) {
+        const nombres = repetidosOtraJornada.map((producto) => producto.nombre).join(", ");
+        const jornadaAnterior = jornadaActual === "AM" ? "PM" : "AM";
+        const jornadaAnteriorTexto = describirJornadaInsumos(jornadaAnterior);
+        const jornadaActualTexto = describirJornadaInsumos(jornadaActual);
+        const varios = repetidosOtraJornada.length > 1;
+        const confirmarSegundaSolicitud = await confirmarRafiki({
+          tipo: "advertencia",
+          titulo: varios ? "Confirmar segunda solicitud de insumos" : "Confirmar segunda solicitud del insumo",
+          mensaje: varios
+            ? `Pediste estos insumos en la ${jornadaAnteriorTexto}: ${nombres}. ¿Estás seguro de que los necesitas otra vez en la ${jornadaActualTexto}?`
+            : `Pediste este insumo en la ${jornadaAnteriorTexto}: ${nombres}. ¿Estás seguro de que lo necesitas otra vez en la ${jornadaActualTexto}?`,
+          textoConfirmar: "Continuar",
+          textoCancelar: "Cancelar"
+        });
+
+        if (!confirmarSegundaSolicitud) return;
+      }
+
+      const mensajeFiltrado = crearMensajeSolicitudProductos({
+        fechaSolicitud: nuevaSolicitud.fecha_solicitud,
+        fechaPara: nuevaSolicitud.fecha_para,
+        productos: productosPermitidos,
+        observaciones: nuevaSolicitud.observaciones
+      });
+
+      const solicitudFiltrada = {
+        ...nuevaSolicitud,
+        insumos: productosPermitidos,
+        mensaje: mensajeFiltrado
+      };
+
       const { data, error } = await supabase
         .from("solicitudes_insumos")
-        .insert(nuevaSolicitud)
+        .insert(solicitudFiltrada)
         .select("id, fecha_solicitud, fecha_para, insumos, observaciones, mensaje")
         .single();
 
@@ -559,7 +602,7 @@ export default function SolicitudProductos() {
         return;
       }
 
-      const solicitudGuardada = data || nuevaSolicitud;
+      const solicitudGuardada = data || solicitudFiltrada;
       setSolicitudFinalizada(solicitudGuardada);
       setSolicitudesGuardadas((actual) => [solicitudGuardada, ...actual]);
       setYaExisteSolicitudHoy(false);
@@ -569,7 +612,7 @@ export default function SolicitudProductos() {
       if (abrirWhatsApp) {
         const link = crearLinkWhatsApp(
           WHATSAPP_SOLICITUD_INSUMOS,
-          solicitudGuardada.mensaje || mensajeFinal,
+          solicitudGuardada.mensaje || mensajeFiltrado || mensajeFinal,
           { abrirApp: true }
         );
 
@@ -674,9 +717,11 @@ export default function SolicitudProductos() {
                       </div>
 
                       <div className="alert alert-info">
-                        Puedes hacer varias solicitudes en el día, siempre que no repitas el mismo insumo.
+                        Cada insumo puede solicitarse máximo una vez en AM y una vez en PM.
                         <br />
                         <span className="small">
+                          Si se repite en la jornada contraria, Rafiki pedirá confirmación. Los repetidos de la misma jornada se omiten automáticamente.
+                          <br />
                           {catalogoInsumos.cargando
                             ? "Cargando catálogo..."
                             : catalogoInsumos.fuente === "bd"
