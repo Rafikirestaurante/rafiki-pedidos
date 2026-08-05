@@ -89,19 +89,47 @@ export default function PanelMesasCompacto({
     }
 
     if (itemSinAcompanantes) {
-      abrirPaso("datos", itemActivo.id);
+      mostrarResumenYDatos();
       return;
     }
 
     abrirPaso("acompanantes", itemActivo.id);
   }
 
-  function continuarAcompanantes() {
+  function validarAcompanantesActuales() {
     if (!itemSinAcompanantes && acompanantesItem.length === 0) {
       onMostrarError?.("Selecciona al menos un acompañante o usa Con todo.");
-      return;
+      return false;
     }
-    abrirPaso("datos", itemActivo?.id);
+    return true;
+  }
+
+  function desplazarA(elementoId) {
+    window.setTimeout(() => {
+      document.getElementById(elementoId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
+
+  function mostrarResumenYDatos() {
+    setPaso(null);
+    desplazarA("mesa-resumen-compacto");
+  }
+
+  function irADatos() {
+    setPaso(null);
+    desplazarA("mesa-datos-final");
+  }
+
+  function continuarAcompanantes() {
+    if (!validarAcompanantesActuales()) return;
+    mostrarResumenYDatos();
+  }
+
+  function agregarOtroAlmuerzoDesdeAcompanantes() {
+    if (!validarAcompanantesActuales()) return;
+    const itemId = onCrearAlmuerzo?.();
+    if (!itemId) return;
+    abrirPaso("proteina", itemId);
   }
 
   return (
@@ -142,7 +170,17 @@ export default function PanelMesasCompacto({
                   key={pasoItem.id}
                   type="button"
                   className={["mesas-beta-step", activo ? "active" : "", completado ? "done" : ""].filter(Boolean).join(" ")}
-                  onClick={() => abrirPaso(pasoItem.id)}
+                  onClick={() => {
+                    if (pasoItem.id === "datos") {
+                      if (!hayProductoSeleccionadoMesa) {
+                        onMostrarError?.("Agrega al menos un almuerzo antes de completar los datos.");
+                        return;
+                      }
+                      irADatos();
+                      return;
+                    }
+                    abrirPaso(pasoItem.id);
+                  }}
                 >
                   <span>{pasoItem.numero}</span>
                   <strong>{pasoItem.titulo}</strong>
@@ -155,7 +193,7 @@ export default function PanelMesasCompacto({
             <button type="button" className="button" onClick={iniciarAlmuerzo}>
               {hayProductoSeleccionadoMesa ? "Agregar almuerzo" : "Iniciar pedido"}
             </button>
-            <button type="button" className="button light" onClick={() => abrirPaso("datos")}>Datos y envío</button>
+            <button type="button" className="button light" onClick={irADatos} disabled={!hayProductoSeleccionadoMesa}>Datos y envío</button>
           </div>
 
           <div className="mesas-compacta-accesos">
@@ -170,7 +208,7 @@ export default function PanelMesasCompacto({
           </div>
         </section>
 
-        <aside className="card card-pad mesas-beta-preview">
+        <aside id="mesa-resumen-compacto" className="card card-pad mesas-beta-preview">
           <h2>{hayProductoSeleccionadoMesa ? "Resumen del pedido" : "Resumen"}</h2>
           {!hayProductoSeleccionadoMesa ? (
             <div className="box soft"><strong>Empieza creando el primer almuerzo.</strong></div>
@@ -199,8 +237,10 @@ export default function PanelMesasCompacto({
               <div className="total-row mesas-beta-total"><span>Total</span><strong>{dinero(total)}</strong></div>
               <div className="mesas-beta-actions resumen-actions-inline">
                 <button type="button" className="button light" onClick={iniciarAlmuerzo}>+ Otro almuerzo</button>
-                <button type="button" className="button light" onClick={() => abrirPaso("datos")}>Editar datos</button>
-                <button type="button" className="button" onClick={() => abrirPaso("datos")}>Revisar y enviar</button>
+              </div>
+
+              <div className="mesas-compacta-datos-inline">
+                <DatosMesa {...datosMesaProps} />
               </div>
             </>
           )}
@@ -208,21 +248,30 @@ export default function PanelMesasCompacto({
       </main>
 
       <RafikiModal
-        open={Boolean(pasoActual)}
+        open={paso === "proteina" || paso === "acompanantes"}
         title={pasoActual ? `${pasoActual.numero}. ${pasoActual.titulo}` : "Mesas"}
         onClose={() => setPaso(null)}
         size="lg"
         className="mesas-beta-modal mesas-compacta-modal"
-        footer={paso === "datos" ? null : (
+        footer={(
           <>
-            <button type="button" className="button light" onClick={() => setPaso(null)}>Cerrar</button>
-            {paso === "proteina" && <button type="button" className="button" onClick={continuarProteina}>Continuar</button>}
-            {paso === "acompanantes" && <button type="button" className="button" onClick={continuarAcompanantes}>Continuar a datos</button>}
+            {paso === "proteina" && (
+              <>
+                <button type="button" className="button light" onClick={() => setPaso(null)}>Cerrar</button>
+                <button type="button" className="button green" onClick={continuarProteina}>Continuar</button>
+              </>
+            )}
+            {paso === "acompanantes" && (
+              <>
+                <button type="button" className="button light" onClick={agregarOtroAlmuerzoDesdeAcompanantes}>Agregar otro almuerzo</button>
+                <button type="button" className="button green" onClick={continuarAcompanantes}>Continuar</button>
+              </>
+            )}
           </>
         )}
       >
         <div className="mesas-beta-modal-progress">
-          {PASOS.map((pasoItem) => (
+          {PASOS.filter((pasoItem) => pasoItem.id !== "datos").map((pasoItem) => (
             <span key={pasoItem.id} className={indicePaso(paso) >= indicePaso(pasoItem.id) ? "active" : ""}>
               {pasoItem.numero}
             </span>
@@ -308,11 +357,6 @@ export default function PanelMesasCompacto({
           </div>
         )}
 
-        {paso === "datos" && (
-          <div className="mesas-beta-modal-section mesas-compacta-datos">
-            <DatosMesa {...datosMesaProps} />
-          </div>
-        )}
       </RafikiModal>
     </>
   );

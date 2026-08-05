@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.16-FASE37E1-LIMPIEZA-VISTA-COMPACTA-MESAS-2026-08-05",
-  phase: "Fase 37E.1 - Limpieza visual de la vista Compacta en Mesas",
+  version: "127.17-FASE37E2-FLUJO-COMPACTO-DATOS-INLINE-2026-08-05",
+  phase: "Fase 37E.2 - Flujo compacto con Datos y envío debajo del resumen",
   date: "2026-08-05",
-  fase: "37E1-LIMPIEZA-VISTA-COMPACTA-MESAS",
+  fase: "37E2-FLUJO-COMPACTO-DATOS-INLINE",
   notes:
-    "En /mesas se limpia la presentación de la vista Compacta: se eliminan etiquetas de prueba, textos operativos, explicaciones y subtítulos. La cabecera muestra únicamente Mesas y el selector queda reducido a Normal y Compacta, sin alterar el motor real de pedidos.",
+    "En /mesas Compacta, el Paso 3 deja de abrirse como modal y se integra debajo del Resumen del pedido. En el Paso 2 se ofrecen Agregar otro almuerzo y Continuar; las acciones principales de los pasos 1 y 2 usan el color verde de la vista Normal.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
