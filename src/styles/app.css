@@ -8154,3 +8154,33 @@ body.rafiki-modal-open {
 .mesas-compacta-title h2 {
   margin: 0;
 }
+
+/* Fase 37E.2 - Datos y envío integrados debajo del resumen compacto */
+.mesas-compacta-datos-inline {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rafiki-border-soft);
+  scroll-margin-top: 16px;
+}
+
+.mesas-compacta-datos-inline .step-title {
+  margin-top: 0 !important;
+}
+
+.mesas-compacta-datos-inline .sticky-total {
+  position: static;
+  margin-top: 12px;
+}
+
+.mesas-compacta-datos-inline .mesa-datos-grid {
+  margin-top: 0;
+}
+
+@media (max-width: 700px) {
+  .mesas-compacta-datos-inline {
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+}
