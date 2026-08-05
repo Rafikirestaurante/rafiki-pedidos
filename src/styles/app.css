@@ -8009,3 +8009,199 @@ body.rafiki-modal-open {
     padding-inline: 9px;
   }
 }
+
+/* Fase 37E - Selector Normal / Compacta operativo en /mesas */
+.mesas-vista-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: min(1180px, calc(100% - 24px));
+  margin: 10px auto 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 22px rgba(120, 53, 15, 0.05);
+}
+
+.mesas-vista-selector-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mesas-vista-selector-copy strong {
+  color: var(--rafiki-brand-deep);
+  font-size: 13px;
+  font-weight: 1000;
+}
+
+.mesas-vista-selector-copy span {
+  color: var(--rafiki-muted);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.mesas-vista-selector-opciones {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 12px;
+  background: var(--rafiki-surface-soft);
+}
+
+.mesas-vista-selector-opciones button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--rafiki-muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.mesas-vista-selector-opciones button.active {
+  background: #fff;
+  color: var(--rafiki-brand-deep);
+  box-shadow: 0 3px 10px rgba(120, 53, 15, 0.12);
+}
+
+.mesas-vista-selector-opciones small {
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.12);
+  color: #c2410c;
+  font-size: 9px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mesas-compacta-operativa .mesas-beta-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mesas-compacta-banner {
+  border-style: solid;
+  border-color: rgba(22, 163, 74, 0.25);
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(255, 251, 235, 0.92));
+}
+
+.mesas-compacta-banner span {
+  color: #15803d;
+}
+
+.mesas-compacta-accesos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rafiki-border-soft);
+}
+
+.mesas-compacta-accesos span {
+  flex: 1 1 190px;
+  color: var(--rafiki-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mesas-compacta-accesos button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--rafiki-brand-deep);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.mesas-compacta-accesos button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mesas-compacta-modal.rafiki-ui-modal-card {
+  max-height: min(92vh, 900px);
+}
+
+.mesas-compacta-datos .step-title {
+  margin-top: 0 !important;
+}
+
+.mesas-compacta-datos .sticky-total {
+  position: static;
+  margin-top: 12px;
+}
+
+@media (max-width: 700px) {
+  .mesas-vista-selector {
+    align-items: stretch;
+    width: calc(100% - 16px);
+    margin: 8px auto 10px;
+    padding: 9px;
+  }
+
+  .mesas-vista-selector-copy span {
+    display: none;
+  }
+
+  .mesas-vista-selector-opciones {
+    flex: 1 1 auto;
+  }
+
+  .mesas-vista-selector-opciones button {
+    flex: 1 1 0;
+    padding-inline: 8px;
+  }
+
+  .mesas-compacta-operativa .mesas-beta-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .mesas-compacta-operativa .mesas-beta-step {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    min-height: 78px;
+    padding: 9px 5px;
+    text-align: center;
+  }
+
+  .mesas-compacta-operativa .mesas-beta-step span {
+    width: 28px;
+    height: 28px;
+  }
+
+  .mesas-compacta-operativa .mesas-beta-step strong {
+    font-size: 11px;
+  }
+
+  .mesas-compacta-accesos button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 390px) {
+  .mesas-vista-selector {
+    display: grid;
+    gap: 7px;
+  }
+
+  .mesas-vista-selector-copy {
+    text-align: center;
+  }
+}
