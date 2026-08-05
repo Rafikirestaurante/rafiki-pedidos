@@ -1,10 +1,6 @@
 export default function SelectorVistaMesas({ vista = "normal", onChange }) {
   return (
     <section className="mesas-vista-selector card" aria-label="Seleccionar vista de Mesas">
-      <div className="mesas-vista-selector-copy">
-        <strong>Vista de pedidos</strong>
-        <span>Normal es la interfaz habitual. Compacta usa el flujo por pasos con pedidos reales.</span>
-      </div>
       <div className="mesas-vista-selector-opciones" role="group" aria-label="Tipo de vista">
         <button
           type="button"
@@ -20,7 +16,7 @@ export default function SelectorVistaMesas({ vista = "normal", onChange }) {
           onClick={() => onChange?.("compacta")}
           aria-pressed={vista === "compacta"}
         >
-          Compacta <small>Prueba</small>
+          Compacta
         </button>
       </div>
     </section>

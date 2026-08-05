@@ -108,17 +108,8 @@ export default function PanelMesasCompacto({
     <>
       <main className="order-layout mesas-cliente-layout mesas-panel-layout mesas-beta-layout mesas-compacta-operativa">
         <section className="card card-pad mesas-beta-home">
-          <div className="mesas-beta-banner mesas-compacta-banner">
-            <span>Prueba operativa</span>
-            <strong>Vista compacta</strong>
-            <p>Los pedidos se guardan, imprimen y llegan a cocina usando el mismo flujo oficial de Mesas.</p>
-          </div>
-
-          <div className="mesa-panel-title mesas-beta-title">
-            <div>
-              <h2>🍽️ Mesas compacta</h2>
-              <p className="muted">Crea almuerzos reales mediante pasos. El pedido se conserva al cambiar entre Normal y Compacta.</p>
-            </div>
+          <div className="mesa-panel-title mesas-beta-title mesas-compacta-title">
+            <h2>Mesas</h2>
           </div>
 
           {modoEdicionAdmin && pedidoEditando?.id && (
@@ -168,7 +159,6 @@ export default function PanelMesasCompacto({
           </div>
 
           <div className="mesas-compacta-accesos">
-            <span>Para agregar otros productos sin perder el pedido:</span>
             <button type="button" onClick={() => onAbrirNormalCategoria?.("cafeteria")}>☕ Cafetería</button>
             <button
               type="button"
@@ -219,8 +209,7 @@ export default function PanelMesasCompacto({
 
       <RafikiModal
         open={Boolean(pasoActual)}
-        title={pasoActual ? `${pasoActual.numero}. ${pasoActual.titulo}` : "Vista compacta"}
-        description="Pedido operativo: al enviarlo se guarda, imprime y actualiza los módulos oficiales."
+        title={pasoActual ? `${pasoActual.numero}. ${pasoActual.titulo}` : "Mesas"}
         onClose={() => setPaso(null)}
         size="lg"
         className="mesas-beta-modal mesas-compacta-modal"
