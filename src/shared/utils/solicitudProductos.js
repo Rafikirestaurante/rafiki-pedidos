@@ -1,5 +1,16 @@
 import { fechaISOColombia, generarId, normalizarTexto } from "./pedidos";
 import { categoriasSolicitudProductos, productosRestauranteBase, STORAGE_INSUMOS_PENDIENTES } from "../../data/solicitudProductosData";
+import {
+  clasificarProductosSolicitudPorJornada,
+  describirJornadaInsumos,
+  obtenerJornadaProductoSolicitud
+} from "./solicitudInsumosJornadas";
+
+export {
+  clasificarProductosSolicitudPorJornada,
+  describirJornadaInsumos,
+  obtenerJornadaProductoSolicitud
+} from "./solicitudInsumosJornadas";
 
 export const FILTROS_JORNADA_INSUMOS = Object.freeze({
   TODO: "todo",
@@ -138,45 +149,6 @@ export function obtenerHoraInsumosColombia(fecha = new Date()) {
     hour12: false,
     hourCycle: "h23"
   }).format(fecha);
-}
-
-function normalizarJornadaInsumos(valor) {
-  const texto = String(valor || "").trim().toUpperCase();
-  if (texto === "AM" || texto === "PM") return texto;
-  if (texto.includes("MAÑANA") || texto.includes("MANANA")) return "AM";
-  if (texto.includes("TARDE") || texto.includes("NOCHE")) return "PM";
-  return "";
-}
-
-function obtenerJornadaProductoSolicitud(producto = {}, solicitud = {}) {
-  const directa = normalizarJornadaInsumos(
-    producto.jornadaSolicitud ||
-      producto.jornada_solicitud ||
-      producto.jornada ||
-      solicitud.jornadaSolicitud ||
-      solicitud.jornada_solicitud ||
-      solicitud.jornada
-  );
-
-  if (directa) return directa;
-
-  const horaTexto = String(
-    producto.horaSolicitud ||
-      producto.hora_solicitud ||
-      producto.solicitadoEn ||
-      solicitud.horaSolicitud ||
-      solicitud.hora_solicitud ||
-      solicitud.created_at ||
-      ""
-  );
-
-  const horaMatch = horaTexto.match(/(?:T|\s|^)(\d{1,2}):\d{2}/);
-  if (!horaMatch) return "";
-
-  const hora = Number(horaMatch[1]);
-  if (!Number.isFinite(hora)) return "";
-
-  return hora < 12 ? "AM" : "PM";
 }
 
 export function desplazarFechaISOColombia(fechaISO, dias = 0) {

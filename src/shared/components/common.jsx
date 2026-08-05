@@ -109,6 +109,7 @@ export function ConfirmModal({
   mensaje = "¿Deseas continuar?",
   textoConfirmar = "Confirmar",
   textoCancelar = "Cancelar",
+  mostrarCancelar = true,
   onConfirmar,
   onCancelar
 }) {
@@ -119,7 +120,11 @@ export function ConfirmModal({
   const lineas = String(mensaje || "").split("\n");
 
   return (
-    <div className="rafiki-modal-backdrop" role="presentation" onMouseDown={onCancelar}>
+    <div
+      className="rafiki-modal-backdrop"
+      role="presentation"
+      onMouseDown={mostrarCancelar ? onCancelar : undefined}
+    >
       <div
         className={`rafiki-modal-card ${claseTipo}`}
         role="dialog"
@@ -134,10 +139,12 @@ export function ConfirmModal({
             <p key={`${linea}-${index}`}>{linea || "\u00A0"}</p>
           ))}
         </div>
-        <div className="rafiki-modal-actions">
-          <button type="button" className="button secondary" onClick={onCancelar}>
-            {textoCancelar}
-          </button>
+        <div className={`rafiki-modal-actions${mostrarCancelar ? "" : " rafiki-modal-actions-single"}`}>
+          {mostrarCancelar ? (
+            <button type="button" className="button secondary" onClick={onCancelar}>
+              {textoCancelar}
+            </button>
+          ) : null}
           <button type="button" className={`button rafiki-modal-confirm ${claseTipo}`} onClick={onConfirmar} autoFocus>
             {textoConfirmar}
           </button>
