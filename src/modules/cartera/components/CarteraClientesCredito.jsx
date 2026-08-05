@@ -25,7 +25,6 @@ import {
   fechaColombiaHaceDias,
   fechaColombiaYYYYMMDD,
 } from "../../../shared/utils/fechasColombia";
-import { listarPedidosPorCliente } from "../../../services/pedidosService";
 import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
 import ThermalPrintControls from "../../impresion/ThermalPrintControls";
 
@@ -36,6 +35,7 @@ import {
   METODOS_ABONO,
   VISTA_CARTERA_INICIAL,
   conTiempoMaximo,
+  construirEstadoCuenta,
   descargarArchivo,
   dinero,
   escaparHtmlExcel,
@@ -77,10 +77,6 @@ export default function CarteraClientesCredito() {
   const [formularioAbono, setFormularioAbono] = useState(ABONO_INICIAL);
   const [abonoPendienteConfirmacion, setAbonoPendienteConfirmacion] = useState(null);
   const [vistaCartera, setVistaCartera] = useState(VISTA_CARTERA_INICIAL);
-  const [mostrarRankings, setMostrarRankings] = useState(false);
-  const [pedidosClienteDetalle, setPedidosClienteDetalle] = useState([]);
-  const [cargandoPedidosCliente, setCargandoPedidosCliente] = useState(false);
-  const [errorPedidosCliente, setErrorPedidosCliente] = useState("");
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -212,43 +208,6 @@ export default function CarteraClientesCredito() {
     [clientes, clienteAbonoId]
   );
 
-  const cargarPedidosClienteDetalle = useCallback(async (clienteSeleccionado) => {
-    if (!clienteSeleccionado?.nombre) {
-      setPedidosClienteDetalle([]);
-      setErrorPedidosCliente("");
-      return;
-    }
-
-    setCargandoPedidosCliente(true);
-    setErrorPedidosCliente("");
-
-    try {
-      const { data, error: errorConsulta } = await listarPedidosPorCliente(clienteSeleccionado.nombre, { limite: 120 });
-      if (errorConsulta) {
-        registrarErrorSupabase("listar pedidos por cliente cartera", errorConsulta);
-        setErrorPedidosCliente(describirErrorSupabase(errorConsulta, "consultar los pedidos del cliente"));
-        setPedidosClienteDetalle([]);
-        return;
-      }
-      setPedidosClienteDetalle(Array.isArray(data) ? data : []);
-    } catch (err) {
-      registrarErrorSupabase("listar pedidos por cliente cartera", err);
-      setErrorPedidosCliente(describirErrorSupabase(err, "consultar los pedidos del cliente"));
-      setPedidosClienteDetalle([]);
-    } finally {
-      setCargandoPedidosCliente(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (clienteDetalle) {
-      cargarPedidosClienteDetalle(clienteDetalle);
-    } else {
-      setPedidosClienteDetalle([]);
-      setErrorPedidosCliente("");
-    }
-  }, [cargarPedidosClienteDetalle, clienteDetalle]);
-
   const hayFiltroFechaMovimientos = Boolean(filtros.fechaInicio || filtros.fechaFin);
 
   const movimientosFiltrados = useMemo(() => {
@@ -352,8 +311,8 @@ export default function CarteraClientesCredito() {
 
   const movimientosClienteDetalle = useMemo(() => {
     if (!clienteDetalleId) return [];
-    return movimientosFiltrados.filter((movimiento) => movimiento.cliente_credito_id === clienteDetalleId);
-  }, [clienteDetalleId, movimientosFiltrados]);
+    return movimientosCartera.filter((movimiento) => movimiento.cliente_credito_id === clienteDetalleId);
+  }, [clienteDetalleId, movimientosCartera]);
 
   const abonosClienteDetalle = useMemo(() => {
     if (!clienteDetalleId) return [];
@@ -370,6 +329,11 @@ export default function CarteraClientesCredito() {
     const abonado = abonosClienteDetalle.reduce((acum, abono) => acum + Number(abono.valor_abono || 0), 0);
     return { total, saldo, pendientes, abonado };
   }, [abonosClienteDetalle, movimientosClienteDetalle]);
+
+  const estadoCuentaCliente = useMemo(
+    () => construirEstadoCuenta(movimientosClienteDetalle, abonosClienteDetalle),
+    [abonosClienteDetalle, movimientosClienteDetalle]
+  );
 
   function limpiarFormulario() {
     setFormulario(FORM_INICIAL);
@@ -472,6 +436,36 @@ export default function CarteraClientesCredito() {
 
     const clienteArchivo = clienteFiltradoMovimientos?.nombre ? `-${nombreArchivoSeguro(clienteFiltradoMovimientos.nombre)}` : "";
     descargarArchivo(`movimientos-cartera${clienteArchivo}-${fechaColombiaYYYYMMDD()}.xls`, contenido);
+  }
+
+  function exportarCarteraActualExcel() {
+    const encabezados = ["Cliente", "Teléfono", "Último pedido", "Pedidos", "Saldo pendiente", "Estado", "Observaciones"];
+    const filas = clientesVisibles.map((cliente) => [
+      cliente.nombre || "—", cliente.telefono || "—", formatearFecha(cliente.fecha_ultimo_pedido),
+      Number(cliente.total_pedidos || 0), Number(cliente.saldo_pendiente || 0),
+      cliente.activo === false ? "Inactivo" : "Activo", cliente.observaciones || "—",
+    ]);
+    const tabla = [encabezados, ...filas].map((fila, indice) => `<tr>${fila.map((celda) => `<${indice === 0 ? "th" : "td"}>${escaparHtmlExcel(celda)}</${indice === 0 ? "th" : "td"}>`).join("")}</tr>`).join("");
+    descargarArchivo(`cartera-actual-${fechaColombiaYYYYMMDD()}.xls`, `<!doctype html><html><head><meta charset="utf-8" /></head><body><h2>Cartera actual</h2><p>Saldo total: ${escaparHtmlExcel(dinero(indicadores.saldoTotal))}</p><table border="1">${tabla}</table></body></html>`);
+  }
+
+  function exportarEstadoCuentaExcel() {
+    if (!clienteDetalle) return;
+    const encabezados = ["Fecha", "Movimiento", "Referencia", "Descripción", "Pedido a crédito", "Pago recibido", "Saldo pendiente"];
+    const filas = estadoCuentaCliente.map((linea) => [formatearFechaHora(linea.fecha), linea.tipo, linea.referencia, linea.descripcion, linea.pedido || "", linea.pago || "", linea.saldo]);
+    const tabla = [encabezados, ...filas].map((fila, indice) => `<tr>${fila.map((celda) => `<${indice === 0 ? "th" : "td"}>${escaparHtmlExcel(celda)}</${indice === 0 ? "th" : "td"}>`).join("")}</tr>`).join("");
+    descargarArchivo(`estado-cuenta-${nombreArchivoSeguro(clienteDetalle.nombre)}-${fechaColombiaYYYYMMDD()}.xls`, `<!doctype html><html><head><meta charset="utf-8" /></head><body><h2>Estado de cuenta: ${escaparHtmlExcel(clienteDetalle.nombre)}</h2><p>Saldo actual: ${escaparHtmlExcel(dinero(clienteDetalle.saldo_pendiente))}</p><table border="1">${tabla}</table></body></html>`);
+  }
+
+  function exportarAbonosExcel() {
+    const abonosFiltrados = abonosCartera.filter((abono) => {
+      if (filtros.clienteId && String(abono.cliente_credito_id || "") !== String(filtros.clienteId)) return false;
+      return fechaDentroRango(abono.fecha_abono || abono.created_at, filtros.fechaInicio, filtros.fechaFin);
+    });
+    const encabezados = ["Fecha", "Cliente", "Pedido aplicado", "Pago recibido", "Método", "Saldo anterior", "Saldo posterior", "Observación"];
+    const filas = abonosFiltrados.map((abono) => [formatearFechaHora(abono.fecha_abono || abono.created_at), abono.cliente_nombre || "—", abono.numero_pedido ? `#${abono.numero_pedido}` : "—", Number(abono.valor_abono || 0), abono.metodo_pago || "—", Number(abono.saldo_anterior || 0), Number(abono.saldo_nuevo || 0), abono.observacion || "—"]);
+    const tabla = [encabezados, ...filas].map((fila, indice) => `<tr>${fila.map((celda) => `<${indice === 0 ? "th" : "td"}>${escaparHtmlExcel(celda)}</${indice === 0 ? "th" : "td"}>`).join("")}</tr>`).join("");
+    descargarArchivo(`abonos-cartera-${fechaColombiaYYYYMMDD()}.xls`, `<!doctype html><html><head><meta charset="utf-8" /></head><body><h2>Abonos recibidos</h2><table border="1">${tabla}</table></body></html>`);
   }
 
   function construirTextoMovimientosWhatsApp() {
@@ -754,10 +748,8 @@ export default function CarteraClientesCredito() {
   }
 
   const tabsCartera = [
-    { id: "resumen", label: "Resumen", icon: "📊" },
-    { id: "clientes", label: "Clientes", icon: "👥", count: clientesVisibles.length },
-    { id: "movimientos", label: "Movimientos", icon: "🧾", count: indicadores.movimientosFiltrados },
-    { id: "detalle", label: "Detalle cliente", icon: "🔎", count: clienteDetalle ? 1 : null },
+    { id: "cartera", label: "Cartera actual", icon: "👥", count: clientesVisibles.length },
+    { id: "historial", label: "Historial", icon: "🧾", count: indicadores.movimientosFiltrados },
   ];
 
   return (
@@ -812,66 +804,15 @@ export default function CarteraClientesCredito() {
         confirmarRegistroAbono={confirmarRegistroAbono}
       />
 
-      {vistaCartera === "resumen" && (
+      {vistaCartera === "cartera" && (
         <section className="card card-pad cartera-resumen-card">
           <div className="cartera-indicadores">
             <div className="cartera-indicador"><small>Créditos otorgados hoy</small><strong>{dinero(indicadores.creditosOtorgadosHoy)}</strong></div>
             <div className="cartera-indicador neutral"><small>Abonos recibidos hoy</small><strong>{dinero(indicadores.abonosRecibidosHoy)}</strong></div>
             <div className="cartera-indicador"><small>Cartera pendiente total</small><strong>{dinero(indicadores.saldoTotal)}</strong></div>
             <div className="cartera-indicador"><small>Clientes con saldo</small><strong>{indicadores.clientesConSaldo}</strong></div>
-            <div className="cartera-indicador"><small>Pedidos pendientes</small><strong>{indicadores.pedidosPendientes}</strong></div>
-            <div className="cartera-indicador neutral"><small>Abonos acumulados</small><strong>{dinero(indicadores.carteraPagada)}</strong></div>
-            <div className="cartera-indicador neutral"><small>Cantidad de abonos</small><strong>{indicadores.abonosRecibidos}</strong></div>
-            <div className="cartera-indicador neutral"><small>Saldo según filtros</small><strong>{dinero(indicadores.saldoFiltrado)}</strong></div>
+            
           </div>
-
-          <div className="cartera-resumen-header">
-            <div>
-              <h3>Análisis rápido</h3>
-              <p className="muted small">Los rankings quedan ocultos para que el panel cargue más limpio. Puedes abrirlos cuando necesites revisar prioridades de cobro.</p>
-            </div>
-            <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={() => setMostrarRankings((valor) => !valor)}>
-              {mostrarRankings ? "Ocultar rankings" : "📊 Ver rankings y estadísticas"}
-            </button>
-          </div>
-
-          {mostrarRankings && (
-            <div className="ranking-grid">
-              <article className="ranking-card">
-                <h3>Top saldos pendientes</h3>
-                <div className="ranking-list">
-                  {rankingClientes.topSaldo.length === 0 ? <RafikiEmptyState icon="✅" title="Sin saldos pendientes" description="No hay clientes activos con saldo pendiente." /> : rankingClientes.topSaldo.map((cliente) => (
-                    <div key={cliente.id} className="ranking-item">
-                      <span><strong>{cliente.nombre}</strong><small>{cliente.telefono || "Sin teléfono"}</small></span>
-                      <strong className="saldo-pendiente">{dinero(cliente.saldo_pendiente)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </article>
-              <article className="ranking-card">
-                <h3>Créditos recientes</h3>
-                <div className="ranking-list">
-                  {rankingClientes.recientes.length === 0 ? <RafikiEmptyState icon="🧾" title="Sin créditos recientes" description="Aún no hay últimos pedidos registrados para clientes crédito." /> : rankingClientes.recientes.map((cliente) => (
-                    <div key={cliente.id} className="ranking-item">
-                      <span><strong>{cliente.nombre}</strong><small>Último pedido: {formatearFecha(cliente.fecha_ultimo_pedido)}</small></span>
-                      <strong className={Number(cliente.saldo_pendiente || 0) > 0 ? "saldo-pendiente" : "saldo-cero"}>{dinero(cliente.saldo_pendiente)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </article>
-              <article className="ranking-card">
-                <h3>Clientes sin teléfono</h3>
-                <div className="ranking-list">
-                  {rankingClientes.sinTelefono.length === 0 ? <RafikiEmptyState icon="📱" title="Teléfonos completos" description="Todos los clientes con saldo pendiente tienen teléfono registrado." /> : rankingClientes.sinTelefono.map((cliente) => (
-                    <div key={cliente.id} className="ranking-item">
-                      <span><strong>{cliente.nombre}</strong><small>{Number(cliente.total_pedidos || 0)} pedido(s)</small></span>
-                      <strong className="saldo-pendiente">{dinero(cliente.saldo_pendiente)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            </div>
-          )}
 
           {resultadoAuditoria && (
             <div className="auditoria-resumen">
@@ -888,12 +829,12 @@ export default function CarteraClientesCredito() {
         </section>
       )}
 
-      {vistaCartera === "clientes" && (
+      {vistaCartera === "cartera" && (
         <section className="card card-pad" style={{ marginTop: 12 }}>
           <div className="section-heading section-heading-pedidos-unificados">
             <div>
-              <h3>Clientes con crédito</h3>
-              <p className="muted small">Consulta saldos, estado, teléfono y detalle de pedidos por cliente.</p>
+              <h3>Cartera actual</h3>
+              <p className="muted small">Consulta saldos, registra pagos y abre el estado de cuenta de cada cliente.</p>
             </div>
           </div>
 
@@ -908,6 +849,7 @@ export default function CarteraClientesCredito() {
             <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarClientes} disabled={cargando}>
               {cargando ? "Cargando..." : "Actualizar clientes"}
             </button>
+            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={exportarCarteraActualExcel} disabled={clientesVisibles.length === 0}>Exportar cartera actual</button>
           </div>
 
           <div className="pedidos-tabla-wrap">
@@ -944,7 +886,7 @@ export default function CarteraClientesCredito() {
                         <RafikiActionMenu
                           disabled={guardando}
                           items={[
-                            { id: "ver", label: "Ver cartera y pedidos", icon: "🔎", variant: "info", onClick: () => { setClienteDetalleId(cliente.id); setVistaCartera("detalle"); } },
+                            { id: "ver", label: "Ver estado de cuenta", icon: "🔎", variant: "info", onClick: () => setClienteDetalleId(cliente.id) },
                             { id: "editar", label: "Editar cliente", icon: "✏️", onClick: () => editar(cliente) },
                             whatsapp ? { id: "whatsapp", label: "Enviar WhatsApp", icon: "💬", variant: "success", disabled: saldoPendiente <= 0, onClick: () => abrirWhatsApp(cliente) } : null,
                             { id: "estado", label: cliente.activo === false ? "Activar cliente" : "Desactivar cliente", icon: cliente.activo === false ? "✅" : "🚫", variant: cliente.activo === false ? "success" : "danger", onClick: () => cambiarEstado(cliente) },
@@ -960,11 +902,11 @@ export default function CarteraClientesCredito() {
         </section>
       )}
 
-      {vistaCartera === "movimientos" && (
+      {vistaCartera === "historial" && (
         <section className="card card-pad" style={{ marginTop: 12 }}>
           <div className="section-heading section-heading-pedidos-unificados">
             <div>
-              <h3>Movimientos de cartera</h3>
+              <h3>Historial de cartera</h3>
               <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Los cortes se calculan con horario Colombia para evitar descuadres al cierre.</p>
             </div>
             <div className="cartera-movimientos-resumen">
@@ -1008,8 +950,9 @@ export default function CarteraClientesCredito() {
               {cargandoMovimientos ? "Cargando..." : "Actualizar movimientos"}
             </button>
             <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={exportarMovimientosExcel} disabled={movimientosFiltrados.length === 0}>
-              Exportar Excel
+              Exportar pedidos filtrados
             </button>
+            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={exportarAbonosExcel} disabled={abonosCartera.length === 0}>Exportar abonos filtrados</button>
             <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={compartirMovimientosWhatsApp} disabled={movimientosFiltrados.length === 0}>
               Compartir WhatsApp
             </button>
@@ -1063,7 +1006,7 @@ export default function CarteraClientesCredito() {
         </section>
       )}
 
-      {vistaCartera === "detalle" && (
+      {clienteDetalle && (
         <section className="detalle-cartera">
           {!clienteDetalle ? (
             <RafikiEmptyState
@@ -1076,19 +1019,19 @@ export default function CarteraClientesCredito() {
             <>
               <div className="section-heading section-heading-pedidos-unificados">
                 <div>
-                  <h3>Cartera de {clienteDetalle.nombre}</h3>
-                  <p className="muted small">Detalle del cliente según los filtros activos de movimientos.</p>
+                  <h3>Estado de cuenta de {clienteDetalle.nombre}</h3>
+                  <p className="muted small">Pedidos a crédito y pagos recibidos en una sola secuencia.</p>
                 </div>
                 <div className="cartera-actions" style={{ marginTop: 0 }}>
                   <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={() => abrirAbono(clienteDetalle)} disabled={Number(clienteDetalle.saldo_pendiente || 0) <= 0}>Registrar abono</button>
+                  <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={exportarEstadoCuentaExcel} disabled={estadoCuentaCliente.length === 0}>Exportar estado de cuenta</button>
                   <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setClienteDetalleId(null)}>Cerrar</button>
                 </div>
               </div>
 
               <div className="cartera-indicadores" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
                 <div className="cartera-indicador"><small>Saldo actual cliente</small><strong>{dinero(clienteDetalle.saldo_pendiente)}</strong></div>
-                <div className="cartera-indicador"><small>Saldo filtrado</small><strong>{dinero(resumenDetalle.saldo)}</strong></div>
-                <div className="cartera-indicador neutral"><small>Total filtrado</small><strong>{dinero(resumenDetalle.total)}</strong></div>
+                <div className="cartera-indicador"><small>Total comprado a crédito</small><strong>{dinero(resumenDetalle.total)}</strong></div>
                 <div className="cartera-indicador neutral"><small>Abonado</small><strong className="abono-valor">{dinero(resumenDetalle.abonado)}</strong></div>
                 <div className="cartera-indicador neutral"><small>Pedidos pendientes</small><strong>{resumenDetalle.pendientes}</strong></div>
               </div>
@@ -1098,110 +1041,26 @@ export default function CarteraClientesCredito() {
                   <thead>
                     <tr>
                       <th>Fecha</th>
-                      <th>Pedido</th>
-                      <th>Descripción del pedido</th>
-                      <th>Valor</th>
-                      <th>Estado</th>
-                      <th>Saldo</th>
+                      <th>Movimiento</th>
+                      <th>Referencia</th>
+                      <th>Descripción</th>
+                      <th>Pedido a crédito</th>
+                      <th>Pago recibido</th>
+                      <th>Saldo pendiente</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {movimientosClienteDetalle.length === 0 ? (
-                      <tr><td colSpan="6"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente no tiene movimientos con los filtros actuales." /></td></tr>
-                    ) : movimientosClienteDetalle.map((movimiento) => {
-                      const estado = estadoCartera(movimiento);
-                      const saldoPendiente = saldoMovimiento(movimiento);
-                      return (
-                        <tr key={movimiento.id}>
-                          <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
-                          <td>#{movimiento.numero_pedido || "—"}</td>
-                          <td className="td-pedido-detalle">{resumenPedidoMovimiento(movimiento)}<small>{movimiento.pedido_items?.length ? `${movimiento.pedido_items.length} item(s)` : "Detalle compacto"}</small></td>
-                          <td className="td-total">{dinero(movimiento.valor)}</td>
-                          <td><RafikiBadge estado={estado} /></td>
-                          <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-
-              <div className="pedidos-cliente-bloque">
-                <div className="section-heading section-heading-pedidos-unificados">
-                  <div>
-                    <h3>Pedidos realizados por el cliente</h3>
-                    <p className="muted small">Consulta rápida de los últimos pedidos registrados con este nombre, incluyendo pedidos crédito, mesa, cliente y correcciones.</p>
-                  </div>
-                  <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={() => cargarPedidosClienteDetalle(clienteDetalle)} disabled={cargandoPedidosCliente}>
-                    {cargandoPedidosCliente ? "Cargando..." : "Actualizar pedidos"}
-                  </button>
-                </div>
-                {errorPedidosCliente && <div className="alert error" style={{ marginTop: 8 }}>{errorPedidosCliente}</div>}
-                <div className="pedidos-tabla-wrap">
-                  <table className="pedidos-tabla-compacta">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Pedido</th>
-                        <th>Ubicación</th>
-                        <th>Mesero</th>
-                        <th>Pago</th>
-                        <th>Estado</th>
-                        <th>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pedidosClienteDetalle.length === 0 ? (
-                        <tr><td colSpan="7"><RafikiEmptyState icon="🍽️" title={cargandoPedidosCliente ? "Cargando pedidos..." : "Sin pedidos encontrados"} description={cargandoPedidosCliente ? "Estamos buscando los pedidos de este cliente." : "No se encontraron pedidos registrados con este nombre. Si el cliente aparece escrito diferente, búscalo desde Pedidos Hoy."} /></td></tr>
-                      ) : pedidosClienteDetalle.map((pedido) => (
-                        <tr key={pedido.id}>
-                          <td>{formatearFechaHora(pedido.created_at)}</td>
-                          <td>#{pedido.numero_pedido || "—"}</td>
-                          <td>{pedido.ubicacion || pedido.mesa || "—"}</td>
-                          <td>{pedido.mesero || "—"}</td>
-                          <td>{pedido.tipo_pago || "—"}</td>
-                          <td><RafikiBadge estado={pedido.estado || "—"} /></td>
-                          <td className="td-total">{dinero(pedido.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {pedidosClienteDetalle.length >= 120 && <p className="muted small">Se muestran los últimos 120 pedidos encontrados para este cliente.</p>}
-              </div>
-
-              <div className="section-heading section-heading-pedidos-unificados" style={{ marginTop: 14 }}>
-                <div>
-                  <h3>Historial de abonos</h3>
-                  <p className="muted small">Pagos registrados y aplicados a los pedidos de este cliente.</p>
-                </div>
-              </div>
-              <div className="pedidos-tabla-wrap">
-                <table className="pedidos-tabla-compacta">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Pedido aplicado</th>
-                      <th>Valor abonado</th>
-                      <th>Método</th>
-                      <th>Saldo antes</th>
-                      <th>Saldo después</th>
-                      <th>Observación</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {abonosClienteDetalle.length === 0 ? (
-                      <tr><td colSpan="7"><RafikiEmptyState icon="💵" title="Sin abonos" description="Este cliente aún no tiene abonos registrados." /></td></tr>
-                    ) : abonosClienteDetalle.map((abono) => (
-                      <tr key={abono.id} className="subtle-row">
-                        <td>{formatearFechaHora(abono.fecha_abono || abono.created_at)}</td>
-                        <td>#{abono.numero_pedido || "—"}</td>
-                        <td className="td-total abono-valor">{dinero(abono.valor_abono)}</td>
-                        <td>{abono.metodo_pago || "—"}</td>
-                        <td className="td-total">{dinero(abono.saldo_anterior)}</td>
-                        <td className="td-total">{dinero(abono.saldo_nuevo)}</td>
-                        <td className="td-obs">{abono.observacion || "—"}</td>
+                    {estadoCuentaCliente.length === 0 ? (
+                      <tr><td colSpan="7"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente aún no tiene pedidos a crédito ni pagos registrados." /></td></tr>
+                    ) : estadoCuentaCliente.map((linea) => (
+                      <tr key={linea.id} className={linea.tipo === "Pago recibido" ? "subtle-row" : ""}>
+                        <td>{formatearFechaHora(linea.fecha)}</td>
+                        <td><RafikiBadge estado={linea.tipo} /></td>
+                        <td>{linea.referencia}</td>
+                        <td className="td-pedido-detalle">{linea.descripcion}</td>
+                        <td className="td-total">{linea.pedido ? dinero(linea.pedido) : "—"}</td>
+                        <td className="td-total abono-valor">{linea.pago ? dinero(linea.pago) : "—"}</td>
+                        <td className={`td-total ${linea.saldo > 0 ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(linea.saldo)}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -27,7 +27,7 @@ export const FILTROS_INICIALES = {
 
 export const METODOS_ABONO = FORMAS_PAGO_ABONO_CARTERA;
 
-export const VISTA_CARTERA_INICIAL = "resumen";
+export const VISTA_CARTERA_INICIAL = "cartera";
 
 export const ABONO_INICIAL = {
   valorAbono: "",
@@ -204,6 +204,40 @@ export function textoBusquedaMovimiento(movimiento) {
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+export function construirEstadoCuenta(movimientos = [], abonos = []) {
+  const lineas = [
+    ...(Array.isArray(movimientos) ? movimientos : []).map((movimiento) => ({
+      id: `pedido-${movimiento.id}`,
+      fecha: movimiento.fecha_movimiento || movimiento.created_at,
+      tipo: "Pedido a crédito",
+      referencia: movimiento.numero_pedido ? `#${movimiento.numero_pedido}` : "—",
+      descripcion: resumenPedidoMovimiento(movimiento),
+      pedido: estadoCartera(movimiento) === "anulado" ? 0 : aPesosEnteros(movimiento.valor),
+      pago: 0,
+      estado: estadoCartera(movimiento),
+    })),
+    ...(Array.isArray(abonos) ? abonos : []).map((abono) => ({
+      id: `abono-${abono.id}`,
+      fecha: abono.fecha_abono || abono.created_at,
+      tipo: "Pago recibido",
+      referencia: abono.numero_pedido ? `Pedido #${abono.numero_pedido}` : "Abono",
+      descripcion: [abono.metodo_pago, abono.observacion].filter(Boolean).join(" · ") || "Abono a cartera",
+      pedido: 0,
+      pago: aPesosEnteros(abono.valor_abono),
+      estado: "aplicado",
+    })),
+  ].sort((a, b) => {
+    const diferencia = new Date(a.fecha || 0).getTime() - new Date(b.fecha || 0).getTime();
+    return diferencia || String(a.id).localeCompare(String(b.id));
+  });
+
+  let saldo = 0;
+  return lineas.map((linea) => {
+    saldo = Math.max(0, saldo + linea.pedido - linea.pago);
+    return { ...linea, saldo };
+  });
 }
 
 export function conTiempoMaximo(promesa, ms = 18000, nombre = "consulta") {

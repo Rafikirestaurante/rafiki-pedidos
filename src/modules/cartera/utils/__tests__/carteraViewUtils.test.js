@@ -1,10 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
+  construirEstadoCuenta,
   movimientoPendiente,
   resumenPedidoMovimiento,
   saldoMovimiento,
   resumirAbonosPorMetodo,
 } from "../carteraViewUtils";
+
+describe("construirEstadoCuenta", () => {
+  it("combina pedidos y pagos y calcula el saldo en orden cronológico", () => {
+    const lineas = construirEstadoCuenta(
+      [{ id: "p1", fecha_movimiento: "2026-08-01T12:00:00", numero_pedido: 10, valor: 25000, estado: "pendiente", concepto: "Almuerzo" }],
+      [{ id: "a1", fecha_abono: "2026-08-02T12:00:00", numero_pedido: 10, valor_abono: 10000, metodo_pago: "Efectivo" }]
+    );
+    expect(lineas).toHaveLength(2);
+    expect(lineas[0]).toMatchObject({ tipo: "Pedido a crédito", pedido: 25000, saldo: 25000 });
+    expect(lineas[1]).toMatchObject({ tipo: "Pago recibido", pago: 10000, saldo: 15000 });
+  });
+});
 
 describe("carteraViewUtils", () => {
   it("calcula el saldo con respaldo en el valor original", () => {

@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.19-FASE38A-CARTERA-PEDIDOS-FILTROS-EXPORTACION-2026-08-05",
-  phase: "Fase 38A - Cartera: pedidos, descripción, filtros y exportación",
+  version: "127.20-FASE38B-REORGANIZACION-INTEGRAL-CARTERA-2026-08-05",
+  phase: "Fase 38B - Reorganización integral de Cartera",
   date: "2026-08-05",
-  fase: "38A-CARTERA-PEDIDOS-FILTROS-EXPORTACION",
+  fase: "38B-REORGANIZACION-INTEGRAL-CARTERA",
   notes:
-    "Cartera presenta Pedido y Descripción del pedido con un resumen natural de cantidades y productos, filtros independientes y exportación limitada exactamente a los movimientos visibles.",
+    "Cartera queda organizada en Cartera actual e Historial, con estado de cuenta cronológico unificado y exportaciones independientes.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
