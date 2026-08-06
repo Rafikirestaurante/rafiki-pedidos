@@ -230,7 +230,42 @@ export function textoBusquedaMovimiento(movimiento) {
     .join(" ");
 }
 
+export function agruparAbonosRegistrados(abonos = []) {
+  const grupos = new Map();
+
+  (Array.isArray(abonos) ? abonos : []).forEach((abono, indice) => {
+    const fechaRegistro = abono.created_at || abono.fecha_abono || "";
+    const clave = [
+      abono.cliente_credito_id || "sin-cliente",
+      fechaRegistro,
+      abono.fecha_abono || "",
+      abono.metodo_pago || "",
+      abono.observacion || "",
+    ].join("|");
+    const actual = grupos.get(clave);
+
+    if (!actual) {
+      grupos.set(clave, {
+        ...abono,
+        id: abono.id || `agrupado-${indice}`,
+        valor_abono: aPesosEnteros(abono.valor_abono),
+        aplicaciones: 1,
+      });
+      return;
+    }
+
+    actual.valor_abono += aPesosEnteros(abono.valor_abono);
+    actual.aplicaciones += 1;
+    actual.numero_pedido = null;
+    actual.pedido_id = null;
+    actual.cartera_movimiento_id = null;
+  });
+
+  return Array.from(grupos.values());
+}
+
 export function construirEstadoCuenta(movimientos = [], abonos = [], { soloProteina = false } = {}) {
+  const abonosAgrupados = agruparAbonosRegistrados(abonos);
   const lineas = [
     ...(Array.isArray(movimientos) ? movimientos : []).map((movimiento) => ({
       id: `pedido-${movimiento.id}`,
@@ -242,12 +277,12 @@ export function construirEstadoCuenta(movimientos = [], abonos = [], { soloProte
       pago: 0,
       estado: estadoCartera(movimiento),
     })),
-    ...(Array.isArray(abonos) ? abonos : []).map((abono) => ({
+    ...abonosAgrupados.map((abono) => ({
       id: `abono-${abono.id}`,
       fecha: abono.fecha_abono || abono.created_at,
       tipo: "Pago recibido",
-      referencia: abono.numero_pedido ? `Pedido #${abono.numero_pedido}` : "Abono",
-      descripcion: [abono.metodo_pago, abono.observacion].filter(Boolean).join(" · ") || "Abono a cartera",
+      referencia: "Abono",
+      descripcion: [abono.metodo_pago, abono.observacion].filter(Boolean).join(" · ") || "Pago recibido",
       pedido: 0,
       pago: aPesosEnteros(abono.valor_abono),
       estado: "aplicado",

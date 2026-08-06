@@ -19,6 +19,12 @@ export default function CarteraModals({
   abonoPendienteConfirmacion,
   cerrarConfirmacionAbono,
   confirmarRegistroAbono,
+  clienteUnificar,
+  clienteDestinoUnificarId,
+  cambiarClienteDestinoUnificar,
+  clientesDestinoUnificar,
+  cerrarUnificacion,
+  confirmarUnificacion,
 }) {
   return (
     <>
@@ -40,6 +46,42 @@ export default function CarteraModals({
             <button type="button" className="button light" onClick={limpiarFormulario}>Cancelar</button>
           </div>
         </form>
+      </RafikiModal>
+
+      <RafikiModal
+        open={Boolean(clienteUnificar)}
+        title="Unificar clientes"
+        description="Traslada toda la cartera y el historial al cliente correcto. El registro duplicado desaparecerá del directorio."
+        onClose={cerrarUnificacion}
+        size="md"
+      >
+        {clienteUnificar && (
+          <div className="cartera-unificar">
+            <div className="cartera-unificar-origen">
+              <small>Cliente que se unificará</small>
+              <strong>{clienteUnificar.nombre}</strong>
+              <span>{clienteUnificar.total_pedidos || 0} pedido(s) · Saldo {dinero(clienteUnificar.saldo_pendiente)}</span>
+            </div>
+            <label>
+              Conservar como cliente principal
+              <select value={clienteDestinoUnificarId} onChange={(event) => cambiarClienteDestinoUnificar(event.target.value)}>
+                <option value="">Selecciona el cliente correcto</option>
+                {clientesDestinoUnificar.map((cliente) => (
+                  <option key={cliente.id} value={cliente.id}>
+                    {cliente.nombre} · {dinero(cliente.saldo_pendiente)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="alert warning cartera-unificar-aviso">
+              Se combinarán pedidos, abonos y saldo. El nombre “{clienteUnificar.nombre}” se conservará como alias para futuras búsquedas. Esta acción no se puede deshacer desde la aplicación.
+            </div>
+            <div className="cartera-actions">
+              <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarUnificacion} disabled={guardando}>Cancelar</button>
+              <button type="button" className="mini-btn danger" style={{ width: "auto", marginBottom: 0 }} onClick={confirmarUnificacion} disabled={guardando || !clienteDestinoUnificarId}>{guardando ? "Unificando..." : "Confirmar unificación"}</button>
+            </div>
+          </div>
+        )}
       </RafikiModal>
 
       <RafikiModal

@@ -11,6 +11,11 @@
         .cartera-profesional-panel input, .cartera-profesional-panel textarea, .cartera-profesional-panel select { width: 100%; min-height: 44px; border: 1px solid #e7e5e4; border-radius: 14px; padding: 10px 12px; font: inherit; background: #fff; }
         .cartera-profesional-panel textarea { min-height: 76px; resize: vertical; }
         .cartera-profesional-panel .cartera-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .cartera-unificar { display: grid; gap: 14px; }
+        .cartera-unificar label { display: grid; gap: 6px; font-weight: 800; color: #431407; }
+        .cartera-unificar-origen { display: grid; gap: 4px; padding: 12px; border: 1px solid #fed7aa; border-radius: 14px; background: #fff7ed; }
+        .cartera-unificar-origen small, .cartera-unificar-origen span { color: #78716c; }
+        .cartera-unificar-aviso { margin: 0; }
         .cartera-profesional-panel .cartera-quick-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; padding: 10px; border: 1px dashed #fed7aa; border-radius: 16px; background: #fffaf5; }
         .cartera-profesional-panel .cartera-movimientos-resumen { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 8px; color: #475569; font-size: 12px; min-width: min(100%, 520px); }
         .cartera-profesional-panel .cartera-resumen-chip { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 8px 10px; min-width: 0; }

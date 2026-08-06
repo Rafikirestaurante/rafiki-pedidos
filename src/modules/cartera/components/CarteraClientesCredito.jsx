@@ -6,6 +6,7 @@ import {
   desactivarClienteCredito,
   editarClienteCredito,
   listarClientesCredito,
+  unificarClientesCredito,
 } from "../../../services/clientesCreditoService";
 import {
   listarAbonosCartera,
@@ -34,6 +35,7 @@ import {
   FORM_INICIAL,
   METODOS_ABONO,
   VISTA_CARTERA_INICIAL,
+  agruparAbonosRegistrados,
   conTiempoMaximo,
   construirEstadoCuenta,
   descargarArchivo,
@@ -78,6 +80,8 @@ export default function CarteraClientesCredito() {
   const [abonoPendienteConfirmacion, setAbonoPendienteConfirmacion] = useState(null);
   const [vistaCartera, setVistaCartera] = useState(VISTA_CARTERA_INICIAL);
   const [soloProteinaEstadoCuenta, setSoloProteinaEstadoCuenta] = useState(false);
+  const [clienteUnificarId, setClienteUnificarId] = useState(null);
+  const [clienteDestinoUnificarId, setClienteDestinoUnificarId] = useState("");
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -207,6 +211,18 @@ export default function CarteraClientesCredito() {
   const clienteAbono = useMemo(
     () => clientes.find((cliente) => cliente.id === clienteAbonoId) || null,
     [clientes, clienteAbonoId]
+  );
+
+  const clienteUnificar = useMemo(
+    () => clientes.find((cliente) => cliente.id === clienteUnificarId) || null,
+    [clientes, clienteUnificarId]
+  );
+
+  const clientesDestinoUnificar = useMemo(
+    () => [...clientes]
+      .filter((cliente) => cliente.id !== clienteUnificarId && cliente.activo !== false)
+      .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" })),
+    [clientes, clienteUnificarId]
   );
 
   const hayFiltroFechaMovimientos = Boolean(filtros.fechaInicio || filtros.fechaFin);
@@ -464,12 +480,12 @@ export default function CarteraClientesCredito() {
   }
 
   function exportarAbonosExcel() {
-    const abonosFiltrados = abonosCartera.filter((abono) => {
+    const abonosFiltrados = agruparAbonosRegistrados(abonosCartera.filter((abono) => {
       if (filtros.clienteId && String(abono.cliente_credito_id || "") !== String(filtros.clienteId)) return false;
       return fechaDentroRango(abono.fecha_abono || abono.created_at, filtros.fechaInicio, filtros.fechaFin);
-    });
-    const encabezados = ["Fecha", "Cliente", "Pedido aplicado", "Pago recibido", "Método", "Saldo anterior", "Saldo posterior", "Observación"];
-    const filas = abonosFiltrados.map((abono) => [formatearFechaHora(abono.fecha_abono || abono.created_at), abono.cliente_nombre || "—", abono.numero_pedido ? `#${abono.numero_pedido}` : "—", Number(abono.valor_abono || 0), abono.metodo_pago || "—", Number(abono.saldo_anterior || 0), Number(abono.saldo_nuevo || 0), abono.observacion || "—"]);
+    }));
+    const encabezados = ["Fecha", "Cliente", "Pago recibido", "Método", "Observación"];
+    const filas = abonosFiltrados.map((abono) => [formatearFechaHora(abono.fecha_abono || abono.created_at), abono.cliente_nombre || "—", Number(abono.valor_abono || 0), abono.metodo_pago || "—", abono.observacion || "—"]);
     const tabla = [encabezados, ...filas].map((fila, indice) => `<tr>${fila.map((celda) => `<${indice === 0 ? "th" : "td"}>${escaparHtmlExcel(celda)}</${indice === 0 ? "th" : "td"}>`).join("")}</tr>`).join("");
     descargarArchivo(`abonos-cartera-${fechaColombiaYYYYMMDD()}.xls`, `<!doctype html><html><head><meta charset="utf-8" /></head><body><h2>Abonos recibidos</h2><table border="1">${tabla}</table></body></html>`);
   }
@@ -694,6 +710,43 @@ export default function CarteraClientesCredito() {
     setError("");
   }
 
+  function abrirUnificacion(cliente) {
+    setClienteUnificarId(cliente?.id || null);
+    setClienteDestinoUnificarId("");
+    setMensaje("");
+    setError("");
+  }
+
+  function cerrarUnificacion() {
+    if (guardando) return;
+    setClienteUnificarId(null);
+    setClienteDestinoUnificarId("");
+  }
+
+  async function confirmarUnificacion() {
+    if (!clienteUnificar?.id || !clienteDestinoUnificarId || guardando) return;
+    const destino = clientes.find((cliente) => cliente.id === clienteDestinoUnificarId);
+    setGuardando(true);
+    setMensaje("");
+    setError("");
+    try {
+      await unificarClientesCredito({
+        clienteOrigenId: clienteUnificar.id,
+        clienteDestinoId: clienteDestinoUnificarId,
+      });
+      if (clienteDetalleId === clienteUnificar.id) setClienteDetalleId(clienteDestinoUnificarId);
+      setClienteUnificarId(null);
+      setClienteDestinoUnificarId("");
+      setMensaje(`Clientes unificados correctamente. ${destino?.nombre || "El cliente principal"} conserva todos los pedidos, abonos y el saldo combinado.`);
+      await actualizarTodo();
+    } catch (err) {
+      registrarErrorSupabase("unificar clientes crédito", err);
+      setError(describirErrorSupabase(err, "unificar los clientes"));
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   async function guardarCliente(evento) {
     evento.preventDefault();
     if (!formulario.nombre.trim()) {
@@ -809,6 +862,12 @@ export default function CarteraClientesCredito() {
         abonoPendienteConfirmacion={abonoPendienteConfirmacion}
         cerrarConfirmacionAbono={() => !guardando && setAbonoPendienteConfirmacion(null)}
         confirmarRegistroAbono={confirmarRegistroAbono}
+        clienteUnificar={clienteUnificar}
+        clienteDestinoUnificarId={clienteDestinoUnificarId}
+        cambiarClienteDestinoUnificar={setClienteDestinoUnificarId}
+        clientesDestinoUnificar={clientesDestinoUnificar}
+        cerrarUnificacion={cerrarUnificacion}
+        confirmarUnificacion={confirmarUnificacion}
       />
 
       {vistaCartera === "cartera" && (
@@ -895,6 +954,7 @@ export default function CarteraClientesCredito() {
                           items={[
                             { id: "ver", label: "Ver estado de cuenta", icon: "🔎", variant: "info", onClick: () => abrirEstadoCuenta(cliente.id) },
                             { id: "editar", label: "Editar cliente", icon: "✏️", onClick: () => editar(cliente) },
+                            { id: "unificar", label: "Unificar con otro cliente", icon: "🔗", variant: "warning", onClick: () => abrirUnificacion(cliente) },
                             whatsapp ? { id: "whatsapp", label: "Enviar WhatsApp", icon: "💬", variant: "success", disabled: saldoPendiente <= 0, onClick: () => abrirWhatsApp(cliente) } : null,
                             { id: "estado", label: cliente.activo === false ? "Activar cliente" : "Desactivar cliente", icon: cliente.activo === false ? "✅" : "🚫", variant: cliente.activo === false ? "success" : "danger", onClick: () => cambiarEstado(cliente) },
                           ]}

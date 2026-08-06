@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  agruparAbonosRegistrados,
   construirEstadoCuenta,
   movimientoPendiente,
   resumenPedidoMovimiento,
@@ -17,6 +18,23 @@ describe("construirEstadoCuenta", () => {
     expect(lineas).toHaveLength(2);
     expect(lineas[0]).toMatchObject({ tipo: "Pedido a crédito", pedido: 25000, saldo: 25000 });
     expect(lineas[1]).toMatchObject({ tipo: "Pago recibido", pago: 10000, saldo: 15000 });
+  });
+
+  it("muestra como un solo abono las aplicaciones FIFO del mismo pago", () => {
+    const lineas = construirEstadoCuenta(
+      [
+        { id: "p1", fecha_movimiento: "2026-07-08T12:00:00", valor: 22500, estado: "pagado" },
+        { id: "p2", fecha_movimiento: "2026-07-08T12:30:00", valor: 16000, estado: "pagado" },
+      ],
+      [
+        { id: "a1", cliente_credito_id: "c1", created_at: "2026-07-09T12:00:01Z", fecha_abono: "2026-07-09T07:00:00", numero_pedido: 3597, valor_abono: 22500, metodo_pago: "Efectivo" },
+        { id: "a2", cliente_credito_id: "c1", created_at: "2026-07-09T12:00:01Z", fecha_abono: "2026-07-09T07:00:00", numero_pedido: 3691, valor_abono: 16000, metodo_pago: "Efectivo" },
+      ]
+    );
+
+    expect(lineas).toHaveLength(3);
+    expect(lineas[2]).toMatchObject({ referencia: "Abono", pago: 38500, saldo: 0 });
+    expect(lineas[2].descripcion).toBe("Efectivo");
   });
 });
 
@@ -64,5 +82,13 @@ describe("carteraViewUtils", () => {
     ]);
     expect(resultado).toHaveLength(2);
     expect(resultado.find((item) => item.etiqueta.startsWith("Efectivo"))?.valor).toContain("15.000");
+  });
+
+  it("no une dos pagos distintos aunque tengan la misma fecha operativa", () => {
+    const resultado = agruparAbonosRegistrados([
+      { id: "a1", cliente_credito_id: "c1", created_at: "2026-07-09T12:00:01Z", fecha_abono: "2026-07-09T07:00:00", valor_abono: 10000, metodo_pago: "Efectivo" },
+      { id: "a2", cliente_credito_id: "c1", created_at: "2026-07-09T12:00:02Z", fecha_abono: "2026-07-09T07:00:00", valor_abono: 5000, metodo_pago: "Efectivo" },
+    ]);
+    expect(resultado).toHaveLength(2);
   });
 });

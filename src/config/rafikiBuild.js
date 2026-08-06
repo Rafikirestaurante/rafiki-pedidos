@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.21-FASE38C-ESTADO-CUENTA-SEPARADO-SOLO-PROTEINA-2026-08-05",
-  phase: "Fase 38C - Estado de cuenta separado y vista solo proteína",
+  version: "127.23-FASE38E-EDITAR-UNIFICAR-CLIENTES-CARTERA-2026-08-05",
+  phase: "Fase 38E - Editar y unificar clientes de cartera",
   date: "2026-08-05",
-  fase: "38C-ESTADO-CUENTA-SEPARADO-SOLO-PROTEINA",
+  fase: "38E-EDITAR-UNIFICAR-CLIENTES-CARTERA",
   notes:
-    "Estado de cuenta queda en una pestaña independiente con selector de cliente, tabla simplificada y modo Solo proteína.",
+    "Cada pago recibido aparece como un único abono en el estado de cuenta y en la exportación, aunque FIFO lo distribuya internamente entre varios pedidos.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
