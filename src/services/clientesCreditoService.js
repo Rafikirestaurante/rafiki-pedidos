@@ -219,6 +219,25 @@ export async function activarClienteCredito(id) {
   return editarClienteCredito(id, { activo: true });
 }
 
+export async function unificarClientesCredito({ clienteOrigenId, clienteDestinoId } = {}) {
+  if (!clienteOrigenId || !clienteDestinoId || !supabaseConfigOk) return null;
+  if (String(clienteOrigenId) === String(clienteDestinoId)) {
+    throw new Error("Selecciona dos clientes diferentes para unificar.");
+  }
+
+  const { data, error } = await supabase.rpc("unificar_clientes_credito", {
+    p_cliente_origen_id: clienteOrigenId,
+    p_cliente_destino_id: clienteDestinoId,
+  });
+
+  if (error) {
+    console.warn("No se pudieron unificar los clientes de crédito:", error.message);
+    throw error;
+  }
+
+  return data || null;
+}
+
 export async function asegurarClienteCredito(nombre) {
   const nombreLimpio = normalizarNombreClienteCredito(nombre);
   const nombreNormalizado = generarNombreNormalizadoClienteCredito(nombreLimpio);
