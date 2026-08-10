@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.24-FASE38F-ANALISIS-AVANZADO-GASTOS-2026-08-10",
-  phase: "Fase 38F - Registro por fecha y análisis avanzado de gastos",
+  version: "127.25-FASE38G-GASTOS-LISTADO-DASHBOARD-ORGANIZADO-2026-08-10",
+  phase: "Fase 38G - Gastos con listado y dashboard separados",
   date: "2026-08-10",
-  fase: "38F-ANALISIS-AVANZADO-GASTOS",
+  fase: "38G-GASTOS-LISTADO-DASHBOARD-ORGANIZADO",
   notes:
-    "Gastos permite registrar en hoy o en la fecha consultada y analizar por rango, proveedor, categoría, pago y detalle, con exportación filtrada.",
+    "Gastos separa el listado operativo completo y un dashboard organizado con filtros por rango de fechas y proveedor.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

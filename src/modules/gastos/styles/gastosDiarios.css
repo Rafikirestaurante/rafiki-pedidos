@@ -28,6 +28,13 @@
         .gastos-inventario-linea { display: grid; grid-template-columns: minmax(180px, 1fr) 130px auto; gap: 8px; align-items: end; margin-top: 8px; }
         .gastos-inventario-linea button { min-height: 42px; }
         .gastos-valor-negativo { color: #b91c1c; }
+        .gastos-informe-contenedor { display: grid; gap: 12px; }
+        .gastos-subtabs { display: flex; gap: 6px; padding: 5px; border: 1px solid rgba(15, 23, 42, 0.10); border-radius: 16px; background: #f8fafc; width: fit-content; max-width: 100%; }
+        .gastos-subtabs button { appearance: none; border: 0; border-radius: 12px; padding: 11px 18px; background: transparent; color: #475569; font: inherit; font-weight: 900; cursor: pointer; }
+        .gastos-subtabs button:hover { background: #fff7ed; color: #9a3412; }
+        .gastos-subtabs button.active { background: #ffffff; color: #9a3412; box-shadow: 0 3px 12px rgba(15, 23, 42, 0.10); }
+        .gastos-vista-panel { margin-top: 0; }
+        .gastos-filtros-principales { grid-template-columns: repeat(3, minmax(170px, 1fr)); }
         .gastos-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 14px 0 8px; padding: 12px; border-radius: 16px; background: #f8fafc; border: 1px solid rgba(15, 23, 42, 0.08); }
         .gastos-filtros-acciones { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
         .gastos-comparativos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
@@ -49,4 +56,7 @@
           .gastos-recurrente-btn { flex: 0 1 auto; padding: 9px 11px; font-size: 0.92rem; }
           .gastos-inventario-linea { grid-template-columns: 1fr; }
           .gastos-comparativos { grid-template-columns: 1fr; }
+          .gastos-subtabs { width: 100%; }
+          .gastos-subtabs button { flex: 1; padding: 11px 8px; }
+          .gastos-filtros-principales { grid-template-columns: 1fr; }
         }
