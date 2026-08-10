@@ -1,3 +1,121 @@
+## Fase 38G — Gastos con listado y dashboard separados
+
+Versión: `127.25-FASE38G-GASTOS-LISTADO-DASHBOARD-ORGANIZADO-2026-08-10`
+
+### Corrección de organización del panel Gastos
+
+- Se elimina el control “Ocultar/ver resumen por categoría”.
+- El listado operativo vuelve a mostrarse completo en su propia subpestaña.
+- El análisis se traslada a una subpestaña independiente llamada “Dashboard de gastos”.
+- El dashboard utiliza únicamente los filtros principales de rango de fechas y proveedor.
+- Los indicadores y comparativos por proveedor y por día quedan separados de las acciones de editar o eliminar gastos.
+- Se conservan el registro para hoy, el registro en la fecha consultada, la impresión y la exportación del análisis.
+
+### Cambios de esta fase
+
+- El botón principal se denomina **Nuevo gasto hoy** y siempre abre el formulario con la fecha actual.
+- Cuando el informe diario consulta una fecha diferente, aparece una acción separada para registrar el gasto exactamente en ese día.
+- Nuevo análisis por rango de fechas con filtros combinables por proveedor, categoría, método de pago y texto de compra, factura u observación.
+- Indicadores del total filtrado, promedio por día con gastos, proveedor con mayor gasto y día con mayor gasto.
+- Comparativos ordenados por proveedor y por día, más tabla completa del periodo.
+- La exportación conserva exactamente el rango y los filtros visibles.
+- No requiere cambios en Supabase ni modifica la lógica de Caja, inventario o gastos existentes.
+
+---
+
+## Fase 38E — Editar y unificar clientes de cartera
+
+Versión: `127.23-FASE38E-EDITAR-UNIFICAR-CLIENTES-CARTERA-2026-08-05`
+
+### Cambios de esta fase
+
+- Se conserva la edición del nombre, teléfono y observaciones desde Cartera actual.
+- Nueva acción **Unificar con otro cliente** para corregir registros duplicados.
+- La unificación pide seleccionar el cliente principal y muestra el saldo y los pedidos del duplicado antes de confirmar.
+- Pedidos, movimientos de cartera y abonos se trasladan en una sola transacción SQL.
+- Todos los pedidos históricos del nombre duplicado adoptan el nombre principal, por lo que la corrección se refleja también en Pedidos Hoy, historiales, informes y exportaciones.
+- El nombre anterior queda guardado como alias del cliente principal para facilitar búsquedas futuras.
+- Se combinan datos de contacto y observaciones sin reemplazar información útil del cliente principal.
+- El duplicado se elimina únicamente después de trasladar y recalcular correctamente toda su información.
+- RPC, FIFO, valores enteros y trazabilidad de movimientos permanecen intactos.
+
+Cada pago recibido aparece como un único **Abono** en el Estado de cuenta, aunque internamente el RPC lo distribuya entre varios pedidos mediante FIFO. La fila descuenta el valor total una sola vez del saldo cronológico y la exportación de abonos aplica la misma consolidación. No se modifican RPC, saldos almacenados, valores enteros, auditoría ni Supabase.
+
+---
+
+## Fase 38C — Estado de cuenta separado y vista Solo proteína
+
+Versión: `127.21-FASE38C-ESTADO-CUENTA-SEPARADO-SOLO-PROTEINA-2026-08-05`
+
+Cartera queda organizada en **Cartera actual**, **Estado de cuenta** e **Historial**. El Estado de cuenta ocupa su propia pestaña, permite seleccionar clientes y ofrece el modo Solo proteína. No se modifican RPC, FIFO, saldos, valores enteros, auditoría ni Supabase.
+
+---
+
+## Fase 38A — Cartera: pedidos, filtros y exportación
+
+Versión: `127.19-FASE38A-CARTERA-PEDIDOS-FILTROS-EXPORTACION-2026-08-05`
+
+En Cartera, la referencia se denomina **Pedido** y el contenido se muestra como **Descripción del pedido**, con un formato natural como `1 Pechuga asada + 2 Carnes bistec`. Movimientos incorpora filtros independientes por número de pedido y por producto o descripción. La exportación conserva exactamente los filtros visibles, además de cliente, estado y rango de fechas. No se modifican saldos, abonos, FIFO, auditoría ni Supabase.
+
+---
+
+## Fase 37F — Control de solicitudes de insumos por jornada
+
+Versión: `127.18-FASE37F-CONTROL-INSUMOS-AM-PM-2026-08-05`
+
+En **Admin → Solicitud de insumos**, cada producto puede solicitarse máximo una vez en AM y una vez en PM. Los repetidos dentro de la misma jornada se muestran en una alerta, se omiten automáticamente y la solicitud continúa con los productos nuevos. Cuando un producto ya fue pedido en la jornada contraria, Rafiki solicita confirmación antes de permitir la segunda solicitud del día. Supabase y WhatsApp reciben únicamente la lista filtrada. No requiere migración SQL.
+
+---
+
+## Fase 37E.2 — Datos y envío debajo del resumen compacto
+
+Versión: `127.17-FASE37E2-FLUJO-COMPACTO-DATOS-INLINE-2026-08-05`
+
+En `/mesas` → **Compacta**, el Paso 3 deja de abrirse como ventana modal. El Resumen del pedido se muestra primero y, justo debajo, aparece el formulario real de **Datos y envío**. Los modales quedan reservados para Proteína y Acompañantes.
+
+El Paso 1 usa **Continuar** en verde. En el Paso 2 aparecen **Agregar otro almuerzo** y **Continuar** en verde; continuar cierra la ventana y lleva al resumen con los datos debajo. No requiere migración Supabase ni modifica el flujo Normal, guardado, impresión o edición administrativa.
+
+---
+
+
+## Fase 37D — Adicionales con cantidades en Mesas
+
+Versión: `127.14-FASE37D-ADICIONALES-CANTIDADES-MESAS-2026-07-31`
+
+En `/mesas`, Restaurante incorpora una sección discreta **Adicionales** que se habilita después de seleccionar al menos un almuerzo. Cada adicional puede pedirse con cantidad independiente y se refleja como producto separado en total, resumen e impresión. No requiere migración Supabase.
+
+## 127.11 — Fase 37B Calendario móvil ampliable
+
+Versión: `127.11-FASE37B-CALENDARIO-MOVIL-ZOOM-2026-07-25`
+
+En **Informes → Rafa**, el calendario mensual conserva exactamente su diseño de escritorio. En celulares aparece un botón discreto **“🔍 Ampliar”** que abre el calendario en una vista de pantalla completa tipo imagen. La vista inicia ajustada al ancho disponible y permite zoom con dos dedos, desplazamiento con un dedo, controles `− / +`, botón **Ajustar**, navegación entre meses y selección de cualquier día para abrir su detalle.
+
+No se convierten los datos en una imagen estática: el calendario continúa siendo interactivo y se actualiza con las mismas ventas y gastos del Dashboard. No requiere migración de Supabase ni modifica cálculos, pedidos, impresión o permisos.
+
+---
+
+## 127.10 — Fase 37A.2 Hotfix Parfait en Mesas y Cliente
+
+Versión: `127.10-FASE37A2-HOTFIX-PARFAIT-MESAS-CLIENTE-2026-07-23`
+
+Se corrige la causa exacta de `Parfait Parfait...`: el Catálogo entrega tamaños como `Parfait 12 oz` y `/mesas` volvía a agregar el prefijo. Desde esta versión el tamaño se normaliza a `12 oz` antes de crear el producto. El formateador compartido también limpia pedidos ya existentes y reconoce la subcategoría `Parfait` aunque no venga marcada explícitamente con `categoria: cafeteria`.
+
+El resultado esperado en `/mesas` y `/cliente` es `1 x Parfait 12 oz · Fresa, Banano`; la misma regla se conserva para Pedidos Hoy, Cartera y comandas térmicas. No requiere SQL adicional.
+
+---
+
+## 127.9 — Fase 37A.1 Hotfix resumen y comandas de Cafetería
+
+Versión: `127.9-FASE37A1-HOTFIX-RESUMEN-COMANDAS-CAFETERIA-2026-07-22`
+
+Se corrige de forma integral el formato de productos de Cafetería. Parfait, Batidos y Jugos tradicionales pasan a usar una única regla compartida en el Resumen del pedido, Pedidos Hoy, Cartera, texto persistido y comandas térmicas.
+
+Ejemplos finales: `Parfait 12 oz · Banano, Arándanos, Uva`, `Milo 12 oz` con `Base: Helado` aparte, `Maracuyá 16 oz` y `Fresa 12 oz · Agua`. También se limpian prefijos heredados repetidos como `Parfait Parfait...`.
+
+No requiere migración adicional de Supabase. Conserva completa la Fase 37A de registro de clientes y cumpleaños. Se agrega `npm run cafeteria-summary:check`, integrado en la verificación general.
+
+---
+
 ## 127.8 — Fase 37A Registro de clientes y cumpleaños
 
 Versión: `127.8-FASE37A-REGISTRO-CLIENTES-CUMPLEANOS-2026-07-21`
@@ -628,3 +746,21 @@ Se creó la ruta paralela `/cliente-beta` para probar una versión visual del fl
 - Se agregan acciones partidas: `Editar proteína` y `Editar acompañantes`.
 - Nuevo modal para editar proteína/plato desde el resumen sin regresar al flujo inicial.
 - No toca SQL, Caja, Cartera, Pedidos Hoy, impresión térmica ni service worker.
+
+
+## 127.12-FASE37B1-ZOOM-GESTOS-NAVEGACION-COMPACTA-2026-07-30
+
+Fase 37B.1: se simplificó la vista ampliada del calendario mensual de Informes Rafa. Se eliminaron los controles manuales `−`, `+` y **Ajustar**, dejando zoom con dos dedos y desplazamiento táctil. La navegación entre meses ahora usa un control compacto tipo cápsula tanto en el Dashboard normal como en la vista ampliada. No requiere cambios en Supabase.
+
+
+## 127.13-FASE37C-FILTROS-INSUMOS-LLAVE-TRANSFERENCIA-2026-07-30
+
+Fase 37C - Filtros de insumos y llave de transferencia: en Admin → Solicitud de insumos → Insumos pendientes se añadieron filtros **Todo el día**, **AM**, **PM** y **PM anterior + AM actual**. La fecha seleccionada funciona como día base; el filtro combinado consulta automáticamente la tarde del día anterior y la mañana de la fecha base. En `/cliente`, al escoger **Transferencia**, se muestra la llave `0090381033` con un botón para copiarla. No requiere migración de Supabase.
+
+
+## Fase 37E.1 — Limpieza visual de Mesas Compacta
+
+- La cabecera de la vista Compacta muestra únicamente **Mesas**.
+- Se eliminaron etiquetas de prueba, descripciones operativas y subtítulos.
+- El selector superior queda reducido a **Normal** y **Compacta**.
+- No se modificó el motor real de pedidos, guardado, edición o impresión.

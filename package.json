@@ -31,7 +31,14 @@
     "feedback:check": "node scripts/validate-feedback-uniforme.mjs",
     "performance:check": "node scripts/validate-performance-bundle.mjs",
     "modularization:check": "node scripts/validate-modularizacion-progresiva.mjs",
-    "diagnostic:check": "node scripts/validate-diagnostico-resumen.mjs"
+    "diagnostic:check": "node scripts/validate-diagnostico-resumen.mjs",
+    "cafeteria-summary:check": "node scripts/validate-resumen-comandas-cafeteria.mjs",
+    "dashboard-mobile-zoom:check": "node scripts/validate-dashboard-mobile-zoom.mjs",
+    "fase37c:check": "node scripts/validate-fase37c-insumos-transferencia.mjs",
+    "fase37d:check": "node scripts/validate-fase37d-adicionales-mesas.mjs",
+    "fase37e:check": "node scripts/validate-fase37e-vista-compacta-mesas.mjs",
+    "fase37e2:check": "node scripts/validate-fase37e2-flujo-compacto-inline.mjs",
+    "fase37f:check": "node scripts/validate-fase37f-insumos-am-pm.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
@@ -51,6 +58,6 @@
   },
   "type": "module",
   "name": "rafiki-pedidos",
-  "version": "127.8.0",
+  "version": "127.25.0",
   "private": true
 }

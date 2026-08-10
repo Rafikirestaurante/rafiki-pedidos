@@ -28,9 +28,9 @@ controlar("Diagnóstico revisa PWA, caché y Supabase", diagnostico.includes("ge
 controlar("Diagnóstico muestra sincronización y errores", diagnostico.includes("Última sincronización") && diagnostico.includes("Último error") && diagnostico.includes("leerUltimaSincronizacionDiagnostico"));
 controlar("Diagnóstico permite copiar informe técnico", diagnostico.includes("Copiar informe") && diagnostico.includes("crearInformeTecnicoDiagnostico") && utilDiagnostico.includes("RAFIKI PEDIDOS — INFORME TÉCNICO"));
 controlar("App registra sincronización de pedidos", app.includes("registrarSincronizacionDiagnostico") && app.includes('origen: "Pedidos"'));
-controlar("Resumen especial limitado a Parfait y Batidos", resumen.includes("esParfaitResumen") && resumen.includes("esBatidoResumen") && !resumen.includes("Jugo tradicional"));
+controlar("Resumen unifica Parfait, Batidos y Jugos tradicionales", resumen.includes("esParfaitResumen") && resumen.includes("esBatidoResumen") && resumen.includes("esJugoTradicionalResumen"));
 controlar("Batidos no repiten el tipo genérico", resumen.includes("productoSinTipo") && resumen.includes("batido refrescante") && resumen.includes("batido cremoso"));
-controlar("Resumen compartido usa la regla especial", resumenItem.includes("nombreCafeteriaResumen") && resumenItem.includes("detalleCafeteriaEstaEnTitulo"));
+controlar("Resumen compartido usa el nombre canónico", resumenItem.includes("obtenerNombreCafeteria") && resumenItem.includes("esJugoTradicionalResumen"));
 controlar("Pruebas de diagnóstico", existe("src/shared/utils/__tests__/diagnosticoRafiki.test.js"));
 controlar("Pruebas del resumen", existe("src/shared/utils/__tests__/resumenPedidoDisplay.test.js"));
 controlar("Existe comando diagnostic:check", packageJson.scripts?.["diagnostic:check"] === "node scripts/validate-diagnostico-resumen.mjs");

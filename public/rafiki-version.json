@@ -1,6 +1,6 @@
 {
-  "version": "127.8-FASE37A-REGISTRO-CLIENTES-CUMPLEANOS-2026-07-21",
-  "phase": "Fase 37A - Registro de clientes y cumpleaños",
-  "date": "2026-07-21",
-  "notes": "Acceso por código más discreto y registro de clientes con celular, ubicación y cumpleaños sin privilegios VIP automáticos."
+  "version": "127.25-FASE38G-GASTOS-LISTADO-DASHBOARD-ORGANIZADO-2026-08-10",
+  "phase": "Fase 38G - Gastos con listado y dashboard separados",
+  "date": "2026-08-10",
+  "notes": "Gastos separa el listado operativo completo y un dashboard organizado con filtros por rango de fechas y proveedor."
 }
