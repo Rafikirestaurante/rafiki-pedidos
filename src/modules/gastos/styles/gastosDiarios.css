@@ -28,6 +28,14 @@
         .gastos-inventario-linea { display: grid; grid-template-columns: minmax(180px, 1fr) 130px auto; gap: 8px; align-items: end; margin-top: 8px; }
         .gastos-inventario-linea button { min-height: 42px; }
         .gastos-valor-negativo { color: #b91c1c; }
+        .gastos-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 14px 0 8px; padding: 12px; border-radius: 16px; background: #f8fafc; border: 1px solid rgba(15, 23, 42, 0.08); }
+        .gastos-filtros-acciones { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .gastos-comparativos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
+        .gastos-ranking { border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; padding: 12px; background: #fff; max-height: 340px; overflow: auto; }
+        .gastos-ranking h4 { margin: 0 0 8px; }
+        .gastos-ranking > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 2px; border-top: 1px solid rgba(15, 23, 42, 0.07); }
+        .gastos-ranking > div strong { white-space: nowrap; }
+        .gastos-metricas-analisis small { display: block; margin-top: 3px; color: #64748b; }
 
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
@@ -40,4 +48,5 @@
           .gastos-recurrentes-botones { gap: 5px; }
           .gastos-recurrente-btn { flex: 0 1 auto; padding: 9px 11px; font-size: 0.92rem; }
           .gastos-inventario-linea { grid-template-columns: 1fr; }
+          .gastos-comparativos { grid-template-columns: 1fr; }
         }

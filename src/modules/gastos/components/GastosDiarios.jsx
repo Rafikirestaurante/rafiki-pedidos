@@ -7,6 +7,7 @@ import {
   METODOS_PAGO_GASTOS,
   actualizarGastoDiario,
   cargarGastosDiarios,
+  cargarGastosDiariosRango,
   crearGastoDiario,
   eliminarGastoDiario,
   obtenerFechaGastoHoy
@@ -69,11 +70,51 @@ function crearFilasResumenObjeto(objeto = {}) {
     }));
 }
 
+function inicioMes(fechaIso) {
+  const fecha = String(fechaIso || obtenerFechaGastoHoy());
+  return `${fecha.slice(0, 7)}-01`;
+}
+
+function normalizarTexto(texto) {
+  return String(texto || "").trim().toLocaleLowerCase("es-CO");
+}
+
+function fechaLegible(fechaIso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(fechaIso || ""))) return "—";
+  return new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })
+    .format(new Date(`${fechaIso}T12:00:00Z`));
+}
+
+function textoCsv(valor) {
+  const texto = String(valor ?? "");
+  return /[;"\n]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
+}
+
+function descargarCsv(nombre, filas) {
+  const contenido = `\ufeff${filas.map((fila) => fila.map(textoCsv).join(";")).join("\n")}`;
+  const url = URL.createObjectURL(new Blob([contenido], { type: "text/csv;charset=utf-8" }));
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default function GastosDiarios({ esAdministrador = false, modoRapido = false, mostrarInforme = true }) {
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL);
   const [fechaInforme, setFechaInforme] = useState(obtenerFechaGastoHoy());
   const [gastos, setGastos] = useState([]);
+  const [gastosPeriodo, setGastosPeriodo] = useState([]);
+  const [fechaInicio, setFechaInicio] = useState(inicioMes(obtenerFechaGastoHoy()));
+  const [fechaFin, setFechaFin] = useState(obtenerFechaGastoHoy());
+  const [filtroProveedor, setFiltroProveedor] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroPago, setFiltroPago] = useState("");
+  const [filtroDetalle, setFiltroDetalle] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [cargandoPeriodo, setCargandoPeriodo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const [editandoId, setEditandoId] = useState(null);
@@ -91,6 +132,26 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   const totalGastos = useMemo(() => gastos.reduce((total, gasto) => total + Number(gasto.valor || 0), 0), [gastos]);
   const resumenCategorias = useMemo(() => resumirPorCampo(gastos, "categoria"), [gastos]);
   const resumenPagos = useMemo(() => resumirPorCampo(gastos, "metodoPago"), [gastos]);
+  const proveedoresPeriodo = useMemo(() => [...new Set(gastosPeriodo.map((gasto) => gasto.proveedor).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" })), [gastosPeriodo]);
+  const categoriasPeriodo = useMemo(() => [...new Set(gastosPeriodo.map((gasto) => gasto.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" })), [gastosPeriodo]);
+  const pagosPeriodo = useMemo(() => [...new Set(gastosPeriodo.map((gasto) => gasto.metodoPago).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" })), [gastosPeriodo]);
+  const gastosFiltrados = useMemo(() => gastosPeriodo.filter((gasto) => {
+    if (filtroProveedor && gasto.proveedor !== filtroProveedor) return false;
+    if (filtroCategoria && gasto.categoria !== filtroCategoria) return false;
+    if (filtroPago && gasto.metodoPago !== filtroPago) return false;
+    const busqueda = normalizarTexto(filtroDetalle);
+    if (busqueda && !normalizarTexto(`${gasto.articulos} ${gasto.numeroFactura} ${gasto.observacion}`).includes(busqueda)) return false;
+    return true;
+  }), [gastosPeriodo, filtroProveedor, filtroCategoria, filtroPago, filtroDetalle]);
+  const analisisPeriodo = useMemo(() => {
+    const porProveedor = resumirPorCampo(gastosFiltrados, "proveedor");
+    const porDia = resumirPorCampo(gastosFiltrados, "fecha");
+    const total = gastosFiltrados.reduce((suma, gasto) => suma + Number(gasto.valor || 0), 0);
+    const diasConGastos = Object.keys(porDia).length;
+    const proveedorMayor = Object.entries(porProveedor).sort((a, b) => b[1] - a[1])[0] || ["—", 0];
+    const diaMayor = Object.entries(porDia).sort((a, b) => b[1] - a[1])[0] || ["—", 0];
+    return { total, diasConGastos, promedioDiario: diasConGastos ? total / diasConGastos : 0, proveedorMayor, diaMayor, porProveedor, porDia };
+  }, [gastosFiltrados]);
 
   const mostrarMensaje = useCallback((texto, tipoForzado) => {
     const mensajeLimpio = String(texto || "").trim();
@@ -156,6 +217,26 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     cargar(fechaInforme);
   }, [cargar, fechaInforme]);
 
+  const cargarPeriodo = useCallback(async () => {
+    if (!supabaseConfigOk || !esAdministrador) return;
+    if (!fechaInicio || !fechaFin || fechaInicio > fechaFin) {
+      setError("La fecha inicial del análisis no puede ser posterior a la fecha final.");
+      return;
+    }
+    setCargandoPeriodo(true);
+    setError("");
+    try {
+      setGastosPeriodo(await cargarGastosDiariosRango(fechaInicio, fechaFin));
+    } catch (err) {
+      registrarErrorSupabase("cargar análisis de gastos", err);
+      setError(describirErrorSupabase(err, "cargar el análisis de gastos"));
+    } finally {
+      setCargandoPeriodo(false);
+    }
+  }, [esAdministrador, fechaInicio, fechaFin]);
+
+  useEffect(() => { cargarPeriodo(); }, [cargarPeriodo]);
+
   function imprimirGastosTermico(formato = "80") {
     const lista = Array.isArray(gastos) ? gastos : [];
     const ok = imprimirReporteTermico({
@@ -214,11 +295,19 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
     setLineasInventario([{ insumoId: "", cantidad: "" }]);
   }
 
-  function abrirFormularioNuevo() {
+  function abrirFormularioNuevo(fecha = obtenerFechaGastoHoy()) {
     limpiarFormulario();
+    setFormulario({ ...FORMULARIO_INICIAL, fecha });
     setError("");
     mostrarMensaje("");
     setModalFormularioAbierto(true);
+  }
+
+  function exportarAnalisis() {
+    const filas = [["Fecha", "Proveedor", "Artículos", "Categoría", "Método de pago", "Factura", "Valor", "Observación"]];
+    gastosFiltrados.forEach((gasto) => filas.push([gasto.fecha, gasto.proveedor, gasto.articulos, gasto.categoria, gasto.metodoPago, gasto.numeroFactura, gasto.valor, gasto.observacion]));
+    filas.push([], ["TOTAL FILTRADO", "", "", "", "", "", analisisPeriodo.total, ""]);
+    descargarCsv(`gastos-${fechaInicio}-a-${fechaFin}.csv`, filas);
   }
 
   function cerrarFormulario() {
@@ -299,6 +388,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
       if (esAdministrador) {
         setFechaInforme(fechaGuardada);
         await cargar(fechaGuardada);
+        await cargarPeriodo();
       }
     } catch (err) {
       if (String(err?.message || "").startsWith("Activa inventario")) {
@@ -460,7 +550,8 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         </div>
         {!modoRapido ? (
           <div className="gastos-top-actions">
-            <button type="button" className="button" onClick={abrirFormularioNuevo} disabled={!supabaseConfigOk}>+ Nuevo gasto</button>
+            <button type="button" className="button" onClick={() => abrirFormularioNuevo(obtenerFechaGastoHoy())} disabled={!supabaseConfigOk}>+ Nuevo gasto hoy</button>
+            {fechaInforme !== obtenerFechaGastoHoy() ? <button type="button" className="button light" onClick={() => abrirFormularioNuevo(fechaInforme)} disabled={!supabaseConfigOk}>+ Agregar gasto el {fechaLegible(fechaInforme)}</button> : null}
             <button type="button" className="button light" onClick={() => cargar(fechaInforme)} disabled={cargando || !esAdministrador}>{cargando ? "Cargando..." : "Actualizar"}</button>
           </div>
         ) : null}
@@ -489,7 +580,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         <div className="gastos-informe-header">
           <div>
             <h3>📊 Informe de gastos</h3>
-            <p className="muted">Resumen limpio del día seleccionado.</p>
+            <p className="muted">Consulta y edita los gastos del día seleccionado.</p>
           </div>
           {esAdministrador && (
             <label className="field-label" style={{ minWidth: 190 }}>Fecha del informe
@@ -539,7 +630,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
                 icon="🧾"
                 title="No hay gastos para esta fecha"
                 description="Cuando registres el primer gasto aparecerá aquí junto con su categoría, método de pago y valor."
-                action={<button type="button" className="button" onClick={abrirFormularioNuevo}>Registrar gasto</button>}
+                action={<button type="button" className="button" onClick={() => abrirFormularioNuevo(fechaInforme)}>Registrar gasto en esta fecha</button>}
               />
             ) : null}
 
@@ -581,6 +672,46 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         )}
       </section>
       )}
+
+      {mostrarInforme && esAdministrador ? (
+        <section className="box gastos-analisis" style={{ marginTop: 16 }}>
+          <div className="gastos-informe-header">
+            <div>
+              <h3>📈 Análisis de gastos</h3>
+              <p className="muted">Compara proveedores, días y categorías dentro del periodo que necesites.</p>
+            </div>
+            <button type="button" className="mini-btn green" onClick={exportarAnalisis} disabled={!gastosFiltrados.length}>Exportar lo filtrado</button>
+          </div>
+
+          <div className="gastos-filtros">
+            <label className="field-label">Desde<input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} /></label>
+            <label className="field-label">Hasta<input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} /></label>
+            <label className="field-label">Proveedor<select value={filtroProveedor} onChange={(e) => setFiltroProveedor(e.target.value)}><option value="">Todos</option>{proveedoresPeriodo.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="field-label">Categoría<select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}><option value="">Todas</option>{categoriasPeriodo.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="field-label">Método de pago<select value={filtroPago} onChange={(e) => setFiltroPago(e.target.value)}><option value="">Todos</option>{pagosPeriodo.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="field-label">Buscar compra<input value={filtroDetalle} onChange={(e) => setFiltroDetalle(e.target.value)} placeholder="Artículo, factura u observación" /></label>
+          </div>
+          <div className="gastos-filtros-acciones">
+            <button type="button" className="mini-btn" onClick={() => { setFechaInicio(inicioMes(obtenerFechaGastoHoy())); setFechaFin(obtenerFechaGastoHoy()); setFiltroProveedor(""); setFiltroCategoria(""); setFiltroPago(""); setFiltroDetalle(""); }}>Este mes / limpiar filtros</button>
+            <span className="muted small">{cargandoPeriodo ? "Actualizando análisis…" : `${gastosFiltrados.length} gastos encontrados`}</span>
+          </div>
+
+          <div className="gastos-resumen-mini gastos-metricas-analisis">
+            <div className="gastos-resumen-card"><span className="muted small">Total filtrado</span><strong className="gastos-valor-negativo">${dinero(analisisPeriodo.total)}</strong></div>
+            <div className="gastos-resumen-card"><span className="muted small">Promedio por día con gastos</span><strong>${dinero(analisisPeriodo.promedioDiario)}</strong></div>
+            <div className="gastos-resumen-card"><span className="muted small">Proveedor con mayor gasto</span><strong>{analisisPeriodo.proveedorMayor[0]}</strong><small>${dinero(analisisPeriodo.proveedorMayor[1])}</small></div>
+            <div className="gastos-resumen-card"><span className="muted small">Día con mayor gasto</span><strong>{fechaLegible(analisisPeriodo.diaMayor[0])}</strong><small>${dinero(analisisPeriodo.diaMayor[1])}</small></div>
+          </div>
+
+          <div className="gastos-comparativos">
+            <div className="gastos-ranking"><h4>Por proveedor</h4>{Object.entries(analisisPeriodo.porProveedor).sort((a, b) => b[1] - a[1]).map(([nombre, total]) => <div key={nombre}><span>{nombre}</span><strong>${dinero(total)}</strong></div>)}</div>
+            <div className="gastos-ranking"><h4>Por día</h4>{Object.entries(analisisPeriodo.porDia).sort(([a], [b]) => b.localeCompare(a)).map(([fecha, total]) => <div key={fecha}><span>{fechaLegible(fecha)}</span><strong>${dinero(total)}</strong></div>)}</div>
+          </div>
+
+          {!!gastosFiltrados.length && <div className="gastos-tabla-wrap"><table className="gastos-tabla"><thead><tr><th>Fecha</th><th>Proveedor</th><th>Comprado</th><th>Categoría</th><th>Pago</th><th>Valor</th></tr></thead><tbody>{gastosFiltrados.map((gasto) => <tr key={`analisis-${gasto.id}`}><td>{fechaLegible(gasto.fecha)}</td><td><strong>{gasto.proveedor}</strong></td><td>{gasto.articulos || "Sin detalle"}</td><td>{capitalizar(gasto.categoria)}</td><td>{capitalizar(gasto.metodoPago)}</td><td><strong className="gastos-valor-negativo">${dinero(gasto.valor)}</strong></td></tr>)}</tbody></table></div>}
+          {!gastosFiltrados.length && !cargandoPeriodo ? <RafikiEmptyState icon="📊" title="No hay resultados para estos filtros" description="Amplía el rango o limpia alguno de los filtros para continuar el análisis." /> : null}
+        </section>
+      ) : null}
     </section>
   );
 }
