@@ -538,7 +538,6 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
         {!modoRapido ? (
           <div className="gastos-top-actions">
             <button type="button" className="button" onClick={() => abrirFormularioNuevo(obtenerFechaGastoHoy())} disabled={!supabaseConfigOk}>+ Nuevo gasto hoy</button>
-            {fechaInforme !== obtenerFechaGastoHoy() ? <button type="button" className="button light" onClick={() => abrirFormularioNuevo(fechaInforme)} disabled={!supabaseConfigOk}>+ Agregar gasto el {fechaLegible(fechaInforme)}</button> : null}
             <button type="button" className="button light" onClick={() => cargar(fechaInforme)} disabled={cargando || !esAdministrador}>{cargando ? "Cargando..." : "Actualizar"}</button>
           </div>
         ) : null}
@@ -578,9 +577,16 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
                 <h3>Listado de gastos</h3>
                 <p className="muted">Consulta, edita o elimina los gastos del día seleccionado.</p>
               </div>
-              <label className="field-label" style={{ minWidth: 190 }}>Fecha del listado
-                <input type="date" value={fechaInforme} onChange={(e) => setFechaInforme(e.target.value)} />
-              </label>
+              <div className="gastos-fecha-listado-acciones">
+                <label className="field-label">Fecha del listado
+                  <input type="date" value={fechaInforme} onChange={(e) => setFechaInforme(e.target.value)} />
+                </label>
+                {fechaInforme !== obtenerFechaGastoHoy() ? (
+                  <button type="button" className="button light" onClick={() => abrirFormularioNuevo(fechaInforme)} disabled={!supabaseConfigOk}>
+                    + Agregar gasto el {fechaLegible(fechaInforme)}
+                  </button>
+                ) : null}
+              </div>
             </div>
             <div className="gastos-resumen-mini">
               <div className="gastos-resumen-card"><span className="muted small">Gastos registrados</span><strong>{gastos.length}</strong></div>
@@ -645,36 +651,43 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
             )}
           </section>
         ) : (
-          <section className="box gastos-analisis gastos-vista-panel">
-            <div className="gastos-informe-header">
+          <section className="ventas-mes-dashboard gastos-dashboard-informes">
+            <div className="ventas-mes-header">
               <div>
+                <span className="ventas-mes-kicker">Informe de gastos</span>
                 <h3>Dashboard de gastos</h3>
-                <p className="muted">Analiza cuánto se gastó por proveedor y por día en el periodo seleccionado.</p>
+                <p>Analiza cuánto se gastó por proveedor y por día en el periodo seleccionado.</p>
               </div>
               <button type="button" className="mini-btn green" onClick={exportarAnalisis} disabled={!gastosFiltrados.length}>Exportar resultados</button>
             </div>
 
-            <div className="gastos-filtros gastos-filtros-principales">
-              <label className="field-label">Desde<input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} /></label>
-              <label className="field-label">Hasta<input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} /></label>
-              <label className="field-label">Proveedor<select value={filtroProveedor} onChange={(e) => setFiltroProveedor(e.target.value)}><option value="">Todos los proveedores</option>{proveedoresPeriodo.map((item) => <option key={item}>{item}</option>)}</select></label>
-            </div>
-            <div className="gastos-filtros-acciones">
-              <button type="button" className="mini-btn" onClick={() => { setFechaInicio(inicioMes(obtenerFechaGastoHoy())); setFechaFin(obtenerFechaGastoHoy()); setFiltroProveedor(""); }}>Restablecer a este mes</button>
-              <span className="muted small">{cargandoPeriodo ? "Actualizando dashboard…" : `${gastosFiltrados.length} gastos incluidos en el análisis`}</span>
-            </div>
+            <section className="ventas-mes-panel gastos-dashboard-filtros">
+              <div className="ventas-mes-panel-heading">
+                <div>
+                  <h4>Periodo del informe</h4>
+                  <p>Selecciona el rango y, si lo necesitas, un proveedor específico.</p>
+                </div>
+                <button type="button" className="mini-btn" onClick={() => { setFechaInicio(inicioMes(obtenerFechaGastoHoy())); setFechaFin(obtenerFechaGastoHoy()); setFiltroProveedor(""); }}>Este mes</button>
+              </div>
+              <div className="gastos-filtros gastos-filtros-principales">
+                <label className="field-label">Desde<input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} /></label>
+                <label className="field-label">Hasta<input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} /></label>
+                <label className="field-label">Proveedor<select value={filtroProveedor} onChange={(e) => setFiltroProveedor(e.target.value)}><option value="">Todos los proveedores</option>{proveedoresPeriodo.map((item) => <option key={item}>{item}</option>)}</select></label>
+              </div>
+              <p className="ventas-mes-nota">{cargandoPeriodo ? "Actualizando dashboard…" : `${gastosFiltrados.length} gastos incluidos en el análisis`}</p>
+            </section>
 
-            <div className="gastos-resumen-mini gastos-metricas-analisis">
-              <div className="gastos-resumen-card"><span className="muted small">Total del periodo</span><strong className="gastos-valor-negativo">${dinero(analisisPeriodo.total)}</strong></div>
-              <div className="gastos-resumen-card"><span className="muted small">Promedio por día con gastos</span><strong>${dinero(analisisPeriodo.promedioDiario)}</strong></div>
-              <div className="gastos-resumen-card"><span className="muted small">Proveedor con mayor gasto</span><strong>{analisisPeriodo.proveedorMayor[0]}</strong><small>${dinero(analisisPeriodo.proveedorMayor[1])}</small></div>
-              <div className="gastos-resumen-card"><span className="muted small">Día con mayor gasto</span><strong>{fechaLegible(analisisPeriodo.diaMayor[0])}</strong><small>${dinero(analisisPeriodo.diaMayor[1])}</small></div>
+            <div className="ventas-mes-metricas gastos-metricas-analisis">
+              <article className="ventas-mes-metrica"><span>Total del periodo</span><strong className="gastos-valor-negativo">${dinero(analisisPeriodo.total)}</strong><small>{gastosFiltrados.length} gastos registrados</small></article>
+              <article className="ventas-mes-metrica"><span>Promedio diario</span><strong>${dinero(analisisPeriodo.promedioDiario)}</strong><small>Sobre {analisisPeriodo.diasConGastos} días con gastos</small></article>
+              <article className="ventas-mes-metrica"><span>Proveedor principal</span><strong>{analisisPeriodo.proveedorMayor[0]}</strong><small>${dinero(analisisPeriodo.proveedorMayor[1])}</small></article>
+              <article className="ventas-mes-metrica"><span>Día con mayor gasto</span><strong>{fechaLegible(analisisPeriodo.diaMayor[0])}</strong><small>${dinero(analisisPeriodo.diaMayor[1])}</small></article>
             </div>
 
             {gastosFiltrados.length ? (
               <div className="gastos-comparativos">
-                <div className="gastos-ranking"><h4>Gasto por proveedor</h4>{Object.entries(analisisPeriodo.porProveedor).sort((a, b) => b[1] - a[1]).map(([nombre, total]) => <div key={nombre}><span>{nombre}</span><strong>${dinero(total)}</strong></div>)}</div>
-                <div className="gastos-ranking"><h4>Gasto por día</h4>{Object.entries(analisisPeriodo.porDia).sort(([a], [b]) => b.localeCompare(a)).map(([fecha, total]) => <div key={fecha}><span>{fechaLegible(fecha)}</span><strong>${dinero(total)}</strong></div>)}</div>
+                <section className="ventas-mes-panel gastos-ranking"><div className="ventas-mes-panel-heading"><div><h4>Gasto por proveedor</h4><p>Proveedores ordenados de mayor a menor gasto.</p></div></div>{Object.entries(analisisPeriodo.porProveedor).sort((a, b) => b[1] - a[1]).map(([nombre, total]) => <div key={nombre}><span>{nombre}</span><strong>${dinero(total)}</strong></div>)}</section>
+                <section className="ventas-mes-panel gastos-ranking"><div className="ventas-mes-panel-heading"><div><h4>Gasto por día</h4><p>Comportamiento diario dentro del periodo.</p></div></div>{Object.entries(analisisPeriodo.porDia).sort(([a], [b]) => b.localeCompare(a)).map(([fecha, total]) => <div key={fecha}><span>{fechaLegible(fecha)}</span><strong>${dinero(total)}</strong></div>)}</section>
               </div>
             ) : !cargandoPeriodo ? <RafikiEmptyState icon="📊" title="No hay resultados para este periodo" description="Amplía el rango o selecciona todos los proveedores para continuar." /> : null}
           </section>

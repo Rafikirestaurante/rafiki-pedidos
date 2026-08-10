@@ -14,6 +14,9 @@
         .gastos-tabla th, .gastos-tabla td { padding: 10px 11px; border-bottom: 1px solid rgba(15, 23, 42, 0.08); text-align: left; vertical-align: top; font-size: 0.95rem; }
         .gastos-tabla th { position: sticky; top: 0; z-index: 2; background: #fff7ed; color: #111827; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
         .gastos-informe-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+        .gastos-fecha-listado-acciones { display: flex; align-items: flex-end; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+        .gastos-fecha-listado-acciones .field-label { min-width: 190px; }
+        .gastos-fecha-listado-acciones .button { min-height: 46px; }
         .gastos-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
         .gastos-rapidos-panel { max-width: 720px; margin: 0 auto; }
         .gastos-rapidos-panel .gastos-formulario-box { padding: 16px; }
@@ -35,19 +38,25 @@
         .gastos-subtabs button.active { background: #ffffff; color: #9a3412; box-shadow: 0 3px 12px rgba(15, 23, 42, 0.10); }
         .gastos-vista-panel { margin-top: 0; }
         .gastos-filtros-principales { grid-template-columns: repeat(3, minmax(170px, 1fr)); }
-        .gastos-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 14px 0 8px; padding: 12px; border-radius: 16px; background: #f8fafc; border: 1px solid rgba(15, 23, 42, 0.08); }
+        .gastos-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 14px 0 8px; }
         .gastos-filtros-acciones { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
         .gastos-comparativos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
-        .gastos-ranking { border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; padding: 12px; background: #fff; max-height: 340px; overflow: auto; }
-        .gastos-ranking h4 { margin: 0 0 8px; }
+        .gastos-ranking { max-height: 390px; overflow: auto; }
+        .gastos-ranking .ventas-mes-panel-heading { margin-bottom: 8px; }
         .gastos-ranking > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 2px; border-top: 1px solid rgba(15, 23, 42, 0.07); }
         .gastos-ranking > div strong { white-space: nowrap; }
         .gastos-metricas-analisis small { display: block; margin-top: 3px; color: #64748b; }
+        .gastos-dashboard-informes { margin-bottom: 0; }
+        .gastos-dashboard-informes > .ventas-mes-header .mini-btn { white-space: nowrap; }
+        .gastos-dashboard-filtros .gastos-filtros { margin-bottom: 10px; }
 
         @media (max-width: 720px) {
           .gastos-diarios-grid { grid-template-columns: 1fr; }
           .gastos-informe-header { align-items: stretch; }
           .gastos-informe-header label { width: 100%; }
+          .gastos-fecha-listado-acciones { width: 100%; align-items: stretch; }
+          .gastos-fecha-listado-acciones .field-label,
+          .gastos-fecha-listado-acciones .button { width: 100%; }
           .gastos-top-actions { justify-content: stretch; }
           .gastos-top-actions .button, .gastos-top-actions .mini-btn { width: 100%; }
           .gastos-tabla { min-width: 620px; }
