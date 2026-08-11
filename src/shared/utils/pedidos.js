@@ -307,12 +307,10 @@ export function esProductoSinAcompanantes(item = {}) {
   const categoria = normalizarTexto(item?.categoria);
   const nombre = normalizarTexto(item?.plato || item?.proteina || item?.nombre || item?.producto);
 
+  if (item?.sinAcompanantes === true || item?.sin_acompanantes === true) return true;
+  if (/\bsa\b/.test(categoria)) return true;
   if (esAdicionalAlmuerzo(item)) return true;
   if (categoria.includes("sopa") || nombre.includes("sopa")) return true;
-  if (categoria.includes("pasta") || nombre.includes("pasta")) return true;
-  if (nombre.startsWith("arroz de ")) return true;
-  if (nombre.includes(" arroz de ")) return true;
-  if (nombre.includes("arroz trifasico") || nombre.includes("arroz trifásico")) return true;
 
   return false;
 }
@@ -428,7 +426,9 @@ export function textoAPlatosDetalle(texto, { estricto = false } = {}) {
     }
 
     const partesCategoria = linea.split("|");
-    const categoria = String(partesCategoria[0] || "Platos").trim() || "Platos";
+    const categoriaConReglas = String(partesCategoria[0] || "Platos").trim() || "Platos";
+    const sinAcompanantes = /(?:^|\s)SA(?:\s|$)/i.test(categoriaConReglas);
+    const categoria = categoriaConReglas.replace(/(?:^|\s)SA(?=\s|$)/gi, " ").replace(/\s+/g, " ").trim() || "Platos";
     const resto = partesCategoria.slice(1).join("|").trim();
 
     if (!resto) {
@@ -468,7 +468,7 @@ export function textoAPlatosDetalle(texto, { estricto = false } = {}) {
       return;
     }
 
-    platos.push({ categoria, nombre, precio });
+    platos.push({ categoria, nombre, precio, sinAcompanantes });
   });
 
   return { platos, errores };
@@ -476,7 +476,7 @@ export function textoAPlatosDetalle(texto, { estricto = false } = {}) {
 
 export function platosATexto(platosDetalle) {
   return (platosDetalle || [])
-    .map((item) => `${item.categoria || "Platos"} | ${item.nombre}:${Number(item.precio) || 0}`)
+    .map((item) => `${item.categoria || "Platos"}${item.sinAcompanantes || item.sin_acompanantes ? " SA" : ""} | ${item.nombre}:${Number(item.precio) || 0}`)
     .join("\n");
 }
 
@@ -490,7 +490,8 @@ export function normalizarPlatos(menu) {
       .map((item) => ({
         categoria: String(item.categoria || "Platos").trim() || "Platos",
         nombre: String(item.nombre || "").trim(),
-        precio: Number(item.precio) || 0
+        precio: Number(item.precio) || 0,
+        sinAcompanantes: item.sinAcompanantes === true || item.sin_acompanantes === true
       }))
       .filter((item) => item.nombre);
   }
@@ -1095,4 +1096,3 @@ export function consolidarPedidos(pedidos) {
 
   return resumen;
 }
-

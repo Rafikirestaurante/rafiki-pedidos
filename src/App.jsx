@@ -479,6 +479,7 @@ export default function App() {
         return {
           ...item,
           categoria: platoSeleccionado.categoria || "",
+          sinAcompanantes: platoSeleccionado.sinAcompanantes === true,
           plato: platoSeleccionado.nombre || "",
           proteina: platoSeleccionado.nombre || "",
           precioPlato: Number(platoSeleccionado.precio) || 0,
@@ -641,6 +642,7 @@ export default function App() {
         return {
           ...item,
           categoria: platoSeleccionado.categoria || "",
+          sinAcompanantes: platoSeleccionado.sinAcompanantes === true,
           plato: platoSeleccionado.nombre || "",
           proteina: platoSeleccionado.nombre || "",
           precioPlato: Number(platoSeleccionado.precio) || 0,

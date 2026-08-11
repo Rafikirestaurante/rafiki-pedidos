@@ -5,12 +5,15 @@ import {
   crearTextoItem,
   dinero,
   esAdicionalAlmuerzo,
+  esProductoSinAcompanantes,
   esItemCafeteria,
   formatoNumeroPedido,
   limpiarTelefono,
   limpiarTexto,
   normalizarTexto,
   textoParaLlevarItem,
+  textoAPlatosDetalle,
+  platosATexto,
   valorParaLlevarItem
 } from "../pedidos";
 
@@ -35,6 +38,25 @@ describe("utils/pedidos", () => {
   it("detecta productos de cafetería", () => {
     expect(esItemCafeteria({ tipo: "Batido cremoso", producto: "Milo" })).toBe(true);
     expect(esItemCafeteria({ categoria: "Almuerzo", plato: "Pechuga" })).toBe(false);
+  });
+
+  it("usa SA como regla explícita y no deduce arroces o pastas", () => {
+    const resultado = textoAPlatosDetalle(
+      "Platos SA | Arroz con pollo:18000\nPastas | Pasta boloñesa:19000",
+      { estricto: true }
+    );
+
+    expect(resultado.errores).toEqual([]);
+    expect(resultado.platos[0]).toEqual({
+      categoria: "Platos",
+      nombre: "Arroz con pollo",
+      precio: 18000,
+      sinAcompanantes: true
+    });
+    expect(esProductoSinAcompanantes(resultado.platos[0])).toBe(true);
+    expect(esProductoSinAcompanantes(resultado.platos[1])).toBe(false);
+    expect(esProductoSinAcompanantes({ categoria: "Platos", nombre: "Arroz trifásico" })).toBe(false);
+    expect(platosATexto(resultado.platos)).toContain("Platos SA | Arroz con pollo:18000");
   });
 
   it("calcula empaque para llevar según tipo de producto", () => {
