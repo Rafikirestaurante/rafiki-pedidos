@@ -94,6 +94,13 @@ export default function MenuDiarioTab({
         <strong>Ejemplo:</strong> Pechuga | Pechuga en salsa criolla:18500
         <br />
         <br />
+        <strong>Sin acompañantes (SA):</strong> agrega SA al final de la categoría.
+        <br />
+        Ejemplo: Platos SA | Arroz con pollo:18000
+        <br />
+        SA es una regla interna y no aparecerá en el nombre visible del plato.
+        <br />
+        <br />
         <strong>Sopas:</strong> los platos con categoría Sopas no permiten acompañantes ni incluyen sopa + bebida.
         <br />
         <br />

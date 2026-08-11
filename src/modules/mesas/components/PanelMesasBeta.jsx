@@ -119,6 +119,7 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
 
     actualizarItemMesa(itemActivo.id, {
       categoria: platoSeleccionado.categoria || "",
+      sinAcompanantes: platoSeleccionado.sinAcompanantes === true,
       plato: platoSeleccionado.nombre || "",
       proteina: platoSeleccionado.nombre || "",
       precioPlato: Number(platoSeleccionado.precio) || 0,
@@ -198,6 +199,7 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
         return {
           ...item,
           categoria: platoSeleccionado.categoria || "",
+          sinAcompanantes: platoSeleccionado.sinAcompanantes === true,
           plato: platoSeleccionado.nombre || "",
           proteina: platoSeleccionado.nombre || "",
           precioPlato: Number(platoSeleccionado.precio) || 0,

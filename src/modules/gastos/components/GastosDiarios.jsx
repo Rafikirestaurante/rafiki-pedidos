@@ -106,6 +106,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   const [fechaInicio, setFechaInicio] = useState(inicioMes(obtenerFechaGastoHoy()));
   const [fechaFin, setFechaFin] = useState(obtenerFechaGastoHoy());
   const [filtroProveedor, setFiltroProveedor] = useState("");
+  const [comparativoGastos, setComparativoGastos] = useState("proveedor");
   const [vistaInforme, setVistaInforme] = useState("listado");
   const [cargando, setCargando] = useState(false);
   const [cargandoPeriodo, setCargandoPeriodo] = useState(false);
@@ -133,12 +134,42 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
   const analisisPeriodo = useMemo(() => {
     const porProveedor = resumirPorCampo(gastosFiltrados, "proveedor");
     const porDia = resumirPorCampo(gastosFiltrados, "fecha");
+    const porCategoria = resumirPorCampo(gastosFiltrados, "categoria");
     const total = gastosFiltrados.reduce((suma, gasto) => suma + Number(gasto.valor || 0), 0);
     const diasConGastos = Object.keys(porDia).length;
     const proveedorMayor = Object.entries(porProveedor).sort((a, b) => b[1] - a[1])[0] || ["—", 0];
     const diaMayor = Object.entries(porDia).sort((a, b) => b[1] - a[1])[0] || ["—", 0];
-    return { total, diasConGastos, promedioDiario: diasConGastos ? total / diasConGastos : 0, proveedorMayor, diaMayor, porProveedor, porDia };
+    const categoriaMayor = Object.entries(porCategoria).sort((a, b) => b[1] - a[1])[0] || ["—", 0];
+    return { total, diasConGastos, promedioDiario: diasConGastos ? total / diasConGastos : 0, proveedorMayor, diaMayor, categoriaMayor, porProveedor, porDia, porCategoria };
   }, [gastosFiltrados]);
+
+  const datosComparativo = useMemo(() => {
+    const configuraciones = {
+      proveedor: {
+        titulo: "Gastos por proveedor",
+        descripcion: "Compara cuánto se compró a cada proveedor en el periodo.",
+        datos: analisisPeriodo.porProveedor,
+        etiqueta: (valor) => valor
+      },
+      dia: {
+        titulo: "Gastos por día",
+        descripcion: "Compara el valor total registrado en cada día del periodo.",
+        datos: analisisPeriodo.porDia,
+        etiqueta: fechaLegible
+      },
+      categoria: {
+        titulo: "Gastos por categoría",
+        descripcion: "Identifica en qué categorías se concentra el gasto.",
+        datos: analisisPeriodo.porCategoria,
+        etiqueta: capitalizar
+      }
+    };
+    const configuracion = configuraciones[comparativoGastos] || configuraciones.proveedor;
+    const items = Object.entries(configuracion.datos)
+      .sort((a, b) => b[1] - a[1])
+      .map(([nombre, total]) => ({ nombre, etiqueta: configuracion.etiqueta(nombre), total }));
+    return { ...configuracion, items, maximo: Math.max(...items.map((item) => item.total), 1) };
+  }, [analisisPeriodo, comparativoGastos]);
 
   const mostrarMensaje = useCallback((texto, tipoForzado) => {
     const mensajeLimpio = String(texto || "").trim();
@@ -656,7 +687,7 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
               <div>
                 <span className="ventas-mes-kicker">Informe de gastos</span>
                 <h3>Dashboard de gastos</h3>
-                <p>Analiza cuánto se gastó por proveedor y por día en el periodo seleccionado.</p>
+                <p>Analiza cuánto se gastó por proveedor, día y categoría en el periodo seleccionado.</p>
               </div>
               <button type="button" className="mini-btn green" onClick={exportarAnalisis} disabled={!gastosFiltrados.length}>Exportar resultados</button>
             </div>
@@ -682,13 +713,29 @@ export default function GastosDiarios({ esAdministrador = false, modoRapido = fa
               <article className="ventas-mes-metrica"><span>Promedio diario</span><strong>${dinero(analisisPeriodo.promedioDiario)}</strong><small>Sobre {analisisPeriodo.diasConGastos} días con gastos</small></article>
               <article className="ventas-mes-metrica"><span>Proveedor principal</span><strong>{analisisPeriodo.proveedorMayor[0]}</strong><small>${dinero(analisisPeriodo.proveedorMayor[1])}</small></article>
               <article className="ventas-mes-metrica"><span>Día con mayor gasto</span><strong>{fechaLegible(analisisPeriodo.diaMayor[0])}</strong><small>${dinero(analisisPeriodo.diaMayor[1])}</small></article>
+              <article className="ventas-mes-metrica"><span>Categoría principal</span><strong>{capitalizar(analisisPeriodo.categoriaMayor[0])}</strong><small>${dinero(analisisPeriodo.categoriaMayor[1])}</small></article>
             </div>
 
             {gastosFiltrados.length ? (
-              <div className="gastos-comparativos">
-                <section className="ventas-mes-panel gastos-ranking"><div className="ventas-mes-panel-heading"><div><h4>Gasto por proveedor</h4><p>Proveedores ordenados de mayor a menor gasto.</p></div></div>{Object.entries(analisisPeriodo.porProveedor).sort((a, b) => b[1] - a[1]).map(([nombre, total]) => <div key={nombre}><span>{nombre}</span><strong>${dinero(total)}</strong></div>)}</section>
-                <section className="ventas-mes-panel gastos-ranking"><div className="ventas-mes-panel-heading"><div><h4>Gasto por día</h4><p>Comportamiento diario dentro del periodo.</p></div></div>{Object.entries(analisisPeriodo.porDia).sort(([a], [b]) => b.localeCompare(a)).map(([fecha, total]) => <div key={fecha}><span>{fechaLegible(fecha)}</span><strong>${dinero(total)}</strong></div>)}</section>
-              </div>
+              <section className="ventas-mes-panel gastos-comparativo-panel">
+                <div className="ventas-mes-panel-heading ventas-barras-heading">
+                  <div><h4>Comparativo de gastos</h4><p>{datosComparativo.descripcion}</p></div>
+                  <div className="ventas-barras-filtros" role="group" aria-label="Tipo de comparativo de gastos">
+                    <button type="button" className={comparativoGastos === "proveedor" ? "active" : ""} onClick={() => setComparativoGastos("proveedor")}>Proveedor</button>
+                    <button type="button" className={comparativoGastos === "dia" ? "active" : ""} onClick={() => setComparativoGastos("dia")}>Día</button>
+                    <button type="button" className={comparativoGastos === "categoria" ? "active" : ""} onClick={() => setComparativoGastos("categoria")}>Categoría</button>
+                  </div>
+                </div>
+                <div className="gastos-barras" aria-label={datosComparativo.titulo}>
+                  {datosComparativo.items.map((item) => (
+                    <div className="gastos-barra-fila" key={item.nombre}>
+                      <span title={item.etiqueta}>{item.etiqueta}</span>
+                      <div className="gastos-barra-pista"><i style={{ width: `${Math.max((item.total / datosComparativo.maximo) * 100, 3)}%` }} /></div>
+                      <strong>${dinero(item.total)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </section>
             ) : !cargandoPeriodo ? <RafikiEmptyState icon="📊" title="No hay resultados para este periodo" description="Amplía el rango o selecciona todos los proveedores para continuar." /> : null}
           </section>
         )}

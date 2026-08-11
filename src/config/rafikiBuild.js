@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.26-FASE38H-DASHBOARD-GASTOS-ESTILO-INFORMES-2026-08-10",
-  phase: "Fase 38H - Dashboard de gastos alineado con Informes",
-  date: "2026-08-10",
-  fase: "38H-DASHBOARD-GASTOS-ESTILO-INFORMES",
+  version: "127.28-FASE38J-REGLA-SA-SIN-ACOMPANANTES-2026-08-11",
+  phase: "Fase 38J - Regla SA para platos sin acompañantes",
+  date: "2026-08-11",
+  fase: "38J-REGLA-SA-SIN-ACOMPANANTES",
   notes:
-    "Dashboard de gastos adopta el formato visual de Informes y el alta para la fecha consultada queda junto a Fecha del listado.",
+    "El Editor de menú diario permite marcar platos con SA para omitir acompañantes en Cliente y Mesas sin depender del nombre arroz o pasta.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
