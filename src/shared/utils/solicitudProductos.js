@@ -26,14 +26,9 @@ export function ordenarProductosPorNombre(productos) {
 }
 
 export function ordenarCategoriasPorLista(categorias) {
-  return [...categorias].sort((a, b) => {
-    const indiceA = categoriasSolicitudProductos.indexOf(a);
-    const indiceB = categoriasSolicitudProductos.indexOf(b);
-    if (indiceA !== -1 && indiceB !== -1) return indiceA - indiceB;
-    if (indiceA !== -1) return -1;
-    if (indiceB !== -1) return 1;
-    return String(a).localeCompare(String(b), "es", { sensitivity: "base" });
-  });
+  return [...categorias].sort((a, b) =>
+    String(a || "").localeCompare(String(b || ""), "es", { sensitivity: "base" })
+  );
 }
 
 
@@ -278,4 +273,3 @@ export function crearMensajeCompraProveedores(productos) {
     })
     .join("\n");
 }
-
