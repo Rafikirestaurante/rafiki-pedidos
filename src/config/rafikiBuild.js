@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "127.28-FASE38J-REGLA-SA-SIN-ACOMPANANTES-2026-08-11",
-  phase: "Fase 38J - Regla SA para platos sin acompañantes",
-  date: "2026-08-11",
-  fase: "38J-REGLA-SA-SIN-ACOMPANANTES",
+  version: "127.29-FASE38K-PREFERENCIA-MESAS-ORDEN-ALFABETICO-2026-08-29",
+  phase: "Fase 38K - Preferencia de vista y orden alfabético",
+  date: "2026-08-29",
+  fase: "38K-PREFERENCIA-MESAS-ORDEN-ALFABETICO",
   notes:
-    "El Editor de menú diario permite marcar platos con SA para omitir acompañantes en Cliente y Mesas sin depender del nombre arroz o pasta.",
+    "Mesas recuerda la vista Normal o Compacta por dispositivo; Solicitud de insumos y Catálogo se presentan alfabéticamente.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

@@ -175,7 +175,7 @@ export default function CatalogoRafa() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
   const [estadoFiltro, setEstadoFiltro] = useState("todos");
-  const [ordenFiltro, setOrdenFiltro] = useState("categoria");
+  const [ordenFiltro, setOrdenFiltro] = useState("alfabetico");
   const [productos, setProductos] = useState(() => leerStorage(STORAGE_CATALOGO_PRODUCTOS, PRODUCTOS_INICIALES));
   const [insumos, setInsumos] = useState(() => leerStorage(STORAGE_CATALOGO_INSUMOS, INSUMOS_INICIALES));
   const [editandoId, setEditandoId] = useState("");
@@ -247,20 +247,24 @@ export default function CatalogoRafa() {
     });
 
     return [...filtrados].sort((a, b) => {
-      if (ordenFiltro === "nombre") return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
+      if (ordenFiltro === "alfabetico") {
+        return String(a.categoria || "").localeCompare(String(b.categoria || ""), "es", { sensitivity: "base" }) ||
+          String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" });
+      }
+      if (ordenFiltro === "nombre") return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es", { sensitivity: "base" });
       if (ordenFiltro === "precio") return Number(b.precio || 0) - Number(a.precio || 0);
       if (ordenFiltro === "estado") return Number(a.activo === false) - Number(b.activo === false) || Number(b.agotado || 0) - Number(a.agotado || 0);
       return String(a.categoria || "").localeCompare(String(b.categoria || ""), "es") || Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
     });
   }, [busqueda, categoriaFiltro, estadoFiltro, listaActual, ordenFiltro]);
 
-  const filtrosActivos = Boolean(busqueda.trim()) || categoriaFiltro !== "todas" || estadoFiltro !== "todos" || ordenFiltro !== "categoria";
+  const filtrosActivos = Boolean(busqueda.trim()) || categoriaFiltro !== "todas" || estadoFiltro !== "todos" || ordenFiltro !== "alfabetico";
 
   function limpiarFiltrosCatalogo() {
     setBusqueda("");
     setCategoriaFiltro("todas");
     setEstadoFiltro("todos");
-    setOrdenFiltro("categoria");
+    setOrdenFiltro("alfabetico");
   }
 
   useEffect(() => {
@@ -335,7 +339,7 @@ export default function CatalogoRafa() {
     setBusqueda("");
     setCategoriaFiltro("todas");
     setEstadoFiltro("todos");
-    setOrdenFiltro("categoria");
+    setOrdenFiltro("alfabetico");
     mostrarMensaje("");
     setEditandoId("");
     const esNuevoProductos = nuevoTipo === "productos_restaurante" || nuevoTipo === "productos_cafeteria";
@@ -743,7 +747,8 @@ export default function CatalogoRafa() {
         <label className="field-label">
           Ordenar por
           <select value={ordenFiltro} onChange={(e) => setOrdenFiltro(e.target.value)}>
-            <option value="categoria">Categoría / orden</option>
+            <option value="alfabetico">Categoría / nombre (A–Z)</option>
+            <option value="categoria">Categoría / orden manual</option>
             <option value="nombre">Nombre</option>
             {esProductos && <option value="precio">Precio mayor a menor</option>}
             <option value="estado">Estado</option>

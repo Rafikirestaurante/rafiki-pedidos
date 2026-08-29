@@ -63,6 +63,26 @@ import {
   saboresCatalogoPorCategoria,
 } from "../utils/catalogoMesas";
 
+const VISTA_MESAS_STORAGE_KEY = "rafiki_vista_mesas_v1";
+
+function leerVistaMesasPreferida() {
+  if (typeof window === "undefined" || !window.localStorage) return "normal";
+  try {
+    return window.localStorage.getItem(VISTA_MESAS_STORAGE_KEY) === "compacta" ? "compacta" : "normal";
+  } catch {
+    return "normal";
+  }
+}
+
+function guardarVistaMesasPreferida(vista) {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    window.localStorage.setItem(VISTA_MESAS_STORAGE_KEY, vista === "compacta" ? "compacta" : "normal");
+  } catch {
+    // La selección sigue funcionando durante la sesión si el navegador bloquea localStorage.
+  }
+}
+
 export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion, navegacionAdminVisible = false, puedeVerRafa = false, onIrAdmin, onIrPedidos, onIrGerencia }) {
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
@@ -97,7 +117,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [clientesCreditoMesa, setClientesCreditoMesa] = useState(() => leerClientesCreditoGuardados());
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
   const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
-  const [vistaMesas, setVistaMesas] = useState("normal");
+  const [vistaMesas, setVistaMesas] = useState(() => leerVistaMesasPreferida());
 
   useEffect(() => {
     let cancelado = false;
@@ -782,6 +802,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   function seleccionarVistaMesas(vista) {
     const siguienteVista = vista === "compacta" ? "compacta" : "normal";
     setVistaMesas(siguienteVista);
+    guardarVistaMesasPreferida(siguienteVista);
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 40);
   }
 
