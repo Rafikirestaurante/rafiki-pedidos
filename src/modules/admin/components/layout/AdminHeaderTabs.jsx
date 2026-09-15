@@ -11,7 +11,6 @@ export default function AdminHeaderTabs({
   puedeVerInventario,
   puedeVerCaja,
   cerrarPanelAdmin,
-  navegar,
 }) {
   return (
     <>
@@ -19,20 +18,7 @@ export default function AdminHeaderTabs({
         <div>
           <div className="brand">⚙️ Admin</div>
         </div>
-        <div className="nav nav-wrap">
-          <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-            Mesas
-          </button>
-          <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
-            Pedidos hoy
-          </button>
-          {puedeVerRafa && (
-            <button type="button" onClick={() => navegar("/gerencia", "gerencia")}>
-              Gerencia
-            </button>
-          )}
-          <PWAClearCacheButton compact />
-        </div>
+<div className="admin-header-tools"><PWAClearCacheButton compact /></div>
       </header>
 
       <div className="admin-tabs">

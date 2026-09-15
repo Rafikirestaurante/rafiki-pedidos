@@ -36,11 +36,6 @@ export default function PanelMesasCompacto({
   modoEdicionAdmin = false,
   pedidoEditando = null,
   onCancelarEdicion,
-  navegacionAdminVisible = false,
-  puedeVerRafa = false,
-  onIrAdmin,
-  onIrPedidos,
-  onIrGerencia,
   acompanantesDisponibles = [],
   onCrearAlmuerzo,
   onCambiarPlato,
@@ -50,10 +45,12 @@ export default function PanelMesasCompacto({
   onCambiarCantidad,
   onEditarProteina,
   onEditarAcompanantes,
-  onAbrirNormalCategoria,
+  contenidoCafeteria = null,
+  contenidoAdicionalesRestaurante = null,
   datosMesaProps = {}
 }) {
   const [paso, setPaso] = useState(null);
+  const [lineaActiva, setLineaActiva] = useState("restaurante");
   const [itemActivoId, setItemActivoId] = useState(null);
 
   const itemActivo = useMemo(() => {
@@ -120,6 +117,12 @@ export default function PanelMesasCompacto({
     desplazarA("mesa-datos-final");
   }
 
+  function volverACafeteria() {
+    setLineaActiva("cafeteria");
+    setPaso(null);
+    desplazarA("mesa-cafeteria-panel");
+  }
+
   function continuarAcompanantes() {
     if (!validarAcompanantesActuales()) return;
     mostrarResumenYDatos();
@@ -148,69 +151,82 @@ export default function PanelMesasCompacto({
             </div>
           )}
 
-          {navegacionAdminVisible && (
-            <div className="mesa-admin-nav" aria-label="Navegación administrativa">
-              <button type="button" onClick={onIrPedidos}>Pedidos hoy</button>
-              <button type="button" onClick={onIrAdmin}>Admin</button>
-              {puedeVerRafa && <button type="button" onClick={onIrGerencia}>Gerencia</button>}
-            </div>
-          )}
+          <div className="mesas-compacta-lineas" aria-label="Línea de pedido">
+            <button
+              type="button"
+              className={lineaActiva === "restaurante" ? "active" : ""}
+              onClick={() => { setLineaActiva("restaurante"); setPaso(null); }}
+            >
+              <span>🍽️</span>
+              <strong>Restaurante</strong>
+            </button>
+            <button
+              type="button"
+              className={lineaActiva === "cafeteria" ? "active" : ""}
+              onClick={() => { setLineaActiva("cafeteria"); setPaso(null); }}
+            >
+              <span>☕</span>
+              <strong>Cafetería</strong>
+            </button>
+          </div>
 
-          <div className="mesas-beta-steps" aria-label="Pasos del pedido compacto">
-            {PASOS.map((pasoItem) => {
-              const activo = paso === pasoItem.id;
-              const completado = pasoItem.id === "proteina"
-                ? hayAlmuerzoSeleccionadoMesa
-                : pasoItem.id === "acompanantes"
-                  ? Boolean(hayAlmuerzoSeleccionadoMesa && (itemSinAcompanantes || acompanantesItem.length > 0))
-                  : Boolean((modoLlevar || mesaLocal) && meseroLocal);
+          {lineaActiva === "restaurante" ? (
+            <>
+            <div className="mesas-beta-steps" aria-label="Pasos del pedido compacto">
+              {PASOS.map((pasoItem) => {
+                const activo = paso === pasoItem.id;
+                const completado = pasoItem.id === "proteina"
+                  ? hayAlmuerzoSeleccionadoMesa
+                  : pasoItem.id === "acompanantes"
+                    ? Boolean(hayAlmuerzoSeleccionadoMesa && (itemSinAcompanantes || acompanantesItem.length > 0))
+                    : Boolean((modoLlevar || mesaLocal) && meseroLocal);
 
-              return (
-                <button
-                  key={pasoItem.id}
-                  type="button"
-                  className={["mesas-beta-step", activo ? "active" : "", completado ? "done" : ""].filter(Boolean).join(" ")}
-                  onClick={() => {
-                    if (pasoItem.id === "datos") {
-                      if (!hayProductoSeleccionadoMesa) {
-                        onMostrarError?.("Agrega al menos un almuerzo antes de completar los datos.");
+                return (
+                  <button
+                    key={pasoItem.id}
+                    type="button"
+                    className={["mesas-beta-step", activo ? "active" : "", completado ? "done" : ""].filter(Boolean).join(" ")}
+                    onClick={() => {
+                      if (pasoItem.id === "datos") {
+                        if (!hayProductoSeleccionadoMesa) {
+                          onMostrarError?.("Agrega al menos un producto antes de completar los datos.");
+                          return;
+                        }
+                        irADatos();
                         return;
                       }
-                      irADatos();
-                      return;
-                    }
-                    abrirPaso(pasoItem.id);
-                  }}
-                >
-                  <span>{pasoItem.numero}</span>
-                  <strong>{pasoItem.titulo}</strong>
-                </button>
-              );
-            })}
-          </div>
+                      abrirPaso(pasoItem.id);
+                    }}
+                  >
+                    <span>{pasoItem.numero}</span>
+                    <strong>{pasoItem.titulo}</strong>
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="mesas-beta-actions">
-            <button type="button" className="button" onClick={iniciarAlmuerzo}>
-              {hayProductoSeleccionadoMesa ? "Agregar almuerzo" : "Iniciar pedido"}
-            </button>
-            <button type="button" className="button light" onClick={irADatos} disabled={!hayProductoSeleccionadoMesa}>Datos y envío</button>
-          </div>
+            <div className="mesas-beta-actions">
+              <button type="button" className="button" onClick={iniciarAlmuerzo}>
+                {hayProductoSeleccionadoMesa ? "Agregar almuerzo" : "Iniciar pedido"}
+              </button>
+              <button type="button" className="button light" onClick={irADatos} disabled={!hayProductoSeleccionadoMesa}>Datos y envío</button>
+            </div>
 
-          <div className="mesas-compacta-accesos">
-            <button type="button" onClick={() => onAbrirNormalCategoria?.("cafeteria")}>☕ Cafetería</button>
-            <button type="button" onClick={() => onAbrirNormalCategoria?.("almuerzos")}>
-              🍟 Adic. Restaurante
-            </button>
-            <button type="button" onClick={() => onAbrirNormalCategoria?.("cafeteria", "adicionales")}>
-              ➕ Adic. Cafetería
-            </button>
-          </div>
+            <div className="mesas-compacta-adicionales-restaurante">
+              {contenidoAdicionalesRestaurante}
+            </div>
+            </>
+          ) : (
+            <div className="mesas-compacta-cafeteria">
+              {contenidoCafeteria || <div className="box soft">No hay opciones de Cafetería configuradas.</div>}
+            </div>
+          )}
         </section>
 
         <aside id="mesa-resumen-compacto" className="card card-pad mesas-beta-preview">
           <h2>{hayProductoSeleccionadoMesa ? "Resumen del pedido" : "Resumen"}</h2>
           {!hayProductoSeleccionadoMesa ? (
-            <div className="box soft"><strong>Empieza creando el primer almuerzo.</strong></div>
+            <div className="box soft"><strong>Agrega un producto de Restaurante o Cafetería para comenzar.</strong></div>
           ) : (
             <>
               <div className="box soft mesas-beta-datos-resumen">
@@ -235,7 +251,7 @@ export default function PanelMesasCompacto({
 
               <div className="total-row mesas-beta-total"><span>Total</span><strong>{dinero(total)}</strong></div>
               <div className="mesas-beta-actions resumen-actions-inline">
-                <button type="button" className="button light" onClick={iniciarAlmuerzo}>+ Otro almuerzo</button>
+                <button type="button" className="button light" onClick={lineaActiva === "cafeteria" ? volverACafeteria : iniciarAlmuerzo}>{lineaActiva === "cafeteria" ? "+ Cafetería" : "+ Otro almuerzo"}</button>
               </div>
 
               <div className="mesas-compacta-datos-inline">

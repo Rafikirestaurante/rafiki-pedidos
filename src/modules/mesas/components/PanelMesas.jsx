@@ -83,7 +83,7 @@ function guardarVistaMesasPreferida(vista) {
   } catch { /* conserva la vista de la sesión */ }
 }
 
-export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion, navegacionAdminVisible = false, puedeVerRafa = false, onIrAdmin, onIrPedidos, onIrGerencia }) {
+export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion }) {
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("");
@@ -668,7 +668,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     setItemsMesa((actual) => [...actual, item]);
     limpiarSeleccionCafeteria();
     setErrorMesa("");
-    irAElementoMesas(destino === "resumen" ? "mesa-confirmacion-final" : "mesa-categorias-top", 120, "start");
+    const destinoElemento = vistaMesas === "compacta"
+      ? (destino === "resumen" ? "mesa-resumen-compacto" : "mesa-cafeteria-panel")
+      : (destino === "resumen" ? "mesa-confirmacion-final" : "mesa-categorias-top");
+    irAElementoMesas(destinoElemento, 120, "start");
   }
 
   function toggleFrutaParfait(fruta) {
@@ -937,6 +940,302 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     onActualizarItem: actualizarItemMesa
   };
 
+  const contenidoAdicionalesRestauranteMesa = (
+    <AdicionalesRestauranteMesas
+      adicionales={restauranteAdicionalesAlmuerzo}
+      abierto={adicionalesRestauranteAbiertos}
+      onAlternar={() => setAdicionalesRestauranteAbiertos((actual) => !actual)}
+      cantidadPorNombre={cantidadAdicionalRestaurante}
+      onCambiarCantidad={cambiarCantidadAdicionalRestaurante}
+    />
+  );
+
+  const contenidoCafeteriaMesa = (
+    <div className="cafeteria-placeholder fade-step">
+      <div className="cafeteria-grid cafeteria-actions compact-cafeteria-actions">
+        {[
+          ["parfait", "Parfait"],
+          ["batidos", "Batidos"],
+          ["desayunos", "Desayunos"],
+          ["sandwich", "Comida"],
+          ["bebidas", "Bebidas"],
+          ["postres", "Postres"],
+          ["adicionales", "➕ Adicionales"]
+        ].map(([clave, nombre]) => (
+          <button
+            key={clave}
+            type="button"
+            onClick={() => { setSubcategoriaCafeteria(clave); setErrorMesa(""); irAElementoMesas("mesa-cafeteria-panel", 100, "start"); }}
+            className={`cafeteria-card cafeteria-button ${subcategoriaCafeteria === clave ? "active" : ""}`}
+          >
+            <strong>{nombre}</strong>
+          </button>
+        ))}
+      </div>
+
+      <div id="mesa-cafeteria-panel" />
+
+      {errorMesa && (
+        <div className="finalizar-error" role="alert" aria-live="polite" style={{ marginTop: 10 }}>{errorMesa}</div>
+      )}
+
+      {subcategoriaCafeteria === "parfait" && (
+        <div className="cafeteria-panel fade-step">
+          <h3>Parfait</h3>
+          <div className="option-grid">
+            {cafeteriaParfaitTamanos.map((item) => (
+              <button key={item.nombre} type="button" onClick={() => setTamanoParfait(item.nombre)} className={`option ${tamanoParfait === item.nombre ? "selected" : ""}`}>
+                <div>{item.nombre}</div>
+                <small>{dinero(item.precio)}</small>
+              </button>
+            ))}
+          </div>
+
+          <h4>Frutas disponibles</h4>
+          <div className="chips">
+            {CAFETERIA_FRUTAS.map((fruta) => {
+              const seleccionado = frutasParfait.includes(fruta);
+              const bloqueado = !seleccionado && frutasParfait.length >= 3;
+              return (
+                <button key={fruta} type="button" disabled={bloqueado} onClick={() => toggleFrutaParfait(fruta)} className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}>
+                  {seleccionado ? "✓ " : "+ "}{fruta}
+                </button>
+              );
+            })}
+          </div>
+          <p className="muted">Máximo 3 frutas. Al escoger 3 frutas se suma automáticamente {dinero(1000)}.</p>
+
+
+          <div className="box compact-box quantity-box">
+            <strong>Cantidad</strong>
+            <SelectorCantidad
+              cantidad={cantidadCafeteria}
+              onChange={setCantidadCafeteria}
+            />
+          </div>
+
+          <div className="total-row compact-total-row">
+            <span>Subtotal parfait</span>
+            <strong>{dinero((precioPorNombre(cafeteriaParfaitTamanos, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0)) * cantidadCafeteria)}</strong>
+          </div>
+          <button type="button" className="button add-meal" onClick={agregarParfaitMesa}>+agregar otro producto</button>
+        </div>
+      )}
+
+      {subcategoriaCafeteria === "batidos" && (
+        <div className="cafeteria-panel fade-step">
+          <h3>Batidos</h3>
+          <h4>Tipo</h4>
+          <div className="option-grid">
+            {[
+              { clave: "cremoso", nombre: "Batido cremoso" },
+              { clave: "refrescante", nombre: "Batido refrescante" },
+              { clave: "jugo", nombre: "Jugo tradicional" }
+            ].map((item) => (
+              <button key={item.clave} type="button" onClick={() => cambiarTipoBatidoMesa(item.clave)} className={`option ${tipoBatido === item.clave ? "selected" : ""}`}>
+                <div>{item.nombre}</div>
+              </button>
+            ))}
+          </div>
+          {tipoBatido && (
+            <>
+              <h4>Sabor</h4>
+              <div className="chips">
+                {(tipoBatido === "cremoso"
+                  ? cafeteriaBatidosCremososSabores
+                  : tipoBatido === "refrescante"
+                    ? cafeteriaBatidosRefrescantesSabores
+                    : cafeteriaJugosTradicionalesSabores
+                ).map((sabor) => (
+                  <button key={sabor} type="button" onClick={() => setSaborBatido(sabor)} className={`chip ${saborBatido === sabor ? "selected" : ""}`}>{saborBatido === sabor ? "✓ " : "+ "}{sabor}</button>
+                ))}
+              </div>
+              {tipoBatido === "cremoso" && (
+                <>
+                  <h4>Base</h4>
+                  <div className="chips">
+                    {CAFETERIA_BATIDOS_BASES.map((base) => (
+                      <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {tipoBatido === "jugo" && (
+                <>
+                  <h4>Base</h4>
+                  <div className="chips">
+                    {CAFETERIA_JUGOS_BASES.map((base) => (
+                      <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
+                    ))}
+                  </div>
+                </>
+              )}
+              <h4>Tamaño</h4>
+              <div className="option-grid">
+                {(tipoBatido === "cremoso" ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS).map((item) => (
+                  <button key={item.nombre} type="button" onClick={() => setTamanoBatido(item.nombre)} className={`option ${tamanoBatido === item.nombre ? "selected" : ""}`}>
+                    <div>{item.nombre}</div>
+                    <small>{dinero(item.precio)}</small>
+                  </button>
+                ))}
+              </div>
+
+              <div className="box compact-box quantity-box">
+                <strong>Cantidad</strong>
+                <SelectorCantidad
+                  cantidad={cantidadCafeteria}
+                  onChange={setCantidadCafeteria}
+                />
+              </div>
+              <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+agregar otro producto</button>
+            </>
+          )}
+        </div>
+      )}
+
+      {subcategoriaCafeteria === "desayunos" && (
+        <div className="cafeteria-panel fade-step">
+          <h3>Desayunos</h3>
+          <div className="option-grid">
+            {cafeteriaDesayunos.map((item) => (
+              <button key={item.nombre} type="button" onClick={() => setDesayunoSeleccionado(item.nombre)} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
+                <div>{item.nombre}</div>
+                <small>{dinero(item.precio)}</small>
+              </button>
+            ))}
+          </div>
+          <h4>Acompañante</h4>
+          <div className="chips">
+            {CAFETERIA_ACOMPANANTES_DESAYUNO.map((acompanante) => (
+              <button key={acompanante} type="button" onClick={() => setAcompananteDesayuno(acompanante)} className={`chip ${acompananteDesayuno === acompanante ? "selected" : ""}`}>{acompananteDesayuno === acompanante ? "✓ " : "+ "}{acompanante}</button>
+            ))}
+          </div>
+          <h4>Bebida</h4>
+          <div className="chips">
+            {CAFETERIA_BEBIDAS_DESAYUNO.map((bebida) => (
+              <button key={bebida} type="button" onClick={() => setBebidaDesayuno(bebida)} className={`chip ${bebidaDesayuno === bebida ? "selected" : ""}`}>{bebidaDesayuno === bebida ? "✓ " : "+ "}{bebida}</button>
+            ))}
+          </div>
+          <h4>Otros desayunos</h4>
+          <div className="option-grid compact-options">
+            {CAFETERIA_OTROS_DESAYUNOS.map((item) => (
+              <button key={item.nombre} type="button" onClick={() => { setDesayunoSeleccionado(item.nombre); setAcompananteDesayuno(""); setBebidaDesayuno(""); setAdicionalesDesayuno([]); }} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
+                <div>{item.nombre}</div>
+                <small>{dinero(item.precio)}</small>
+              </button>
+            ))}
+          </div>
+          <div className="box compact-box quantity-box">
+            <strong>Cantidad</strong>
+            <SelectorCantidad
+              cantidad={cantidadCafeteria}
+              onChange={setCantidadCafeteria}
+            />
+          </div>
+
+          <div className="total-row compact-total-row">
+            <span>Subtotal desayuno</span>
+            <strong>{dinero((precioPorNombre([...cafeteriaDesayunos, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0)) * cantidadCafeteria)}</strong>
+          </div>
+          <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+agregar otro producto</button>
+        </div>
+      )}
+
+      {subcategoriaCafeteria === "sandwich" && (
+        <div className="cafeteria-panel fade-step">
+          <h3>Comida</h3>
+          <div className="option-grid">
+            {cafeteriaSandwiches.map((item) => (
+              <button key={item.nombre} type="button" onClick={() => setSandwichSeleccionado(item.nombre)} className={`option ${sandwichSeleccionado === item.nombre ? "selected" : ""}`}>
+                <div>{item.nombre}</div>
+                <small>{dinero(item.precio)}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="box compact-box quantity-box">
+            <strong>Cantidad</strong>
+            <SelectorCantidad
+              cantidad={cantidadCafeteria}
+              onChange={setCantidadCafeteria}
+            />
+          </div>
+          <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado))}>+agregar otro producto</button>
+        </div>
+      )}
+
+      {subcategoriaCafeteria === "bebidas" && (
+        <div className="cafeteria-panel fade-step">
+          <h3>Bebidas</h3>
+          <div className="option-grid">
+            {cafeteriaBebidasCalientes.map((item) => (
+              <button key={item.nombre} type="button" onClick={() => setBebidaCalienteSeleccionada(item.nombre)} className={`option ${bebidaCalienteSeleccionada === item.nombre ? "selected" : ""}`}>
+                <div>{item.nombre}</div>
+                <small>{dinero(item.precio)}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="box compact-box quantity-box">
+            <strong>Cantidad</strong>
+            <SelectorCantidad
+              cantidad={cantidadCafeteria}
+              onChange={setCantidadCafeteria}
+            />
+          </div>
+          <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada))}>+agregar otro producto</button>
+        </div>
+      )}
+
+      {subcategoriaCafeteria === "postres" && (
+        <div className="cafeteria-panel fade-step">
+          <h3>Postres y frutas</h3>
+          <div className="option-grid">
+            {cafeteriaPostres.map((item) => (
+              <button key={item.nombre} type="button" onClick={() => setPostreSeleccionado(item.nombre)} className={`option ${postreSeleccionado === item.nombre ? "selected" : ""}`}>
+                <div>{item.nombre}</div>
+                <small>{dinero(item.precio)}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="box compact-box quantity-box">
+            <strong>Cantidad</strong>
+            <SelectorCantidad
+              cantidad={cantidadCafeteria}
+              onChange={setCantidadCafeteria}
+            />
+          </div>
+          <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado))}>+agregar otro producto</button>
+        </div>
+      )}
+
+      {subcategoriaCafeteria === "adicionales" && (
+        <AdicionalesCafeteriaMesas
+          adicionales={cafeteriaAdicionales}
+          cantidadPorNombre={cantidadAdicionalCafeteria}
+          onCambiarCantidad={cambiarCantidadAdicionalCafeteria}
+        />
+      )}
+
+      <button
+        type="button"
+        onClick={() => {
+          if (subcategoriaCafeteria === "parfait") agregarParfaitMesa("resumen");
+          if (subcategoriaCafeteria === "batidos") agregarBatidoMesa("resumen");
+          if (subcategoriaCafeteria === "desayunos") agregarDesayunoMesa("resumen");
+          if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado), "resumen");
+          if (subcategoriaCafeteria === "bebidas") agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada), "resumen");
+          if (subcategoriaCafeteria === "postres") agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado), "resumen");
+        }}
+        className="button continue-button"
+        style={{ marginTop: 12, background: "#16a34a" }}
+      >
+        agregar y continuar
+      </button>
+    </div>
+  );
+
   if (pedidoMesaConfirmado) {
     return (
       <ConfirmacionPedidoMesa
@@ -974,14 +1273,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           <button type="button" onClick={() => irPasoMesas("resumen")} title="Resumen del pedido">R</button>
           <button type="button" onClick={() => irPasoMesas("datos")} title="Datos de la mesa">3</button>
         </div>
-
-        {navegacionAdminVisible && (
-          <div className="mesa-admin-nav" aria-label="Navegación administrativa">
-            <button type="button" onClick={onIrPedidos}>Pedidos hoy</button>
-            <button type="button" onClick={onIrAdmin}>Admin</button>
-            {puedeVerRafa && <button type="button" onClick={onIrGerencia}>Gerencia</button>}
-          </div>
-        )}
 
         <MesaTabs
           categoriaActiva={categoriaActivaMesa}
@@ -1118,13 +1409,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               );
             })}
 
-            <AdicionalesRestauranteMesas
-              adicionales={restauranteAdicionalesAlmuerzo}
-              abierto={adicionalesRestauranteAbiertos}
-              onAlternar={() => setAdicionalesRestauranteAbiertos((actual) => !actual)}
-              cantidadPorNombre={cantidadAdicionalRestaurante}
-              onCambiarCantidad={cambiarCantidadAdicionalRestaurante}
-            />
+            {contenidoAdicionalesRestauranteMesa}
             {hayProductoSeleccionadoMesa && (
               <div className="mesa-clean-actions">
                 <button
@@ -1155,291 +1440,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
             )}
             </>
           )
-        ) : (
-          <div className="cafeteria-placeholder fade-step">
-            <div className="cafeteria-grid cafeteria-actions compact-cafeteria-actions">
-              {[
-                ["parfait", "Parfait"],
-                ["batidos", "Batidos"],
-                ["desayunos", "Desayunos"],
-                ["sandwich", "Comida"],
-                ["bebidas", "Bebidas"],
-                ["postres", "Postres"],
-                ["adicionales", "➕ Adicionales"]
-              ].map(([clave, nombre]) => (
-                <button
-                  key={clave}
-                  type="button"
-                  onClick={() => { setSubcategoriaCafeteria(clave); setErrorMesa(""); irAElementoMesas("mesa-cafeteria-panel", 100, "start"); }}
-                  className={`cafeteria-card cafeteria-button ${subcategoriaCafeteria === clave ? "active" : ""}`}
-                >
-                  <strong>{nombre}</strong>
-                </button>
-              ))}
-            </div>
-
-            <div id="mesa-cafeteria-panel" />
-
-            {errorMesa && (
-              <div className="finalizar-error" role="alert" aria-live="polite" style={{ marginTop: 10 }}>{errorMesa}</div>
-            )}
-
-            {subcategoriaCafeteria === "parfait" && (
-              <div className="cafeteria-panel fade-step">
-                <h3>Parfait</h3>
-                <div className="option-grid">
-                  {cafeteriaParfaitTamanos.map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => setTamanoParfait(item.nombre)} className={`option ${tamanoParfait === item.nombre ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                      <small>{dinero(item.precio)}</small>
-                    </button>
-                  ))}
-                </div>
-
-                <h4>Frutas disponibles</h4>
-                <div className="chips">
-                  {CAFETERIA_FRUTAS.map((fruta) => {
-                    const seleccionado = frutasParfait.includes(fruta);
-                    const bloqueado = !seleccionado && frutasParfait.length >= 3;
-                    return (
-                      <button key={fruta} type="button" disabled={bloqueado} onClick={() => toggleFrutaParfait(fruta)} className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}>
-                        {seleccionado ? "✓ " : "+ "}{fruta}
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="muted">Máximo 3 frutas. Al escoger 3 frutas se suma automáticamente {dinero(1000)}.</p>
-
-
-                <div className="box compact-box quantity-box">
-                  <strong>Cantidad</strong>
-                  <SelectorCantidad
-                    cantidad={cantidadCafeteria}
-                    onChange={setCantidadCafeteria}
-                  />
-                </div>
-
-                <div className="total-row compact-total-row">
-                  <span>Subtotal parfait</span>
-                  <strong>{dinero((precioPorNombre(cafeteriaParfaitTamanos, tamanoParfait) + (frutasParfait.length === 3 ? 1000 : 0)) * cantidadCafeteria)}</strong>
-                </div>
-                <button type="button" className="button add-meal" onClick={agregarParfaitMesa}>+agregar otro producto</button>
-              </div>
-            )}
-
-            {subcategoriaCafeteria === "batidos" && (
-              <div className="cafeteria-panel fade-step">
-                <h3>Batidos</h3>
-                <h4>Tipo</h4>
-                <div className="option-grid">
-                  {[
-                    { clave: "cremoso", nombre: "Batido cremoso" },
-                    { clave: "refrescante", nombre: "Batido refrescante" },
-                    { clave: "jugo", nombre: "Jugo tradicional" }
-                  ].map((item) => (
-                    <button key={item.clave} type="button" onClick={() => cambiarTipoBatidoMesa(item.clave)} className={`option ${tipoBatido === item.clave ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                    </button>
-                  ))}
-                </div>
-                {tipoBatido && (
-                  <>
-                    <h4>Sabor</h4>
-                    <div className="chips">
-                      {(tipoBatido === "cremoso"
-                        ? cafeteriaBatidosCremososSabores
-                        : tipoBatido === "refrescante"
-                          ? cafeteriaBatidosRefrescantesSabores
-                          : cafeteriaJugosTradicionalesSabores
-                      ).map((sabor) => (
-                        <button key={sabor} type="button" onClick={() => setSaborBatido(sabor)} className={`chip ${saborBatido === sabor ? "selected" : ""}`}>{saborBatido === sabor ? "✓ " : "+ "}{sabor}</button>
-                      ))}
-                    </div>
-                    {tipoBatido === "cremoso" && (
-                      <>
-                        <h4>Base</h4>
-                        <div className="chips">
-                          {CAFETERIA_BATIDOS_BASES.map((base) => (
-                            <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    {tipoBatido === "jugo" && (
-                      <>
-                        <h4>Base</h4>
-                        <div className="chips">
-                          {CAFETERIA_JUGOS_BASES.map((base) => (
-                            <button key={base} type="button" onClick={() => setBaseBatido(base)} className={`chip ${baseBatido === base ? "selected" : ""}`}>{baseBatido === base ? "✓ " : "+ "}{base}</button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    <h4>Tamaño</h4>
-                    <div className="option-grid">
-                      {(tipoBatido === "cremoso" ? CAFETERIA_BATIDOS_CREMOSOS_TAMANOS : CAFETERIA_BATIDOS_REFRESCANTES_TAMANOS).map((item) => (
-                        <button key={item.nombre} type="button" onClick={() => setTamanoBatido(item.nombre)} className={`option ${tamanoBatido === item.nombre ? "selected" : ""}`}>
-                          <div>{item.nombre}</div>
-                          <small>{dinero(item.precio)}</small>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="box compact-box quantity-box">
-                      <strong>Cantidad</strong>
-                      <SelectorCantidad
-                        cantidad={cantidadCafeteria}
-                        onChange={setCantidadCafeteria}
-                      />
-                    </div>
-                    <button type="button" className="button add-meal" onClick={agregarBatidoMesa}>+agregar otro producto</button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {subcategoriaCafeteria === "desayunos" && (
-              <div className="cafeteria-panel fade-step">
-                <h3>Desayunos</h3>
-                <div className="option-grid">
-                  {cafeteriaDesayunos.map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => setDesayunoSeleccionado(item.nombre)} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                      <small>{dinero(item.precio)}</small>
-                    </button>
-                  ))}
-                </div>
-                <h4>Acompañante</h4>
-                <div className="chips">
-                  {CAFETERIA_ACOMPANANTES_DESAYUNO.map((acompanante) => (
-                    <button key={acompanante} type="button" onClick={() => setAcompananteDesayuno(acompanante)} className={`chip ${acompananteDesayuno === acompanante ? "selected" : ""}`}>{acompananteDesayuno === acompanante ? "✓ " : "+ "}{acompanante}</button>
-                  ))}
-                </div>
-                <h4>Bebida</h4>
-                <div className="chips">
-                  {CAFETERIA_BEBIDAS_DESAYUNO.map((bebida) => (
-                    <button key={bebida} type="button" onClick={() => setBebidaDesayuno(bebida)} className={`chip ${bebidaDesayuno === bebida ? "selected" : ""}`}>{bebidaDesayuno === bebida ? "✓ " : "+ "}{bebida}</button>
-                  ))}
-                </div>
-                <h4>Otros desayunos</h4>
-                <div className="option-grid compact-options">
-                  {CAFETERIA_OTROS_DESAYUNOS.map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => { setDesayunoSeleccionado(item.nombre); setAcompananteDesayuno(""); setBebidaDesayuno(""); setAdicionalesDesayuno([]); }} className={`option ${desayunoSeleccionado === item.nombre ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                      <small>{dinero(item.precio)}</small>
-                    </button>
-                  ))}
-                </div>
-                <div className="box compact-box quantity-box">
-                  <strong>Cantidad</strong>
-                  <SelectorCantidad
-                    cantidad={cantidadCafeteria}
-                    onChange={setCantidadCafeteria}
-                  />
-                </div>
-
-                <div className="total-row compact-total-row">
-                  <span>Subtotal desayuno</span>
-                  <strong>{dinero((precioPorNombre([...cafeteriaDesayunos, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado) + adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0)) * cantidadCafeteria)}</strong>
-                </div>
-                <button type="button" className="button add-meal" onClick={agregarDesayunoMesa}>+agregar otro producto</button>
-              </div>
-            )}
-
-            {subcategoriaCafeteria === "sandwich" && (
-              <div className="cafeteria-panel fade-step">
-                <h3>Comida</h3>
-                <div className="option-grid">
-                  {cafeteriaSandwiches.map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => setSandwichSeleccionado(item.nombre)} className={`option ${sandwichSeleccionado === item.nombre ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                      <small>{dinero(item.precio)}</small>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="box compact-box quantity-box">
-                  <strong>Cantidad</strong>
-                  <SelectorCantidad
-                    cantidad={cantidadCafeteria}
-                    onChange={setCantidadCafeteria}
-                  />
-                </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado))}>+agregar otro producto</button>
-              </div>
-            )}
-
-            {subcategoriaCafeteria === "bebidas" && (
-              <div className="cafeteria-panel fade-step">
-                <h3>Bebidas</h3>
-                <div className="option-grid">
-                  {cafeteriaBebidasCalientes.map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => setBebidaCalienteSeleccionada(item.nombre)} className={`option ${bebidaCalienteSeleccionada === item.nombre ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                      <small>{dinero(item.precio)}</small>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="box compact-box quantity-box">
-                  <strong>Cantidad</strong>
-                  <SelectorCantidad
-                    cantidad={cantidadCafeteria}
-                    onChange={setCantidadCafeteria}
-                  />
-                </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada))}>+agregar otro producto</button>
-              </div>
-            )}
-
-            {subcategoriaCafeteria === "postres" && (
-              <div className="cafeteria-panel fade-step">
-                <h3>Postres y frutas</h3>
-                <div className="option-grid">
-                  {cafeteriaPostres.map((item) => (
-                    <button key={item.nombre} type="button" onClick={() => setPostreSeleccionado(item.nombre)} className={`option ${postreSeleccionado === item.nombre ? "selected" : ""}`}>
-                      <div>{item.nombre}</div>
-                      <small>{dinero(item.precio)}</small>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="box compact-box quantity-box">
-                  <strong>Cantidad</strong>
-                  <SelectorCantidad
-                    cantidad={cantidadCafeteria}
-                    onChange={setCantidadCafeteria}
-                  />
-                </div>
-                <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado))}>+agregar otro producto</button>
-              </div>
-            )}
-
-            {subcategoriaCafeteria === "adicionales" && (
-              <AdicionalesCafeteriaMesas
-                adicionales={cafeteriaAdicionales}
-                cantidadPorNombre={cantidadAdicionalCafeteria}
-                onCambiarCantidad={cambiarCantidadAdicionalCafeteria}
-              />
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                if (subcategoriaCafeteria === "parfait") agregarParfaitMesa("resumen");
-                if (subcategoriaCafeteria === "batidos") agregarBatidoMesa("resumen");
-                if (subcategoriaCafeteria === "desayunos") agregarDesayunoMesa("resumen");
-                if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado), "resumen");
-                if (subcategoriaCafeteria === "bebidas") agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada), "resumen");
-                if (subcategoriaCafeteria === "postres") agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado), "resumen");
-              }}
-              className="button continue-button"
-              style={{ marginTop: 12, background: "#16a34a" }}
-            >
-              agregar y continuar
-            </button>
-          </div>
-        )}
+        ) : contenidoCafeteriaMesa}
       </section>
 
       <ResumenMesaNormal
@@ -1474,11 +1475,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           modoEdicionAdmin={modoEdicionAdmin}
           pedidoEditando={pedidoEditando}
           onCancelarEdicion={onCancelarEdicion}
-          navegacionAdminVisible={navegacionAdminVisible}
-          puedeVerRafa={puedeVerRafa}
-          onIrAdmin={onIrAdmin}
-          onIrPedidos={onIrPedidos}
-          onIrGerencia={onIrGerencia}
           acompanantesDisponibles={acompanantesMesaDisponiblesResumen}
           onCrearAlmuerzo={crearAlmuerzoVistaCompacta}
           onCambiarPlato={cambiarPlatoMesa}
@@ -1488,7 +1484,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           onCambiarCantidad={actualizarCantidadGrupoMesa}
           onEditarProteina={setGrupoEditandoProteinaMesa}
           onEditarAcompanantes={setGrupoEditandoAcompanantesMesa}
-          onAbrirNormalCategoria={abrirNormalParaCategoria}
+          contenidoCafeteria={contenidoCafeteriaMesa}
+          contenidoAdicionalesRestaurante={contenidoAdicionalesRestauranteMesa}
           datosMesaProps={datosMesaProps}
         />
       )}

@@ -27,8 +27,7 @@ export default function GerenciaPanel({
   puedeVerInformeGastos,
   puedeVerInventario,
   puedeVerCatalogo,
-  cerrarPanelAdmin,
-  navegar
+  cerrarPanelAdmin
 }) {
   const [tabActiva, setTabActiva] = useState("inicio");
 
@@ -80,16 +79,7 @@ export default function GerenciaPanel({
         <div>
           <div className="brand">📊 Gerencia</div>
         </div>
-        <div className="nav nav-wrap">
-          <button type="button" onClick={() => navegar("/admin", "admin")}>
-            Admin
-          </button>
-          <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-            Mesas
-          </button>
-          <button type="button" onClick={() => navegar("/pedidos", "pedidos")}>
-            Pedidos hoy
-          </button>
+        <div className="admin-header-tools">
           <button type="button" className="button light" onClick={cerrarPanelAdmin}>
             Cerrar panel
           </button>
