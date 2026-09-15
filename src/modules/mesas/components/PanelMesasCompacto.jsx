@@ -198,12 +198,11 @@ export default function PanelMesasCompacto({
 
           <div className="mesas-compacta-accesos">
             <button type="button" onClick={() => onAbrirNormalCategoria?.("cafeteria")}>☕ Cafetería</button>
-            <button
-              type="button"
-              onClick={() => onAbrirNormalCategoria?.("almuerzos")}
-              disabled={!hayAlmuerzoSeleccionadoMesa}
-            >
-              + Adicionales
+            <button type="button" onClick={() => onAbrirNormalCategoria?.("almuerzos")}>
+              🍟 Adic. Restaurante
+            </button>
+            <button type="button" onClick={() => onAbrirNormalCategoria?.("cafeteria", "adicionales")}>
+              ➕ Adic. Cafetería
             </button>
           </div>
         </section>
@@ -216,9 +215,9 @@ export default function PanelMesasCompacto({
             <>
               <div className="box soft mesas-beta-datos-resumen">
                 <strong>{modoLlevar ? "Pedido para llevar" : `Mesa ${mesaLocal || "sin seleccionar"}`}</strong>
-                <span>Mesero: {meseroLocal || "sin seleccionar"}</span>
+                {clientePedido ? <span>Cliente: {clientePedido}</span> : <span>Cliente: sin nombre</span>}
                 <span>Pago: {tipoPagoMesa}</span>
-                {clientePedido ? <span>Cliente: {clientePedido}</span> : null}
+                <span>Mesero: {meseroLocal || "sin seleccionar"}</span>
               </div>
 
               {gruposResumenMesa.map((grupo) => (

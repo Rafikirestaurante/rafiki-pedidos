@@ -28,6 +28,7 @@ import {
 } from "../../../shared/utils/fechasColombia";
 import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
 import ThermalPrintControls from "../../impresion/ThermalPrintControls";
+import useAbonosEditables from "../hooks/useAbonosEditables";
 
 import {
   ABONO_INICIAL,
@@ -208,6 +209,28 @@ export default function CarteraClientesCredito() {
     [clientes, clienteDetalleId]
   );
 
+  const {
+    abonoEditando,
+    formularioAbonoEdicion,
+    abonoAnulando,
+    motivoAnulacionAbono,
+    abrirEdicionAbono,
+    cerrarEdicionAbono,
+    cambiarCampoAbonoEdicion,
+    guardarEdicionAbono,
+    abrirAnulacionAbono,
+    cerrarAnulacionAbono,
+    confirmarAnulacionAbono,
+    setMotivoAnulacionAbono,
+  } = useAbonosEditables({
+    clienteDetalle,
+    guardando,
+    setGuardando,
+    setMensaje,
+    setError,
+    actualizarTodo,
+  });
+
   const clienteAbono = useMemo(
     () => clientes.find((cliente) => cliente.id === clienteAbonoId) || null,
     [clientes, clienteAbonoId]
@@ -270,18 +293,23 @@ export default function CarteraClientesCredito() {
     return clientes.find((cliente) => String(cliente.id || "") === String(filtros.clienteId)) || null;
   }, [clientes, filtros.clienteId]);
 
+  const abonosAgrupadosCartera = useMemo(
+    () => agruparAbonosRegistrados(abonosCartera),
+    [abonosCartera]
+  );
+
   const indicadores = useMemo(() => {
     const activos = clientes.filter((cliente) => cliente.activo !== false);
     const clientesConSaldo = clientes.filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0);
     const saldoTotal = clientes.reduce((total, cliente) => total + Number(cliente.saldo_pendiente || 0), 0);
     const pedidosPendientes = movimientosCartera.filter(movimientoPendiente).length;
-    const carteraPagada = abonosCartera.reduce((total, abono) => total + Number(abono.valor_abono || 0), 0);
+    const carteraPagada = abonosAgrupadosCartera.reduce((total, abono) => total + Number(abono.valor_abono || 0), 0);
     const creditosOtorgadosHoy = movimientosCartera.reduce((total, movimiento) => {
       if (estadoCartera(movimiento) === "anulado") return total;
       if (!esHoyColombia(movimiento.fecha_movimiento || movimiento.created_at)) return total;
       return total + aPesosEnteros(movimiento.valor);
     }, 0);
-    const abonosRecibidosHoy = abonosCartera.reduce((total, abono) => {
+    const abonosRecibidosHoy = abonosAgrupadosCartera.reduce((total, abono) => {
       if (!esHoyColombia(abono.fecha_abono || abono.created_at)) return total;
       return total + aPesosEnteros(abono.valor_abono);
     }, 0);
@@ -300,14 +328,14 @@ export default function CarteraClientesCredito() {
       saldoTotal,
       pedidosPendientes,
       carteraPagada,
-      abonosRecibidos: abonosCartera.length,
+      abonosRecibidos: abonosAgrupadosCartera.length,
       creditosOtorgadosHoy,
       abonosRecibidosHoy,
       valorOriginalFiltrado,
       saldoFiltrado,
       movimientosFiltrados: movimientosFiltrados.length,
     };
-  }, [abonosCartera, clientes, movimientosCartera, movimientosFiltrados]);
+  }, [abonosAgrupadosCartera, clientes, movimientosCartera, movimientosFiltrados]);
 
   const rankingClientes = useMemo(() => {
     const activos = clientes.filter((cliente) => cliente.activo !== false);
@@ -862,6 +890,16 @@ export default function CarteraClientesCredito() {
         abonoPendienteConfirmacion={abonoPendienteConfirmacion}
         cerrarConfirmacionAbono={() => !guardando && setAbonoPendienteConfirmacion(null)}
         confirmarRegistroAbono={confirmarRegistroAbono}
+        abonoEditando={abonoEditando}
+        formularioAbonoEdicion={formularioAbonoEdicion}
+        cambiarCampoAbonoEdicion={cambiarCampoAbonoEdicion}
+        guardarEdicionAbono={guardarEdicionAbono}
+        cerrarEdicionAbono={cerrarEdicionAbono}
+        abonoAnulando={abonoAnulando}
+        motivoAnulacionAbono={motivoAnulacionAbono}
+        cambiarMotivoAnulacionAbono={setMotivoAnulacionAbono}
+        cerrarAnulacionAbono={cerrarAnulacionAbono}
+        confirmarAnulacionAbono={confirmarAnulacionAbono}
         clienteUnificar={clienteUnificar}
         clienteDestinoUnificarId={clienteDestinoUnificarId}
         cambiarClienteDestinoUnificar={setClienteDestinoUnificarId}
@@ -1124,11 +1162,12 @@ export default function CarteraClientesCredito() {
                       <th>Pedido a crédito</th>
                       <th>Pago recibido</th>
                       <th>Saldo pendiente</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {estadoCuentaCliente.length === 0 ? (
-                      <tr><td colSpan="6"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente aún no tiene pedidos a crédito ni pagos registrados." /></td></tr>
+                      <tr><td colSpan="7"><RafikiEmptyState icon="🧾" title="Sin movimientos" description="Este cliente aún no tiene pedidos a crédito ni pagos registrados." /></td></tr>
                     ) : estadoCuentaCliente.map((linea) => (
                       <tr key={linea.id} className={linea.tipo === "Pago recibido" ? "subtle-row" : ""}>
                         <td>{formatearFechaHora(linea.fecha)}</td>
@@ -1137,6 +1176,16 @@ export default function CarteraClientesCredito() {
                         <td className="td-total">{linea.pedido ? dinero(linea.pedido) : "—"}</td>
                         <td className="td-total abono-valor">{linea.pago ? dinero(linea.pago) : "—"}</td>
                         <td className={`td-total ${linea.saldo > 0 ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(linea.saldo)}</td>
+                        <td className="td-acciones">
+                          {linea.tipo === "Pago recibido" ? (
+                            linea.pagoId ? (
+                              <div className="cartera-actions" style={{ margin: 0, flexWrap: "nowrap" }}>
+                                <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => abrirEdicionAbono(linea)} disabled={guardando}>Editar</button>
+                                <button type="button" className="mini-btn danger" style={{ width: "auto", marginBottom: 0 }} onClick={() => abrirAnulacionAbono(linea)} disabled={guardando}>Eliminar</button>
+                              </div>
+                            ) : <small className="muted">SQL Fase 39 pendiente</small>
+                          ) : "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

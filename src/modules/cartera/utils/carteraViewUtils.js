@@ -65,7 +65,7 @@ export function resumirPorEstadoMovimientos(movimientos = []) {
 
 export function resumirAbonosPorMetodo(abonos = []) {
   const mapa = new Map();
-  (Array.isArray(abonos) ? abonos : []).forEach((abono) => {
+  agruparAbonosRegistrados(abonos).forEach((abono) => {
     const metodo = String(abono.metodo_pago || abono.metodoPago || "Sin método").trim() || "Sin método";
     const actual = mapa.get(metodo) || { cantidad: 0, total: 0 };
     actual.cantidad += 1;
@@ -234,28 +234,35 @@ export function agruparAbonosRegistrados(abonos = []) {
   const grupos = new Map();
 
   (Array.isArray(abonos) ? abonos : []).forEach((abono, indice) => {
+    if (abono?.vigente === false) return;
+
     const fechaRegistro = abono.created_at || abono.fecha_abono || "";
-    const clave = [
+    const claveLegacy = [
       abono.cliente_credito_id || "sin-cliente",
       fechaRegistro,
       abono.fecha_abono || "",
       abono.metodo_pago || "",
       abono.observacion || "",
     ].join("|");
+    const pagoId = abono.pago_id || null;
+    const clave = pagoId ? `pago:${pagoId}` : `legacy:${claveLegacy}`;
     const actual = grupos.get(clave);
 
     if (!actual) {
       grupos.set(clave, {
         ...abono,
-        id: abono.id || `agrupado-${indice}`,
+        id: pagoId || abono.id || `agrupado-${indice}`,
+        pago_id: pagoId,
         valor_abono: aPesosEnteros(abono.valor_abono),
         aplicaciones: 1,
+        aplicaciones_ids: abono.id ? [abono.id] : [],
       });
       return;
     }
 
     actual.valor_abono += aPesosEnteros(abono.valor_abono);
     actual.aplicaciones += 1;
+    if (abono.id) actual.aplicaciones_ids.push(abono.id);
     actual.numero_pedido = null;
     actual.pedido_id = null;
     actual.cartera_movimiento_id = null;
@@ -278,7 +285,7 @@ export function construirEstadoCuenta(movimientos = [], abonos = [], { soloProte
       estado: estadoCartera(movimiento),
     })),
     ...abonosAgrupados.map((abono) => ({
-      id: `abono-${abono.id}`,
+      id: `abono-${abono.pago_id || abono.id}`,
       fecha: abono.fecha_abono || abono.created_at,
       tipo: "Pago recibido",
       referencia: "Abono",
@@ -286,6 +293,19 @@ export function construirEstadoCuenta(movimientos = [], abonos = [], { soloProte
       pedido: 0,
       pago: aPesosEnteros(abono.valor_abono),
       estado: "aplicado",
+      pagoId: abono.pago_id || null,
+      abono: {
+        id: abono.id,
+        pago_id: abono.pago_id || null,
+        cliente_credito_id: abono.cliente_credito_id || null,
+        cliente_nombre: abono.cliente_nombre || "",
+        valor_abono: aPesosEnteros(abono.valor_abono),
+        metodo_pago: abono.metodo_pago || "",
+        observacion: abono.observacion || "",
+        fecha_abono: abono.fecha_abono || abono.created_at || "",
+        created_at: abono.created_at || "",
+        aplicaciones: Number(abono.aplicaciones || 1),
+      },
     })),
   ].sort((a, b) => {
     const diferencia = new Date(a.fecha || 0).getTime() - new Date(b.fecha || 0).getTime();

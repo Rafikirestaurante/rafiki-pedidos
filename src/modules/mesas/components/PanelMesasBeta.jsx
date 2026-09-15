@@ -24,6 +24,7 @@ import {
   MESEROS_DISPONIBLES,
   vibracionCortaMesas
 } from "../../../shared/utils/mesas";
+import { listarMeserosActivos } from "../../../services/meserosService";
 
 const PASOS_BETA = [
   { id: "proteina", numero: 1, titulo: "Selecciona tu proteína aquí" },
@@ -59,10 +60,21 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
   const [telefonoLlevar, setTelefonoLlevar] = useState("");
   const [ubicacionLlevar, setUbicacionLlevar] = useState("");
   const [meseroLocal, setMeseroLocal] = useState("");
+  const [meserosDisponibles, setMeserosDisponibles] = useState(MESEROS_DISPONIBLES);
   const [tipoPagoMesa, setTipoPagoMesa] = useState(FORMAS_PAGO_MESA[0]);
   const [observacionesLocal, setObservacionesLocal] = useState("");
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
   const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
+
+  useEffect(() => {
+    let cancelado = false;
+    listarMeserosActivos()
+      .then((nombres) => {
+        if (!cancelado && Array.isArray(nombres) && nombres.length > 0) setMeserosDisponibles(nombres);
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, []);
 
   const itemsConProducto = useMemo(
     () => itemsMesa.filter((item) => item.plato || item.proteina || item.producto),
@@ -518,16 +530,15 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
                 </div>
               </div>
 
-              <div className="mesa-dato-bloque">
-                <h4>👤 Mesero <span className="requerido">*</span></h4>
-                <div className="chips">
-                  {MESEROS_DISPONIBLES.map((mesero) => (
-                    <button key={mesero} type="button" onClick={() => setMeseroLocal(mesero)} className={`chip ${meseroLocal === mesero ? "selected" : ""}`}>
-                      {meseroLocal === mesero ? "✓ " : ""}{mesero}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <label className="field" id="mesa-beta-cliente-credito">
+                <span>Cliente {tipoPagoMesa === FORMA_PAGO_CREDITO ? <span className="requerido">*</span> : "(opcional)"}</span>
+                <input
+                  type="text"
+                  value={clientePedido}
+                  onChange={(event) => setClientePedido(event.target.value)}
+                  placeholder={tipoPagoMesa === FORMA_PAGO_CREDITO ? "Nombre del cliente de crédito" : "Ej: Sra. Inés, Juan Pérez..."}
+                />
+              </label>
 
               <div className="mesa-dato-bloque">
                 <h4>💳 Forma de pago</h4>
@@ -540,15 +551,16 @@ export default function PanelMesasBeta({ menu, platosAgrupados, cargandoMenu = f
                 </div>
               </div>
 
-              <label className="field" id="mesa-beta-cliente-credito">
-                <span>Cliente {tipoPagoMesa === FORMA_PAGO_CREDITO ? <span className="requerido">*</span> : "(opcional)"}</span>
-                <input
-                  type="text"
-                  value={clientePedido}
-                  onChange={(event) => setClientePedido(event.target.value)}
-                  placeholder={tipoPagoMesa === FORMA_PAGO_CREDITO ? "Nombre del cliente de crédito" : "Ej: Sra. Inés, Juan Pérez..."}
-                />
-              </label>
+              <div className="mesa-dato-bloque">
+                <h4>👤 Mesero <span className="requerido">*</span></h4>
+                <div className="chips">
+                  {meserosDisponibles.map((mesero) => (
+                    <button key={mesero} type="button" onClick={() => setMeseroLocal(mesero)} className={`chip ${meseroLocal === mesero ? "selected" : ""}`}>
+                      {meseroLocal === mesero ? "✓ " : ""}{mesero}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {modoLlevar && (
                 <>

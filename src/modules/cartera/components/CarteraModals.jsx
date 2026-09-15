@@ -19,6 +19,16 @@ export default function CarteraModals({
   abonoPendienteConfirmacion,
   cerrarConfirmacionAbono,
   confirmarRegistroAbono,
+  abonoEditando,
+  formularioAbonoEdicion,
+  cambiarCampoAbonoEdicion,
+  guardarEdicionAbono,
+  cerrarEdicionAbono,
+  abonoAnulando,
+  motivoAnulacionAbono,
+  cambiarMotivoAnulacionAbono,
+  cerrarAnulacionAbono,
+  confirmarAnulacionAbono,
   clienteUnificar,
   clienteDestinoUnificarId,
   cambiarClienteDestinoUnificar,
@@ -118,6 +128,74 @@ export default function CarteraModals({
               <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAbono} disabled={guardando}>Cancelar</button>
             </div>
           </form>
+        )}
+      </RafikiModal>
+
+
+
+      <RafikiModal
+        open={Boolean(abonoEditando)}
+        title="Editar abono"
+        description={abonoEditando ? `Modifica el pago completo de ${dinero(abonoEditando.valor_abono)}. Rafiki volverá a aplicar los abonos por FIFO y recalculará los saldos.` : ""}
+        onClose={cerrarEdicionAbono}
+        size="lg"
+      >
+        {abonoEditando && (
+          <form onSubmit={guardarEdicionAbono}>
+            <div className="alert warning" style={{ marginBottom: 12 }}>
+              La edición afecta el pago lógico completo, aunque originalmente se haya distribuido entre varios pedidos. El valor anterior quedará conservado en auditoría.
+            </div>
+            <div className="abono-form-grid">
+              <label>
+                Valor del abono
+                <input type="number" min="1" step="100" value={formularioAbonoEdicion.valorAbono} onChange={(event) => cambiarCampoAbonoEdicion("valorAbono", event.target.value)} required />
+              </label>
+              <label>
+                Método de pago
+                <select value={formularioAbonoEdicion.metodoPago} onChange={(event) => cambiarCampoAbonoEdicion("metodoPago", event.target.value)}>
+                  {metodosAbono.map((metodo) => <option key={metodo} value={metodo}>{metodo}</option>)}
+                </select>
+              </label>
+              <label>
+                Fecha
+                <input type="date" value={formularioAbonoEdicion.fechaAbono} onChange={(event) => cambiarCampoAbonoEdicion("fechaAbono", event.target.value)} required />
+              </label>
+              <label>
+                Observación
+                <input value={formularioAbonoEdicion.observacion} onChange={(event) => cambiarCampoAbonoEdicion("observacion", event.target.value)} placeholder="Opcional" />
+              </label>
+            </div>
+            <div className="cartera-actions">
+              <button type="submit" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} disabled={guardando}>{guardando ? "Recalculando..." : "Guardar cambios"}</button>
+              <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarEdicionAbono} disabled={guardando}>Cancelar</button>
+            </div>
+          </form>
+        )}
+      </RafikiModal>
+
+      <RafikiModal
+        open={Boolean(abonoAnulando)}
+        title="Eliminar abono"
+        description={abonoAnulando ? `Vas a retirar de la cartera un abono de ${dinero(abonoAnulando.valor_abono)}.` : ""}
+        onClose={cerrarAnulacionAbono}
+        size="md"
+        footer={(
+          <>
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={cerrarAnulacionAbono} disabled={guardando}>Cancelar</button>
+            <button type="button" className="mini-btn danger" style={{ width: "auto", marginBottom: 0 }} onClick={confirmarAnulacionAbono} disabled={guardando}>{guardando ? "Recalculando..." : "Eliminar abono"}</button>
+          </>
+        )}
+      >
+        {abonoAnulando && (
+          <div className="cartera-unificar">
+            <div className="alert warning">
+              El abono dejará de contar en el saldo del cliente y Rafiki reconstruirá todas las aplicaciones FIFO posteriores. Por seguridad, no se borra físicamente: queda registrado como anulado en la auditoría.
+            </div>
+            <label>
+              Motivo de eliminación (opcional)
+              <textarea value={motivoAnulacionAbono} onChange={(event) => cambiarMotivoAnulacionAbono(event.target.value)} placeholder="Ej. abono registrado por error" rows={3} maxLength={240} />
+            </label>
+          </div>
         )}
       </RafikiModal>
 

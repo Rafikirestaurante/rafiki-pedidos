@@ -6,7 +6,7 @@ import { lazyConReintento } from "../../../shared/utils/lazyConReintento.js";
 const PanelRafaPrivado = lazyConReintento(() => import("../../dashboard/components/PanelRafaPrivado.jsx"), "GerenciaInformes");
 const CajaAdmin = lazyConReintento(() => import("../../caja/components/CajaAdmin.jsx"), "GerenciaCaja");
 const InventarioAdmin = lazyConReintento(() => import("../../inventario/components/InventarioAdmin.jsx"), "GerenciaInventario");
-const CatalogoRafa = lazyConReintento(() => import("../../catalogo/components/CatalogoRafa.jsx"), "GerenciaCatalogo");
+const AjustesRafiki = lazyConReintento(() => import("../../ajustes/components/AjustesRafiki.jsx"), "GerenciaAjustes");
 const GastosDiarios = lazyConReintento(() => import("../../gastos/components/GastosDiarios.jsx"), "GerenciaGastos");
 const CarteraClientesCredito = lazyConReintento(() => import("../../cartera/components/CarteraClientesCredito.jsx"), "GerenciaCartera");
 
@@ -17,7 +17,7 @@ const TABS_GERENCIA = [
   { id: "gastos", label: "Gastos" },
   { id: "cartera", label: "Cartera" },
   { id: "inventario", label: "Inventario" },
-  { id: "catalogo", label: "Catálogo" }
+  { id: "catalogo", label: "Ajustes" }
 ];
 
 export default function GerenciaPanel({
@@ -65,8 +65,8 @@ export default function GerenciaPanel({
         disponible: puedeVerInventario
       },
       {
-        titulo: "Catálogo",
-        texto: "Gestión del catálogo conectado a productos e insumos.",
+        titulo: "Ajustes",
+        texto: "Configura catálogo, insumos, clientes especiales y meseros de /mesas.",
         tab: "catalogo",
         disponible: puedeVerCatalogo
       }
@@ -163,9 +163,9 @@ export default function GerenciaPanel({
       )}
 
       {tabActiva === "catalogo" && puedeVerCatalogo && (
-        <ErrorBoundary nombreModulo="Catálogo gerencial" usarRecuperacionPWA>
-          <Suspense fallback={<CargandoModulo texto="Cargando catálogo gerencial..." />}>
-            <CatalogoRafa />
+        <ErrorBoundary nombreModulo="Ajustes gerenciales" usarRecuperacionPWA>
+          <Suspense fallback={<CargandoModulo texto="Cargando ajustes gerenciales..." />}>
+            <AjustesRafiki />
           </Suspense>
         </ErrorBoundary>
       )}

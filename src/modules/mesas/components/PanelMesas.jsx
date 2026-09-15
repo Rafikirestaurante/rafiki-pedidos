@@ -36,6 +36,7 @@ import {
   CAFETERIA_SANDWICHES
 } from "../../../data/menuCafeteria";
 import { cargarCatalogoProductosAdmin } from "../../../services/catalogoService";
+import { listarMeserosActivos, MESEROS_FALLBACK } from "../../../services/meserosService";
 import { asegurarClienteCredito, listarClientesCreditoActivos } from "../../../services/clientesCreditoService";
 import { SelectorCantidad } from "../../../shared/components/common";
 import ConfirmacionPedidoMesa from "./ConfirmacionPedidoMesa";
@@ -47,6 +48,7 @@ import DatosMesa from "./DatosMesa";
 import SelectorVistaMesas from "./SelectorVistaMesas";
 import PanelMesasCompacto from "./PanelMesasCompacto";
 import ResumenMesaNormal from "./ResumenMesaNormal";
+import { AdicionalesCafeteriaMesas, AdicionalesRestauranteMesas } from "./AdicionalesMesas";
 import {
   FORMA_PAGO_CREDITO,
   FORMAS_PAGO_MESA,
@@ -78,9 +80,7 @@ function guardarVistaMesasPreferida(vista) {
   if (typeof window === "undefined" || !window.localStorage) return;
   try {
     window.localStorage.setItem(VISTA_MESAS_STORAGE_KEY, vista === "compacta" ? "compacta" : "normal");
-  } catch {
-    // La selección sigue funcionando durante la sesión si el navegador bloquea localStorage.
-  }
+  } catch { /* conserva la vista de la sesión */ }
 }
 
 export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion, navegacionAdminVisible = false, puedeVerRafa = false, onIrAdmin, onIrPedidos, onIrGerencia }) {
@@ -92,6 +92,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [telefonoLlevar, setTelefonoLlevar] = useState("");
   const [ubicacionLlevar, setUbicacionLlevar] = useState("");
   const [meseroLocal, setMeseroLocal] = useState("");
+  const [meserosDisponibles, setMeserosDisponibles] = useState(MESEROS_FALLBACK);
   const [tipoPagoMesa, setTipoPagoMesa] = useState(FORMAS_PAGO_MESA[0]);
   const [observacionesLocal, setObservacionesLocal] = useState("");
   const [errorMesa, setErrorMesa] = useState("");
@@ -113,11 +114,25 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [pedidoMesaConfirmado, setPedidoMesaConfirmado] = useState(null);
   const [cantidadCafeteria, setCantidadCafeteria] = useState(1);
   const [catalogoProductosMesa, setCatalogoProductosMesa] = useState(() => leerProductosCatalogoStorageMesas());
-  const [adicionalesRestauranteAbiertos, setAdicionalesRestauranteAbiertos] = useState(false);
+  const [adicionalesRestauranteAbiertos, setAdicionalesRestauranteAbiertos] = useState(true);
   const [clientesCreditoMesa, setClientesCreditoMesa] = useState(() => leerClientesCreditoGuardados());
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
   const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
   const [vistaMesas, setVistaMesas] = useState(() => leerVistaMesasPreferida());
+
+  useEffect(() => {
+    let cancelado = false;
+
+    listarMeserosActivos()
+      .then((nombres) => {
+        if (!cancelado && Array.isArray(nombres) && nombres.length > 0) setMeserosDisponibles(nombres);
+      })
+      .catch(() => {
+        // Conserva los meseros de respaldo si Supabase o el SQL de Fase 39 no están disponibles.
+      });
+
+    return () => { cancelado = true; };
+  }, []);
 
   useEffect(() => {
     let cancelado = false;
@@ -241,6 +256,15 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     ),
     [catalogoProductosMesa]
   );
+  const cafeteriaAdicionales = useMemo(
+    () => productosCatalogoPorCategoria(
+      catalogoProductosMesa,
+      "Adicionales cafetería",
+      [],
+      { linea: "Cafetería" }
+    ),
+    [catalogoProductosMesa]
+  );
 
   const itemsAlmuerzoMesa = useMemo(
     () => itemsMesa.filter((item) => item.categoria !== "cafeteria" && !esAdicionalAlmuerzo(item)),
@@ -272,16 +296,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   );
   const itemAlmuerzoActivo = itemsAlmuerzoMesa[itemsAlmuerzoMesa.length - 1];
   const itemNavMesa = itemAlmuerzoActivo || itemsAlmuerzoMesa[0] || itemsMesa[0];
-
-  useEffect(() => {
-    if (hayAlmuerzoSeleccionadoMesa || itemsAdicionalesAlmuerzoMesa.length === 0) return;
-
-    setItemsMesa((actual) => {
-      const sinAdicionales = actual.filter((item) => !esAdicionalAlmuerzo(item));
-      return sinAdicionales.length > 0 ? sinAdicionales : [crearItemNuevo()];
-    });
-    setAdicionalesRestauranteAbiertos(false);
-  }, [hayAlmuerzoSeleccionadoMesa, itemsAdicionalesAlmuerzoMesa.length]);
 
   function irPasoMesas(paso) {
     vibracionCortaMesas();
@@ -381,8 +395,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   function cambiarCantidadAdicionalRestaurante(adicional, cantidadSiguiente) {
-    if (!hayAlmuerzoSeleccionadoMesa) return;
-
     vibracionCortaMesas();
     const cantidad = Math.max(0, Math.min(99, Math.round(Number(cantidadSiguiente) || 0)));
 
@@ -428,6 +440,25 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           paraLlevar: false
         }
       ];
+    });
+    setErrorMesa("");
+  }
+
+  function cantidadAdicionalCafeteria(nombre) {
+    const encontrado = itemsMesa.find((item) => item.categoria === "cafeteria" && item.tipo === "Adicional Cafetería" && item.producto === nombre);
+    return Number(encontrado?.cantidad || 0);
+  }
+
+  function cambiarCantidadAdicionalCafeteria(adicional, cantidadSiguiente) {
+    vibracionCortaMesas();
+    const cantidad = Math.max(0, Math.min(99, Math.round(Number(cantidadSiguiente) || 0)));
+    setItemsMesa((actual) => {
+      const indice = actual.findIndex((item) => item.categoria === "cafeteria" && item.tipo === "Adicional Cafetería" && item.producto === adicional.nombre);
+      if (cantidad === 0) return indice >= 0 ? actual.filter((_, index) => index !== indice) : actual;
+      if (indice >= 0) {
+        return actual.map((item, index) => index === indice ? { ...item, cantidad, precio: Number(adicional.precio || 0), precioPlato: Number(adicional.precio || 0), precioProteina: Number(adicional.precio || 0) } : item);
+      }
+      return [...actual, crearItemCafeteria({ tipo: "Adicional Cafetería", producto: adicional.nombre, precio: Number(adicional.precio || 0), cantidad })];
     });
     setErrorMesa("");
   }
@@ -595,8 +626,6 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     setErrorMesa("");
     setAdicionalesRestauranteAbiertos(false);
 
-    // Limpia también los selectores de cafetería para evitar que el siguiente pedido
-    // herede tamaño, cereal, frutas o adicionales del pedido anterior.
     setTamanoParfait("");
     setFrutasParfait([]);
     setTipoBatido("");
@@ -813,10 +842,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     return nuevoItem.id;
   }
 
-  function abrirNormalParaCategoria(categoria) {
+  function abrirNormalParaCategoria(categoria, subcategoria = null) {
     setVistaMesas("normal");
     setCategoriaActivaMesa(categoria);
     if (categoria === "almuerzos") setAdicionalesRestauranteAbiertos(true);
+    if (categoria === "cafeteria" && subcategoria) setSubcategoriaCafeteria(subcategoria);
     setErrorMesa("");
     window.setTimeout(() => irAElementoMesas("mesa-categorias-top", 80, "start"), 60);
   }
@@ -899,6 +929,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     onUbicacionChange: (valor) => { setUbicacionLlevar(valor); setErrorMesa(""); },
     onMeseroChange: (mesero) => { setMeseroLocal(mesero); setErrorMesa(""); },
     clientesCreditoMesa,
+    meserosDisponibles,
     onTipoPagoChange: (pago) => { setTipoPagoMesa(pago); setErrorMesa(""); },
     onObservacionesChange: setObservacionesLocal,
     onEnviarPedido: enviarPedidoMesa,
@@ -1087,66 +1118,13 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
               );
             })}
 
-            {hayAlmuerzoSeleccionadoMesa && restauranteAdicionalesAlmuerzo.length > 0 && (
-              <section className="mesa-adicionales-restaurante" aria-label="Adicionales del restaurante">
-                <button
-                  type="button"
-                  className="mesa-adicionales-toggle"
-                  onClick={() => setAdicionalesRestauranteAbiertos((actual) => !actual)}
-                  aria-expanded={adicionalesRestauranteAbiertos}
-                  aria-controls="mesa-adicionales-restaurante-lista"
-                >
-                  <span>Adicionales</span>
-                  <span aria-hidden="true" className={`mesa-adicionales-chevron ${adicionalesRestauranteAbiertos ? "open" : ""}`}>⌄</span>
-                </button>
-
-                {adicionalesRestauranteAbiertos && (
-                  <div id="mesa-adicionales-restaurante-lista" className="mesa-adicionales-lista fade-step">
-                    {restauranteAdicionalesAlmuerzo.map((adicional) => {
-                      const cantidad = cantidadAdicionalRestaurante(adicional.nombre);
-
-                      return (
-                        <div key={adicional.nombre} className={`mesa-adicional-fila ${cantidad > 0 ? "selected" : ""}`}>
-                          <div className="mesa-adicional-info">
-                            <strong>{adicional.nombre}</strong>
-                            <span>{dinero(adicional.precio)} c/u</span>
-                          </div>
-
-                          {cantidad > 0 ? (
-                            <div className="mesa-adicional-cantidad" aria-label={`Cantidad de ${adicional.nombre}`}>
-                              <button
-                                type="button"
-                                onClick={() => cambiarCantidadAdicionalRestaurante(adicional, cantidad - 1)}
-                                aria-label={`Restar ${adicional.nombre}`}
-                              >
-                                −
-                              </button>
-                              <strong>{cantidad}</strong>
-                              <button
-                                type="button"
-                                onClick={() => cambiarCantidadAdicionalRestaurante(adicional, cantidad + 1)}
-                                aria-label={`Agregar otro ${adicional.nombre}`}
-                              >
-                                +
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              className="mesa-adicional-agregar"
-                              onClick={() => cambiarCantidadAdicionalRestaurante(adicional, 1)}
-                            >
-                              Agregar
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            )}
-
+            <AdicionalesRestauranteMesas
+              adicionales={restauranteAdicionalesAlmuerzo}
+              abierto={adicionalesRestauranteAbiertos}
+              onAlternar={() => setAdicionalesRestauranteAbiertos((actual) => !actual)}
+              cantidadPorNombre={cantidadAdicionalRestaurante}
+              onCambiarCantidad={cambiarCantidadAdicionalRestaurante}
+            />
             {hayProductoSeleccionadoMesa && (
               <div className="mesa-clean-actions">
                 <button
@@ -1186,7 +1164,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                 ["desayunos", "Desayunos"],
                 ["sandwich", "Comida"],
                 ["bebidas", "Bebidas"],
-                ["postres", "Postres"]
+                ["postres", "Postres"],
+                ["adicionales", "➕ Adicionales"]
               ].map(([clave, nombre]) => (
                 <button
                   key={clave}
@@ -1434,6 +1413,14 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                 </div>
                 <button type="button" className="button add-meal" onClick={() => agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado))}>+agregar otro producto</button>
               </div>
+            )}
+
+            {subcategoriaCafeteria === "adicionales" && (
+              <AdicionalesCafeteriaMesas
+                adicionales={cafeteriaAdicionales}
+                cantidadPorNombre={cantidadAdicionalCafeteria}
+                onCambiarCantidad={cambiarCantidadAdicionalCafeteria}
+              />
             )}
 
             <button

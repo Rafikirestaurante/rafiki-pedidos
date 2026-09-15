@@ -16,6 +16,7 @@ export default function DatosMesa({
   guardandoPedido,
   itemsConProducto,
   clientesCreditoMesa = [],
+  meserosDisponibles = MESEROS_DISPONIBLES,
   onSeleccionarMesa,
   onAlternarModoLlevar,
   onClienteChange,
@@ -103,22 +104,6 @@ export default function DatosMesa({
         </div>
 
         <div className="mesa-dato-bloque">
-          <h4>👤 Mesero <span className="requerido">*</span></h4>
-          <div className="chips">
-            {MESEROS_DISPONIBLES.map((mesero) => (
-              <button
-                key={mesero}
-                type="button"
-                onClick={() => onMeseroChange(mesero)}
-                className={`chip ${meseroLocal === mesero ? "selected" : ""}`}
-              >
-                {meseroLocal === mesero ? "✓ " : ""}{mesero}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mesa-dato-bloque">
           <h4>💳 Forma de pago</h4>
           <div className="chips">
             {FORMAS_PAGO_MESA.map((pago) => (
@@ -129,6 +114,22 @@ export default function DatosMesa({
                 className={`chip ${tipoPagoMesa === pago ? "selected" : ""}`}
               >
                 {tipoPagoMesa === pago ? "✓ " : ""}{pago}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mesa-dato-bloque">
+          <h4>👤 Mesero <span className="requerido">*</span></h4>
+          <div className="chips">
+            {meserosDisponibles.map((mesero) => (
+              <button
+                key={mesero}
+                type="button"
+                onClick={() => onMeseroChange(mesero)}
+                className={`chip ${meseroLocal === mesero ? "selected" : ""}`}
+              >
+                {meseroLocal === mesero ? "✓ " : ""}{mesero}
               </button>
             ))}
           </div>
