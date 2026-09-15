@@ -8185,3 +8185,97 @@ body.rafiki-modal-open {
     padding-top: 14px;
   }
 }
+
+/* Fase 39B - Navegación interna uniforme y líneas principales en Mesas Compacta */
+.navegacion-interna-header {
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.navegacion-interna {
+  width: 100%;
+  justify-content: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.navegacion-interna button {
+  min-width: 112px;
+}
+
+.navegacion-interna button:disabled {
+  opacity: 0.52;
+  background: rgba(255, 247, 237, 0.7);
+  color: var(--rafiki-muted);
+}
+
+.admin-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mesas-compacta-lineas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 6px 0 16px;
+}
+
+.mesas-compacta-lineas button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--rafiki-text-soft);
+  font-weight: 950;
+  box-shadow: 0 5px 14px rgba(28, 25, 23, 0.06);
+}
+
+.mesas-compacta-lineas button span {
+  font-size: 19px;
+}
+
+.mesas-compacta-lineas button.active {
+  border-color: var(--rafiki-brand);
+  background: linear-gradient(135deg, var(--rafiki-brand), var(--rafiki-brand-warm));
+  color: #fff;
+  box-shadow: 0 7px 18px rgba(249, 115, 22, 0.22);
+}
+
+.mesas-compacta-cafeteria {
+  margin-top: 4px;
+}
+
+.mesas-compacta-cafeteria .cafeteria-placeholder {
+  margin-top: 0;
+}
+
+.mesas-compacta-adicionales-restaurante {
+  margin-top: 14px;
+}
+
+@media (max-width: 700px) {
+  .navegacion-interna-header {
+    margin-bottom: 10px;
+  }
+
+  .navegacion-interna {
+    justify-content: flex-start;
+  }
+
+  .navegacion-interna button {
+    min-width: auto;
+    padding-inline: 12px;
+  }
+
+  .mesas-compacta-lineas button {
+    min-height: 50px;
+    padding: 9px 8px;
+  }
+}

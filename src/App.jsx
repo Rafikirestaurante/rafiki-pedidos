@@ -18,6 +18,7 @@ import { consolidarItemsResumenPedido, normalizarCantidadResumen } from "./share
 import { WHATSAPP_RAFIKI } from "./config/adminConfig";
 import CargandoModulo from "./shared/components/CargandoModulo";
 import ErrorBoundary from "./shared/components/ErrorBoundary.jsx";
+import NavegacionInterna from "./shared/components/NavegacionInterna.jsx";
 import {
   sincronizarPedidosPendientesOffline,
   actualizarBadgePedidosPendientes
@@ -50,6 +51,7 @@ import {
 } from "./app/lazyModules";
 
 const REALTIME_ADMIN_STORAGE_KEY = "rafikiRealtimeAdminActivo";
+const VISTAS_NAVEGACION_INTERNA = new Set(["mesas", "pedidos", "admin", "gerencia", "inventario"]);
 
 function crearItemClienteInicial({ comerRestaurante = false } = {}) {
   return {
@@ -779,11 +781,19 @@ export default function App() {
       <Suspense fallback={<CargandoModulo texto="Cargando módulo..." />}>
         <div className={`app ${vista === "mesas" || vista === "mesasBeta" ? "mesas-pos-activo" : ""}`}>
           <div className="container">
+            {VISTAS_NAVEGACION_INTERNA.has(vista) && (
+              <header className="topbar navegacion-interna-header">
+                <NavegacionInterna
+                  vistaActual={vista}
+                  navegar={navegar}
+                  puedeVerGerencia={puedeVerRafa}
+                />
+              </header>
+            )}
+
             {vista !== "inicio" &&
-              vista !== "admin" &&
               vista !== "adminLogin" &&
-              vista !== "mesas" &&
-              vista !== "mesasBeta" && (
+              !VISTAS_NAVEGACION_INTERNA.has(vista) && (
                 <header
                   className={`topbar ${vista === "cliente" || vista === "clienteBeta" || vista === "confirmacion" ? "cliente-topbar" : ""}`}
                 >
@@ -794,81 +804,6 @@ export default function App() {
                         : "🍽️ Rafiki Pedidos"}
                     </div>
                   </div>
-
-                  {vista === "mesas" && (
-                    <div className="nav nav-wrap">
-                      <button
-                        type="button"
-                        onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
-                      >
-                        Admin
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
-                      >
-                        Pedidos hoy
-                      </button>
-                      {puedeVerRafa && (
-                        <button
-                          type="button"
-                          onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
-                        >
-                          Gerencia
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {vista === "inventario" && (
-                    <div className="nav nav-wrap">
-                      <button
-                        type="button"
-                        onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
-                      >
-                        Admin
-                      </button>
-                      <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-                        Mesas
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navegar("/pedidos", adminAutenticado ? "pedidos" : "adminLogin")}
-                      >
-                        Pedidos hoy
-                      </button>
-                      {puedeVerRafa && (
-                        <button
-                          type="button"
-                          onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
-                        >
-                          Gerencia
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {vista === "pedidos" && (
-                    <div className="nav nav-wrap">
-                      <button type="button" onClick={() => navegar("/mesas", "mesas")}>
-                        Mesas
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navegar("/admin", adminAutenticado ? "admin" : "adminLogin")}
-                      >
-                        Admin
-                      </button>
-                      {puedeVerRafa && (
-                        <button
-                          type="button"
-                          onClick={() => navegar("/gerencia", adminAutenticado ? "gerencia" : "adminLogin")}
-                        >
-                          Gerencia
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </header>
               )}
 
@@ -1060,11 +995,6 @@ export default function App() {
                     modoEdicionAdmin={Boolean(pedidoEditandoEnMesas)}
                     onGuardarEdicion={editarPedidoMesaAdministrador}
                     onCancelarEdicion={cancelarEdicionPedidoEnMesas}
-                    navegacionAdminVisible={adminAutenticado}
-                    puedeVerRafa={puedeVerRafa}
-                    onIrAdmin={() => navegar("/admin", "admin")}
-                    onIrPedidos={() => navegar("/pedidos", "pedidos")}
-                    onIrGerencia={() => navegar("/gerencia", "gerencia")}
                   />
                 </Suspense>
               </ErrorBoundary>
@@ -1103,7 +1033,6 @@ export default function App() {
                     puedeVerInventario={puedeVerInventario}
                     puedeVerCatalogo={puedeVerCatalogo}
                     cerrarPanelAdmin={cerrarPanelAdmin}
-                    navegar={navegar}
                   />
                 </Suspense>
               </ErrorBoundary>
@@ -1134,7 +1063,6 @@ export default function App() {
                   puedeVerInventario={puedeVerInventario}
                   puedeVerCaja={puedeVerCaja}
                   cerrarPanelAdmin={cerrarPanelAdmin}
-                  navegar={navegar}
                 />
 
                 {cambiosPedidosPendientes && adminTab !== "pedidos" && (
