@@ -40,7 +40,11 @@ export const SELECT_CARTERA_ABONOS = [
   "observacion",
   "fecha_abono",
   "saldo_anterior",
-  "saldo_nuevo"
+  "saldo_nuevo",
+  "pago_id",
+  "vigente",
+  "reemplazado_en",
+  "motivo_reemplazo"
 ].join(", ");
 
 const SELECT_PEDIDO_DETALLE_CARTERA = "id,items,pedido_texto,total";
@@ -117,7 +121,8 @@ async function cargarAbonosPorMovimientos(movimientos = []) {
     const { data, error } = await supabase
       .from("cartera_abonos")
       .select(SELECT_CARTERA_ABONOS)
-      .in("cartera_movimiento_id", lote);
+      .in("cartera_movimiento_id", lote)
+      .eq("vigente", true);
 
     if (error) {
       console.warn("No se pudieron revisar abonos de cartera:", error.message);
@@ -145,6 +150,7 @@ async function actualizarAbonosMovimiento(movimientoId, payload = {}) {
     .from("cartera_abonos")
     .update(payload)
     .eq("cartera_movimiento_id", movimientoId)
+    .eq("vigente", true)
     .select("id");
 
   if (error) {
@@ -164,6 +170,7 @@ async function moverAbonosEntreMovimientos({ movimientoOrigenId, movimientoDesti
     .from("cartera_abonos")
     .update({ ...payload, cartera_movimiento_id: movimientoDestinoId })
     .eq("cartera_movimiento_id", movimientoOrigenId)
+    .eq("vigente", true)
     .select("id,valor_abono");
 
   if (error) {
@@ -720,6 +727,7 @@ export async function listarAbonosCartera({ clienteId = null, movimientoId = nul
   let consulta = supabase
     .from("cartera_abonos")
     .select(SELECT_CARTERA_ABONOS)
+    .eq("vigente", true)
     .order("fecha_abono", { ascending: false })
     .limit(limite);
 
@@ -778,3 +786,60 @@ export async function registrarAbonoClienteCredito({
     saldo_nuevo_total: 0,
   };
 }
+
+export async function editarAbonoClienteCredito({
+  pagoId,
+  valorAbono,
+  metodoPago = METODOS_PAGO.EFECTIVO,
+  observacion = "",
+  fechaAbono = "",
+} = {}) {
+  if (!supabaseConfigOk || !pagoId) return null;
+
+  const datosAbono = normalizarDatosAbono({ valorAbono, metodoPago, observacion });
+  const fechaRegistro = fechaAbonoNormalizada(fechaAbono);
+
+  const { data, error } = await supabase.rpc("editar_abono_cliente_credito", {
+    p_pago_id: pagoId,
+    p_valor_abono: datosAbono.valor,
+    p_metodo_pago: datosAbono.metodoPago,
+    p_observacion: datosAbono.observacion,
+    p_fecha_abono: fechaRegistro,
+  });
+
+  if (error) {
+    const mensaje = String(error?.message || error?.details || error?.hint || "");
+    const rpcNoDisponible = mensaje.toLowerCase().includes("editar_abono_cliente_credito")
+      || mensaje.toLowerCase().includes("could not find the function")
+      || mensaje.toLowerCase().includes("schema cache");
+    if (rpcNoDisponible) {
+      throw new Error("Ejecuta primero el SQL de la Fase 39 para habilitar la edición segura de abonos.");
+    }
+    throw error;
+  }
+
+  return data || null;
+}
+
+export async function anularAbonoClienteCredito({ pagoId, motivo = "" } = {}) {
+  if (!supabaseConfigOk || !pagoId) return null;
+
+  const { data, error } = await supabase.rpc("anular_abono_cliente_credito", {
+    p_pago_id: pagoId,
+    p_motivo: String(motivo || "").trim(),
+  });
+
+  if (error) {
+    const mensaje = String(error?.message || error?.details || error?.hint || "");
+    const rpcNoDisponible = mensaje.toLowerCase().includes("anular_abono_cliente_credito")
+      || mensaje.toLowerCase().includes("could not find the function")
+      || mensaje.toLowerCase().includes("schema cache");
+    if (rpcNoDisponible) {
+      throw new Error("Ejecuta primero el SQL de la Fase 39 para habilitar la anulación segura de abonos.");
+    }
+    throw error;
+  }
+
+  return data || null;
+}
+

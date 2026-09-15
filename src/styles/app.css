@@ -1099,18 +1099,19 @@ p {
   box-shadow: none;
 }
 .mesa-adicionales-restaurante {
-  margin: 10px 0 4px;
-  border: 1px solid #e7e5e4;
+  margin: 12px 0 6px;
+  border: 2px solid #fdba74;
   border-radius: 16px;
-  background: #fffdf9;
+  background: linear-gradient(135deg, #fff7ed, #ffffff);
+  box-shadow: 0 7px 20px rgba(124, 45, 18, 0.08);
   overflow: hidden;
 }
 .mesa-adicionales-toggle {
   width: 100%;
-  min-height: 42px;
+  min-height: 46px;
   border: 0;
-  background: transparent;
-  color: #57534e;
+  background: #ffedd5;
+  color: #7c2d12;
   padding: 10px 13px;
   display: flex;
   align-items: center;
