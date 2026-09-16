@@ -8279,3 +8279,48 @@ body.rafiki-modal-open {
     padding: 9px 8px;
   }
 }
+
+/* Fase 39C — adicionales en modal uniforme */
+.mesa-adicionales-modal-resumen {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.mesa-adicionales-lista-modal {
+  padding: 0;
+}
+.mesa-adicionales-cafeteria-panel {
+  display: grid;
+  gap: 8px;
+}
+.mesa-adicionales-cafeteria-trigger {
+  width: 100%;
+  min-height: 52px;
+  border: 2px solid #fde68a;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fffbeb, #fff);
+  color: #92400e;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  font-weight: 900;
+}
+.mesa-adicionales-cafeteria-trigger:hover {
+  border-color: #f59e0b;
+  background: #fff7ed;
+}
+.mesa-adicionales-cafeteria-trigger strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mesa-adicionales-modal .rafiki-ui-modal-body {
+  display: grid;
+  gap: 10px;
+}

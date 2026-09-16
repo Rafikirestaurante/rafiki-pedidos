@@ -1163,7 +1163,7 @@ export default function App() {
                 {adminTab === "historialMenu" && puedeVerGenerador && (
                   <ErrorBoundary nombreModulo="Historial de menú" usarRecuperacionPWA>
                     <Suspense fallback={<CargandoModulo texto="Cargando historial de menú..." />}>
-                      <GeneradorMenu pestanaInicial="historial" />
+                      <GeneradorMenu pestanaInicial="historial" onIrGenerador={() => setAdminTab("generador")} />
                     </Suspense>
                   </ErrorBoundary>
                 )}
