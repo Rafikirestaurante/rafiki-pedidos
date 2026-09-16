@@ -8400,3 +8400,288 @@ body.rafiki-modal-open {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Fase 39G - Dashboard de ventas filtrable y Cafetería Compacta simplificada */
+.mesas-compacta-cafeteria-modal-contenido .cafeteria-panel > .button.add-meal,
+.mesas-compacta-cafeteria-modal-contenido > .cafeteria-placeholder > .cafeteria-agregar-resumen {
+  display: none;
+}
+
+.mesas-compacta-ver-resumen-cafeteria {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.ventas-filtros-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 18px;
+  background: var(--rafiki-surface);
+}
+
+.ventas-filtros-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ventas-filtros-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.ventas-filtros-heading strong {
+  color: var(--rafiki-text);
+  font-size: 16px;
+}
+
+.ventas-filtros-heading span {
+  color: var(--rafiki-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ventas-filtros-controles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ventas-filtro-campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ventas-filtro-campo > span,
+.ventas-productos-busqueda > span {
+  color: var(--rafiki-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ventas-filtro-campo select,
+.ventas-filtro-productos-btn,
+.ventas-productos-busqueda input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 12px;
+  background: var(--rafiki-bg);
+  color: var(--rafiki-text);
+  font: inherit;
+  font-weight: 800;
+}
+
+.ventas-filtro-productos-btn {
+  text-align: left;
+  cursor: pointer;
+}
+
+.ventas-filtro-productos-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ventas-filtros-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.ventas-filtros-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 999px;
+  background: var(--rafiki-border-soft);
+  color: var(--rafiki-text-soft);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ventas-filtros-chips button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ventas-filtros-chips button strong {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.ventas-filtros-activos {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12px;
+}
+
+.ventas-filtros-activos strong {
+  white-space: nowrap;
+}
+
+.ventas-productos-modal .rafiki-ui-modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.ventas-productos-busqueda {
+  display: grid;
+  gap: 6px;
+}
+
+.ventas-productos-lista {
+  display: grid;
+  gap: 7px;
+  max-height: min(52vh, 520px);
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.ventas-productos-lista button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 12px;
+  background: var(--rafiki-surface);
+  color: var(--rafiki-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ventas-productos-lista button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--rafiki-bg);
+  color: var(--rafiki-muted);
+  font-weight: 900;
+}
+
+.ventas-productos-lista button.active {
+  border-color: var(--rafiki-brand);
+  background: var(--rafiki-border-soft);
+}
+
+.ventas-productos-lista button.active > span {
+  background: var(--rafiki-brand);
+  color: white;
+}
+
+.ventas-comparativo-total {
+  color: var(--rafiki-brand-strong);
+  font-size: 20px;
+}
+
+.ventas-comparativo-lista {
+  display: grid;
+  gap: 10px;
+}
+
+.ventas-comparativo-serie {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(600px, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--rafiki-border);
+  border-radius: 14px;
+  background: var(--rafiki-surface-soft);
+  overflow-x: auto;
+}
+
+.ventas-comparativo-etiqueta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ventas-comparativo-etiqueta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ventas-comparativo-etiqueta span {
+  color: var(--rafiki-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ventas-comparativo-dias {
+  display: grid;
+  grid-template-columns: repeat(var(--comparativo-dias), minmax(12px, 1fr));
+  align-items: end;
+  gap: 3px;
+  height: 62px;
+  min-width: 620px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--rafiki-border-strong);
+}
+
+.ventas-comparativo-dias > span {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  border-radius: 3px 3px 1px 1px;
+  background: var(--rafiki-bg);
+}
+
+.ventas-comparativo-dias i {
+  display: block;
+  width: 100%;
+  border-radius: 3px 3px 1px 1px;
+  background: var(--rafiki-brand);
+}
+
+.ventas-comparativo-serie.serie-1 .ventas-comparativo-dias i { background: #0f766e; }
+.ventas-comparativo-serie.serie-2 .ventas-comparativo-dias i { background: #7c3aed; }
+.ventas-comparativo-serie.serie-3 .ventas-comparativo-dias i { background: #0369a1; }
+.ventas-comparativo-serie.serie-4 .ventas-comparativo-dias i { background: #be123c; }
+.ventas-comparativo-serie.serie-5 .ventas-comparativo-dias i { background: #a16207; }
+.ventas-comparativo-serie.serie-6 .ventas-comparativo-dias i { background: #4338ca; }
+.ventas-comparativo-serie.serie-7 .ventas-comparativo-dias i { background: #047857; }
+
+@media (max-width: 700px) {
+  .ventas-filtros-controles {
+    grid-template-columns: 1fr;
+  }
+
+  .ventas-filtros-heading,
+  .ventas-filtros-activos {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ventas-comparativo-serie {
+    grid-template-columns: 1fr;
+  }
+
+  .ventas-comparativo-etiqueta strong {
+    white-space: normal;
+  }
+}
