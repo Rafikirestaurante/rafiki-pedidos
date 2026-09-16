@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useState } from "react";
+import React, { Suspense, useState } from "react";
 import CargandoModulo from "../../../shared/components/CargandoModulo.jsx";
 import ErrorBoundary from "../../../shared/components/ErrorBoundary.jsx";
 import { lazyConReintento } from "../../../shared/utils/lazyConReintento.js";
@@ -11,7 +11,6 @@ const GastosDiarios = lazyConReintento(() => import("../../gastos/components/Gas
 const CarteraClientesCredito = lazyConReintento(() => import("../../cartera/components/CarteraClientesCredito.jsx"), "GerenciaCartera");
 
 const TABS_GERENCIA = [
-  { id: "inicio", label: "Inicio" },
   { id: "informes", label: "Informes" },
   { id: "caja", label: "Caja" },
   { id: "gastos", label: "Gastos" },
@@ -29,49 +28,7 @@ export default function GerenciaPanel({
   puedeVerCatalogo,
   cerrarPanelAdmin
 }) {
-  const [tabActiva, setTabActiva] = useState("inicio");
-
-  const tarjetasInicio = useMemo(
-    () => [
-      {
-        titulo: "Informes",
-        texto: "Consulta ventas, clientes, estadísticas y reportes gerenciales.",
-        tab: "informes",
-        disponible: puedeVerInformes
-      },
-      {
-        titulo: "Caja",
-        texto: "Controla inicio del día, arqueos, cierres e Informe Caja.",
-        tab: "caja",
-        disponible: puedeVerCaja
-      },
-      {
-        titulo: "Gastos",
-        texto: "Registro y control gerencial de compras y salidas de dinero.",
-        tab: "gastos",
-        disponible: puedeVerGastos
-      },
-      {
-        titulo: "Cartera",
-        texto: "Directorio de clientes crédito y base para cuentas por cobrar.",
-        tab: "cartera",
-        disponible: true
-      },
-      {
-        titulo: "Inventario",
-        texto: "Acceso gerencial al control de insumos y alertas.",
-        tab: "inventario",
-        disponible: puedeVerInventario
-      },
-      {
-        titulo: "Ajustes",
-        texto: "Configura catálogo, insumos, clientes especiales y meseros de /mesas.",
-        tab: "catalogo",
-        disponible: puedeVerCatalogo
-      }
-    ],
-    [puedeVerCatalogo, puedeVerCaja, puedeVerGastos, puedeVerInformes, puedeVerInventario]
-  );
+  const [tabActiva, setTabActiva] = useState("informes");
 
   return (
     <main className="admin-layout gerencia-layout">
@@ -99,26 +56,7 @@ export default function GerenciaPanel({
         ))}
       </div>
 
-      {tabActiva === "inicio" && (
-        <section className="card card-pad">
-          <div className="dashboard-grid">
-            {tarjetasInicio.map((tarjeta) => (
-              <article key={tarjeta.tab} className="card card-pad soft-card">
-                <h3>{tarjeta.titulo}</h3>
-                <p className="muted small">{tarjeta.texto}</p>
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => setTabActiva(tarjeta.tab)}
-                  disabled={!tarjeta.disponible}
-                >
-                  {tarjeta.disponible ? "Abrir" : "Sin permiso"}
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {tabActiva === "informes" && puedeVerInformes && (
         <ErrorBoundary nombreModulo="Informes gerenciales" usarRecuperacionPWA>
@@ -168,8 +106,7 @@ export default function GerenciaPanel({
         </ErrorBoundary>
       )}
 
-      {tabActiva !== "inicio" &&
-        tabActiva !== "cartera" &&
+      {tabActiva !== "cartera" &&
         ((tabActiva === "informes" && !puedeVerInformes) ||
           (tabActiva === "caja" && !puedeVerCaja) ||
           (tabActiva === "gastos" && !puedeVerGastos) ||

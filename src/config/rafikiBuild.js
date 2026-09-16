@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "128.2-FASE39C-ADICIONALES-MODAL-HISTORIAL-ROTACION-5-DIAS-2026-09-16",
-  phase: "Fase 39C - Adicionales modal, Historial separado y rotación de 5 días",
+  version: "128.4-FASE39D-ARQUITECTURA-NAVEGACION-ADMIN-GERENCIA-2026-09-16",
+  phase: "Fase 39D - Arquitectura de navegación Admin y Gerencia",
   date: "2026-09-16",
-  fase: "39C-ADICIONALES-MODAL-HISTORIAL-ROTACION-5-DIAS",
+  fase: "39D-ARQUITECTURA-NAVEGACION-ADMIN-GERENCIA",
   notes:
-    "Adicionales Restaurante/Cafetería usan modal; Historial de menú queda como pestaña Admin independiente; rotación reciente fija a 5 días y no usados ordenados desde mayor antigüedad.",
+    "Admin queda enfocado en operación diaria; Solicitud de insumos e Insumos Pendientes se separan sin duplicar datos; Gerencia elimina Inicio y abre en Informes, conservando las rutas principales existentes.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

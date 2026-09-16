@@ -75,7 +75,7 @@ function borrarBorradorSolicitudInsumos() {
   }
 }
 
-export default function SolicitudProductos() {
+export default function SolicitudProductos({ vistaInicial = "solicitar", mostrarNavegacionInterna = true }) {
   const borradorInicial = leerBorradorSolicitudInsumos();
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
@@ -88,7 +88,7 @@ export default function SolicitudProductos() {
   const [nuevoProductoSolicitudNombre, setNuevoProductoSolicitudNombre] = useState(() => borradorInicial?.nuevoProductoSolicitudNombre || "");
   const [nuevoProductoSolicitudCategoria, setNuevoProductoSolicitudCategoria] = useState(() => borradorInicial?.nuevoProductoSolicitudCategoria || CATEGORIA_SOLICITUD_DEFECTO);
   const [productoSolicitudEliminarId, setProductoSolicitudEliminarId] = useState("");
-  const [vistaSolicitud, setVistaSolicitud] = useState("solicitar");
+  const [vistaSolicitud, setVistaSolicitud] = useState(vistaInicial === "pendientes" ? "pendientes" : "solicitar");
   const [solicitudesGuardadas, setSolicitudesGuardadas] = useState([]);
   const [cargandoPendientes, setCargandoPendientes] = useState(false);
   const [estadoPendientesCompra, setEstadoPendientesCompra] = useState(cargarEstadoPendientesCompra);
@@ -102,6 +102,9 @@ export default function SolicitudProductos() {
     mensaje: "Cargando catálogo de insumos..."
   });
 
+  useEffect(() => {
+    setVistaSolicitud(vistaInicial === "pendientes" ? "pendientes" : "solicitar");
+  }, [vistaInicial]);
 
   useEffect(() => {
     let activo = true;
@@ -665,33 +668,39 @@ export default function SolicitudProductos() {
       <section className="card card-pad">
       <div className="admin-top-row">
         <div>
-          <h2>🧺 Solicitud de insumos</h2>
-          <p className="muted small">Selecciona insumos o revisa el consolidado pendiente para comprar.</p>
+          <h2>{vistaSolicitud === "pendientes" ? "🛒 Insumos pendientes" : "🧺 Solicitud de insumos"}</h2>
+          <p className="muted small">
+            {vistaSolicitud === "pendientes"
+              ? "Consulta, organiza y gestiona los insumos que todavía están pendientes por comprar."
+              : "Crea una nueva solicitud de insumos para la jornada correspondiente."}
+          </p>
         </div>
       </div>
 
-      <div className="admin-tabs" style={{ marginBottom: 16 }}>
-        <button
-          type="button"
-          className={vistaSolicitud === "solicitar" ? "active" : ""}
-          onClick={() => setVistaSolicitud("solicitar")}
-        >
-          Solicitar insumos
-        </button>
-        <button
-          type="button"
-          className={vistaSolicitud === "pendientes" ? "active" : ""}
-          onClick={() => setVistaSolicitud("pendientes")}
-        >
-          Insumos pendientes
-        </button>
-      </div>
+      {mostrarNavegacionInterna && (
+        <div className="admin-tabs" style={{ marginBottom: 16 }}>
+          <button
+            type="button"
+            className={vistaSolicitud === "solicitar" ? "active" : ""}
+            onClick={() => setVistaSolicitud("solicitar")}
+          >
+            Solicitar insumos
+          </button>
+          <button
+            type="button"
+            className={vistaSolicitud === "pendientes" ? "active" : ""}
+            onClick={() => setVistaSolicitud("pendientes")}
+          >
+            Insumos pendientes
+          </button>
+        </div>
+      )}
 
       {vistaSolicitud === "solicitar" && (
         <>
                       <div className="admin-top-row">
                         <div>
-                          <h2>🧺 Solicitud de insumos</h2>
+                          {mostrarNavegacionInterna && <h2>🧺 Solicitud de insumos</h2>}
                         </div>
 
                         <button type="button" onClick={limpiarSolicitudProductos} className="button light">
@@ -861,10 +870,14 @@ export default function SolicitudProductos() {
         <div>
           <div className="admin-top-row">
             <div>
-              <h2>🛒 Insumos pendientes</h2>
-              <p className="muted small">
-                Aquí solo verás los insumos solicitados. La cantidad a comprar la defines tú.
-              </p>
+              {mostrarNavegacionInterna && (
+                <>
+                  <h2>🛒 Insumos pendientes</h2>
+                  <p className="muted small">
+                    Aquí solo verás los insumos solicitados. La cantidad a comprar la defines tú.
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="actions-inline">

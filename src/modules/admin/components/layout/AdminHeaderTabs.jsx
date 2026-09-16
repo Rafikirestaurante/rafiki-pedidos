@@ -6,10 +6,6 @@ export default function AdminHeaderTabs({
   puedeVerMenu,
   puedeVerProductos,
   puedeVerGenerador,
-  puedeVerRafa,
-  puedeVerCatalogo,
-  puedeVerInventario,
-  puedeVerCaja,
   cerrarPanelAdmin,
 }) {
   return (
@@ -18,7 +14,7 @@ export default function AdminHeaderTabs({
         <div>
           <div className="brand">⚙️ Admin</div>
         </div>
-<div className="admin-header-tools"><PWAClearCacheButton compact /></div>
+        <div className="admin-header-tools"><PWAClearCacheButton compact /></div>
       </header>
 
       <div className="admin-tabs">
@@ -50,6 +46,16 @@ export default function AdminHeaderTabs({
           </button>
         )}
 
+        {puedeVerProductos && (
+          <button
+            type="button"
+            onClick={() => setAdminTab("insumosPendientes")}
+            className={adminTab === "insumosPendientes" ? "active" : ""}
+          >
+            Insumos Pendientes
+          </button>
+        )}
+
         {puedeVerGenerador && (
           <button
             type="button"
@@ -67,45 +73,6 @@ export default function AdminHeaderTabs({
             className={adminTab === "historialMenu" ? "active" : ""}
           >
             Historial de menú
-          </button>
-        )}
-
-        {puedeVerCatalogo && (
-          <button
-            type="button"
-            onClick={() => setAdminTab("catalogo")}
-            className={adminTab === "catalogo" ? "active" : ""}
-          >
-            Catálogo
-          </button>
-        )}
-        {puedeVerInventario && (
-          <button
-            type="button"
-            onClick={() => setAdminTab("inventario")}
-            className={adminTab === "inventario" ? "active" : ""}
-          >
-            Inventario
-          </button>
-        )}
-
-        {puedeVerCaja && (
-          <button
-            type="button"
-            onClick={() => setAdminTab("caja")}
-            className={adminTab === "caja" ? "active" : ""}
-          >
-            Caja
-          </button>
-        )}
-
-        {puedeVerRafa && (
-          <button
-            type="button"
-            onClick={() => setAdminTab("rafa")}
-            className={adminTab === "rafa" ? "active" : ""}
-          >
-            Rafa
           </button>
         )}
 
