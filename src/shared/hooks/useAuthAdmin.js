@@ -26,11 +26,9 @@ export const ADMIN_TABS_VALIDAS = new Set([
   "pedidos",
   "menu",
   "productos",
+  "insumosPendientes",
   "generador",
-  "catalogo",
-  "inventario",
-  "caja",
-  "rafa"
+  "historialMenu"
 ]);
 
 export function leerAdminTabGuardada() {
@@ -269,7 +267,9 @@ export function useAuthAdmin({ vista, setVista, navegar }) {
     if (!adminAutenticado || adminAuthCargando) return;
     const pestanaPermitida = primeraPestanaPermitida(adminRol);
 
-    if (!usuarioPuede(adminRol, adminTab)) {
+    const permisoTabActual = adminTab === "historialMenu" ? "generador" : adminTab === "insumosPendientes" ? "productos" : adminTab;
+
+    if (!usuarioPuede(adminRol, permisoTabActual)) {
       guardarAdminTabActiva(pestanaPermitida);
       setAdminTab(pestanaPermitida);
     }

@@ -34,8 +34,6 @@ import {
   AdminHeaderTabs,
   AdminLogin,
   AdminPedidosSection,
-  CajaAdmin,
-  CatalogoRafa,
   ConfirmacionPedidoCliente,
   GeneradorMenu,
   GerenciaPanel,
@@ -45,7 +43,6 @@ import {
   PanelClienteBeta,
   PanelMesasBeta,
   PanelMesasPOS,
-  PanelRafaPrivado,
   PedidoCliente,
   SolicitudProductos,
 } from "./app/lazyModules";
@@ -1058,10 +1055,6 @@ export default function App() {
                   puedeVerMenu={puedeVerMenu}
                   puedeVerProductos={puedeVerProductos}
                   puedeVerGenerador={puedeVerGenerador}
-                  puedeVerRafa={puedeVerRafa}
-                  puedeVerCatalogo={puedeVerCatalogo}
-                  puedeVerInventario={puedeVerInventario}
-                  puedeVerCaja={puedeVerCaja}
                   cerrarPanelAdmin={cerrarPanelAdmin}
                 />
 
@@ -1147,7 +1140,16 @@ export default function App() {
                 {adminTab === "productos" && puedeVerProductos && (
                   <ErrorBoundary nombreModulo="Solicitud de insumos" usarRecuperacionPWA>
                     <Suspense fallback={<CargandoModulo texto="Cargando solicitud de insumos..." />}>
-                      <SolicitudProductos />
+                      <SolicitudProductos vistaInicial="solicitar" mostrarNavegacionInterna={false} />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
+
+
+                {adminTab === "insumosPendientes" && puedeVerProductos && (
+                  <ErrorBoundary nombreModulo="Insumos pendientes" usarRecuperacionPWA>
+                    <Suspense fallback={<CargandoModulo texto="Cargando insumos pendientes..." />}>
+                      <SolicitudProductos vistaInicial="pendientes" mostrarNavegacionInterna={false} />
                     </Suspense>
                   </ErrorBoundary>
                 )}
@@ -1164,47 +1166,6 @@ export default function App() {
                   <ErrorBoundary nombreModulo="Historial de menú" usarRecuperacionPWA>
                     <Suspense fallback={<CargandoModulo texto="Cargando historial de menú..." />}>
                       <GeneradorMenu pestanaInicial="historial" onIrGenerador={() => setAdminTab("generador")} />
-                    </Suspense>
-                  </ErrorBoundary>
-                )}
-
-                {adminTab === "catalogo" && puedeVerCatalogo && (
-                  <ErrorBoundary nombreModulo="Catálogo" usarRecuperacionPWA>
-                    <Suspense fallback={<CargandoModulo texto="Cargando catálogo..." />}>
-                      <CatalogoRafa />
-                    </Suspense>
-                  </ErrorBoundary>
-                )}
-                {adminTab === "inventario" && puedeVerInventario && (
-                  <ErrorBoundary
-                    nombreModulo="Inventario"
-                    onReset={() => setRecargaPedidos((actual) => actual + 1)}
-                  >
-                    <Suspense fallback={<CargandoModulo texto="Cargando inventario..." />}>
-                      <InventarioAdmin />
-                    </Suspense>
-                  </ErrorBoundary>
-                )}
-
-                {adminTab === "caja" && puedeVerCaja && (
-                  <ErrorBoundary
-                    nombreModulo="Caja"
-                    usarRecuperacionPWA
-                    onReset={() => setRecargaPedidos((actual) => actual + 1)}
-                  >
-                    <Suspense fallback={<CargandoModulo texto="Cargando caja..." />}>
-                      <CajaAdmin />
-                    </Suspense>
-                  </ErrorBoundary>
-                )}
-
-                {adminTab === "rafa" && puedeVerRafa && (
-                  <ErrorBoundary
-                    nombreModulo="Informes Rafa"
-                    onReset={() => setRecargaPedidos((actual) => actual + 1)}
-                  >
-                    <Suspense fallback={<CargandoModulo texto="Cargando sección Rafa..." />}>
-                      <PanelRafaPrivado />
                     </Suspense>
                   </ErrorBoundary>
                 )}
