@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  crearComparacionProductosMensual,
   crearResumenVentasMensuales,
   desplazarMes,
+  obtenerCatalogoFiltrosVentas,
   obtenerNivelVentaDia,
   obtenerOffsetCalendarioLunes,
   obtenerRangoMesColombia
@@ -38,7 +40,7 @@ describe("dashboard/ventasMensuales", () => {
     expect(resumen.totalGastos).toBe(15000);
     expect(resumen.resultadoMes).toBe(45000);
     expect(resumen.totalPedidos).toBe(3);
-    expect(dia3.total).toBe(30000);
+    expect(dia3.total).toBe(32000);
     expect(dia3.gastos).toBe(10000);
     expect(dia3.resultado).toBe(20000);
     expect(dia3.pedidos).toBe(2);
@@ -57,4 +59,64 @@ describe("dashboard/ventasMensuales", () => {
     expect(obtenerNivelVentaDia(60, 100)).toBe(3);
     expect(obtenerNivelVentaDia(90, 100)).toBe(4);
   });
+
+  it("filtra el calendario por categoría y producto usando los items reales del pedido", () => {
+    const pedidos = [
+      {
+        created_at: "2026-07-03T15:00:00.000Z",
+        total: 50000,
+        estado: "Finalizado",
+        items: [
+          { categoria: "Platos", plato: "Pechuga", precio: 20000, precioPlato: 20000, cantidad: 1 },
+          { categoria: "cafeteria", area: "cafeteria", tipo: "Parfait", producto: "Parfait 16 oz - Frutas: Mango", tamano: "16 oz", precio: 15000, cantidad: 2 }
+        ]
+      }
+    ];
+
+    const resumen = crearResumenVentasMensuales(pedidos, [], "2026-07", { categoria: "Parfait", productos: ["Parfait 16 oz"] });
+    const dia3 = resumen.dias.find((dia) => dia.dia === 3);
+
+    expect(resumen.filtrosActivos).toBe(true);
+    expect(resumen.totalMes).toBe(32000);
+    expect(resumen.totalUnidades).toBe(2);
+    expect(resumen.totalPedidos).toBe(1);
+    expect(dia3.total).toBe(30000);
+    expect(dia3.unidades).toBe(2);
+  });
+
+  it("construye categorías y productos disponibles sin fragmentar los parfait por frutas", () => {
+    const catalogo = obtenerCatalogoFiltrosVentas([
+      {
+        estado: "Finalizado",
+        items: [
+          { categoria: "cafeteria", area: "cafeteria", tipo: "Parfait", producto: "Parfait 16 oz - Frutas: Mango", tamano: "16 oz" },
+          { categoria: "cafeteria", area: "cafeteria", tipo: "Parfait", producto: "Parfait 16 oz - Frutas: Fresa", tamano: "16 oz" },
+          { categoria: "Platos", plato: "Pechuga" }
+        ]
+      }
+    ]);
+
+    expect(catalogo.categorias).toContain("Parfait");
+    expect(catalogo.categorias).toContain("Platos");
+    expect(catalogo.productosPorCategoria.Parfait).toEqual(["Parfait 16 oz"]);
+  });
+
+  it("crea series comparables para varios productos seleccionados", () => {
+    const series = crearComparacionProductosMensual([
+      {
+        created_at: "2026-07-03T15:00:00.000Z",
+        estado: "Finalizado",
+        items: [
+          { categoria: "Platos", plato: "Pechuga", precioPlato: 20000, cantidad: 2 },
+          { categoria: "Platos", plato: "Cerdo", precioPlato: 16000, cantidad: 1 }
+        ]
+      }
+    ], ["Pechuga", "Cerdo"], "2026-07", "Platos");
+
+    expect(series).toHaveLength(2);
+    expect(series[0]).toMatchObject({ producto: "Pechuga", total: 40000, unidades: 2 });
+    expect(series[0].dias[2]).toBe(40000);
+    expect(series[1]).toMatchObject({ producto: "Cerdo", total: 16000, unidades: 1 });
+  });
+
 });

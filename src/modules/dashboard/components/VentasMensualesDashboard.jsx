@@ -5,12 +5,15 @@ import { formatearFechaColombia } from "../../../shared/utils/fechasColombia";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import { cargarGastosDashboardRango, cargarPedidosDashboardRango } from "../../../services/dashboardService";
 import {
+  crearComparacionProductosMensual,
   crearResumenVentasMensuales,
   desplazarMes,
+  obtenerCatalogoFiltrosVentas,
   obtenerMesColombia,
   obtenerNivelVentaDia,
   obtenerRangoMesColombia
 } from "../utils/ventasMensuales";
+import { ComparativoProductosVentas, FiltrosVentasMensuales } from "./VentasMensualesFiltros";
 
 function TarjetaMetrica({ etiqueta, valor, ayuda }) {
   return (
@@ -290,8 +293,7 @@ function CalendarioVentasAmpliado({
       </div>
 
       <p className="ventas-calendario-zoom-ayuda">
-        Toca un día para ver ventas, gastos, pedidos y ticket promedio. El calendario conserva toda su
-        información; solo cambia el nivel de ampliación.
+        Toca un día para consultar su detalle. El calendario conserva toda su información; solo cambia el nivel de ampliación.
       </p>
     </RafikiModal>
   );
@@ -461,7 +463,7 @@ function GraficaBarrasVentas({ resumen, onSeleccionarDia }) {
   );
 }
 
-function DetalleDiaVentas({ dia, onClose, onAbrirInforme }) {
+function DetalleDiaVentas({ dia, filtrado = false, onClose, onAbrirInforme }) {
   return (
     <RafikiModal
       open={Boolean(dia)}
@@ -476,7 +478,7 @@ function DetalleDiaVentas({ dia, onClose, onAbrirInforme }) {
             Cerrar
           </button>
           <button type="button" className="button" onClick={() => onAbrirInforme(dia?.fecha)}>
-            Abrir informe del día
+            {filtrado ? "Abrir informe completo del día" : "Abrir informe del día"}
           </button>
         </>
       }
@@ -488,25 +490,40 @@ function DetalleDiaVentas({ dia, onClose, onAbrirInforme }) {
             <strong>{dinero(dia.total)}</strong>
           </div>
           <div className="ventas-dia-resumen-grid">
-            <div>
-              <span>Total de gastos</span>
-              <strong>{dinero(dia.gastos)}</strong>
-            </div>
-            <div>
-              <span>Resultado ventas - gastos</span>
-              <strong>{dinero(dia.resultado)}</strong>
-            </div>
-            <div>
-              <span>Pedidos</span>
-              <strong>{dia.pedidos}</strong>
-            </div>
+            {filtrado ? (
+              <>
+                <div>
+                  <span>Unidades filtradas</span>
+                  <strong>{dia.unidades}</strong>
+                </div>
+                <div>
+                  <span>Pedidos con coincidencia</span>
+                  <strong>{dia.pedidos}</strong>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <span>Total de gastos</span>
+                  <strong>{dinero(dia.gastos)}</strong>
+                </div>
+                <div>
+                  <span>Resultado ventas - gastos</span>
+                  <strong>{dinero(dia.resultado)}</strong>
+                </div>
+                <div>
+                  <span>Pedidos</span>
+                  <strong>{dia.pedidos}</strong>
+                </div>
+              </>
+            )}
             <div>
               <span>Ticket promedio</span>
               <strong>{dinero(dia.ticketPromedio)}</strong>
             </div>
           </div>
-          {dia.pedidos === 0 && dia.gastos === 0 ? (
-            <p className="muted">Este día no tiene ventas ni gastos registrados.</p>
+          {dia.pedidos === 0 && (!filtrado ? dia.gastos === 0 : true) ? (
+            <p className="muted">{filtrado ? "Este día no tiene ventas que coincidan con los filtros." : "Este día no tiene ventas ni gastos registrados."}</p>
           ) : null}
         </div>
       ) : null}
@@ -524,6 +541,8 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
   const [vista, setVista] = useState("ambos");
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [calendarioAmpliado, setCalendarioAmpliado] = useState(false);
+  const [categoriaFiltro, setCategoriaFiltro] = useState("");
+  const [productosFiltro, setProductosFiltro] = useState([]);
 
   useEffect(() => {
     let cancelado = false;
@@ -585,7 +604,39 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
     };
   }, [mes]);
 
-  const resumen = useMemo(() => crearResumenVentasMensuales(pedidos, gastos, mes), [pedidos, gastos, mes]);
+  const catalogoFiltros = useMemo(() => obtenerCatalogoFiltrosVentas(pedidos), [pedidos]);
+  const filtrosVentas = useMemo(() => ({
+    categoria: categoriaFiltro,
+    productos: productosFiltro
+  }), [categoriaFiltro, productosFiltro]);
+  const resumen = useMemo(
+    () => crearResumenVentasMensuales(pedidos, gastos, mes, filtrosVentas),
+    [pedidos, gastos, mes, filtrosVentas]
+  );
+  const comparacionProductos = useMemo(
+    () => crearComparacionProductosMensual(pedidos, productosFiltro, mes, categoriaFiltro),
+    [pedidos, productosFiltro, mes, categoriaFiltro]
+  );
+
+
+  function cambiarCategoriaFiltro(categoria) {
+    setCategoriaFiltro(categoria);
+    setProductosFiltro([]);
+    setDiaSeleccionado(null);
+  }
+
+  function alternarProductoFiltro(producto) {
+    setProductosFiltro((actual) =>
+      actual.includes(producto) ? actual.filter((item) => item !== producto) : [...actual, producto]
+    );
+    setDiaSeleccionado(null);
+  }
+
+  function limpiarFiltrosVentas() {
+    setCategoriaFiltro("");
+    setProductosFiltro([]);
+    setDiaSeleccionado(null);
+  }
 
   function abrirInformeDia(fecha) {
     setDiaSeleccionado(null);
@@ -615,17 +666,41 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
       {error ? <div className="alert alert-error">{error}</div> : null}
       {cargando ? <div className="alert alert-info">Cargando ventas de {resumen.nombreMes}...</div> : null}
 
+      <FiltrosVentasMensuales
+        catalogo={catalogoFiltros}
+        categoria={categoriaFiltro}
+        productosSeleccionados={productosFiltro}
+        onCategoriaChange={cambiarCategoriaFiltro}
+        onToggleProducto={alternarProductoFiltro}
+        onLimpiar={limpiarFiltrosVentas}
+      />
+
+      {resumen.filtrosActivos ? (
+        <div className="ventas-filtros-activos" role="status">
+          <strong>Vista filtrada</strong>
+          <span>El calendario, las métricas y las barras muestran únicamente las ventas que coinciden con los filtros.</span>
+        </div>
+      ) : null}
+
       <div className="ventas-mes-metricas">
         <TarjetaMetrica
-          etiqueta="Ventas del mes"
+          etiqueta={resumen.filtrosActivos ? "Ventas filtradas" : "Ventas del mes"}
           valor={dinero(resumen.totalMes)}
           ayuda={`${resumen.diasConVenta} días con ventas`}
         />
-        <TarjetaMetrica
-          etiqueta="Gastos del mes"
-          valor={dinero(resumen.totalGastos)}
-          ayuda={`Resultado ${dinero(resumen.resultadoMes)}`}
-        />
+        {resumen.filtrosActivos ? (
+          <TarjetaMetrica
+            etiqueta="Unidades vendidas"
+            valor={resumen.totalUnidades}
+            ayuda="Solo productos filtrados"
+          />
+        ) : (
+          <TarjetaMetrica
+            etiqueta="Gastos del mes"
+            valor={dinero(resumen.totalGastos)}
+            ayuda={`Resultado ${dinero(resumen.resultadoMes)}`}
+          />
+        )}
         <TarjetaMetrica
           etiqueta="Promedio diario"
           valor={dinero(resumen.promedioDiario)}
@@ -637,7 +712,7 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
           ayuda={resumen.mejorDia ? formatearFechaColombia(resumen.mejorDia.fecha) : "Sin ventas"}
         />
         <TarjetaMetrica
-          etiqueta="Pedidos del mes"
+          etiqueta={resumen.filtrosActivos ? "Pedidos con coincidencias" : "Pedidos del mes"}
           valor={resumen.totalPedidos}
           ayuda={`Ticket promedio ${dinero(resumen.ticketPromedio)}`}
         />
@@ -665,8 +740,8 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
 
       {!cargando && resumen.totalPedidos === 0 ? (
         <div className="ventas-mes-vacio">
-          <strong>No hay ventas registradas en {resumen.nombreMes}.</strong>
-          <span>Puedes navegar a otro mes usando las flechas.</span>
+          <strong>{resumen.filtrosActivos ? "No hay ventas que coincidan con los filtros." : `No hay ventas registradas en ${resumen.nombreMes}.`}</strong>
+          <span>{resumen.filtrosActivos ? "Prueba otra categoría, producto o limpia los filtros." : "Puedes navegar a otro mes usando las flechas."}</span>
         </div>
       ) : null}
 
@@ -682,13 +757,17 @@ export default function VentasMensualesDashboard({ onSeleccionarDia }) {
         <GraficaBarrasVentas resumen={resumen} onSeleccionarDia={setDiaSeleccionado} />
       ) : null}
 
+      <ComparativoProductosVentas series={comparacionProductos} nombreMes={resumen.nombreMes} />
+
       <p className="ventas-mes-nota">
-        Se excluyen pedidos borrados. El total de gastos se toma de los gastos diarios registrados para cada
-        fecha.
+        {resumen.filtrosActivos
+          ? "Se excluyen pedidos borrados. Los gastos no se prorratean por categoría o producto; por eso no se incluyen en las métricas de la vista filtrada."
+          : "Se excluyen pedidos borrados. El total de gastos se toma de los gastos diarios registrados para cada fecha."}
       </p>
 
       <DetalleDiaVentas
         dia={diaSeleccionado}
+        filtrado={resumen.filtrosActivos}
         onClose={() => setDiaSeleccionado(null)}
         onAbrirInforme={abrirInformeDia}
       />

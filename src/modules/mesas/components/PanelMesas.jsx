@@ -671,7 +671,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     const destinoElemento = vistaMesas === "compacta"
       ? (destino === "resumen" ? "mesa-resumen-compacto" : "mesa-cafeteria-panel")
       : (destino === "resumen" ? "mesa-confirmacion-final" : "mesa-categorias-top");
-    irAElementoMesas(destinoElemento, 120, "start");
+    if (!(vistaMesas === "compacta" && destino === "categorias")) {
+      irAElementoMesas(destinoElemento, 120, "start");
+    }
+    return true;
   }
 
   function toggleFrutaParfait(fruta) {
@@ -685,12 +688,12 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   function agregarParfaitMesa(destino = "categorias") {
     if (!tamanoParfait) {
       mostrarErrorMesa("Selecciona el tamaño del parfait.");
-      return;
+      return false;
     }
 
     if (frutasParfait.length === 0) {
       mostrarErrorMesa("Selecciona al menos una fruta para el parfait.");
-      return;
+      return false;
     }
 
     const precioBase = precioPorNombre(cafeteriaParfaitTamanos, tamanoParfait);
@@ -700,7 +703,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     const tamanoParfaitLimpio = coincidenciaTamano ? `${coincidenciaTamano[1]} oz` : String(tamanoParfait || "").replace(/^parfait\s+/i, "").trim();
     const descripcionParfait = `Parfait ${tamanoParfaitLimpio} - Frutas: ${frutasSeleccionadas.join(", ")}`;
 
-    agregarItemCafeteria(crearItemCafeteria({
+    const agregado = agregarItemCafeteria(crearItemCafeteria({
       tipo: "Parfait",
       producto: descripcionParfait,
       precio: precioBase + extraFrutas,
@@ -712,6 +715,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     }), destino);
 
     setFrutasParfait([]);
+    return agregado;
   }
 
   function cambiarTipoBatidoMesa(tipo) {
@@ -725,22 +729,22 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   function agregarBatidoMesa(destino = "categorias") {
     if (!tipoBatido) {
       mostrarErrorMesa("Selecciona el tipo de bebida.");
-      return;
+      return false;
     }
 
     if (!saborBatido) {
       mostrarErrorMesa("Selecciona el sabor.");
-      return;
+      return false;
     }
 
     if (!tamanoBatido) {
       mostrarErrorMesa("Selecciona el tamaño.");
-      return;
+      return false;
     }
 
     if ((tipoBatido === "cremoso" || tipoBatido === "jugo") && !baseBatido) {
       mostrarErrorMesa("Selecciona la base.");
-      return;
+      return false;
     }
 
     const tamanos = tipoBatido === "cremoso"
@@ -753,7 +757,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
         ? "Batido refrescante"
         : "Jugo tradicional";
 
-    agregarItemCafeteria(crearItemCafeteria({
+    return agregarItemCafeteria(crearItemCafeteria({
       tipo: nombreTipo,
       producto: `${saborBatido} ${tamanoBatido}`,
       precio,
@@ -766,24 +770,24 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   function agregarDesayunoMesa(destino = "categorias") {
     if (!desayunoSeleccionado) {
       mostrarErrorMesa("Selecciona un desayuno.");
-      return;
+      return false;
     }
 
     const desayunoPrincipal = cafeteriaDesayunos.some((item) => item.nombre === desayunoSeleccionado);
     if (desayunoPrincipal && !acompananteDesayuno) {
       mostrarErrorMesa("Selecciona el acompañante del desayuno.");
-      return;
+      return false;
     }
 
     if (desayunoPrincipal && !bebidaDesayuno) {
       mostrarErrorMesa("Selecciona la bebida del desayuno.");
-      return;
+      return false;
     }
 
     const precioBase = precioPorNombre([...cafeteriaDesayunos, ...CAFETERIA_OTROS_DESAYUNOS], desayunoSeleccionado);
     const precioAdicionales = adicionalesDesayuno.reduce((suma, item) => suma + Number(item.precio || 0), 0);
 
-    agregarItemCafeteria(crearItemCafeteria({
+    const agregado = agregarItemCafeteria(crearItemCafeteria({
       tipo: "Desayuno",
       producto: desayunoSeleccionado,
       precio: precioBase + precioAdicionales,
@@ -795,15 +799,16 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
     setBebidaDesayuno("");
     setAdicionalesDesayuno([]);
+    return agregado;
   }
 
   function agregarProductoSimpleCafeteria(tipo, producto, precio, destino = "categorias") {
     if (!producto) {
       mostrarErrorMesa(`Selecciona un producto de ${tipo}.`);
-      return;
+      return false;
     }
 
-    agregarItemCafeteria(crearItemCafeteria({
+    return agregarItemCafeteria(crearItemCafeteria({
       tipo,
       producto,
       precio,
@@ -949,6 +954,22 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       onCambiarCantidad={cambiarCantidadAdicionalRestaurante}
     />
   );
+
+  function agregarCafeteriaActual(destino = "categorias") {
+    if (subcategoriaCafeteria === "parfait") return agregarParfaitMesa(destino);
+    if (subcategoriaCafeteria === "batidos") return agregarBatidoMesa(destino);
+    if (subcategoriaCafeteria === "desayunos") return agregarDesayunoMesa(destino);
+    if (subcategoriaCafeteria === "sandwich") {
+      return agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado), destino);
+    }
+    if (subcategoriaCafeteria === "bebidas") {
+      return agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada), destino);
+    }
+    if (subcategoriaCafeteria === "postres") {
+      return agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado), destino);
+    }
+    return false;
+  }
 
   const contenidoCafeteriaMesa = (
     <div className="cafeteria-placeholder fade-step">
@@ -1220,18 +1241,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
       <button
         type="button"
-        onClick={() => {
-          if (subcategoriaCafeteria === "parfait") agregarParfaitMesa("resumen");
-          if (subcategoriaCafeteria === "batidos") agregarBatidoMesa("resumen");
-          if (subcategoriaCafeteria === "desayunos") agregarDesayunoMesa("resumen");
-          if (subcategoriaCafeteria === "sandwich") agregarProductoSimpleCafeteria("Comida", sandwichSeleccionado, precioPorNombre(cafeteriaSandwiches, sandwichSeleccionado), "resumen");
-          if (subcategoriaCafeteria === "bebidas") agregarProductoSimpleCafeteria("Bebida caliente", bebidaCalienteSeleccionada, precioPorNombre(cafeteriaBebidasCalientes, bebidaCalienteSeleccionada), "resumen");
-          if (subcategoriaCafeteria === "postres") agregarProductoSimpleCafeteria("Postre", postreSeleccionado, precioPorNombre(cafeteriaPostres, postreSeleccionado), "resumen");
-        }}
-        className="button continue-button"
+        onClick={() => agregarCafeteriaActual("resumen")}
+        className="button continue-button cafeteria-agregar-resumen"
         style={{ marginTop: 12, background: "#16a34a" }}
       >
-        agregar y continuar
+        Agregar y ver resumen
       </button>
     </div>
   );
@@ -1488,6 +1502,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           contenidoAdicionalesRestaurante={contenidoAdicionalesRestauranteMesa}
           subcategoriaCafeteria={subcategoriaCafeteria}
           onSeleccionarSubcategoriaCafeteria={(categoria) => { setSubcategoriaCafeteria(categoria); setErrorMesa(""); }}
+          onAgregarCafeteriaActual={agregarCafeteriaActual}
           datosMesaProps={datosMesaProps}
         />
       )}

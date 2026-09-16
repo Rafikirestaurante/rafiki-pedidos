@@ -49,6 +49,7 @@ export default function PanelMesasCompacto({
   contenidoAdicionalesRestaurante = null,
   subcategoriaCafeteria = "parfait",
   onSeleccionarSubcategoriaCafeteria,
+  onAgregarCafeteriaActual,
   datosMesaProps = {}
 }) {
   const [paso, setPaso] = useState(null);
@@ -67,6 +68,10 @@ export default function PanelMesasCompacto({
   ];
 
   const categoriaCafeteriaActiva = categoriasCafeteria.find((item) => item.id === subcategoriaCafeteria) || categoriasCafeteria[0];
+  const cantidadProductosResumen = gruposResumenMesa.reduce(
+    (suma, grupo) => suma + Math.max(Number(grupo?.cantidad) || 1, 1),
+    0
+  );
 
   const itemActivo = useMemo(() => {
     const encontrado = itemsAlmuerzoMesa.find((item) => item.id === itemActivoId);
@@ -261,6 +266,16 @@ export default function PanelMesasCompacto({
                 ))}
               </div>
 
+              {hayProductoSeleccionadoMesa ? (
+                <button
+                  type="button"
+                  className="button green mesas-compacta-ver-resumen-cafeteria"
+                  onClick={mostrarResumenYDatos}
+                >
+                  🛒 Ver resumen ({cantidadProductosResumen})
+                </button>
+              ) : null}
+
               {subcategoriaCafeteria === "adicionales" ? (
                 <div className="mesas-compacta-cafeteria-detalle-inline">
                   {contenidoCafeteria || <div className="box soft">No hay opciones de Cafetería configuradas.</div>}
@@ -424,14 +439,32 @@ export default function PanelMesasCompacto({
       <RafikiModal
         open={lineaActiva === "cafeteria" && cafeteriaModalAbierto && subcategoriaCafeteria !== "adicionales"}
         title={`☕ Cafetería · ${categoriaCafeteriaActiva.titulo}`}
-        description="Selecciona el producto y sus opciones. Puedes cerrar el modal para volver a las categorías."
+        description="Selecciona el producto y sus opciones. Usa una de las dos acciones inferiores para continuar."
         onClose={() => setCafeteriaModalAbierto(false)}
         size="lg"
         className="mesas-beta-modal mesas-compacta-modal mesas-compacta-cafeteria-modal"
         footer={(
           <>
-            <button type="button" className="button light" onClick={() => setCafeteriaModalAbierto(false)}>Volver a categorías</button>
-            <button type="button" className="button green" onClick={() => { setCafeteriaModalAbierto(false); mostrarResumenYDatos(); }}>Ver resumen</button>
+            <button
+              type="button"
+              className="button light"
+              onClick={() => onAgregarCafeteriaActual?.("categorias")}
+            >
+              Agregar otro producto
+            </button>
+            <button
+              type="button"
+              className="button green"
+              onClick={() => {
+                const agregado = onAgregarCafeteriaActual?.("resumen");
+                if (agregado) {
+                  setCafeteriaModalAbierto(false);
+                  mostrarResumenYDatos();
+                }
+              }}
+            >
+              Agregar y ver resumen
+            </button>
           </>
         )}
       >

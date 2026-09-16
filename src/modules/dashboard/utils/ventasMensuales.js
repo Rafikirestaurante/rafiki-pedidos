@@ -1,6 +1,6 @@
 import { fechaColombiaYYYYMMDD } from "../../../shared/utils/fechasColombia";
 import { aPesosEnteros } from "../../../shared/utils/money";
-import { obtenerEstadoPedido } from "../../../shared/utils/pedidos";
+import { calcularTotalItem, obtenerEstadoPedido } from "../../../shared/utils/pedidos";
 
 const NOMBRES_DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -71,12 +71,134 @@ function crearDia(mes, dia) {
     total: 0,
     pedidos: 0,
     ticketPromedio: 0,
+    unidades: 0,
     gastos: 0,
     resultado: 0
   };
 }
 
-export function crearResumenVentasMensuales(pedidos = [], gastos = [], mes = obtenerMesColombia()) {
+
+function textoLimpio(valor) {
+  return String(valor || "").replace(/\s+/g, " ").trim();
+}
+
+function normalizarFiltro(valor) {
+  return textoLimpio(valor)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function tituloDesdeTexto(valor, respaldo = "Otros") {
+  const texto = textoLimpio(valor) || respaldo;
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+export function obtenerNombreProductoVenta(item = {}) {
+  const tipo = normalizarFiltro(item?.tipo);
+  if (tipo.includes("parfait") && textoLimpio(item?.tamano)) {
+    return `Parfait ${textoLimpio(item.tamano)}`;
+  }
+  return textoLimpio(item?.producto || item?.plato || item?.proteina || item?.nombre) || "Producto sin nombre";
+}
+
+export function obtenerCategoriaProductoVenta(item = {}) {
+  const area = normalizarFiltro(item?.area || item?.categoria);
+  const tipo = normalizarFiltro(item?.tipo);
+
+  if (area.includes("cafeteria") || normalizarFiltro(item?.categoria).includes("cafeteria")) {
+    if (tipo.includes("parfait")) return "Parfait";
+    if (tipo.includes("batido") || tipo.includes("jugo")) return "Batidos";
+    if (tipo.includes("desayuno")) return "Desayunos";
+    if (tipo.includes("comida") || tipo.includes("sandwich")) return "Comida";
+    if (tipo.includes("bebida")) return "Bebidas";
+    if (tipo.includes("postre")) return "Postres";
+    if (tipo.includes("adicional")) return "Adicionales Cafetería";
+    return tituloDesdeTexto(item?.tipo, "Cafetería");
+  }
+
+  const categoria = tituloDesdeTexto(item?.categoria, "Almuerzos");
+  if (normalizarFiltro(categoria).includes("adicional")) return "Adicionales Restaurante";
+  return categoria;
+}
+
+function obtenerCantidadItemVenta(item = {}) {
+  const cantidad = Number(item?.cantidad);
+  return Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1;
+}
+
+function calcularValorItemVenta(item = {}) {
+  return Math.max(calcularTotalItem({ ...item, cantidad: obtenerCantidadItemVenta(item) }), 0);
+}
+
+function coincideItemConFiltros(item, filtros = {}) {
+  const categoria = textoLimpio(filtros?.categoria);
+  const productos = Array.isArray(filtros?.productos) ? filtros.productos.map(textoLimpio).filter(Boolean) : [];
+
+  if (categoria && obtenerCategoriaProductoVenta(item) !== categoria) return false;
+  if (productos.length > 0 && !productos.includes(obtenerNombreProductoVenta(item))) return false;
+  return true;
+}
+
+export function hayFiltrosVentasActivos(filtros = {}) {
+  return Boolean(textoLimpio(filtros?.categoria) || (Array.isArray(filtros?.productos) && filtros.productos.length > 0));
+}
+
+export function obtenerCatalogoFiltrosVentas(pedidos = []) {
+  const porCategoria = new Map();
+
+  (pedidos || []).forEach((pedido) => {
+    if (obtenerEstadoPedido(pedido) === "Borrado") return;
+    const items = Array.isArray(pedido?.items) ? pedido.items : [];
+    items.forEach((item) => {
+      const categoria = obtenerCategoriaProductoVenta(item);
+      const producto = obtenerNombreProductoVenta(item);
+      if (!porCategoria.has(categoria)) porCategoria.set(categoria, new Set());
+      porCategoria.get(categoria).add(producto);
+    });
+  });
+
+  const categorias = Array.from(porCategoria.keys()).sort((a, b) => a.localeCompare(b, "es"));
+  const productosPorCategoria = Object.fromEntries(
+    categorias.map((categoria) => [categoria, Array.from(porCategoria.get(categoria)).sort((a, b) => a.localeCompare(b, "es"))])
+  );
+  const productos = Array.from(new Set(Object.values(productosPorCategoria).flat())).sort((a, b) => a.localeCompare(b, "es"));
+
+  return { categorias, productos, productosPorCategoria };
+}
+
+export function crearComparacionProductosMensual(pedidos = [], productos = [], mes = obtenerMesColombia(), categoria = "") {
+  const seleccionados = Array.from(new Set((productos || []).map(textoLimpio).filter(Boolean)));
+  const mesBase = mesValido(mes) ? mes : obtenerMesColombia();
+  const cantidadDias = obtenerDiasDelMes(mesBase);
+
+  return seleccionados.map((producto) => {
+    const dias = Array.from({ length: cantidadDias }, () => 0);
+    let total = 0;
+    let unidades = 0;
+
+    (pedidos || []).forEach((pedido) => {
+      if (obtenerEstadoPedido(pedido) === "Borrado") return;
+      const fecha = fechaColombiaYYYYMMDD(pedido?.created_at);
+      if (!fecha || !fecha.startsWith(`${mesBase}-`)) return;
+      const dia = Number(fecha.slice(-2));
+      const items = (Array.isArray(pedido?.items) ? pedido.items : []).filter((item) => {
+        if (obtenerNombreProductoVenta(item) !== producto) return false;
+        if (categoria && obtenerCategoriaProductoVenta(item) !== categoria) return false;
+        return true;
+      });
+      const totalPedido = items.reduce((suma, item) => suma + calcularValorItemVenta(item), 0);
+      const unidadesPedido = items.reduce((suma, item) => suma + obtenerCantidadItemVenta(item), 0);
+      total += totalPedido;
+      unidades += unidadesPedido;
+      if (dia >= 1 && dia <= cantidadDias) dias[dia - 1] += totalPedido;
+    });
+
+    return { producto, total, unidades, dias };
+  }).sort((a, b) => b.total - a.total || a.producto.localeCompare(b.producto, "es"));
+}
+
+export function crearResumenVentasMensuales(pedidos = [], gastos = [], mes = obtenerMesColombia(), filtros = {}) {
   const mesBase = mesValido(mes) ? mes : obtenerMesColombia();
   const cantidadDias = obtenerDiasDelMes(mesBase);
   const dias = Array.from({ length: cantidadDias }, (_, index) => crearDia(mesBase, index + 1));
@@ -91,8 +213,18 @@ export function crearResumenVentasMensuales(pedidos = [], gastos = [], mes = obt
     const dia = porFecha.get(fecha);
     if (!dia) return;
 
-    const total = Math.max(aPesosEnteros(pedido?.total), 0);
+    const filtrosActivos = hayFiltrosVentasActivos(filtros);
+    const items = Array.isArray(pedido?.items) ? pedido.items : [];
+    const itemsFiltrados = filtrosActivos ? items.filter((item) => coincideItemConFiltros(item, filtros)) : items;
+    if (filtrosActivos && itemsFiltrados.length === 0) return;
+
+    const total = filtrosActivos
+      ? itemsFiltrados.reduce((suma, item) => suma + calcularValorItemVenta(item), 0)
+      : Math.max(aPesosEnteros(pedido?.total), 0);
+    const unidades = itemsFiltrados.reduce((suma, item) => suma + obtenerCantidadItemVenta(item), 0);
+
     dia.total += total;
+    dia.unidades += unidades;
     dia.pedidos += 1;
   });
 
@@ -115,6 +247,7 @@ export function crearResumenVentasMensuales(pedidos = [], gastos = [], mes = obt
   const totalMes = dias.reduce((suma, dia) => suma + dia.total, 0);
   const totalGastos = dias.reduce((suma, dia) => suma + dia.gastos, 0);
   const totalPedidos = dias.reduce((suma, dia) => suma + dia.pedidos, 0);
+  const totalUnidades = dias.reduce((suma, dia) => suma + dia.unidades, 0);
   const mejorDia = diasConVenta.reduce((mejor, dia) => {
     if (!mejor) return dia;
     if (dia.total > mejor.total) return dia;
@@ -133,6 +266,8 @@ export function crearResumenVentasMensuales(pedidos = [], gastos = [], mes = obt
     totalGastos,
     resultadoMes: totalMes - totalGastos,
     totalPedidos,
+    totalUnidades,
+    filtrosActivos: hayFiltrosVentasActivos(filtros),
     diasConVenta: diasConVenta.length,
     promedioDiario: diasConVenta.length > 0 ? Math.round(totalMes / diasConVenta.length) : 0,
     ticketPromedio: totalPedidos > 0 ? Math.round(totalMes / totalPedidos) : 0,
