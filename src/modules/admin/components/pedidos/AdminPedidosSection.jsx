@@ -1039,6 +1039,14 @@ function AdminPedidosSectionBase({
         </div>
       </div>
 
+      <RafikiTabs
+        tabs={tabsPedidosHoy}
+        activeTab={vistaPedidosHoy}
+        onChange={setVistaPedidosHoy}
+        className="pedidos-hoy-tabs pedidos-hoy-tabs-superiores"
+        ariaLabel="Secciones de Pedidos Hoy"
+      />
+
       {alertaPedidoNuevo && (
         <div className="alerta-pedido-nuevo">
           <div>
@@ -1152,13 +1160,6 @@ function AdminPedidosSectionBase({
         ) : null}
       </div>
 
-      <RafikiTabs
-        tabs={tabsPedidosHoy}
-        activeTab={vistaPedidosHoy}
-        onChange={setVistaPedidosHoy}
-        className="pedidos-hoy-tabs"
-        ariaLabel="Secciones de Pedidos Hoy"
-      />
 
       {vistaPedidosHoy === "mesas" ? (
         <ResumenMesasHoy

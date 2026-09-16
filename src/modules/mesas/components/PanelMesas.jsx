@@ -1486,6 +1486,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           onEditarAcompanantes={setGrupoEditandoAcompanantesMesa}
           contenidoCafeteria={contenidoCafeteriaMesa}
           contenidoAdicionalesRestaurante={contenidoAdicionalesRestauranteMesa}
+          subcategoriaCafeteria={subcategoriaCafeteria}
+          onSeleccionarSubcategoriaCafeteria={(categoria) => { setSubcategoriaCafeteria(categoria); setErrorMesa(""); }}
           datosMesaProps={datosMesaProps}
         />
       )}

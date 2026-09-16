@@ -106,7 +106,7 @@ export default function CarteraModals({
             <div className="abono-form-grid">
               <label>
                 Valor del abono
-                <input type="number" min="0" step="100" value={formularioAbono.valorAbono} onChange={(event) => cambiarCampoAbono("valorAbono", event.target.value)} placeholder="Ej. 50000" required />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={formularioAbono.valorAbono} onChange={(event) => cambiarCampoAbono("valorAbono", event.target.value.replace(/\D/g, ""))} placeholder="Ej. 100500" required />
               </label>
               <label>
                 Método de pago
@@ -148,7 +148,7 @@ export default function CarteraModals({
             <div className="abono-form-grid">
               <label>
                 Valor del abono
-                <input type="number" min="1" step="100" value={formularioAbonoEdicion.valorAbono} onChange={(event) => cambiarCampoAbonoEdicion("valorAbono", event.target.value)} required />
+                <input type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={formularioAbonoEdicion.valorAbono} onChange={(event) => cambiarCampoAbonoEdicion("valorAbono", event.target.value.replace(/\D/g, ""))} placeholder="Ej. 100500" required />
               </label>
               <label>
                 Método de pago

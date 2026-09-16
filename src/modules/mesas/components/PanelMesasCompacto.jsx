@@ -47,11 +47,26 @@ export default function PanelMesasCompacto({
   onEditarAcompanantes,
   contenidoCafeteria = null,
   contenidoAdicionalesRestaurante = null,
+  subcategoriaCafeteria = "parfait",
+  onSeleccionarSubcategoriaCafeteria,
   datosMesaProps = {}
 }) {
   const [paso, setPaso] = useState(null);
   const [lineaActiva, setLineaActiva] = useState("restaurante");
   const [itemActivoId, setItemActivoId] = useState(null);
+  const [cafeteriaModalAbierto, setCafeteriaModalAbierto] = useState(false);
+
+  const categoriasCafeteria = [
+    { id: "parfait", icono: "🥣", titulo: "Parfait" },
+    { id: "batidos", icono: "🥤", titulo: "Batidos" },
+    { id: "desayunos", icono: "🍳", titulo: "Desayunos" },
+    { id: "sandwich", icono: "🥪", titulo: "Comida" },
+    { id: "bebidas", icono: "☕", titulo: "Bebidas" },
+    { id: "postres", icono: "🍰", titulo: "Postres" },
+    { id: "adicionales", icono: "➕", titulo: "Adicionales" },
+  ];
+
+  const categoriaCafeteriaActiva = categoriasCafeteria.find((item) => item.id === subcategoriaCafeteria) || categoriasCafeteria[0];
 
   const itemActivo = useMemo(() => {
     const encontrado = itemsAlmuerzoMesa.find((item) => item.id === itemActivoId);
@@ -133,6 +148,16 @@ export default function PanelMesasCompacto({
     const itemId = onCrearAlmuerzo?.();
     if (!itemId) return;
     abrirPaso("proteina", itemId);
+  }
+
+  function abrirCategoriaCafeteria(categoriaId) {
+    onSeleccionarSubcategoriaCafeteria?.(categoriaId);
+    setPaso(null);
+    if (categoriaId === "adicionales") {
+      setCafeteriaModalAbierto(false);
+      return;
+    }
+    setCafeteriaModalAbierto(true);
   }
 
   return (
@@ -218,7 +243,29 @@ export default function PanelMesasCompacto({
             </>
           ) : (
             <div className="mesas-compacta-cafeteria">
-              {contenidoCafeteria || <div className="box soft">No hay opciones de Cafetería configuradas.</div>}
+              <div className="mesas-compacta-cafeteria-encabezado">
+                <strong>Selecciona una categoría</strong>
+                <span className="muted small">Cafetería usa el mismo flujo compacto de Restaurante: eliges una categoría y trabajas dentro de un modal.</span>
+              </div>
+              <div className="mesas-compacta-cafeteria-categorias" aria-label="Categorías de Cafetería">
+                {categoriasCafeteria.map((categoria) => (
+                  <button
+                    key={categoria.id}
+                    type="button"
+                    className={`mesas-compacta-cafeteria-opcion ${subcategoriaCafeteria === categoria.id ? "active" : ""}`}
+                    onClick={() => abrirCategoriaCafeteria(categoria.id)}
+                  >
+                    <span>{categoria.icono}</span>
+                    <strong>{categoria.titulo}</strong>
+                  </button>
+                ))}
+              </div>
+
+              {subcategoriaCafeteria === "adicionales" ? (
+                <div className="mesas-compacta-cafeteria-detalle-inline">
+                  {contenidoCafeteria || <div className="box soft">No hay opciones de Cafetería configuradas.</div>}
+                </div>
+              ) : null}
             </div>
           )}
         </section>
@@ -372,6 +419,25 @@ export default function PanelMesasCompacto({
           </div>
         )}
 
+      </RafikiModal>
+
+      <RafikiModal
+        open={lineaActiva === "cafeteria" && cafeteriaModalAbierto && subcategoriaCafeteria !== "adicionales"}
+        title={`☕ Cafetería · ${categoriaCafeteriaActiva.titulo}`}
+        description="Selecciona el producto y sus opciones. Puedes cerrar el modal para volver a las categorías."
+        onClose={() => setCafeteriaModalAbierto(false)}
+        size="lg"
+        className="mesas-beta-modal mesas-compacta-modal mesas-compacta-cafeteria-modal"
+        footer={(
+          <>
+            <button type="button" className="button light" onClick={() => setCafeteriaModalAbierto(false)}>Volver a categorías</button>
+            <button type="button" className="button green" onClick={() => { setCafeteriaModalAbierto(false); mostrarResumenYDatos(); }}>Ver resumen</button>
+          </>
+        )}
+      >
+        <div className="mesas-compacta-cafeteria-modal-contenido">
+          {contenidoCafeteria || <div className="box soft">No hay opciones de Cafetería configuradas.</div>}
+        </div>
       </RafikiModal>
     </>
   );

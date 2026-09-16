@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { CampoTexto } from "../../../shared/components/common";
+import RafikiModal from "../../../shared/components/RafikiModal";
 
 export default function MenuDiarioTab({
   menu,
@@ -13,6 +15,14 @@ export default function MenuDiarioTab({
   guardandoMenu,
   mensajeMenu,
 }) {
+  const [platosSaAutomatico, setPlatosSaAutomatico] = useState([]);
+
+  function manejarTraerDesdeGenerador() {
+    const resultado = traerTextoDesdeGeneradorMenu?.();
+    const platosConSa = Array.isArray(resultado?.platosConSa) ? resultado.platosConSa : [];
+    setPlatosSaAutomatico(platosConSa);
+  }
+
   return (
     <section className="card card-pad">
       <h2>✏️ Editar menú diario</h2>
@@ -23,13 +33,13 @@ export default function MenuDiarioTab({
       <div className="box soft" style={{ marginBottom: 14 }}>
         <strong>Traer desde Generador de menú</strong>
         <p className="muted small" style={{ margin: "4px 0 10px" }}>
-          Carga automáticamente el texto de platos del día y acompañantes generado en la sección Generador.
+          Carga automáticamente el texto de platos del día y acompañantes generado en la sección Generador. Arroces y Pastas reciben SA automáticamente y Rafiki te mostrará cuáles fueron marcados.
         </p>
         <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           <button
             type="button"
             className="button"
-            onClick={traerTextoDesdeGeneradorMenu}
+            onClick={manejarTraerDesdeGenerador}
             style={{ width: "100%", fontWeight: 900 }}
           >
             📥 Traer platos y acompañantes del generador
@@ -116,6 +126,32 @@ export default function MenuDiarioTab({
       >
         {guardandoMenu ? "Guardando menú..." : "Guardar menú del día"}
       </button>
+
+
+
+      <RafikiModal
+        open={platosSaAutomatico.length > 0}
+        title="SA aplicado automáticamente"
+        description="Al traer el menú desde el Generador, Rafiki marcó estos Arroces y Pastas como Sin Acompañantes (SA)."
+        onClose={() => setPlatosSaAutomatico([])}
+        footer={(
+          <button type="button" className="button" onClick={() => setPlatosSaAutomatico([])}>
+            Entendido
+          </button>
+        )}
+      >
+        <div className="box soft" style={{ display: "grid", gap: 8 }}>
+          {platosSaAutomatico.map((plato, index) => (
+            <div key={`${plato.tipo}-${plato.nombre}-${index}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <strong>{plato.tipo === "Pasta" ? "🍝" : "🍚"} {plato.nombre}</strong>
+              <span className="badge">SA</span>
+            </div>
+          ))}
+        </div>
+        <p className="muted small" style={{ margin: "12px 0 0" }}>
+          SA es una regla interna: evita que estos platos soliciten acompañantes y no se muestra al cliente ni en las impresiones.
+        </p>
+      </RafikiModal>
 
       {mensajeMenu.texto && (
         <div
