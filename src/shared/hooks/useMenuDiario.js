@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase, supabaseConfigMensaje, supabaseConfigOk } from "../../supabaseClient";
 import { conTiempoMaximo } from "../utils/async";
 import { guardarMenuCache, hayMenuCacheValido, leerMenuCache } from "../utils/menuCache";
-import { leerUltimoTextoEditorGenerador } from "../utils/generadorMenu";
+import { aplicarSaAutomaticoArrocesPastas, leerUltimoTextoEditorGenerador } from "../utils/generadorMenu";
 import { describirErrorSupabase, esErrorEsquemaSupabase, registrarErrorSupabase } from "../utils/supabaseErrors";
 import {
   acompanantesATexto,
@@ -341,8 +341,12 @@ export function useMenuDiario({
       return;
     }
 
+    let platosConSa = [];
+
     if (ultimoTexto.platosTexto) {
-      setPlatosTexto(ultimoTexto.platosTexto);
+      const resultadoSa = aplicarSaAutomaticoArrocesPastas(ultimoTexto.platosTexto);
+      setPlatosTexto(resultadoSa.texto);
+      platosConSa = resultadoSa.platosConSa;
     }
 
     if (ultimoTexto.acompanantesTexto) {
@@ -350,10 +354,16 @@ export function useMenuDiario({
     }
 
     mostrarMensajeMenu(
-      "✅ Texto del Generador de menú cargado. Revisa y presiona Guardar menú del día para publicarlo.",
+      platosConSa.length
+        ? `✅ Texto del Generador cargado. Se aplicó SA automáticamente a ${platosConSa.length} plato${platosConSa.length === 1 ? "" : "s"} de Arroz/Pasta.`
+        : "✅ Texto del Generador de menú cargado. Revisa y presiona Guardar menú del día para publicarlo.",
       "success",
       { persistente: true }
     );
+
+    return {
+      platosConSa
+    };
   }
 
   function imprimirMenuDiarioTicket() {

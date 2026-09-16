@@ -372,3 +372,58 @@ export function crearSvgMenuSoloTexto({ platos, acompanantes }) {
   </svg>`;
 }
 
+
+function normalizarClaveSaAutomatico(texto) {
+  return String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function aplicarSaAutomaticoArrocesPastas(texto = "") {
+  const platosConSa = [];
+
+  const lineas = String(texto || "").split("\n").map((linea) => {
+    const original = String(linea || "");
+    const limpia = original.trim();
+    if (!limpia || !limpia.includes("|")) return original;
+
+    const indiceSeparador = original.indexOf("|");
+    const categoriaOriginal = original.slice(0, indiceSeparador).trim() || "Platos";
+    const restoOriginal = original.slice(indiceSeparador + 1).trim();
+    if (!restoOriginal) return original;
+
+    const indicePrecio = restoOriginal.lastIndexOf(":");
+    const nombre = (indicePrecio >= 0 ? restoOriginal.slice(0, indicePrecio) : restoOriginal).trim();
+    if (!nombre) return original;
+
+    const categoriaSinSa = categoriaOriginal
+      .replace(/(?:^|\s)SA(?=\s|$)/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim() || "Platos";
+    const yaTieneSa = /(?:^|\s)SA(?:\s|$)/i.test(categoriaOriginal);
+    const categoriaNormalizada = normalizarClaveSaAutomatico(categoriaSinSa);
+    const nombreNormalizado = normalizarClaveSaAutomatico(nombre);
+
+    const esPasta = /(^|\b)pastas?\b/.test(categoriaNormalizada) || /^pastas?\b/.test(nombreNormalizado);
+    const esArroz = /(^|\b)arro(?:z|ces)\b/.test(categoriaNormalizada) || /^arro(?:z|ces)\b/.test(nombreNormalizado);
+
+    if (!esPasta && !esArroz) return original;
+
+    if (!yaTieneSa) {
+      platosConSa.push({
+        nombre,
+        tipo: esPasta ? "Pasta" : "Arroz"
+      });
+    }
+
+    return `${categoriaSinSa} SA | ${restoOriginal}`;
+  });
+
+  return {
+    texto: lineas.join("\n"),
+    platosConSa
+  };
+}

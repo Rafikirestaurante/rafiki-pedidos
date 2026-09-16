@@ -8324,3 +8324,79 @@ body.rafiki-modal-open {
   display: grid;
   gap: 10px;
 }
+
+/* Fase 39E - Cafetería adopta el mismo lenguaje visual de Restaurante en Mesas Compacta */
+.mesas-compacta-cafeteria-encabezado {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 12px;
+}
+
+.mesas-compacta-cafeteria-categorias {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mesas-compacta-cafeteria-opcion {
+  min-height: 72px;
+  border: 1px solid var(--border, #d9dee8);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.mesas-compacta-cafeteria-opcion span {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.mesas-compacta-cafeteria-opcion strong {
+  font-size: 0.98rem;
+}
+
+.mesas-compacta-cafeteria-opcion.active {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.12);
+}
+
+.mesas-compacta-cafeteria-modal-contenido > .cafeteria-placeholder > .compact-cafeteria-actions,
+.mesas-compacta-cafeteria-detalle-inline > .cafeteria-placeholder > .compact-cafeteria-actions,
+.mesas-compacta-cafeteria-modal-contenido > .cafeteria-placeholder > #mesa-cafeteria-panel,
+.mesas-compacta-cafeteria-detalle-inline > .cafeteria-placeholder > #mesa-cafeteria-panel {
+  display: none;
+}
+
+.mesas-compacta-cafeteria-modal-contenido .cafeteria-panel,
+.mesas-compacta-cafeteria-detalle-inline .cafeteria-panel {
+  margin-top: 0;
+}
+
+.mesas-compacta-cafeteria-detalle-inline {
+  margin-top: 12px;
+}
+
+/* Pedidos Hoy: navegación Pedidos / Mesas / Borrados siempre arriba */
+.pedidos-hoy-tabs-superiores {
+  margin-top: 10px;
+  margin-bottom: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  background: var(--surface, #fff);
+  padding: 6px 0;
+}
+
+@media (min-width: 760px) {
+  .mesas-compacta-cafeteria-categorias {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

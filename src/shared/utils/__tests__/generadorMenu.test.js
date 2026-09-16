@@ -3,7 +3,8 @@ import {
   limpiarLista,
   limpiarPrecio,
   generarTextoEditorMenu,
-  generarTextoAcompanantesEditor
+  generarTextoAcompanantesEditor,
+  aplicarSaAutomaticoArrocesPastas
 } from "../generadorMenu";
 
 describe("utils/generadorMenu", () => {
@@ -28,6 +29,29 @@ describe("utils/generadorMenu", () => {
     expect(texto).toContain("Sopas | sancocho de costilla:17000");
     expect(texto).toContain("Platos | Pechuga Asada sin salsa:16000");
     expect(texto).toContain("Sopas | Sancocho de pollo con arroz:15000");
+  });
+
+
+  it("aplica SA automáticamente solo a arroces y pastas al importar al editor", () => {
+    const resultado = aplicarSaAutomaticoArrocesPastas(
+      [
+        "Platos | Arroz con pollo:18000",
+        "Platos | Pastas boloñesa:19000",
+        "Sopas | Sancocho de pollo con arroz:16500",
+        "Platos | Carne guisada:19000",
+        "Pastas SA | Pasta carbonara:20000"
+      ].join("\n")
+    );
+
+    expect(resultado.texto).toContain("Platos SA | Arroz con pollo:18000");
+    expect(resultado.texto).toContain("Platos SA | Pastas boloñesa:19000");
+    expect(resultado.texto).toContain("Sopas | Sancocho de pollo con arroz:16500");
+    expect(resultado.texto).toContain("Platos | Carne guisada:19000");
+    expect(resultado.texto).toContain("Pastas SA | Pasta carbonara:20000");
+    expect(resultado.platosConSa).toEqual([
+      { nombre: "Arroz con pollo", tipo: "Arroz" },
+      { nombre: "Pastas boloñesa", tipo: "Pasta" }
+    ]);
   });
 
   it("genera acompañantes separados por 'o' y agrega Solo esos dos", () => {
