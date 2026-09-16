@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   agruparPlatosVisuales,
   categoriaRotacionMenu,
+  crearMapaUltimoUsoMenu,
   ordenarAcompanantesResumen,
   ordenarPlatosResumen,
+  ordenarProductosPorUltimoUso,
 } from "../generadorMenuViewUtils";
 
 describe("generadorMenuViewUtils", () => {
@@ -41,4 +43,23 @@ describe("generadorMenuViewUtils", () => {
     expect(categoriaRotacionMenu({ categoria: "Pastas", nombre: "Pastas" })).toBe("pastas");
     expect(categoriaRotacionMenu({ categoria: "Platos", nombre: "Pechuga asada" })).toBe("platos");
   });
+  it("ordena no usados desde el que lleva más tiempo sin aparecer", () => {
+    const historial = [
+      { fecha: "2026-09-10", platos: [{ nombre: "Pollo guisado" }] },
+      { fecha: "2026-08-20", platos: [{ nombre: "Pastas boloñesa" }] },
+    ];
+    const mapa = crearMapaUltimoUsoMenu(historial);
+    const ordenados = ordenarProductosPorUltimoUso([
+      { nombre: "Pollo guisado" },
+      { nombre: "Nunca usado" },
+      { nombre: "Pastas boloñesa" },
+    ], mapa);
+
+    expect(ordenados.map((item) => item.nombre)).toEqual([
+      "Nunca usado",
+      "Pastas boloñesa",
+      "Pollo guisado",
+    ]);
+  });
+
 });

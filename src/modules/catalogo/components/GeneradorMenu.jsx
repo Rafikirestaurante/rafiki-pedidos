@@ -23,27 +23,29 @@ import {
   PLATOS_GENERADOR_DEFECTO,
   agruparPlatosVisuales,
   categoriaRotacionMenu,
+  crearMapaUltimoUsoMenu,
   esProductoOcultoGenerador,
   fechaDentroDeRangoMenu,
   filtrarCatalogoMenu,
   leerBorradorGeneradorMenu,
   nombreVisualPlato,
   normalizarTextoCatalogo,
-  obtenerNombresHistorialRotacion,
   ordenarAcompanantesResumen,
   ordenarPlatosResumen,
+  ordenarProductosPorUltimoUso,
+  ordenarProductosUsadosRecientemente,
   productosRestauranteFallback,
   tipoAlertaGenerador,
   tituloAlertaGenerador,
 } from "../utils/generadorMenuViewUtils";
 
-export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
+export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenerador = null } = {}) {
   const borradorInicial = leerBorradorGeneradorMenu();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) && borradorInicial.platos.length ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
   const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
   const [mensaje, setMensaje] = useState("");
-  const [fechaMenu, setFechaMenu] = useState(() => fechaHoyISO());
+  const [fechaMenu, setFechaMenu] = useState(() => borradorInicial?.fechaMenu || fechaHoyISO());
   const [guardandoHistorial, setGuardandoHistorial] = useState(false);
   const [historial, setHistorial] = useState([]);
   const [paginaHistorial, setPaginaHistorial] = useState(1);
@@ -56,7 +58,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
   const [seleccionCatalogoPlatos, setSeleccionCatalogoPlatos] = useState([]);
   const [seleccionCatalogoAcompanantes, setSeleccionCatalogoAcompanantes] = useState([]);
-  const [pestanaGenerador, setPestanaGenerador] = useState(pestanaInicial === "historial" ? "historial" : "generador");
+  const pestanaGenerador = pestanaInicial === "historial" ? "historial" : "generador";
   const [modoInformeMenus, setModoInformeMenus] = useState("ultimos12");
   const [fechaInformeMenu, setFechaInformeMenu] = useState(() => fechaHoyISO());
   const [fechaInicioInformeMenu, setFechaInicioInformeMenu] = useState(() => fechaHoyISO());
@@ -219,45 +221,47 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
   }, [modoInformeMenus, fechaInformeMenu, fechaInicioInformeMenu, fechaFinInformeMenu]);
 
   const rotacionInteligenteMenu = useMemo(() => {
+    const DIAS_RECIENTES = 5;
     const configuracion = [
-      { key: "platos", titulo: "Platos", dias: 10, icono: "🍽️" },
-      { key: "guisos", titulo: "Guisos", dias: 5, icono: "🥘" },
-      { key: "sopas", titulo: "Sopas", dias: 5, icono: "🍲" },
-      { key: "pastas", titulo: "Pastas", dias: 5, icono: "🍝" }
+      { key: "platos", titulo: "Platos", icono: "🍽️" },
+      { key: "guisos", titulo: "Guisos", icono: "🥘" },
+      { key: "sopas", titulo: "Sopas", icono: "🍲" },
+      { key: "pastas", titulo: "Pastas", icono: "🍝" }
     ];
+
+    const mapaUltimoUso = crearMapaUltimoUsoMenu(historial);
 
     const catalogoPorCategoria = configuracion.reduce((acc, item) => {
       acc[item.key] = catalogoRestaurante
         .filter((producto) => producto.linea === "Restaurante" && producto.activo !== false && producto.agotado !== true)
         .filter((producto) => !esProductoOcultoGenerador(producto))
-        .filter((producto) => categoriaRotacionMenu(producto) === item.key)
-        .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre), "es", { sensitivity: "base" }));
+        .filter((producto) => categoriaRotacionMenu(producto) === item.key);
       return acc;
     }, {});
 
     return configuracion.map((config) => {
-      const usados = new Map();
-      historial
-        .filter((registro) => fechaDentroDeRangoMenu(registro.fecha, config.dias))
-        .forEach((registro) => {
-          obtenerNombresHistorialRotacion(registro).forEach((nombre) => {
-            const clave = normalizarTextoCatalogo(nombre);
-            const productoCatalogo = (catalogoPorCategoria[config.key] || []).find((producto) => normalizarTextoCatalogo(producto.nombre) === clave);
-            if (productoCatalogo && !usados.has(clave)) {
-              usados.set(clave, { nombre: productoCatalogo.nombre, fecha: registro.fecha });
-            }
-          });
-        });
-
-      const noUsados = (catalogoPorCategoria[config.key] || [])
-        .filter((producto) => !usados.has(normalizarTextoCatalogo(producto.nombre)))
-        .map((producto) => producto.nombre);
+      const productosCategoria = catalogoPorCategoria[config.key] || [];
+      const usadosProductos = ordenarProductosUsadosRecientemente(
+        productosCategoria.filter((producto) => {
+          const ultimoUso = mapaUltimoUso.get(normalizarTextoCatalogo(producto.nombre));
+          return fechaDentroDeRangoMenu(ultimoUso, DIAS_RECIENTES);
+        }),
+        mapaUltimoUso
+      );
+      const noUsadosProductos = ordenarProductosPorUltimoUso(
+        productosCategoria.filter((producto) => {
+          const ultimoUso = mapaUltimoUso.get(normalizarTextoCatalogo(producto.nombre));
+          return !fechaDentroDeRangoMenu(ultimoUso, DIAS_RECIENTES);
+        }),
+        mapaUltimoUso
+      );
 
       return {
         ...config,
-        usados: Array.from(usados.values()).map((item) => item.nombre),
-        noUsados,
-        totalCatalogo: (catalogoPorCategoria[config.key] || []).length
+        dias: DIAS_RECIENTES,
+        usados: usadosProductos.map((producto) => producto.nombre),
+        noUsados: noUsadosProductos.map((producto) => producto.nombre),
+        totalCatalogo: productosCategoria.length
       };
     });
   }, [catalogoRestaurante, historial]);
@@ -276,9 +280,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
     sugerenciasRotacionMenu.reduce((total, grupo) => total + grupo.sugeridos.length, 0)
   ), [sugerenciasRotacionMenu]);
 
-  useEffect(() => {
-    setPestanaGenerador(pestanaInicial === "historial" ? "historial" : "generador");
-  }, [pestanaInicial]);
 
   const totalPaginasHistorial = Math.max(1, Math.ceil(historial.length / 5));
 
@@ -684,8 +685,29 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
     }
   }
 
+  function abrirRegistroEnGenerador(registro) {
+    const platosRegistro = Array.isArray(registro?.platos) ? registro.platos : [];
+    const acompanantesRegistro = Array.isArray(registro?.acompanantes) ? registro.acompanantes : [];
+
+    try {
+      window.localStorage?.setItem(
+        GENERADOR_MENU_DRAFT_KEY,
+        JSON.stringify({
+          fechaMenu: registro?.fecha || fechaHoyISO(),
+          platos: platosRegistro.length ? platosRegistro : PLATOS_GENERADOR_DEFECTO,
+          acompanantes: acompanantesRegistro.join("\n"),
+          actualizadoEn: new Date().toISOString()
+        })
+      );
+    } catch {
+      // El historial sigue disponible aunque el navegador bloquee el almacenamiento local.
+    }
+
+    onIrGenerador?.();
+  }
+
   useEffect(() => {
-    cargarHistorialGenerador({ cargarUltimo: !borradorInicial });
+    cargarHistorialGenerador({ cargarUltimo: pestanaGenerador === "generador" && !borradorInicial });
   }, []);
 
   return (
@@ -693,17 +715,12 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
       {modalAlertaRafiki}
       <section className="card card-pad generador-menu">
       <div>
-        <h2>🎨 Generador de menú Rafiki</h2>
-        <p className="muted">Crea una imagen solo texto del menú para usarla en WhatsApp, Instagram o sobre una plantilla.</p>
-      </div>
-
-      <div className="generador-subtabs" role="tablist" aria-label="Secciones del generador de menú">
-        <button type="button" className={pestanaGenerador === "generador" ? "active" : ""} onClick={() => setPestanaGenerador("generador")}>
-          Generador
-        </button>
-        <button type="button" className={pestanaGenerador === "historial" ? "active" : ""} onClick={() => setPestanaGenerador("historial")}>
-          📊 Historial de menú
-        </button>
+        <h2>{pestanaGenerador === "historial" ? "📊 Historial de menú" : "🎨 Generador de menú Rafiki"}</h2>
+        <p className="muted">
+          {pestanaGenerador === "historial"
+            ? "Consulta menús anteriores y revisa la rotación de productos con una ventana reciente fija de 5 días."
+            : "Crea una imagen solo texto del menú para usarla en WhatsApp, Instagram o sobre una plantilla."}
+        </p>
       </div>
 
       {pestanaGenerador === "historial" && (
@@ -712,7 +729,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
             <div>
               <strong>Historial y rotación inteligente de menú</strong>
               <p className="muted small" style={{ marginBottom: 0 }}>
-                Revisa los últimos menús y detecta qué productos se han usado o no según la regla Rafiki: Platos 10 días; Guisos, Sopas y Pastas 5 días.
+                Revisa los últimos menús y detecta qué productos se han usado durante los últimos 5 días. El resto queda en “No usados recientemente”, ordenado desde el que lleva más tiempo sin usarse hasta el de uso más reciente.
               </p>
             </div>
             <button type="button" className="button light" onClick={() => cargarHistorialGenerador({ cargarUltimo: false })} disabled={cargandoHistorial}>
@@ -897,8 +914,8 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
                       key={registro.id}
                       type="button"
                       className="history-menu-item"
-                      onClick={() => { cargarRegistro(registro); setPestanaGenerador("generador"); }}
-                      title="Cargar este menú en el generador"
+                      onClick={() => abrirRegistroEnGenerador(registro)}
+                      title="Cargar este menú en la pestaña Generador de menú"
                     >
                       <strong>{registro.fecha}</strong>
                       <span>{Array.isArray(registro.platos) ? registro.platos.length : 0} platos · {Array.isArray(registro.acompanantes) ? registro.acompanantes.length : 0} acompañantes</span>
@@ -1167,46 +1184,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador" } = {}) {
             <img src={svgTextoUrl} alt="Vista previa menú Rafiki solo texto" style={{ display: "block", width: "100%", height: "auto" }} />
           </div>
 
-          <div className="box soft" style={{ marginTop: 14 }}>
-            <div className="generador-box-header">
-              <div>
-                <strong>Historial reciente</strong>
-                <p className="muted small" style={{ marginBottom: 0 }}>Paginado de 5 en 5 para que sea más cómodo desde celular.</p>
-              </div>
-              <button type="button" className="button light" onClick={() => cargarHistorialGenerador({ cargarUltimo: false })} disabled={cargandoHistorial} style={{ padding: "8px 10px" }}>
-                {cargandoHistorial ? "Cargando..." : "Actualizar"}
-              </button>
-            </div>
-            {historial.length === 0 ? (
-              <p className="muted small" style={{ marginBottom: 0 }}>Todavía no hay registros guardados.</p>
-            ) : (
-              <>
-                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                  {historialPaginado.map((registro) => (
-                    <button
-                      key={registro.id}
-                      type="button"
-                      className="history-menu-item"
-                      onClick={() => cargarRegistro(registro)}
-                      title="Cargar este menú en el generador"
-                    >
-                      <strong>{registro.fecha}</strong>
-                      <span>{Array.isArray(registro.platos) ? registro.platos.length : 0} platos · {Array.isArray(registro.acompanantes) ? registro.acompanantes.length : 0} acompañantes</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="historial-menu-paginacion">
-                  <button type="button" className="button light" onClick={() => setPaginaHistorial((actual) => Math.max(1, actual - 1))} disabled={paginaHistorial <= 1}>
-                    ← Anterior
-                  </button>
-                  <span>Página {paginaHistorial} de {totalPaginasHistorial}</span>
-                  <button type="button" className="button light" onClick={() => setPaginaHistorial((actual) => Math.min(totalPaginasHistorial, actual + 1))} disabled={paginaHistorial >= totalPaginasHistorial}>
-                    Siguiente →
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
         </div>
       </div>
 </section>

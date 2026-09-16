@@ -2,9 +2,6 @@
         .generador-menu, .generador-menu * { min-width: 0; }
         .generador-menu h2 { line-height: 1.05; }
         .generador-menu-grid { width: 100%; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 22px; align-items: start; margin-top: 18px; }
-        .generador-subtabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding: 6px; border-radius: 18px; background: #fff7ed; border: 1px solid #fed7aa; }
-        .generador-subtabs button { border: 1px solid transparent; background: transparent; color: #7c2d12; border-radius: 14px; padding: 10px 14px; font-weight: 950; cursor: pointer; }
-        .generador-subtabs button.active { background: #fff; border-color: #fdba74; box-shadow: 0 4px 12px rgba(124, 45, 18, 0.08); }
         .historial-inteligente-menu { margin-top: 16px; }
         .historial-inteligente-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         .rotacion-menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
@@ -85,7 +82,6 @@
         @media (max-width: 640px) {
           .generador-menu.card-pad { padding: 14px !important; border-radius: 22px; }
           .generador-menu h2 { font-size: 24px; }
-          .generador-subtabs button { flex: 1 1 140px; padding: 10px 8px; }
           .plato-menu-row { grid-template-columns: minmax(0, 1fr) 92px 34px; gap: 6px; }
           .box.soft input, .field input, .field textarea { padding: 10px 8px; font-size: 14px; }
           .acciones-generador .button, .generador-menu .button { width: 100%; justify-content: center; }

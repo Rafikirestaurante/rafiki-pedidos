@@ -114,7 +114,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [pedidoMesaConfirmado, setPedidoMesaConfirmado] = useState(null);
   const [cantidadCafeteria, setCantidadCafeteria] = useState(1);
   const [catalogoProductosMesa, setCatalogoProductosMesa] = useState(() => leerProductosCatalogoStorageMesas());
-  const [adicionalesRestauranteAbiertos, setAdicionalesRestauranteAbiertos] = useState(true);
+  const [adicionalesRestauranteAbiertos, setAdicionalesRestauranteAbiertos] = useState(false);
   const [clientesCreditoMesa, setClientesCreditoMesa] = useState(() => leerClientesCreditoGuardados());
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
   const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);

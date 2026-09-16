@@ -66,7 +66,7 @@ export default function AdminHeaderTabs({
             onClick={() => setAdminTab("historialMenu")}
             className={adminTab === "historialMenu" ? "active" : ""}
           >
-            Historial menú
+            Historial de menú
           </button>
         )}
 

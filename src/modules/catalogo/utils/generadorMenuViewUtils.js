@@ -129,15 +129,60 @@ export function obtenerNombresHistorialRotacion(registro) {
   return obtenerPlatosSinPrecio(registro);
 }
 
+
+export function crearMapaUltimoUsoMenu(historial = []) {
+  const ultimoUso = new Map();
+  historial.forEach((registro) => {
+    const fecha = String(registro?.fecha || "").trim();
+    if (!fecha) return;
+    obtenerNombresHistorialRotacion(registro).forEach((nombre) => {
+      const clave = normalizarTextoCatalogo(nombre);
+      if (!clave) return;
+      const fechaAnterior = ultimoUso.get(clave);
+      if (!fechaAnterior || fecha > fechaAnterior) ultimoUso.set(clave, fecha);
+    });
+  });
+  return ultimoUso;
+}
+
+export function ordenarProductosPorUltimoUso(productos = [], mapaUltimoUso = new Map()) {
+  return [...productos].sort((a, b) => {
+    const fechaA = mapaUltimoUso.get(normalizarTextoCatalogo(a?.nombre || a)) || "";
+    const fechaB = mapaUltimoUso.get(normalizarTextoCatalogo(b?.nombre || b)) || "";
+
+    // Nunca usados primero: llevan el mayor tiempo posible fuera de rotación.
+    if (!fechaA && fechaB) return -1;
+    if (fechaA && !fechaB) return 1;
+
+    // Entre productos usados, la fecha más antigua va primero.
+    const diferenciaFecha = fechaA.localeCompare(fechaB);
+    if (diferenciaFecha !== 0) return diferenciaFecha;
+
+    return String(a?.nombre || a).localeCompare(String(b?.nombre || b), "es", { sensitivity: "base" });
+  });
+}
+
+export function ordenarProductosUsadosRecientemente(productos = [], mapaUltimoUso = new Map()) {
+  return [...productos].sort((a, b) => {
+    const fechaA = mapaUltimoUso.get(normalizarTextoCatalogo(a?.nombre || a)) || "";
+    const fechaB = mapaUltimoUso.get(normalizarTextoCatalogo(b?.nombre || b)) || "";
+    const diferenciaFecha = fechaB.localeCompare(fechaA);
+    if (diferenciaFecha !== 0) return diferenciaFecha;
+    return String(a?.nombre || a).localeCompare(String(b?.nombre || b), "es", { sensitivity: "base" });
+  });
+}
+
 export function fechaDentroDeRangoMenu(fecha, dias) {
   if (!fecha) return false;
   const fechaRegistro = new Date(`${fecha}T12:00:00`);
   if (Number.isNaN(fechaRegistro.getTime())) return false;
 
   const hoy = new Date();
-  const limite = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const finHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+  const limite = new Date(inicioHoy);
   limite.setDate(limite.getDate() - (Number(dias) - 1));
-  return fechaRegistro >= limite;
+  return fechaRegistro >= limite && fechaRegistro <= finHoy;
 }
 
 export function productosRestauranteFallback() {
