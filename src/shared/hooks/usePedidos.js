@@ -39,6 +39,7 @@ export function usePedidos({
   telefono,
   ubicacion,
   comerRestauranteCliente = false,
+  mesaClienteQr = null,
   clienteEspecialAplicado = null,
   tipoPago,
   observaciones,
@@ -101,7 +102,9 @@ export function usePedidos({
 
     const clienteEspecialPedido = normalizarClienteEspecialParaPedido(clienteEspecialAplicado);
 
-    const itemsClienteNormalizados = normalizarItemsParaDestinoCliente(itemsPedido, { comerRestauranteCliente });
+    const pedidoMesaQr = Boolean(mesaClienteQr);
+    const comerEnRestauranteEfectivo = pedidoMesaQr || comerRestauranteCliente;
+    const itemsClienteNormalizados = normalizarItemsParaDestinoCliente(itemsPedido, { comerRestauranteCliente: comerEnRestauranteEfectivo });
 
     const itemsValidos = itemsClienteNormalizados
       .filter((item) => item.plato || item.proteina || item.producto)
@@ -113,7 +116,7 @@ export function usePedidos({
           cliente_especial: clienteEspecialPedido || undefined,
           acompanantes: sinAcompanantes ? [] : limpiarAcompanantesCliente(item.acompanantes || []),
           observacionAcompanantes: sinAcompanantes ? "" : (item.observacionAcompanantes || "").trim(),
-          paraLlevar: !comerRestauranteCliente
+          paraLlevar: !comerEnRestauranteEfectivo
         };
       });
 
@@ -126,7 +129,7 @@ export function usePedidos({
 
     if (!cliente.trim()) camposFaltantes.push("nombre");
     if (!telefono.trim()) camposFaltantes.push("teléfono");
-    if (!comerRestauranteCliente && !ubicacion.trim()) camposFaltantes.push("ubicación");
+    if (!comerEnRestauranteEfectivo && !ubicacion.trim()) camposFaltantes.push("ubicación");
     if (!tipoPago) camposFaltantes.push("forma de pago");
 
     if (camposFaltantes.length > 0) {
@@ -146,7 +149,7 @@ export function usePedidos({
 
     const clienteNombre = limpiarTexto(cliente, 120);
     const telefonoLimpio = limpiarTelefono(telefono);
-    const ubicacionLimpia = comerRestauranteCliente ? "Comer en restaurante" : limpiarTexto(ubicacion, 200);
+    const ubicacionLimpia = pedidoMesaQr ? `Mesa ${mesaClienteQr}` : (comerRestauranteCliente ? "Comer en restaurante" : limpiarTexto(ubicacion, 200));
     const observacionesLimpias = limpiarTexto(observaciones, 500);
 
     if (!clienteNombre || !telefonoLimpio || !ubicacionLimpia) {
@@ -163,9 +166,9 @@ export function usePedidos({
       telefono: telefonoLimpio,
       ubicacion: ubicacionLimpia,
       tipo_pago: tipoPago,
-      tipo_pedido: comerRestauranteCliente ? "mesa" : "llevar",
-      mesa: comerRestauranteCliente ? "5A" : null,
-      mesero: "Aplicacion",
+      tipo_pedido: comerEnRestauranteEfectivo ? "mesa" : "llevar",
+      mesa: pedidoMesaQr ? mesaClienteQr : (comerRestauranteCliente ? "5A" : null),
+      mesero: pedidoMesaQr ? "Cliente QR" : "Aplicacion",
       observaciones: observacionesLimpias,
       items: itemsValidos,
       pedido_texto: pedidoTexto,
@@ -175,7 +178,7 @@ export function usePedidos({
     };
 
     const guardarOfflineCliente = (mensajeOffline) => {
-      const pendiente = guardarPedidoPendienteOffline(nuevoPedido, { origen: "cliente" });
+      const pendiente = guardarPedidoPendienteOffline(nuevoPedido, { origen: pedidoMesaQr ? "cliente_qr_mesa" : "cliente" });
       const pedidoOffline = {
         ...nuevoPedido,
         id_temporal: pendiente.id_temporal,
@@ -243,6 +246,7 @@ export function usePedidos({
     tipoPago,
     ubicacion,
     comerRestauranteCliente,
+    mesaClienteQr,
     clienteEspecialAplicado,
   ]);
 

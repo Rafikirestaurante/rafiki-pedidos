@@ -22,7 +22,8 @@ function rutaInicialSeguraPWA(ruta) {
   // La raíz pública del navegador sigue redirigiendo a /cliente desde Vercel,
   // pero el ícono instalado usa start_url=/mesas?app=mesas.
   // También corregimos instalaciones viejas que todavía abran /admin?app=admin.
-  if (ruta === "/" || ruta === "/cliente" || ruta === "/pedido" || arranqueAdminVersionAnterior) {
+  const accesoMesaQr = ruta === "/cliente" && Boolean(params.get("m"));
+  if ((ruta === "/" || ruta === "/cliente" || ruta === "/pedido" || arranqueAdminVersionAnterior) && !accesoMesaQr) {
     return "/mesas";
   }
 

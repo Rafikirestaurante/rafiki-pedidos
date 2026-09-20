@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase, supabaseConfigOk } from "./supabaseClient";
 import { obtenerVistaInicial, actualizarRuta } from "./shared/utils/navigation";
+import { obtenerMesaQrDesdeUrl } from "./shared/utils/mesasQr";
 import { useConfirmacion } from "./shared/components/common";
 import { MAX_ACOMPANANTES_CLIENTE } from "./data/menuAlmuerzos";
 import {
@@ -59,12 +60,13 @@ function crearItemClienteInicial({ comerRestaurante = false } = {}) {
 
 export default function App() {
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
+  const [mesaClienteQr] = useState(() => obtenerMesaQrDesdeUrl());
   const [vista, setVista] = useState(() => obtenerVistaInicial());
-  const [itemsPedido, setItemsPedido] = useState([crearItemClienteInicial()]);
+  const [itemsPedido, setItemsPedido] = useState([crearItemClienteInicial({ comerRestaurante: Boolean(mesaClienteQr) })]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [ubicacion, setUbicacion] = useState("");
-  const [comerRestauranteCliente, setComerRestauranteCliente] = useState(false);
+  const [comerRestauranteCliente, setComerRestauranteCliente] = useState(() => Boolean(mesaClienteQr));
   const [clienteEspecialAplicado, setClienteEspecialAplicado] = useState(null);
   const [tipoPago, setTipoPago] = useState("");
   const [observaciones, setObservaciones] = useState("");
@@ -680,11 +682,11 @@ export default function App() {
   }
 
   function reiniciarPedido() {
-    setItemsPedido([crearItemClienteInicial()]);
+    setItemsPedido([crearItemClienteInicial({ comerRestaurante: Boolean(mesaClienteQr) })]);
     setCliente("");
     setTelefono("");
     setUbicacion("");
-    setComerRestauranteCliente(false);
+    setComerRestauranteCliente(Boolean(mesaClienteQr));
     setClienteEspecialAplicado(null);
     setTipoPago("");
     setObservaciones("");
@@ -714,6 +716,7 @@ export default function App() {
     telefono,
     ubicacion,
     comerRestauranteCliente,
+    mesaClienteQr,
     clienteEspecialAplicado,
     tipoPago,
     observaciones,
@@ -767,7 +770,11 @@ export default function App() {
 
   function nuevoPedidoCliente() {
     reiniciarPedido();
-    navegar("/cliente", "cliente");
+    if (mesaClienteQr) {
+      setVista("cliente");
+    } else {
+      navegar("/cliente", "cliente");
+    }
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
   }
 
@@ -920,6 +927,7 @@ export default function App() {
                   telefono={telefono}
                   ubicacion={ubicacion}
                   comerRestauranteCliente={comerRestauranteCliente}
+                  mesaClienteQr={mesaClienteQr}
                   tipoPago={tipoPago}
                   observaciones={observaciones}
                   errorDatosPedido={errorDatosPedido}
