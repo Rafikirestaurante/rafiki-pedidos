@@ -1,5 +1,5 @@
 export const RAFIKI_BUILD = {
-  version: "128.7-FASE39G-DASHBOARD-FILTROS-PRODUCTOS-CAFETERIA-COMPACTA-2026-09-16",
+  version: "128.8-FASE39H-PEDIDOS-QR-MESAS-2026-09-20",
   phase: "Fase 39G - Dashboard filtrable por categoría/productos y Cafetería Compacta simplificada",
   date: "2026-09-16",
   fase: "39G-DASHBOARD-FILTROS-PRODUCTOS-CAFETERIA-COMPACTA",

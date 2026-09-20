@@ -30,6 +30,7 @@ export default function PedidoCliente({
   telefono,
   ubicacion,
   comerRestauranteCliente = false,
+  mesaClienteQr = null,
   tipoPago,
   observaciones,
   errorDatosPedido,
@@ -130,6 +131,7 @@ export default function PedidoCliente({
               <section className="card" id="inicio-pedido-cliente">
                 <div className="hero">
                   <p>{menu.fecha}</p>
+                  {mesaClienteQr ? <div className="box soft" style={{ marginBottom: 12 }}><strong>🍽️ Pedido para Mesa {mesaClienteQr}</strong><div className="muted small">Esta mesa fue identificada automáticamente desde el QR.</div></div> : null}
                   <h2>{menu.titulo}</h2>
                   <p>{menu.descripcion}</p>
                 </div>
@@ -144,7 +146,7 @@ export default function PedidoCliente({
                     setCliente={setCliente}
                     setTelefono={setTelefono}
                     setUbicacion={setUbicacion}
-                    setComerRestauranteCliente={setComerRestauranteCliente}
+                    setComerRestauranteCliente={mesaClienteQr ? () => setComerRestauranteCliente?.(true) : setComerRestauranteCliente}
                     setErrorDatosPedido={setErrorDatosPedido}
                   />
 
@@ -494,34 +496,43 @@ export default function PedidoCliente({
                       placeholder="Ej: 300 123 4567"
                     />
 
-                    <label className="field cliente-restaurante-toggle">
-                      <span>🍽️ Comer en el restaurante</span>
-                      <label className="inline-check cliente-restaurante-check">
-                        <input
-                          type="checkbox"
-                          checked={comerRestauranteCliente}
-                          onChange={(e) => {
-                            const marcado = e.target.checked;
-                            setComerRestauranteCliente?.(marcado);
-                          }}
-                        />
-                        <span>Registrar este pedido para comer en el restaurante</span>
-                      </label>
-                      {comerRestauranteCliente ? (
-                        <small className="muted">Se guardará internamente como mesa 5A, con ubicación “Comer en restaurante”, y sin recargo de para llevar.</small>
-                      ) : null}
-                    </label>
+                    {mesaClienteQr ? (
+                      <div className="box soft cliente-restaurante-toggle">
+                        <strong>🍽️ Mesa {mesaClienteQr}</strong>
+                        <p className="muted u-mb-0">El pedido se enviará a cocina identificado con esta mesa. No necesitas seleccionar ubicación.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <label className="field cliente-restaurante-toggle">
+                          <span>🍽️ Comer en el restaurante</span>
+                          <label className="inline-check cliente-restaurante-check">
+                            <input
+                              type="checkbox"
+                              checked={comerRestauranteCliente}
+                              onChange={(e) => {
+                                const marcado = e.target.checked;
+                                setComerRestauranteCliente?.(marcado);
+                              }}
+                            />
+                            <span>Registrar este pedido para comer en el restaurante</span>
+                          </label>
+                          {comerRestauranteCliente ? (
+                            <small className="muted">Se guardará como pedido de mesa y sin recargo de para llevar.</small>
+                          ) : null}
+                        </label>
 
-                    <CampoTexto
-                      etiqueta="📍 Ubicación"
-                      value={comerRestauranteCliente ? "Comer en restaurante" : ubicacion}
-                      onChange={(valor) => {
-                        setUbicacion(valor);
-                        if (comerRestauranteCliente) setComerRestauranteCliente?.(false, { preservarUbicacion: true });
-                        if (errorDatosPedido) setErrorDatosPedido("");
-                      }}
-                      placeholder="Ej: Edificio, oficina o barrio"
-                    />
+                        <CampoTexto
+                          etiqueta="📍 Ubicación"
+                          value={comerRestauranteCliente ? "Comer en restaurante" : ubicacion}
+                          onChange={(valor) => {
+                            setUbicacion(valor);
+                            if (comerRestauranteCliente) setComerRestauranteCliente?.(false, { preservarUbicacion: true });
+                            if (errorDatosPedido) setErrorDatosPedido("");
+                          }}
+                          placeholder="Ej: Edificio, oficina o barrio"
+                        />
+                      </>
+                    )}
 
                     <label className="field">
                       <span>💳 Tipo de pago</span>
