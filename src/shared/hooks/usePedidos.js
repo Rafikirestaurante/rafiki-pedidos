@@ -128,9 +128,9 @@ export function usePedidos({
     const camposFaltantes = [];
 
     if (!cliente.trim()) camposFaltantes.push("nombre");
-    if (!telefono.trim()) camposFaltantes.push("teléfono");
+    if (!pedidoMesaQr && !telefono.trim()) camposFaltantes.push("teléfono");
     if (!comerEnRestauranteEfectivo && !ubicacion.trim()) camposFaltantes.push("ubicación");
-    if (!tipoPago) camposFaltantes.push("forma de pago");
+    if (!pedidoMesaQr && !tipoPago) camposFaltantes.push("forma de pago");
 
     if (camposFaltantes.length > 0) {
       const textoError = `Falta ingresar: ${camposFaltantes.join(", ")}.`;
@@ -148,12 +148,15 @@ export function usePedidos({
     setErrorDatosPedido("");
 
     const clienteNombre = limpiarTexto(cliente, 120);
-    const telefonoLimpio = limpiarTelefono(telefono);
+    const telefonoLimpio = pedidoMesaQr ? "" : limpiarTelefono(telefono);
     const ubicacionLimpia = pedidoMesaQr ? `Mesa ${mesaClienteQr}` : (comerRestauranteCliente ? "Comer en restaurante" : limpiarTexto(ubicacion, 200));
+    const tipoPagoPedido = pedidoMesaQr ? "Pago en mesa" : tipoPago;
     const observacionesLimpias = limpiarTexto(observaciones, 500);
 
-    if (!clienteNombre || !telefonoLimpio || !ubicacionLimpia) {
-      setErrorDatosPedido("Revisa nombre, teléfono y ubicación. Hay datos inválidos o incompletos.");
+    if (!clienteNombre || (!pedidoMesaQr && !telefonoLimpio) || !ubicacionLimpia) {
+      setErrorDatosPedido(pedidoMesaQr
+        ? "Revisa el nombre del cliente antes de enviar el pedido."
+        : "Revisa nombre, teléfono y ubicación. Hay datos inválidos o incompletos.");
       return;
     }
 
@@ -165,7 +168,7 @@ export function usePedidos({
       cliente_nombre: clienteNombre,
       telefono: telefonoLimpio,
       ubicacion: ubicacionLimpia,
-      tipo_pago: tipoPago,
+      tipo_pago: tipoPagoPedido,
       tipo_pedido: comerEnRestauranteEfectivo ? "mesa" : "llevar",
       mesa: pedidoMesaQr ? mesaClienteQr : (comerRestauranteCliente ? "5A" : null),
       mesero: pedidoMesaQr ? "Cliente QR" : "Aplicacion",

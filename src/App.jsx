@@ -428,11 +428,11 @@ export default function App() {
     [menu.platos_detalle]
   );
 
-  const mensajeWhatsAppFinal = pedidoFinalizado ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
+  const mensajeWhatsAppFinal = pedidoFinalizado && !mesaClienteQr ? crearMensajeWhatsAppPedido(pedidoFinalizado) : "";
   const whatsappRafikiDisponible = Boolean(limpiarTelefonoWhatsApp(WHATSAPP_RAFIKI));
 
   const linkWhatsAppFinal =
-    pedidoFinalizado && whatsappRafikiDisponible
+    pedidoFinalizado && !mesaClienteQr && whatsappRafikiDisponible
       ? crearLinkWhatsApp(WHATSAPP_RAFIKI, mensajeWhatsAppFinal)
       : "#";
 
@@ -980,6 +980,7 @@ export default function App() {
                 whatsappRafikiDisponible={whatsappRafikiDisponible}
                 linkWhatsAppFinal={linkWhatsAppFinal}
                 nuevoPedidoCliente={nuevoPedidoCliente}
+                esPedidoMesaQr={Boolean(mesaClienteQr)}
               />
             )}
 
