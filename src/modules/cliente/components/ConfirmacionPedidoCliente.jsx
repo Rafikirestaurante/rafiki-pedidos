@@ -6,6 +6,7 @@ export default function ConfirmacionPedidoCliente({
   whatsappRafikiDisponible,
   linkWhatsAppFinal,
   nuevoPedidoCliente,
+  esPedidoMesaQr = false,
 }) {
   const clienteEspecial = obtenerClienteEspecialPedido(pedidoFinalizado);
   const tienePrivilegiosEspeciales = Boolean(
@@ -35,17 +36,21 @@ export default function ConfirmacionPedidoCliente({
                       <span>Cliente</span>
                       <strong>{pedidoFinalizado.cliente || pedidoFinalizado.cliente_nombre || "Cliente"}</strong>
                     </div>
+                    {!esPedidoMesaQr ? (
+                      <div className="confirmacion-info-item">
+                        <span>Teléfono</span>
+                        <strong>{pedidoFinalizado.telefono || "Sin teléfono"}</strong>
+                      </div>
+                    ) : null}
+                    {!esPedidoMesaQr ? (
+                      <div className="confirmacion-info-item">
+                        <span>Pago</span>
+                        <strong>{pedidoFinalizado.tipo_pago || "No especificado"}</strong>
+                      </div>
+                    ) : null}
                     <div className="confirmacion-info-item">
-                      <span>Teléfono</span>
-                      <strong>{pedidoFinalizado.telefono || "Sin teléfono"}</strong>
-                    </div>
-                    <div className="confirmacion-info-item">
-                      <span>Pago</span>
-                      <strong>{pedidoFinalizado.tipo_pago || "No especificado"}</strong>
-                    </div>
-                    <div className="confirmacion-info-item">
-                      <span>Ubicación</span>
-                      <strong>{pedidoFinalizado.ubicacion || ""}</strong>
+                      <span>{esPedidoMesaQr ? "Mesa" : "Ubicación"}</span>
+                      <strong>{esPedidoMesaQr ? (pedidoFinalizado.mesa || pedidoFinalizado.ubicacion || "") : (pedidoFinalizado.ubicacion || "")}</strong>
                     </div>
                   </div>
 
@@ -68,20 +73,22 @@ export default function ConfirmacionPedidoCliente({
                   <div className="confirmacion-ok">Pedido enviado a cocina correctamente.</div>
 
                   <div className="confirmacion-actions">
-                    {whatsappRafikiDisponible ? (
-                      <a
-                        href={linkWhatsAppFinal}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="button green whatsapp-confirm-button"
-                      >
-                        {BOTONES.CONFIRMAR_WHATSAPP}
-                      </a>
-                    ) : (
-                      <div className="confirmacion-warning" role="alert">
-                        WhatsApp no está configurado. El pedido ya fue enviado a cocina correctamente.
-                      </div>
-                    )}
+                    {!esPedidoMesaQr ? (
+                      whatsappRafikiDisponible ? (
+                        <a
+                          href={linkWhatsAppFinal}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="button green whatsapp-confirm-button"
+                        >
+                          {BOTONES.CONFIRMAR_WHATSAPP}
+                        </a>
+                      ) : (
+                        <div className="confirmacion-warning" role="alert">
+                          WhatsApp no está configurado. El pedido ya fue enviado a cocina correctamente.
+                        </div>
+                      )
+                    ) : null}
                     <button type="button" onClick={nuevoPedidoCliente} className="button light" style={{ width: "100%" }}>
                       Hacer otro pedido
                     </button>

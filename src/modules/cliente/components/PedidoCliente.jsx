@@ -469,9 +469,11 @@ export default function PedidoCliente({
                     <div id="paso-datos-entrega" className="step-title u-mt-18">
                       <span className="step-number">3</span>
                       <div>
-                        <h4>Datos de entrega</h4>
+                        <h4>{mesaClienteQr ? "Datos del pedido" : "Datos de entrega"}</h4>
                         <p className="muted u-mb-0">
-                          Así sabremos a dónde llevar tu pedido.
+                          {mesaClienteQr
+                            ? `Escribe tu nombre para identificar el pedido de la Mesa ${mesaClienteQr}.`
+                            : "Así sabremos a dónde llevar tu pedido."}
                         </p>
                       </div>
                     </div>
@@ -486,15 +488,17 @@ export default function PedidoCliente({
                       placeholder="Ej: Laura Pérez"
                     />
 
-                    <CampoTexto
-                      etiqueta="📞 Teléfono"
-                      value={telefono}
-                      onChange={(valor) => {
-                        setTelefono(valor);
-                        if (errorDatosPedido) setErrorDatosPedido("");
-                      }}
-                      placeholder="Ej: 300 123 4567"
-                    />
+                    {!mesaClienteQr ? (
+                      <CampoTexto
+                        etiqueta="📞 Teléfono"
+                        value={telefono}
+                        onChange={(valor) => {
+                          setTelefono(valor);
+                          if (errorDatosPedido) setErrorDatosPedido("");
+                        }}
+                        placeholder="Ej: 300 123 4567"
+                      />
+                    ) : null}
 
                     {mesaClienteQr ? (
                       <div className="box soft cliente-restaurante-toggle">
@@ -534,26 +538,30 @@ export default function PedidoCliente({
                       </>
                     )}
 
-                    <label className="field">
-                      <span>💳 Tipo de pago</span>
-                      <select value={tipoPago} onChange={(e) => {
-                        setTipoPago(e.target.value);
-                        if (errorDatosPedido) setErrorDatosPedido("");
-                      }}>
-                        <option value="">Selecciona una forma de pago</option>
-                        {FORMAS_PAGO_CLIENTE.map((metodo) => (
-                          <option key={metodo} value={metodo}>{metodo}</option>
-                        ))}
-                      </select>
-                    </label>
+                    {!mesaClienteQr ? (
+                      <>
+                        <label className="field">
+                          <span>💳 Tipo de pago</span>
+                          <select value={tipoPago} onChange={(e) => {
+                            setTipoPago(e.target.value);
+                            if (errorDatosPedido) setErrorDatosPedido("");
+                          }}>
+                            <option value="">Selecciona una forma de pago</option>
+                            {FORMAS_PAGO_CLIENTE.map((metodo) => (
+                              <option key={metodo} value={metodo}>{metodo}</option>
+                            ))}
+                          </select>
+                        </label>
 
-                    {tipoPago === "Transferencia" ? <TransferenciaPagoInfo /> : null}
+                        {tipoPago === "Transferencia" ? <TransferenciaPagoInfo /> : null}
+                      </>
+                    ) : null}
 
                     <CampoTexto
                       etiqueta="Observaciones generales"
                       value={observaciones}
                       onChange={setObservaciones}
-                      placeholder="Ej: llevar a recepción, sin cubiertos, pago en efectivo..."
+                      placeholder={mesaClienteQr ? "Ej: sin cubiertos, bebida sin hielo..." : "Ej: llevar a recepción, sin cubiertos, pago en efectivo..."}
                       multiline
                       maxLength={80}
                     />
