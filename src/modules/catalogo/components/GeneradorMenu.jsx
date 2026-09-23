@@ -42,7 +42,7 @@ import {
 export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenerador = null } = {}) {
   const borradorInicial = leerBorradorGeneradorMenu();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
-  const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) && borradorInicial.platos.length ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
+  const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
   const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
   const [mensaje, setMensaje] = useState("");
   const [fechaMenu, setFechaMenu] = useState(() => borradorInicial?.fechaMenu || fechaHoyISO());
@@ -56,8 +56,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
   const [busquedaPlatos, setBusquedaPlatos] = useState("");
   const [busquedaSopas, setBusquedaSopas] = useState("");
   const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
-  const [seleccionCatalogoPlatos, setSeleccionCatalogoPlatos] = useState([]);
-  const [seleccionCatalogoAcompanantes, setSeleccionCatalogoAcompanantes] = useState([]);
   const pestanaGenerador = pestanaInicial === "historial" ? "historial" : "generador";
   const [modoInformeMenus, setModoInformeMenus] = useState("ultimos12");
   const [fechaInformeMenu, setFechaInformeMenu] = useState(() => fechaHoyISO());
@@ -140,13 +138,13 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
 
 
   const nombresPlatosSeleccionados = useMemo(
-    () => new Set(seleccionCatalogoPlatos.map((plato) => normalizarTextoCatalogo(plato.nombre)).filter(Boolean)),
-    [seleccionCatalogoPlatos]
+    () => new Set(platos.map((plato) => normalizarTextoCatalogo(plato.nombre)).filter(Boolean)),
+    [platos]
   );
 
   const nombresAcompanantesSeleccionados = useMemo(
-    () => new Set(seleccionCatalogoAcompanantes.map((item) => normalizarTextoCatalogo(item.nombre || item)).filter(Boolean)),
-    [seleccionCatalogoAcompanantes]
+    () => new Set(limpiarLista(acompanantes).map(normalizarTextoCatalogo).filter(Boolean)),
+    [acompanantes]
   );
 
   const textoEditorMenu = useMemo(() => generarTextoEditorMenu(platosLimpios), [platosLimpios]);
@@ -336,39 +334,27 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
 
   function alternarProductoCatalogoAlMenu(producto) {
     if (!producto?.nombre) return;
-    setSeleccionCatalogoPlatos((actual) => {
+    setPlatos((actual) => {
       const claveProducto = normalizarTextoCatalogo(producto.nombre);
       const existe = actual.some((plato) => normalizarTextoCatalogo(plato.nombre) === claveProducto);
       if (existe) return actual.filter((plato) => normalizarTextoCatalogo(plato.nombre) !== claveProducto);
-      return [...actual, producto].slice(0, 12);
+      const completos = actual.filter((plato) => plato.nombre?.trim() || String(plato.precio || "").trim());
+      if (completos.length >= 12) return actual;
+      return [...completos, { nombre: producto.nombre, precio: "" }];
     });
   }
 
   function alternarAcompananteCatalogo(producto) {
     if (!producto?.nombre) return;
-    setSeleccionCatalogoAcompanantes((actual) => {
+    setAcompanantes((actual) => {
       const claveProducto = normalizarTextoCatalogo(producto.nombre);
-      const existe = actual.some((item) => normalizarTextoCatalogo(item.nombre || item) === claveProducto);
-      if (existe) return actual.filter((item) => normalizarTextoCatalogo(item.nombre || item) !== claveProducto);
-      return [...actual, producto];
+      const lista = limpiarLista(actual);
+      const existe = lista.some((item) => normalizarTextoCatalogo(item) === claveProducto);
+      return (existe ? lista.filter((item) => normalizarTextoCatalogo(item) !== claveProducto) : [...lista, producto.nombre]).join("\n");
     });
   }
 
-  function actualizarResumenDesdeSeleccion() {
-    const preciosActuales = new Map(platos.map((plato) => [normalizarTextoCatalogo(plato.nombre), plato.precio]));
-    const platosOrdenados = ordenarPlatosResumen(seleccionCatalogoPlatos).map((producto) => ({
-      nombre: producto.nombre,
-      precio: preciosActuales.get(normalizarTextoCatalogo(producto.nombre)) || ""
-    }));
-    const acompanantesOrdenados = ordenarAcompanantesResumen(seleccionCatalogoAcompanantes).map((producto) => producto.nombre || producto);
-    setPlatos(platosOrdenados);
-    setAcompanantes(acompanantesOrdenados.join("\n"));
-    setMensaje("Resumen actualizado con la selección del catálogo.");
-  }
-
   function borrarSeleccionCompleta() {
-    setSeleccionCatalogoPlatos([]);
-    setSeleccionCatalogoAcompanantes([]);
     setPlatos([]);
     setAcompanantes("");
     setMensaje("Selección del generador borrada.");
@@ -377,7 +363,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
   function quitarAcompananteResumen(nombre) {
     const clave = normalizarTextoCatalogo(nombre);
     setAcompanantes((actual) => limpiarLista(actual).filter((item) => normalizarTextoCatalogo(item) !== clave).join("\n"));
-    setSeleccionCatalogoAcompanantes((actual) => actual.filter((item) => normalizarTextoCatalogo(item.nombre || item) !== clave));
   }
 
   function descargarDesdeSvg(url, nombreArchivo, mensajeOk, transparente = false, ancho = 1080, alto = 1080) {
@@ -630,8 +615,15 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
       const resultado = await supabase
         .from("historial_generador_menu")
         .update(registroParaGuardar)
-        .eq("id", registroExistente.id);
+        .eq("id", registroExistente.id)
+        .select("id")
+        .maybeSingle();
       error = resultado.error;
+      if (!error && !resultado.data?.id) {
+        setMensaje("No se actualizó el menú en el historial. Revisa los permisos e inténtalo de nuevo.");
+        setGuardandoHistorial(false);
+        return false;
+      }
     } else {
       const resultado = await supabase
         .from("historial_generador_menu")
@@ -703,11 +695,12 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
       // El historial sigue disponible aunque el navegador bloquee el almacenamiento local.
     }
 
+    cargarRegistro(registro, { silencioso: true });
     onIrGenerador?.();
   }
 
   useEffect(() => {
-    cargarHistorialGenerador({ cargarUltimo: pestanaGenerador === "generador" && !borradorInicial });
+    cargarHistorialGenerador({ cargarUltimo: false });
   }, []);
 
   return (
@@ -1051,16 +1044,13 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
               <div>
                 <strong>Resumen del menú seleccionado</strong>
                 <p className="muted small" style={{ marginBottom: 0 }}>
-                  Aquí puedes ajustar precios, agregar algo después de cualquier plato y ordenar el menú como debe salir impreso.
+                  Los cambios del catálogo aparecen aquí al instante. Puedes editar platos, precios y acompañantes sin perder los ajustes anteriores.
                 </p>
               </div>
               <span className="badge">{platosLimpios.length} platos · {listaAcompanantes.length} acompañantes</span>
             </div>
 
             <div className="resumen-menu-actions">
-              <button type="button" className="button" onClick={actualizarResumenDesdeSeleccion}>
-                Actualizar resumen con selección
-              </button>
               <button type="button" className="button light resumen-clear-button" onClick={ordenarPlatosConReglaRafiki} disabled={platos.length < 2}>
                 Orden Rafiki
               </button>
@@ -1132,7 +1122,10 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
 
           <div className="box soft acciones-generador" style={{ marginTop: 14 }}>
             <strong>Acciones</strong>
-            <p className="muted small">Guarda automáticamente en el historial y descarga la imagen solo texto.</p>
+            <p className="muted small">Tus cambios se conservan como borrador en este dispositivo. Puedes guardarlos en el historial sin descargar la imagen.</p>
+            <button type="button" className="button light" onClick={() => guardarHistorialGenerador()} disabled={guardandoHistorial}>
+              {guardandoHistorial ? "Guardando..." : "Guardar cambios"}
+            </button>
             <button type="button" className="button download-text-button" onClick={descargarSoloTexto} disabled={guardandoHistorial}>
               {guardandoHistorial ? "Guardando..." : "Guardar y descargar"}
             </button>

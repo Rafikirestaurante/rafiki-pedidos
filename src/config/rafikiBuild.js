@@ -1,5 +1,5 @@
 export const RAFIKI_BUILD = {
-  version: "128.9-FASE39H1-QR-SIN-PAGO-TELEFONO-WHATSAPP-2026-09-21",
+  version: "129.1-FASE40B-EDICION-GENERADOR-MENU-2026-09-23",
   phase: "Fase 39H.1 - Flujo QR de mesa simplificado",
   date: "2026-09-21",
   fase: "39H1-QR-SIN-PAGO-TELEFONO-WHATSAPP",
