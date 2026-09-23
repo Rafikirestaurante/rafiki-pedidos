@@ -19,7 +19,6 @@ import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/
 
 import {
   ACOMPANANTES_GENERADOR_DEFECTO,
-  GENERADOR_MENU_DRAFT_KEY,
   PLATOS_GENERADOR_DEFECTO,
   agruparPlatosVisuales,
   categoriaRotacionMenu,
@@ -27,7 +26,6 @@ import {
   esProductoOcultoGenerador,
   fechaDentroDeRangoMenu,
   filtrarCatalogoMenu,
-  leerBorradorGeneradorMenu,
   nombreVisualPlato,
   normalizarTextoCatalogo,
   ordenarAcompanantesResumen,
@@ -40,7 +38,7 @@ import {
 } from "../utils/generadorMenuViewUtils";
 
 export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenerador = null } = {}) {
-  const borradorInicial = leerBorradorGeneradorMenu();
+  const borradorInicial = null;
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
   const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
@@ -156,24 +154,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
       acompanantesTexto: textoEditorAcompanantes
     });
   }, [textoEditorMenu, textoEditorAcompanantes]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.localStorage) return;
-
-    try {
-      window.localStorage.setItem(
-        GENERADOR_MENU_DRAFT_KEY,
-        JSON.stringify({
-          fechaMenu: fechaMenu || fechaHoyISO(),
-          platos,
-          acompanantes,
-          actualizadoEn: new Date().toISOString()
-        })
-      );
-    } catch {
-      // Si el navegador no permite guardar, la app continúa normalmente.
-    }
-  }, [fechaMenu, platos, acompanantes]);
 
   const historialUnicoOrdenado = useMemo(() => {
     const unicosPorFecha = new Map();
@@ -615,15 +595,8 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
       const resultado = await supabase
         .from("historial_generador_menu")
         .update(registroParaGuardar)
-        .eq("id", registroExistente.id)
-        .select("id")
-        .maybeSingle();
+        .eq("id", registroExistente.id);
       error = resultado.error;
-      if (!error && !resultado.data?.id) {
-        setMensaje("No se actualizó el menú en el historial. Revisa los permisos e inténtalo de nuevo.");
-        setGuardandoHistorial(false);
-        return false;
-      }
     } else {
       const resultado = await supabase
         .from("historial_generador_menu")
@@ -680,20 +653,6 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
   function abrirRegistroEnGenerador(registro) {
     const platosRegistro = Array.isArray(registro?.platos) ? registro.platos : [];
     const acompanantesRegistro = Array.isArray(registro?.acompanantes) ? registro.acompanantes : [];
-
-    try {
-      window.localStorage?.setItem(
-        GENERADOR_MENU_DRAFT_KEY,
-        JSON.stringify({
-          fechaMenu: registro?.fecha || fechaHoyISO(),
-          platos: platosRegistro.length ? platosRegistro : PLATOS_GENERADOR_DEFECTO,
-          acompanantes: acompanantesRegistro.join("\n"),
-          actualizadoEn: new Date().toISOString()
-        })
-      );
-    } catch {
-      // El historial sigue disponible aunque el navegador bloquee el almacenamiento local.
-    }
 
     cargarRegistro(registro, { silencioso: true });
     onIrGenerador?.();
