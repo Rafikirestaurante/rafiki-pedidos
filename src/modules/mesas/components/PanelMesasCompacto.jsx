@@ -51,6 +51,7 @@ export default function PanelMesasCompacto({
   onSeleccionarSubcategoriaCafeteria,
   onAgregarCafeteriaActual,
   datosMesaProps = {}
+  , obtenerIndicadorPlato = null
 }) {
   const [paso, setPaso] = useState(null);
   const [lineaActiva, setLineaActiva] = useState("restaurante");
@@ -373,7 +374,7 @@ export default function PanelMesasCompacto({
                         onClick={() => onCambiarPlato?.(itemActivo?.id, plato)}
                         className={`option ${itemActivo?.plato === plato.nombre ? "selected" : ""}`}
                       >
-                        <div>{plato.nombre}</div>
+                        <div><span className={`disponibilidad-punto ${obtenerIndicadorPlato?.(plato) || "sin-control"}`} />{plato.nombre}</div>
                         <small>{dinero(plato.precio)}</small>
                       </button>
                     ))}

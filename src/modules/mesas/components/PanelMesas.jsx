@@ -45,6 +45,9 @@ import EditarProteinaResumenModal from "../../../shared/components/EditarProtein
 import ResumenPedidoItem from "../../../shared/components/ResumenPedidoItem";
 import MesaTabs from "./MesaTabs";
 import DatosMesa from "./DatosMesa";
+import RafikiModal from "../../../shared/components/RafikiModal";
+import { useDisponibilidadMenu } from "../../../shared/hooks/useDisponibilidadMenu";
+import { clavePlato, estadoDisponibilidad } from "../../../services/disponibilidadMenuService";
 import SelectorVistaMesas from "./SelectorVistaMesas";
 import PanelMesasCompacto from "./PanelMesasCompacto";
 import ResumenMesaNormal from "./ResumenMesaNormal";
@@ -119,6 +122,18 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [grupoEditandoAcompanantesMesa, setGrupoEditandoAcompanantesMesa] = useState(null);
   const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
   const [vistaMesas, setVistaMesas] = useState(() => leerVistaMesasPreferida());
+  const [platoAlerta, setPlatoAlerta] = useState(null);
+  const disponibilidad = useDisponibilidadMenu(menu?.fecha, menu?.platos_detalle || []);
+
+  function indicadorPlato(plato) {
+    const limite = disponibilidad.limites[clavePlato(plato?.nombre)];
+    return estadoDisponibilidad(limite, disponibilidad.ventas[plato?.nombre] || 0);
+  }
+
+  function revisarDisponibilidad(plato) {
+    const estado = indicadorPlato(plato);
+    if (estado === "rojo") setPlatoAlerta({ nombre: plato.nombre, vendido: disponibilidad.ventas[plato.nombre] || 0, limite: disponibilidad.limites[clavePlato(plato.nombre)]?.cantidad_estimada });
+  }
 
   useEffect(() => {
     let cancelado = false;
@@ -1338,10 +1353,10 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                           <button
                             key={`${plato.categoria}-${plato.nombre}`}
                             type="button"
-                            onClick={() => cambiarPlatoMesa(item.id, plato)}
+                            onClick={() => { cambiarPlatoMesa(item.id, plato); revisarDisponibilidad(plato); }}
                             className={`option ${item.plato === plato.nombre ? "selected" : ""}`}
                           >
-                            <div>{plato.nombre}</div>
+                            <div><span className={`disponibilidad-punto ${indicadorPlato(plato) || "sin-control"}`} aria-label={indicadorPlato(plato) ? `Disponibilidad ${indicadorPlato(plato)}` : "Sin control de cantidad"} />{plato.nombre}</div>
                             <small>{dinero(plato.precio)}</small>
                           </button>
                         ))}
@@ -1504,8 +1519,18 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           onSeleccionarSubcategoriaCafeteria={(categoria) => { setSubcategoriaCafeteria(categoria); setErrorMesa(""); }}
           onAgregarCafeteriaActual={agregarCafeteriaActual}
           datosMesaProps={datosMesaProps}
+          obtenerIndicadorPlato={indicadorPlato}
         />
       )}
+    <RafikiModal
+      open={Boolean(platoAlerta)}
+      title="Cantidad estimada alcanzada"
+      description={platoAlerta ? `Se han vendido ${platoAlerta.vendido} unidades de ${platoAlerta.nombre}, igualando o superando la cantidad estimada de ${platoAlerta.limite}.` : ""}
+      onClose={() => setPlatoAlerta(null)}
+      footer={<button type="button" className="button" onClick={() => setPlatoAlerta(null)}>Continuar</button>}
+    >
+      <p className="muted small">El producto no fue bloqueado. Verifica la disponibilidad o ajusta la cantidad antes de continuar vendiendo.</p>
+    </RafikiModal>
     <EditarProteinaResumenModal
       abierto={Boolean(grupoEditandoProteinaMesa)}
       grupo={grupoEditandoProteinaMesa}

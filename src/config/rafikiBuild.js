@@ -1,10 +1,10 @@
 export const RAFIKI_BUILD = {
-  version: "129.2-FASE40C-HISTORIAL-COMPARTIDO-2026-09-23",
-  phase: "Fase 39H.1 - Flujo QR de mesa simplificado",
-  date: "2026-09-21",
-  fase: "39H1-QR-SIN-PAGO-TELEFONO-WHATSAPP",
+  version: "130.0-FASE41-CONTROL-DISPONIBILIDAD-MENU-2026-09-24",
+  phase: "Fase 41 - Control de disponibilidad y ventas",
+  date: "2026-09-24",
+  fase: "41-CONTROL-DISPONIBILIDAD-MENU",
   notes:
-    "Los pedidos QR de mesa ya no solicitan teléfono ni forma de pago al cliente y no muestran confirmación por WhatsApp. El pago se registra internamente como Pago en mesa y se conserva la mesa fija del QR.",
+    "Control compartido de cantidades estimadas y ventas diarias por plato, con actualización Realtime, indicadores discretos y aviso informativo sin bloqueo automático.",
 };
 
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

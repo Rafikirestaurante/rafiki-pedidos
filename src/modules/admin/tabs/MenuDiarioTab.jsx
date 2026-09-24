@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CampoTexto } from "../../../shared/components/common";
 import RafikiModal from "../../../shared/components/RafikiModal";
+import { textoAPlatosDetalle, fechaISOColombia } from "../../../shared/utils/pedidos";
+import { clavePlato, guardarCantidadMenu, estadoDisponibilidad } from "../../../services/disponibilidadMenuService";
+import { useDisponibilidadMenu } from "../../../shared/hooks/useDisponibilidadMenu";
 
 export default function MenuDiarioTab({
   menu,
@@ -16,6 +19,22 @@ export default function MenuDiarioTab({
   mensajeMenu,
 }) {
   const [platosSaAutomatico, setPlatosSaAutomatico] = useState([]);
+  const [cantidadesEditadas, setCantidadesEditadas] = useState({});
+  const [mensajeCantidad, setMensajeCantidad] = useState("");
+  const platosControl = useMemo(() => textoAPlatosDetalle(platosTexto).platos || [], [platosTexto]);
+  const fechaControl = menu.fecha || fechaISOColombia();
+  const { limites, ventas, error: errorControl, recargar } = useDisponibilidadMenu(fechaControl, platosControl);
+
+  async function guardarCantidad(plato) {
+    const clave = clavePlato(plato.nombre);
+    if (!Object.prototype.hasOwnProperty.call(cantidadesEditadas, clave)) return;
+    try {
+      await guardarCantidadMenu(fechaControl, plato.nombre, cantidadesEditadas[clave], limites[clave]?.agotado || false);
+      setCantidadesEditadas((actual) => { const siguiente = { ...actual }; delete siguiente[clave]; return siguiente; });
+      setMensajeCantidad("Cantidad guardada para todos los dispositivos.");
+      await recargar();
+    } catch (fallo) { setMensajeCantidad(fallo?.message || "No se pudo guardar la cantidad."); }
+  }
 
   function manejarTraerDesdeGenerador() {
     const resultado = traerTextoDesdeGeneradorMenu?.();
@@ -94,6 +113,24 @@ export default function MenuDiarioTab({
         multiline
         rows={7}
       />
+
+      <div className="box soft control-cantidades-menu">
+        <strong>Control de cantidades disponibles</strong>
+        <p className="muted small">Deja la casilla vacía para vender sin límite ni alertas. Las cantidades se guardan al salir de cada casilla.</p>
+        {errorControl && <p role="alert" className="alert alert-warning">No se pudo consultar el control: {errorControl}</p>}
+        {mensajeCantidad && <p role="status" className="muted small">{mensajeCantidad}</p>}
+        <div className="control-cantidades-desborde">
+          <table className="control-cantidades-tabla"><thead><tr><th>Plato</th><th>Cantidad estimada</th><th>Cantidad vendida</th></tr></thead><tbody>
+            {platosControl.map((plato) => {
+              const clave = clavePlato(plato.nombre);
+              const limite = limites[clave];
+              const vendido = ventas[plato.nombre] || 0;
+              const estado = estadoDisponibilidad(limite, vendido);
+              return <tr key={clave}><td>{plato.nombre}</td><td><input aria-label={`Cantidad estimada de ${plato.nombre}`} type="number" inputMode="numeric" min="0" step="1" placeholder="Sin límite" value={cantidadesEditadas[clave] ?? limite?.cantidad_estimada ?? ""} onChange={(e) => setCantidadesEditadas((actual) => ({ ...actual, [clave]: e.target.value }))} onBlur={() => guardarCantidad(plato)} /></td><td><span className={estado ? `control-cantidad-punto ${estado}` : ""} />{vendido}</td></tr>;
+            })}
+          </tbody></table>
+        </div>
+      </div>
 
       <div className="box soft small">
         <strong>Platos:</strong> escribe un plato por línea con este formato:
