@@ -8685,3 +8685,4 @@ body.rafiki-modal-open {
     white-space: normal;
   }
 }
+.disponibilidad-punto,.control-cantidad-punto{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;background:#cbd5e1}.disponibilidad-punto.verde,.control-cantidad-punto.verde{background:#22c55e}.disponibilidad-punto.amarillo,.control-cantidad-punto.amarillo{background:#eab308}.disponibilidad-punto.rojo,.control-cantidad-punto.rojo{background:#ef4444}.control-cantidades-desborde{overflow-x:auto}.control-cantidades-tabla{width:100%;border-collapse:collapse}.control-cantidades-tabla th,.control-cantidades-tabla td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left}.control-cantidades-tabla input{max-width:125px}
