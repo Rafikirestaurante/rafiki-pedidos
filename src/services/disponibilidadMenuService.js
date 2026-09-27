@@ -27,7 +27,27 @@ export function contarPlatosVendidos(pedidos, platos = []) {
   return ventas;
 }
 
-export async function consultarDisponibilidadMenu(fecha, platos) {
+export function resumirVentas(pedidos, platos = [], acompanantes = []) {
+  const platoNombres = new Map(platos.map((p) => [clavePlato(p.nombre), p.nombre]));
+  const acompananteNombres = new Map(acompanantes.map((a) => [clavePlato(a), a]));
+  const ventas = {}, ventasAcompanantes = {};
+  let totalAlmuerzos = 0;
+  for (const pedido of pedidos || []) {
+    if (obtenerEstadoPedido(pedido) === "Borrado") continue;
+    for (const item of obtenerItemsPedido(pedido)) {
+      if (esItemCafeteria(item)) continue;
+      const cantidad = Math.max(1, Number(item?.cantidad || 1));
+      totalAlmuerzos += cantidad;
+      const nombre = platoNombres.get(clavePlato(item?.plato || item?.proteina || item?.nombre || item?.producto));
+      if (nombre) ventas[nombre] = (ventas[nombre] || 0) + cantidad;
+      const lista = Array.isArray(item?.acompanantes) ? item.acompanantes : [];
+      lista.forEach((acompanante) => { const nombreA = acompananteNombres.get(clavePlato(acompanante)); if (nombreA) ventasAcompanantes[nombreA] = (ventasAcompanantes[nombreA] || 0) + cantidad; });
+    }
+  }
+  return { ventas, ventasAcompanantes, totalAlmuerzos };
+}
+
+export async function consultarDisponibilidadMenu(fecha, platos, acompanantes = []) {
   const [inicio, fin] = rangoDiaColombia(fecha);
   const limites = await supabase.from("menu_cantidades_diarias").select("plato, cantidad_estimada, agotado").eq("fecha", fecha);
   if (limites.error) throw limites.error;
@@ -38,7 +58,8 @@ export async function consultarDisponibilidadMenu(fecha, platos) {
     pedidos.push(...(respuesta.data || []));
     if ((respuesta.data || []).length < 500) break;
   }
-  return { limites: Object.fromEntries((limites.data || []).map((item) => [clavePlato(item.plato), item])), ventas: contarPlatosVendidos(pedidos, platos) };
+  const resumen = resumirVentas(pedidos, platos, acompanantes);
+  return { limites: Object.fromEntries((limites.data || []).map((item) => [clavePlato(item.plato), item])), ...resumen };
 }
 
 export async function guardarCantidadMenu(fecha, plato, cantidad, agotado = false) {

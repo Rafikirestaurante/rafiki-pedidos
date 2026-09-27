@@ -2,14 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { consultarDisponibilidadMenu } from "../../services/disponibilidadMenuService";
 
-export function useDisponibilidadMenu(fecha, platos = [], activo = true) {
-  const [datos, setDatos] = useState({ limites: {}, ventas: {} });
+export function useDisponibilidadMenu(fecha, platos = [], acompanantes = [], activo = true) {
+  const [datos, setDatos] = useState({ limites: {}, ventas: {}, ventasAcompanantes: {}, totalAlmuerzos: 0 });
   const [error, setError] = useState("");
-  const nombres = platos.map((item) => item.nombre).join("\u0000");
+  const nombres = platos.map((item) => item.nombre).join("\u0000") + "\u0001" + acompanantes.join("\u0000");
   const recargar = useCallback(async () => {
     if (!activo || !fecha) return null;
     try {
-      const resultado = await consultarDisponibilidadMenu(fecha, platos);
+      const resultado = await consultarDisponibilidadMenu(fecha, platos, acompanantes);
       setDatos(resultado);
       setError("");
       return resultado;
