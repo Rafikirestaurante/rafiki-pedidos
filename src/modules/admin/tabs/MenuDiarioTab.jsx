@@ -23,7 +23,8 @@ export default function MenuDiarioTab({
   const [mensajeCantidad, setMensajeCantidad] = useState("");
   const platosControl = useMemo(() => textoAPlatosDetalle(platosTexto).platos || [], [platosTexto]);
   const fechaControl = menu.fecha || fechaISOColombia();
-  const { limites, ventas, error: errorControl, recargar } = useDisponibilidadMenu(fechaControl, platosControl);
+  const acompanantesControl = useMemo(() => String(acompanantesTexto || "").split("\n").map((x) => x.trim()).filter(Boolean), [acompanantesTexto]);
+  const { limites, ventas, ventasAcompanantes, totalAlmuerzos, error: errorControl, recargar } = useDisponibilidadMenu(fechaControl, platosControl, acompanantesControl);
 
   async function guardarCantidad(plato) {
     const clave = clavePlato(plato.nombre);
@@ -128,6 +129,10 @@ export default function MenuDiarioTab({
               const estado = estadoDisponibilidad(limite, vendido);
               return <tr key={clave}><td>{plato.nombre}</td><td><input aria-label={`Cantidad estimada de ${plato.nombre}`} type="number" inputMode="numeric" min="0" step="1" placeholder="Sin límite" value={cantidadesEditadas[clave] ?? limite?.cantidad_estimada ?? ""} onChange={(e) => setCantidadesEditadas((actual) => ({ ...actual, [clave]: e.target.value }))} onBlur={() => guardarCantidad(plato)} /></td><td><span className={estado ? `control-cantidad-punto ${estado}` : ""} />{vendido}</td></tr>;
             })}
+          </tbody><tfoot><tr><th colSpan="2">Total de almuerzos vendidos</th><th>{totalAlmuerzos}</th></tr></tfoot></table>
+          <h4 style={{ margin: "18px 0 8px" }}>Control de acompañantes</h4>
+          <table className="control-cantidades-tabla"><thead><tr><th>Acompañante</th><th>Cantidad estimada</th><th>Cantidad vendida</th></tr></thead><tbody>
+            {acompanantesControl.map((nombre) => { const clave = clavePlato(nombre); const limite = limites[clave]; const vendido = ventasAcompanantes[nombre] || 0; const estado = estadoDisponibilidad(limite, vendido); return <tr key={clave}><td>{nombre}</td><td><input type="number" min="0" step="1" placeholder="Sin límite" value={cantidadesEditadas[clave] ?? limite?.cantidad_estimada ?? ""} onChange={(e) => setCantidadesEditadas((actual) => ({ ...actual, [clave]: e.target.value }))} onBlur={() => guardarCantidad({ nombre })} /></td><td><span className={estado ? `control-cantidad-punto ${estado}` : ""} />{vendido}</td></tr>; })}
           </tbody></table>
         </div>
       </div>

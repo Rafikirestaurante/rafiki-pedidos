@@ -123,7 +123,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   const [grupoEditandoProteinaMesa, setGrupoEditandoProteinaMesa] = useState(null);
   const [vistaMesas, setVistaMesas] = useState(() => leerVistaMesasPreferida());
   const [platoAlerta, setPlatoAlerta] = useState(null);
-  const disponibilidad = useDisponibilidadMenu(menu?.fecha, menu?.platos_detalle || []);
+  const disponibilidad = useDisponibilidadMenu(menu?.fecha, menu?.platos_detalle || [], menu?.acompanantes || []);
 
   function indicadorPlato(plato) {
     const limite = disponibilidad.limites[clavePlato(plato?.nombre)];
@@ -134,6 +134,13 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     const estado = indicadorPlato(plato);
     if (estado === "rojo") setPlatoAlerta({ nombre: plato.nombre, vendido: disponibilidad.ventas[plato.nombre] || 0, limite: disponibilidad.limites[clavePlato(plato.nombre)]?.cantidad_estimada });
   }
+
+  function revisarAcompanante(nombre) {
+    const limite = disponibilidad.limites[clavePlato(nombre)];
+    if (estadoDisponibilidad(limite, disponibilidad.ventasAcompanantes?.[nombre] || 0) === "rojo") setPlatoAlerta({ nombre, vendido: disponibilidad.ventasAcompanantes?.[nombre] || 0, limite: limite?.cantidad_estimada, tipo: "acompañante" });
+  }
+
+  const indicadorAcompanante = (nombre) => estadoDisponibilidad(disponibilidad.limites[clavePlato(nombre)], disponibilidad.ventasAcompanantes?.[nombre] || 0);
 
   useEffect(() => {
     let cancelado = false;
@@ -1386,11 +1393,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
                               <button
                                 key={acompanante}
                                 type="button"
-                                onClick={() => cambiarAcompananteMesa(item.id, acompanante)}
+                                onClick={() => { cambiarAcompananteMesa(item.id, acompanante); revisarAcompanante(acompanante); }}
                                 disabled={bloqueado}
                                 className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}
                               >
-                                {seleccionado ? "✓ " : "+ "}{acompanante}
+                                <span className={`disponibilidad-punto ${estadoDisponibilidad(disponibilidad.limites[clavePlato(acompanante)], disponibilidad.ventasAcompanantes?.[acompanante] || 0) || "sin-control"}`} />{seleccionado ? "✓ " : "+ "}{acompanante}
                               </button>
                             );
                           })
@@ -1520,6 +1527,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           onAgregarCafeteriaActual={agregarCafeteriaActual}
           datosMesaProps={datosMesaProps}
           obtenerIndicadorPlato={indicadorPlato}
+          obtenerIndicadorAcompanante={indicadorAcompanante}
         />
       )}
     <RafikiModal

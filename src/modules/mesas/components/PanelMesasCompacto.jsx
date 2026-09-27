@@ -52,6 +52,7 @@ export default function PanelMesasCompacto({
   onAgregarCafeteriaActual,
   datosMesaProps = {}
   , obtenerIndicadorPlato = null
+  , obtenerIndicadorAcompanante = null
 }) {
   const [paso, setPaso] = useState(null);
   const [lineaActiva, setLineaActiva] = useState("restaurante");
@@ -416,7 +417,7 @@ export default function PanelMesasCompacto({
                         disabled={bloqueado}
                         className={`chip ${seleccionado ? "selected" : ""} ${bloqueado ? "blocked" : ""}`}
                       >
-                        {seleccionado ? "✓ " : "+ "}{acompanante}
+                        <span className={`disponibilidad-punto ${obtenerIndicadorAcompanante?.(acompanante) || "sin-control"}`} />{seleccionado ? "✓ " : "+ "}{acompanante}
                       </button>
                     );
                   })}
