@@ -1,6 +1,6 @@
 export const RAFIKI_BUILD = {
-  version: "131.0-FASE41B-CONTROL-PLATOS-ACOMPANANTES-2026-09-27",
-  phase: "Fase 41 - Control de disponibilidad y ventas",
+  version: "132.0-FASE42-USUARIOS-PERMISOS-2026-09-27",
+  phase: "Fase 42 - Usuarios y permisos",
   date: "2026-09-27",
   fase: "41-CONTROL-DISPONIBILIDAD-MENU",
   notes:

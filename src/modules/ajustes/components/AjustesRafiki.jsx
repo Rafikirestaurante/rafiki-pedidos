@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import CatalogoRafa from "../../catalogo/components/CatalogoRafa";
 import MeserosAjustes from "./MeserosAjustes";
 import MesasQrAjustes from "./MesasQrAjustes";
+import UsuariosPermisosAjustes from "./UsuariosPermisosAjustes";
 
 export default function AjustesRafiki() {
   const [seccion, setSeccion] = useState("catalogo");
@@ -23,8 +24,11 @@ export default function AjustesRafiki() {
         <button type="button" className={`catalogo-selector-card ${seccion === "mesasQr" ? "active" : ""}`} onClick={() => setSeccion("mesasQr")}>
           <span className="catalogo-selector-icono">📱</span><span><strong>Mesas / QR</strong><small style={{ display: "block" }}>Enlaces para pedidos en mesa</small></span>
         </button>
+        <button type="button" className={`catalogo-selector-card ${seccion === "usuarios" ? "active" : ""}`} onClick={() => setSeccion("usuarios")}>
+          <span className="catalogo-selector-icono">🔐</span><span><strong>Usuarios y permisos</strong><small style={{ display: "block" }}>Cuentas y roles actuales</small></span>
+        </button>
       </div>
-      {seccion === "catalogo" ? <CatalogoRafa /> : seccion === "meseros" ? <MeserosAjustes /> : <MesasQrAjustes />}
+      {seccion === "catalogo" ? <CatalogoRafa /> : seccion === "meseros" ? <MeserosAjustes /> : seccion === "mesasQr" ? <MesasQrAjustes /> : <UsuariosPermisosAjustes />}
     </section>
   );
 }
