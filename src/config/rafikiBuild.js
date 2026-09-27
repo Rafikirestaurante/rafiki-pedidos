@@ -1,5 +1,5 @@
 export const RAFIKI_BUILD = {
-  version: "132.0-FASE42-USUARIOS-PERMISOS-2026-09-27",
+  version: "133.0-FASE42B-CREAR-RESTABLECER-CUENTAS-2026-09-27",
   phase: "Fase 42 - Usuarios y permisos",
   date: "2026-09-27",
   fase: "41-CONTROL-DISPONIBILIDAD-MENU",
