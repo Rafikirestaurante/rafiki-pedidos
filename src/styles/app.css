@@ -172,6 +172,14 @@ p {
   color: #92400e;
   border-color: #fde68a;
 }
+
+/* Fase 43: las validaciones permanecen visibles dentro de los modales del flujo compacto. */
+.mesas-compacta-modal-alerta {
+  margin: 0 0 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
 .alert-error {
   background: #fef2f2;
   color: #991b1b;
