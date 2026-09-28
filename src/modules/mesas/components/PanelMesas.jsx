@@ -1516,6 +1516,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
           onCambiarPlato={cambiarPlatoMesa}
           onCambiarAcompanante={cambiarAcompananteMesa}
           onMostrarError={mostrarErrorMesa}
+          errorMesa={errorMesa}
           onQuitarGrupo={quitarGrupoPedidoMesa}
           onCambiarCantidad={actualizarCantidadGrupoMesa}
           onEditarProteina={setGrupoEditandoProteinaMesa}

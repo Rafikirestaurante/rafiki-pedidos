@@ -38,7 +38,19 @@ import {
 } from "../utils/generadorMenuViewUtils";
 
 export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenerador = null } = {}) {
-  const borradorInicial = null;
+  // Permite transferir temporalmente un registro seleccionado desde Historial
+  // aunque el cambio de pestaña desmonte este componente.
+  const borradorInicial = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.sessionStorage?.getItem("rafikiMenuHistorialParaEditar");
+      if (!raw) return null;
+      window.sessionStorage.removeItem("rafikiMenuHistorialParaEditar");
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  })();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [platos, setPlatos] = useState(() => Array.isArray(borradorInicial?.platos) ? borradorInicial.platos : PLATOS_GENERADOR_DEFECTO);
   const [acompanantes, setAcompanantes] = useState(() => typeof borradorInicial?.acompanantes === "string" ? borradorInicial.acompanantes : ACOMPANANTES_GENERADOR_DEFECTO);
@@ -654,7 +666,11 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
     const platosRegistro = Array.isArray(registro?.platos) ? registro.platos : [];
     const acompanantesRegistro = Array.isArray(registro?.acompanantes) ? registro.acompanantes : [];
 
-    cargarRegistro(registro, { silencioso: true });
+    try {
+      window.sessionStorage?.setItem("rafikiMenuHistorialParaEditar", JSON.stringify(registro));
+    } catch {
+      // Si el almacenamiento no está disponible, se conserva el flujo normal.
+    }
     onIrGenerador?.();
   }
 

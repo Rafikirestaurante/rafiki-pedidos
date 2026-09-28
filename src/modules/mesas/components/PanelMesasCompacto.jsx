@@ -41,6 +41,7 @@ export default function PanelMesasCompacto({
   onCambiarPlato,
   onCambiarAcompanante,
   onMostrarError,
+  errorMesa = "",
   onQuitarGrupo,
   onCambiarCantidad,
   onEditarProteina,
@@ -349,6 +350,7 @@ export default function PanelMesasCompacto({
           </>
         )}
       >
+        {errorMesa ? <div className="alert alert-warning mesas-compacta-modal-alerta" role="alert" aria-live="polite">⚠️ {errorMesa}</div> : null}
         <div className="mesas-beta-modal-progress">
           {PASOS.filter((pasoItem) => pasoItem.id !== "datos").map((pasoItem) => (
             <span key={pasoItem.id} className={indicePaso(paso) >= indicePaso(pasoItem.id) ? "active" : ""}>
@@ -470,6 +472,7 @@ export default function PanelMesasCompacto({
           </>
         )}
       >
+        {errorMesa ? <div className="alert alert-warning mesas-compacta-modal-alerta" role="alert" aria-live="polite">⚠️ {errorMesa}</div> : null}
         <div className="mesas-compacta-cafeteria-modal-contenido">
           {contenidoCafeteria || <div className="box soft">No hay opciones de Cafetería configuradas.</div>}
         </div>
