@@ -1,4 +1,8 @@
 .generador-menu { width: 100%; max-width: 100%; overflow: visible; }
+.generador-categoria-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.generador-categoria-encabezado h4 { margin: 0; }
+.generador-catalogo-modal .selector-catalogo-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.generador-catalogo-modal .selector-catalogo-search { margin-bottom: 12px; }
         .generador-menu, .generador-menu * { min-width: 0; }
         .generador-menu h2 { line-height: 1.05; }
         .generador-menu-grid { width: 100%; max-width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 22px; align-items: start; margin-top: 18px; }

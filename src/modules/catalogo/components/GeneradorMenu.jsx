@@ -15,6 +15,7 @@ import {
   guardarUltimoTextoEditorGenerador
 } from "../../../shared/utils/generadorMenu";
 import { useAlertaRafiki } from "../../../shared/components/common";
+import RafikiModal from "../../../shared/components/RafikiModal";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 
 import {
@@ -64,6 +65,8 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
   const [fuenteCatalogo, setFuenteCatalogo] = useState("local");
   const [cargandoCatalogo, setCargandoCatalogo] = useState(false);
   const [busquedaPlatos, setBusquedaPlatos] = useState("");
+  const [categoriaPlatosAbierta, setCategoriaPlatosAbierta] = useState(null);
+  const [acompanantesModalAbierto, setAcompanantesModalAbierto] = useState(false);
   const [busquedaSopas, setBusquedaSopas] = useState("");
   const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
   const pestanaGenerador = pestanaInicial === "historial" ? "historial" : "generador";
@@ -128,6 +131,9 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
   }, [catalogoPlatos, busquedaPlatos]);
 
   const gruposPlatosVisuales = useMemo(() => agruparPlatosVisuales(platosFiltradosCatalogo), [platosFiltradosCatalogo]);
+  const grupoPlatosAbierto = gruposPlatosVisuales.find((grupo) => grupo.key === categoriaPlatosAbierta);
+  const gruposPlatos = useMemo(() => agruparPlatosVisuales(catalogoPlatos), [catalogoPlatos]);
+  const grupoModal = gruposPlatos.find((grupo) => grupo.key === categoriaPlatosAbierta);
 
   const sopasFiltradasCatalogo = useMemo(() => {
     const q = normalizarTextoCatalogo(busquedaSopas);
@@ -681,6 +687,54 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
   return (
     <>
       {modalAlertaRafiki}
+      <RafikiModal
+        open={Boolean(grupoModal)}
+        title={grupoModal ? `🍽️ ${grupoModal.titulo}` : "Seleccionar platos"}
+        description="Selecciona los platos del menú. Puedes elegir varios antes de cerrar."
+        onClose={() => { setCategoriaPlatosAbierta(null); setBusquedaPlatos(""); }}
+        size="lg"
+        className="generador-catalogo-modal"
+        footer={<button type="button" className="button green" onClick={() => { setCategoriaPlatosAbierta(null); setBusquedaPlatos(""); }}>Listo</button>}
+      >
+        <label className="field selector-catalogo-search">
+          <span>Buscar plato</span>
+          <input type="search" value={busquedaPlatos} onChange={(e) => setBusquedaPlatos(e.target.value)} placeholder="Buscar plato" />
+        </label>
+        <div className="productos-chips selector-catalogo-chips">
+          {(grupoPlatosAbierto?.productos || []).map((producto) => {
+            const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+            return <button key={producto.id || producto.nombre} type="button" className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`} onClick={() => alternarProductoCatalogoAlMenu(producto)} aria-pressed={seleccionado}>
+              {seleccionado ? "✓ " : "+ "}{nombreVisualPlato(producto)}
+            </button>;
+          })}
+          {grupoPlatosAbierto?.productos.length === 0 && <p className="muted small">No se encontraron platos con esa búsqueda.</p>}
+        </div>
+        <p className="muted small">{grupoModal?.productos.filter((producto) => nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre))).length || 0} seleccionados en esta categoría.</p>
+      </RafikiModal>
+      <RafikiModal
+        open={acompanantesModalAbierto}
+        title="🥗 Seleccionar acompañantes"
+        description="Selecciona o quita los acompañantes que estarán disponibles en el menú."
+        onClose={() => { setAcompanantesModalAbierto(false); setBusquedaAcompanantes(""); }}
+        size="lg"
+        className="generador-catalogo-modal"
+        footer={<button type="button" className="button green" onClick={() => { setAcompanantesModalAbierto(false); setBusquedaAcompanantes(""); }}>Listo</button>}
+      >
+        <label className="field selector-catalogo-search">
+          <span>Buscar acompañante</span>
+          <input type="search" value={busquedaAcompanantes} onChange={(e) => setBusquedaAcompanantes(e.target.value)} placeholder="Buscar acompañante" />
+        </label>
+        <div className="productos-chips selector-catalogo-chips">
+          {acompanantesFiltradosCatalogo.map((producto) => {
+            const seleccionado = nombresAcompanantesSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+            return <button key={producto.id || producto.nombre} type="button" className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`} onClick={() => alternarAcompananteCatalogo(producto)} aria-pressed={seleccionado}>
+              {seleccionado ? "✓ " : "+ "}{producto.nombre}
+            </button>;
+          })}
+          {!acompanantesFiltradosCatalogo.length && <p className="muted small">No se encontraron acompañantes.</p>}
+        </div>
+        <p className="muted small">{nombresAcompanantesSeleccionados.size} acompañantes seleccionados.</p>
+      </RafikiModal>
       <section className="card card-pad generador-menu">
       <div>
         <h2>{pestanaGenerador === "historial" ? "📊 Historial de menú" : "🎨 Generador de menú Rafiki"}</h2>
@@ -931,16 +985,16 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
               <section className="selector-catalogo-section">
                 <div className="selector-catalogo-section-head">
                   <h3 className="category-title">🍽️ Platos</h3>
-                  <label className="field selector-catalogo-search">
-                    <input type="search" value={busquedaPlatos} onChange={(e) => setBusquedaPlatos(e.target.value)} placeholder="Buscar plato" />
-                  </label>
                 </div>
 
-                {gruposPlatosVisuales.map((grupo) => (
+                {gruposPlatos.map((grupo) => (
                   <div key={grupo.key} className="selector-subcategoria-visual">
-                    <h4>{grupo.titulo}</h4>
+                    <div className="generador-categoria-encabezado">
+                      <h4>{grupo.titulo}</h4>
+                      <button type="button" className="button light" onClick={() => setCategoriaPlatosAbierta(grupo.key)}>Seleccionar platos</button>
+                    </div>
                     <div className="productos-chips selector-catalogo-chips">
-                      {grupo.productos.map((producto) => {
+                      {grupo.productos.filter((producto) => nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre))).map((producto) => {
                         const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
                         return (
                           <span key={producto.id} className="producto-chip-wrap">
@@ -955,6 +1009,7 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
                           </span>
                         );
                       })}
+                      {!grupo.productos.some((producto) => nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre))) && <span className="muted small">Sin platos seleccionados.</span>}
                     </div>
                   </div>
                 ))}
@@ -988,27 +1043,19 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
 
               <section className="selector-catalogo-section">
                 <div className="selector-catalogo-section-head">
-                  <h3 className="category-title">🥗 Acompañantes</h3>
-                  <label className="field selector-catalogo-search">
-                    <input type="search" value={busquedaAcompanantes} onChange={(e) => setBusquedaAcompanantes(e.target.value)} placeholder="Buscar acompañante" />
-                  </label>
+                  <div>
+                    <h3 className="category-title">🥗 Acompañantes</h3>
+                    <p className="muted small">Seleccionados: {nombresAcompanantesSeleccionados.size}</p>
+                  </div>
+                  <button type="button" className="button light" onClick={() => setAcompanantesModalAbierto(true)}>Seleccionar acompañantes</button>
                 </div>
                 <div className="productos-chips selector-catalogo-chips">
-                  {acompanantesFiltradosCatalogo.map((producto) => {
-                    const seleccionado = nombresAcompanantesSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
-                    return (
-                      <span key={producto.id} className="producto-chip-wrap">
-                        <button
-                          type="button"
-                          className={`producto-chip selector-catalogo-chip ${seleccionado ? "selected" : ""}`}
-                          onClick={() => alternarAcompananteCatalogo(producto)}
-                          title={seleccionado ? "Quitar acompañante" : "Agregar acompañante"}
-                        >
-                          {seleccionado ? "✓ " : "+ "}{producto.nombre}
-                        </button>
-                      </span>
-                    );
-                  })}
+                  {acompanantesFiltradosCatalogo.filter((producto) => nombresAcompanantesSeleccionados.has(normalizarTextoCatalogo(producto.nombre))).map((producto) => (
+                    <button key={producto.id} type="button" className="producto-chip selector-catalogo-chip selected" onClick={() => alternarAcompananteCatalogo(producto)} title="Quitar acompañante">
+                      ✓ {producto.nombre}
+                    </button>
+                  ))}
+                  {!nombresAcompanantesSeleccionados.size && <span className="muted small">Sin acompañantes seleccionados.</span>}
                 </div>
               </section>
             </div>
