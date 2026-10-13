@@ -3,6 +3,7 @@ import { CampoTexto } from "../../../../shared/components/common";
 import { fechaISOColombia } from "../../../../shared/utils/pedidos";
 
 function AdminPedidosFiltrosBase({
+  modo = "todos",
   filtroPedidos,
   setFiltroPedidos,
   fechaSeleccionada,
@@ -72,6 +73,7 @@ function AdminPedidosFiltrosBase({
 
   return (
     <>
+      {modo !== "buscar" && <>
       <div className="filtros-historial filtros-historial-rango">
         <button
           type="button"
@@ -127,6 +129,8 @@ function AdminPedidosFiltrosBase({
         </div>
       )}
 
+      </>}
+      {modo !== "filtros" && <>
       <CampoTexto
         etiqueta="Buscar pedido"
         value={busqueda}
@@ -152,6 +156,7 @@ function AdminPedidosFiltrosBase({
           )}
         </div>
       </form>
+      </>}
     </>
   );
 }

@@ -106,6 +106,7 @@ export async function cargarPedidosRango(inicio, fin, opciones = {}) {
       .gte("created_at", inicio)
       .lt("created_at", fin)
       .order("created_at", { ascending: ascendente })
+      .order("id", { ascending: ascendente })
       .range(desde, hasta);
 
     const lote = Array.isArray(data) ? data : [];
@@ -149,6 +150,7 @@ export async function cargarPedidosRango(inicio, fin, opciones = {}) {
       .gte("created_at", inicio)
       .lt("created_at", fin)
       .order("created_at", { ascending: ascendente })
+      .order("id", { ascending: ascendente })
       .range(desde, hasta);
 
     const { data, error, count } = await consulta;

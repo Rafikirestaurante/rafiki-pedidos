@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { dinero, formatearFechaHora, normalizarTexto, esItemCafeteria, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido, obtenerItemsPedido } from "../../../../shared/utils/pedidos";
+import { exportarPedidosExcel } from "../../utils/exportarPedidosExcel";
+import { fechaISOColombia } from "../../../../shared/utils/pedidos";
 import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
@@ -790,7 +792,11 @@ function AdminPedidosSectionBase({
   });
   const [filtroTipoPagoRapido, setFiltroTipoPagoRapido] = useState("");
   const [mostrarModalFiltrosRapidos, setMostrarModalFiltrosRapidos] = useState(false);
-  const [mostrarFiltrosPedidos, setMostrarFiltrosPedidos] = useState(true);
+  const [mostrarBusquedaPedidos, setMostrarBusquedaPedidos] = useState(false);
+  const [mostrarExportacion, setMostrarExportacion] = useState(false);
+  const [exportandoExcel, setExportandoExcel] = useState(false);
+  const [exportacionDesde, setExportacionDesde] = useState(fechaISOColombia());
+  const [exportacionHasta, setExportacionHasta] = useState(fechaISOColombia());
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [ahoraPedidosHoy, setAhoraPedidosHoy] = useState(() => new Date());
   const totalPedidosServidor = Number.isFinite(paginacionPedidos?.total) ? paginacionPedidos.total : null;
@@ -1014,14 +1020,6 @@ function AdminPedidosSectionBase({
           <button
             type="button"
             className="button light admin-action-button"
-            onClick={() => setMostrarFiltrosPedidos((valor) => !valor)}
-          >
-            {mostrarFiltrosPedidos ? "Ocultar filtros" : "Mostrar filtros"}
-          </button>
-
-          <button
-            type="button"
-            className="button light admin-action-button"
             onClick={refrescarPedidos}
           >
             🔄 Actualizar datos
@@ -1059,9 +1057,18 @@ function AdminPedidosSectionBase({
         </div>
       )}
 
-      {mostrarFiltrosPedidos ? (
-        <div className="pedidos-filtros-card">
-          <AdminPedidosFiltros
+      <div className="pedidos-herramientas-discretas" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "8px 0" }}>
+        <button type="button" className="mini-btn" style={{ width: "auto" }} onClick={() => setMostrarBusquedaPedidos(true)} aria-expanded={mostrarBusquedaPedidos}>Buscar{hayBusquedaPedidos ? " · activo" : ""}</button>
+        <button type="button" className="mini-btn" style={{ width: "auto" }} onClick={() => setMostrarModalFiltrosRapidos(true)} aria-expanded={mostrarModalFiltrosRapidos}>Filtros{hayFiltrosRapidosActivos || filtroPedidos !== "hoy" ? " · activos" : ""}</button>
+        <button type="button" className="mini-btn" style={{ width: "auto" }} onClick={() => {
+          setExportacionDesde(filtroPedidos === "rango" ? fechaInicioRangoPedidos : filtroPedidos === "dia" ? fechaSeleccionada : fechaISOColombia());
+          setExportacionHasta(filtroPedidos === "rango" ? fechaFinRangoPedidos : filtroPedidos === "dia" ? fechaSeleccionada : fechaISOColombia());
+          setMostrarExportacion(true);
+        }}>Excel</button>
+        <ThermalPrintControls onPrint={imprimirPedidosFiltradosTermico} disabled={pedidosVisiblesTabla.length === 0} label="Imprimir" title="Tamaño" buttonClassName="mini-btn" compact />
+      </div>
+      <RafikiModal open={mostrarBusquedaPedidos} title="Buscar pedidos" onClose={() => setMostrarBusquedaPedidos(false)} size="sm">
+          <AdminPedidosFiltros modo="buscar"
             filtroPedidos={filtroPedidos}
             setFiltroPedidos={setFiltroPedidos}
             fechaSeleccionada={fechaSeleccionada}
@@ -1079,37 +1086,22 @@ function AdminPedidosSectionBase({
             limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
             cargandoNumeroPedido={cargandoNumeroPedido}
           />
-        </div>
-      ) : (
-        <div className="pedidos-filtros-resumen-colapsado">
-          <span>Filtros ocultos para limpiar la pantalla.</span>
-          <button type="button" className="mini-btn" onClick={() => setMostrarFiltrosPedidos(true)}>Mostrar filtros</button>
-        </div>
-      )}
-
-      <div className="pedidos-filtros-rapidos-card pedidos-filtros-rapidos-card-modalizado">
-        <div className="pedidos-filtros-rapidos-head">
-          <div>
-            <strong>Filtros rápidos</strong>
-            <span className="muted small pedidos-filtros-rapidos-contador">
-              {pedidosVisiblesTabla.length} pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"} · {resumenFiltrosRapidos}
-            </span>
-          </div>
-          <div className="pedidos-filtros-rapidos-acciones">
-            <button type="button" className={hayFiltrosRapidosActivos ? "mini-btn active" : "mini-btn"} onClick={() => setMostrarModalFiltrosRapidos(true)}>
-              ⚙️ Filtros
-            </button>
-            <ThermalPrintControls
-              onPrint={imprimirPedidosFiltradosTermico}
-              disabled={pedidosVisiblesTabla.length === 0}
-              label="Imprimir"
-              title="Tamaño"
-              buttonClassName="mini-btn"
-              compact
-            />
-          </div>
-        </div>
-      </div>
+      </RafikiModal>
+      <RafikiModal open={mostrarExportacion} title="Exportar pedidos a Excel" description="Todos los pedidos del rango; no depende de las filas cargadas ni de los filtros rápidos. Excluye borrados, anulados y cancelados." onClose={() => { if (!exportandoExcel) setMostrarExportacion(false); }} size="sm">
+        <label className="field"><span>Desde</span><input type="date" value={exportacionDesde} onChange={(e) => setExportacionDesde(e.target.value)} disabled={exportandoExcel} /></label>
+        <label className="field"><span>Hasta</span><input type="date" value={exportacionHasta} onChange={(e) => setExportacionHasta(e.target.value)} disabled={exportandoExcel} /></label>
+        <button type="button" className="button green" disabled={exportandoExcel} onClick={async () => {
+          setExportandoExcel(true);
+          try {
+            const cantidad = await exportarPedidosExcel(exportacionDesde, exportacionHasta);
+            setMostrarExportacion(false);
+            mostrarAlertaRafiki({ tipo: "success", titulo: "Excel exportado", mensaje: `${cantidad} pedidos exportados.` });
+          } catch (error) {
+            setMostrarExportacion(false);
+            mostrarAlertaRafiki({ tipo: "warning", titulo: "No se pudo exportar", mensaje: error.message || "Revisa la conexión." });
+          } finally { setExportandoExcel(false); }
+        }}>{exportandoExcel ? "Exportando…" : "Descargar Excel"}</button>
+      </RafikiModal>
 
       {(resultadoNumeroPedidoVisual.length > 0 || errorNumeroPedido) && (
         <div className="pedido-numero-global-resultados">
@@ -1163,7 +1155,7 @@ function AdminPedidosSectionBase({
 
       {vistaPedidosHoy === "mesas" ? (
         <ResumenMesasHoy
-          pedidosActivos={pedidosActivosVisuales}
+          pedidosActivos={aplicarFiltrosRapidosPedidos(pedidosActivosVisuales, filtrosTipoPedido, filtroTipoPagoRapido)}
           cambiarEstadoPedido={cambiarEstadoPedido}
           guardandoEstadoPedidoId={guardandoEstadoPedidoId}
           puedeEditarPedido={puedeEditarPedido}
@@ -1280,10 +1272,10 @@ function AdminPedidosSectionBase({
 
       <RafikiModal
         open={mostrarModalFiltrosRapidos}
-        title="Filtros rápidos"
-        description="Selecciona una o varias opciones. La impresión 58 mm y 80 mm usará exactamente los pedidos visibles en pantalla; solo cambia la optimización del ancho."
+        title="Filtros de pedidos"
+        description="Filtra por fecha, tipo de pedido y forma de pago."
         onClose={() => setMostrarModalFiltrosRapidos(false)}
-        size="sm"
+        size="lg"
         footer={(
           <>
             {hayFiltrosRapidosActivos ? (
@@ -1293,6 +1285,24 @@ function AdminPedidosSectionBase({
           </>
         )}
       >
+          <AdminPedidosFiltros modo="filtros"
+            filtroPedidos={filtroPedidos}
+            setFiltroPedidos={setFiltroPedidos}
+            fechaSeleccionada={fechaSeleccionada}
+            setFechaSeleccionada={setFechaSeleccionada}
+            fechaInicioRangoPedidos={fechaInicioRangoPedidos}
+            setFechaInicioRangoPedidos={setFechaInicioRangoPedidos}
+            fechaFinRangoPedidos={fechaFinRangoPedidos}
+            setFechaFinRangoPedidos={setFechaFinRangoPedidos}
+            hayBusquedaPedidos={hayBusquedaPedidos}
+            setBusqueda={setBusqueda}
+            busqueda={busqueda}
+            busquedaNumeroPedido={busquedaNumeroPedido}
+            setBusquedaNumeroPedido={setBusquedaNumeroPedido}
+            buscarPedidoPorNumeroGlobal={buscarPedidoPorNumeroGlobal}
+            limpiarBusquedaNumeroPedido={limpiarBusquedaNumeroPedido}
+            cargandoNumeroPedido={cargandoNumeroPedido}
+          />
         <div className="pedidos-filtros-modal-grid">
           <button type="button" className={filtrosTipoPedido.restauranteParaLlevar ? "filtro-modal-opcion active" : "filtro-modal-opcion"} onClick={() => alternarFiltroTipoPedido("restauranteParaLlevar")}>
             <span>🥡</span>
