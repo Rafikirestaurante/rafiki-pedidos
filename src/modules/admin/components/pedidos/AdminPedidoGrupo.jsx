@@ -2,6 +2,7 @@ import React from "react";
 import { TablaPedidosCompacta } from "../../../pedidos/components/PedidosAdmin";
 
 function AdminPedidoGrupoBase({
+  mostrarEncabezado = true,
   titulo,
   icono,
   pedidos,
@@ -25,7 +26,7 @@ function AdminPedidoGrupoBase({
 
   return (
     <div className="pedido-seccion">
-      <div className={`section-heading ${danger ? "section-heading-danger" : ""}`}>
+      {mostrarEncabezado && <div className={`section-heading ${danger ? "section-heading-danger" : ""}`}>
         <h3>{icono} {titulo}</h3>
         <div className="section-heading-actions">
           {mostrarFinalizarTodos && pedidos.length > 0 && puedeFinalizarPendientes && (
@@ -40,7 +41,7 @@ function AdminPedidoGrupoBase({
           )}
           <span>{pedidos.length}</span>
         </div>
-      </div>
+      </div>}
 
       {pedidos.length === 0 ? (
         <div className="box soft">{mensajeVacio}</div>

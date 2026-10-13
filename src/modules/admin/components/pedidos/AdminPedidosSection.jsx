@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { dinero, formatearFechaHora, normalizarTexto, esItemCafeteria, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido, obtenerItemsPedido } from "../../../../shared/utils/pedidos";
 import { exportarPedidosExcel } from "../../utils/exportarPedidosExcel";
 import { fechaISOColombia } from "../../../../shared/utils/pedidos";
-import AdminRealtimeStatus from "./AdminRealtimeStatus";
 import AdminPedidosFiltros from "./AdminPedidosFiltros";
 import AdminPedidoGrupo from "./AdminPedidoGrupo";
 import { MESAS_DISPONIBLES } from "../../../../shared/utils/mesas";
@@ -316,9 +315,8 @@ function imprimirResumenPedidosFiltradosTermico({
   });
 }
 
-function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
+function ResumenMesasHoy({ orden = "ultimos", pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
   const [mesaSeleccionada, setMesaSeleccionada] = useState(null);
-  const [mostrarTresPedidos, setMostrarTresPedidos] = useState(false);
 
   const pedidosPorMesa = useMemo(() => {
     const mapa = new Map(MESAS_DISPONIBLES.map((mesa) => [mesa, []]));
@@ -332,36 +330,21 @@ function ResumenMesasHoy({ pedidosActivos = [], cambiarEstadoPedido, guardandoEs
     });
 
     MESAS_DISPONIBLES.forEach((mesa) => {
-      mapa.set(mesa, mapa.get(mesa).slice().sort(compararFechaPedidoDesc));
+      mapa.set(mesa, mapa.get(mesa).slice().sort((a, b) => orden === "primeros" ? compararFechaPedidoDesc(b, a) : compararFechaPedidoDesc(a, b)));
     });
 
     return mapa;
-  }, [pedidosActivos]);
+  }, [pedidosActivos, orden]);
 
   const pedidosMesaSeleccionada = mesaSeleccionada ? pedidosPorMesa.get(mesaSeleccionada) || [] : [];
   const totalMesaSeleccionada = pedidosMesaSeleccionada.reduce((total, pedido) => total + Number(pedido?.total || 0), 0);
 
   return (
     <div className="admin-mesas-hoy-card">
-      <div className="step-title admin-mesas-hoy-title">
-        <span className="step-number">3</span>
-        <div>
-          <h4>Mesas y últimos pedidos</h4>
-          <p className="muted small">Vista rápida por mesa, similar al paso de datos de entrega.</p>
-        </div>
-        <button
-          type="button"
-          className="button light admin-mesas-toggle"
-          onClick={() => setMostrarTresPedidos((actual) => !actual)}
-        >
-          {mostrarTresPedidos ? "Ver solo último" : "Mostrar últimos 3"}
-        </button>
-      </div>
-
       <div className="admin-mesas-grid" aria-label="Resumen de mesas del día">
         {MESAS_DISPONIBLES.map((mesa) => {
           const pedidosMesa = pedidosPorMesa.get(mesa) || [];
-          const ultimosPedidos = pedidosMesa.slice(0, mostrarTresPedidos ? 3 : 1);
+          const ultimosPedidos = pedidosMesa.slice(0, 3);
           return (
             <article key={mesa} className={`admin-mesa-card ${mesa === "5B" ? "mesa-sola" : ""} ${pedidosMesa.length > 0 ? "con-pedidos" : "sin-pedidos"}`}>
               <div className="admin-mesa-card-head">
@@ -792,6 +775,8 @@ function AdminPedidosSectionBase({
   });
   const [filtroTipoPagoRapido, setFiltroTipoPagoRapido] = useState("");
   const [mostrarModalFiltrosRapidos, setMostrarModalFiltrosRapidos] = useState(false);
+  const [mostrarImpresion, setMostrarImpresion] = useState(false);
+  const [mostrarOrden, setMostrarOrden] = useState(false);
   const [mostrarBusquedaPedidos, setMostrarBusquedaPedidos] = useState(false);
   const [mostrarExportacion, setMostrarExportacion] = useState(false);
   const [exportandoExcel, setExportandoExcel] = useState(false);
@@ -1011,28 +996,13 @@ function AdminPedidosSectionBase({
       <div className="admin-top-row admin-top-row-compact">
         <div className="admin-title-compact">
           <h2>📋 {tituloPedidos}</h2>
-          <p className="muted small">Preparación, seguimiento e historial.</p>
         </div>
 
         <div className="admin-actions-line">
-          <AdminRealtimeStatus estadoRealtimePedidos={estadoRealtimePedidos} />
-
-          <button
-            type="button"
-            className="button light admin-action-button"
-            onClick={refrescarPedidos}
-          >
-            🔄 Actualizar datos
-          </button>
-
-
-          <button
-            type="button"
-            className={realtimeAdminActivo ? "button light realtime-toggle-on admin-action-button" : "button realtime-toggle-off admin-action-button"}
-            onClick={cambiarEstadoRealtimeAdmin}
-            title={realtimeAdminActivo ? "Desactivar actualizaciones en vivo" : "Activar actualizaciones en vivo"}
-          >
-            {realtimeAdminActivo ? "Realtime ON" : "Realtime OFF"}
+          <button type="button" className="mini-btn pedidos-refrescar" onClick={refrescarPedidos} title="Actualizar pedidos" aria-label="Actualizar pedidos">↻</button>
+          <button type="button" className="mini-btn pedidos-en-vivo" onClick={cambiarEstadoRealtimeAdmin} aria-pressed={realtimeAdminActivo} title={estadoRealtimePedidos?.detalle || "Activar o pausar la actualización en vivo"}>
+            <span aria-hidden="true" style={{ color: !realtimeAdminActivo ? "#888" : estadoRealtimePedidos?.estado === "conectado" ? "#25854c" : "#b7791f" }}>●</span>{" "}
+            En vivo: {!realtimeAdminActivo ? "pausado" : estadoRealtimePedidos?.estado === "conectado" ? "activo" : "conectando"}
           </button>
         </div>
       </div>
@@ -1065,8 +1035,18 @@ function AdminPedidosSectionBase({
           setExportacionHasta(filtroPedidos === "rango" ? fechaFinRangoPedidos : filtroPedidos === "dia" ? fechaSeleccionada : fechaISOColombia());
           setMostrarExportacion(true);
         }}>Excel</button>
-        <ThermalPrintControls onPrint={imprimirPedidosFiltradosTermico} disabled={pedidosVisiblesTabla.length === 0} label="Imprimir" title="Tamaño" buttonClassName="mini-btn" compact />
+        <button type="button" className="mini-btn" style={{ width: "auto" }} onClick={() => setMostrarImpresion(true)} aria-expanded={mostrarImpresion}>Imprimir</button>
+        <button type="button" className="mini-btn" style={{ width: "auto" }} onClick={() => setMostrarOrden(true)} aria-expanded={mostrarOrden}>Orden</button>
       </div>
+      <RafikiModal open={mostrarImpresion} title="Imprimir pedidos" onClose={() => setMostrarImpresion(false)} size="sm">
+        <ThermalPrintControls onPrint={imprimirPedidosFiltradosTermico} disabled={pedidosVisiblesTabla.length === 0} label="Imprimir" title="Tamaño" buttonClassName="mini-btn" compact />
+      </RafikiModal>
+      <RafikiModal open={mostrarOrden} title="Orden de pedidos" onClose={() => setMostrarOrden(false)} size="sm">
+        <div style={{ display: "grid", gap: 8 }}>
+          <button type="button" className={ordenPedidosHoy === "ultimos" ? "button green" : "button light"} aria-pressed={ordenPedidosHoy === "ultimos"} onClick={() => { setOrdenPedidosHoy("ultimos"); setMostrarOrden(false); }}>Más recientes primero</button>
+          <button type="button" className={ordenPedidosHoy === "primeros" ? "button green" : "button light"} aria-pressed={ordenPedidosHoy === "primeros"} onClick={() => { setOrdenPedidosHoy("primeros"); setMostrarOrden(false); }}>Más antiguos primero</button>
+        </div>
+      </RafikiModal>
       <RafikiModal open={mostrarBusquedaPedidos} title="Buscar pedidos" onClose={() => setMostrarBusquedaPedidos(false)} size="sm">
           <AdminPedidosFiltros modo="buscar"
             filtroPedidos={filtroPedidos}
@@ -1131,7 +1111,7 @@ function AdminPedidosSectionBase({
 
       {cargandoPedidos && (
         <div className="box soft admin-loading-state" role="status">
-          Cargando pedidos... La última información visible se conserva mientras se actualiza.
+          Cargando pedidos…
         </div>
       )}
 
@@ -1141,20 +1121,11 @@ function AdminPedidosSectionBase({
         </div>
       )}
 
-      <div className="pedidos-carga-resumen" role="status">
-        <p className="muted small">
-          Mostrando {pedidosFiltrados.length} filtrado{pedidosFiltrados.length === 1 ? "" : "s"} de {pedidos.length} pedido{pedidos.length === 1 ? "" : "s"} cargado{pedidos.length === 1 ? "" : "s"}
-          {totalPedidosServidor !== null ? ` · total del rango: ${totalPedidosServidor}` : ""}.
-          {pedidosBorrados.length > 0 ? ` ${pedidosBorrados.length} en Pedidos Borrados no suman en ventas.` : ""}
-        </p>
-        {paginacionPedidos?.advertencia ? (
-          <p className="muted small pedidos-carga-aviso">{paginacionPedidos.advertencia}</p>
-        ) : null}
-      </div>
-
+      {paginacionPedidos?.advertencia && <div className="alert alert-warning" role="alert">{paginacionPedidos.advertencia}</div>}
 
       {vistaPedidosHoy === "mesas" ? (
         <ResumenMesasHoy
+          orden={ordenPedidosHoy}
           pedidosActivos={aplicarFiltrosRapidosPedidos(pedidosActivosVisuales, filtrosTipoPedido, filtroTipoPagoRapido)}
           cambiarEstadoPedido={cambiarEstadoPedido}
           guardandoEstadoPedidoId={guardandoEstadoPedidoId}
@@ -1166,55 +1137,11 @@ function AdminPedidosSectionBase({
 
       {vistaPedidosHoy === "pedidos" ? (
       <div className="pedido-seccion">
-        {hayFiltrosRapidosActivos ? (
-          <div className="alert alert-info pedidos-filtro-activo">
-            Filtros rápidos activos. Mostrando <strong>{pedidosVisiblesTabla.length}</strong> pedido{pedidosVisiblesTabla.length === 1 ? "" : "s"}.
-          </div>
-        ) : null}
-        <div className="section-heading section-heading-pedidos-unificados">
-          <h3>{hayFiltrosRapidosActivos ? "🔎 Pedidos filtrados" : "📋 Pedidos"}</h3>
-          <div className="section-heading-actions pedidos-orden-actions">
-            {pedidosPendientesVisuales.length > 0 && puedeFinalizarPendientes && (
-              <button
-                type="button"
-                className="mini-btn green"
-                onClick={finalizarTodosPendientes}
-                disabled={finalizandoPendientes}
-              >
-                {finalizandoPendientes ? "Finalizando..." : "Finalizar todos"}
-              </button>
-            )}
-            <button
-              type="button"
-              className={ordenPedidosHoy === "ultimos" ? "mini-btn active" : "mini-btn"}
-              onClick={() => setOrdenPedidosHoy("ultimos")}
-              title="Mostrar primero los últimos pedidos"
-            >
-              Últimos
-            </button>
-            <button
-              type="button"
-              className={ordenPedidosHoy === "primeros" ? "mini-btn active" : "mini-btn"}
-              onClick={() => setOrdenPedidosHoy("primeros")}
-              title="Mostrar desde el primer pedido del día"
-            >
-              Primeros
-            </button>
-            <span>{pedidosVisiblesTabla.length}</span>
-          </div>
-        </div>
-
-        {pedidosVisiblesTabla.some((pedido) => pedido.estado_visual_auto === "entregado_por_corte_730pm") ? (
-          <div className="alert alert-info pedidos-corte-730">
-            Después de las 7:30 p. m., los pedidos pendientes de ese día se muestran como entregados en Pedidos Hoy. No se cambian automáticamente en Supabase.
-          </div>
-        ) : null}
-
         {pedidosVisiblesTabla.length === 0 ? (
           <RafikiEmptyState
             icon="📋"
             title={hayFiltrosRapidosActivos ? "No hay pedidos con esos filtros" : "No hay pedidos en esta vista"}
-            description={hayFiltrosRapidosActivos ? "Prueba limpiar o combinar otros filtros rápidos para ampliar los resultados." : "Cuando entren pedidos activos o finalizados, aparecerán aquí con sus estados, pagos y acciones."}
+            
           />
         ) : (
           <TablaPedidosCompacta
@@ -1235,22 +1162,11 @@ function AdminPedidosSectionBase({
       ) : null}
 
       {vistaPedidosHoy === "pedidos" && hayMasPedidos && (
-        <div className="pedidos-cargar-mas-box">
-          <div>
-            <strong>Carga optimizada activa</strong>
-            <p className="muted small">
-              Se cargaron {totalCargadosServidor} de {totalPedidosServidor || "más"} pedido{totalCargadosServidor === 1 ? "" : "s"}.
-              Puedes traer más resultados sin bloquear el celular.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="button light"
-            onClick={cargarMasPedidos}
-            disabled={cargandoMasPedidos || cargandoPedidos}
-          >
-            {cargandoMasPedidos ? "Cargando más..." : "Cargar más resultados"}
-          </button>
+        <button type="button" className="mini-btn" onClick={cargarMasPedidos} disabled={cargandoMasPedidos || cargandoPedidos}>{cargandoMasPedidos ? "Cargando…" : "Cargar más pedidos"}</button>
+      )}
+      {vistaPedidosHoy === "pedidos" && pedidosPendientesVisuales.length > 0 && puedeFinalizarPendientes && (
+        <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
+          <button type="button" className="mini-btn" onClick={finalizarTodosPendientes} disabled={finalizandoPendientes}>{finalizandoPendientes ? "Finalizando…" : "Finalizar todos"}</button>
         </div>
       )}
 
@@ -1258,6 +1174,7 @@ function AdminPedidosSectionBase({
         <AdminPedidoGrupo
           icono="🗑️"
           titulo="Pedidos Borrados"
+          mostrarEncabezado={false}
           pedidos={pedidosBorrados}
           mensajeVacio="No hay pedidos borrados."
           danger
