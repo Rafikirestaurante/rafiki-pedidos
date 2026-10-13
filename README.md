@@ -1,6 +1,181 @@
-## Fase 38G — Gastos con listado y dashboard separados
+# Rafiki Pedidos — 129.2 / Fase 40C
 
-Versión: `127.25-FASE38G-GASTOS-LISTADO-DASHBOARD-ORGANIZADO-2026-08-10`
+## 129.2 — Fase 40C: Historial compartido
+
+El Generador de menú ya no carga ni guarda menús en localStorage. El Historial de Supabase es la fuente única y compartida para todos los celulares y computadores. Se incluye una migración SQL con permisos de lectura, creación, actualización y eliminación para usuarios autenticados.
+
+Versión: `129.2-FASE40C-HISTORIAL-COMPARTIDO-2026-09-23`
+
+## 129.1 — Fase 40B: Edición del generador de menú
+
+El catálogo y el resumen editable usan el mismo menú. Añadir o quitar un plato o acompañante actualiza el resumen inmediatamente, sin reemplazar los ajustes manuales ni los precios de los demás productos. El historial abre el menú seleccionado para seguir editándolo. El borrador local conserva incluso un menú vacío después de borrar la selección. Se añadió «Guardar cambios» para actualizar el historial sin generar una descarga; «Guardar y descargar» sigue disponible.
+
+Versión: `129.1-FASE40B-EDICION-GENERADOR-MENU-2026-09-23`
+
+## 129.0 — Fase 40A: Historial del generador de menú
+
+Al abrir el Generador de menú se mantiene la fecha actual o la fecha del borrador. Los menús anteriores solo se cargan al elegirlos desde Historial. Al actualizar un registro, se verifica que la base de datos haya devuelto la fila modificada; si no la devuelve, se informa el error y no se descarga el archivo como si se hubiese guardado.
+
+Versión: `129.0-FASE40A-HISTORIAL-GENERADOR-MENU-2026-09-23`
+
+## 128.9 — Fase 39H.1: Flujo QR de mesa simplificado
+
+Versión: `128.9-FASE39H1-QR-SIN-PAGO-TELEFONO-WHATSAPP-2026-09-21`
+
+Base oficial: **128.8 — Fase 39H**.
+
+### Cambios
+
+- En pedidos iniciados desde QR de mesa se oculta el campo **Teléfono**.
+- En pedidos QR se oculta el selector **Tipo de pago** y no se exige en validación.
+- El pedido QR se registra internamente con `tipo_pago = "Pago en mesa"` para mantener trazabilidad operativa sin obligar al cliente a escoger un método.
+- La confirmación del pedido QR no muestra teléfono ni forma de pago.
+- La confirmación QR tampoco muestra el botón ni la advertencia de **WhatsApp**.
+- Se conserva el nombre como dato obligatorio y la mesa permanece fijada por el token QR.
+- No requiere SQL nuevo ni modifica rutas.
+
+
+## Fase 39G — Dashboard filtrable y Cafetería Compacta simplificada
+
+Versión: `128.8-FASE39H-PEDIDOS-QR-MESAS-2026-09-20`
+
+Base oficial: **128.6 — Fase 39F**.
+
+### Cambios
+
+- **Mesas → Compacta → Cafetería:** el modal elimina la redundancia entre acciones internas y footer. Solo deja visibles **Agregar otro producto** y **Agregar y ver resumen**.
+- Al agregar otro producto, el modal permanece abierto en la misma categoría; al agregar y ver resumen, valida, agrega, cierra el modal y lleva al resumen.
+- En la pantalla principal de Cafetería Compacta aparece un único acceso **🛒 Ver resumen (cantidad)** cuando ya hay productos en el pedido.
+- **Dashboard de ventas:** nuevo filtro por **Categoría** y selector múltiple de **Producto o productos**, combinables con el mes actual del dashboard.
+- Los productos seleccionados pueden buscarse, quitarse individualmente o restablecerse con **Limpiar filtros**.
+- Calendario, métricas y barras se recalculan usando únicamente los items que coinciden con los filtros.
+- En modo filtrado, **Gastos del mes** se sustituye por **Unidades vendidas** para no comparar ventas parciales contra gastos globales ni prorratearlos artificialmente.
+- Al seleccionar productos aparece una **Comparación por producto** con una serie diaria por cada producto, usando la misma escala visual.
+- Los Parfait se consolidan por tamaño (por ejemplo `Parfait 16 oz`) sin fragmentarse por combinación de frutas.
+- No requiere SQL nuevo ni modifica rutas.
+
+---
+
+# Rafiki Pedidos — 128.6 / Fase 39F
+
+## Fase 39F — SA automático para Arroces y Pastas al importar desde Generador
+
+Versión: `128.6-FASE39F-SA-AUTOMATICO-ARROCES-PASTAS-2026-09-16`
+
+Base oficial: **128.5 — Fase 39E**.
+
+### Cambios
+
+- **Admin → Editar menú diario:** al presionar `📥 Traer platos y acompañantes del generador`, Rafiki identifica Arroces y Pastas y agrega automáticamente la regla interna `SA`.
+- La detección funciona aunque el Generador entregue la categoría como `Platos`: también reconoce nombres que comienzan por `Arroz`, `Arroces`, `Pasta` o `Pastas`.
+- No se marca por simple aparición de la palabra arroz en medio del nombre; por ejemplo, una sopa `Sancocho de pollo con arroz` no recibe SA por esta regla.
+- Después de importar, un **RafikiModal** informa exactamente qué platos recibieron SA, diferenciando Arroz y Pasta.
+- Si una línea ya tenía SA, no se duplica la regla.
+- El automatismo ocurre únicamente al usar el botón de importación desde Generador. La edición manual del menú conserva el comportamiento normal.
+- No requiere SQL nuevo ni cambia rutas.
+
+---
+
+# Rafiki Pedidos — 128.5 / Fase 39E
+
+## Fase 39E — Compacta uniforme, abonos exactos y navegación Pedidos Hoy
+
+Versión: `128.5-FASE39E-COMPACTA-ABONOS-PEDIDOS-HOY-2026-09-16`
+
+Base oficial: **128.4 — Fase 39D**.
+
+### Cambios
+
+- **Mesas Compacta:** Restaurante y Cafetería conservan el mismo lenguaje visual. Cafetería muestra categorías principales en la pantalla compacta y abre el detalle dentro de modal; Restaurante continúa abriendo Proteína/Acompañantes en modal. Adicionales Cafetería conserva su modal específico.
+- **Cartera:** el valor de Registrar abono y Editar abono usa entrada de solo dígitos (`inputMode=numeric`) en lugar de `type=number`, evitando restricciones del navegador y permitiendo valores exactos como `100500`, `250000` o `1000000`.
+- **Pedidos Hoy:** `📋 Pedidos | 🍽️ Mesas | 🗑️ Borrados` queda inmediatamente debajo del encabezado y permanece visible arriba al desplazarse.
+- No se modifican las rutas principales ni se requiere SQL nuevo.
+
+### Compatibilidad
+
+Conserva íntegramente la arquitectura de navegación de Fase 39D y los cambios de Fase 39/39B/39C.
+
+---
+
+# Rafiki Pedidos — 128.4 / Fase 39D
+
+## Fase 39D — Arquitectura de navegación Admin / Gerencia
+
+Versión: `128.4-FASE39D-ARQUITECTURA-NAVEGACION-ADMIN-GERENCIA-2026-09-16`
+
+- Navegación principal se mantiene: **Mesas | Pedidos hoy | Admin | Gerencia**.
+- Admin queda limitado a: **Pedidos hoy | Editar menú diario | Solicitud de insumos | Insumos Pendientes | Generador de menú | Historial de menú**.
+- **Solicitud de insumos** e **Insumos Pendientes** son pestañas independientes, pero reutilizan el mismo componente y la misma fuente de datos para evitar duplicidad.
+- Gerencia queda en: **Informes | Caja | Gastos | Cartera | Inventario | Ajustes**.
+- Se elimina la pestaña Inicio y las tarjetas intermedias de Gerencia; **Informes** abre por defecto.
+- No se cambian las rutas principales `/mesas`, `/pedidos`, `/admin`, `/gerencia`; las rutas históricas se conservan por compatibilidad.
+- Las pestañas antiguas de Admin guardadas en `localStorage` ya no son válidas y regresan de forma segura a **Pedidos hoy**.
+
+
+Hotfix de Fase 39C: corrige el botón **Historial de menú** en Admin. La pestaña `historialMenu` ahora está registrada como válida y reutiliza correctamente el permiso `generador`, evitando que el clic sea descartado o redirigido. Conserva todos los cambios de 128.2.
+
+## Fase 39C — Adicionales modal, Historial separado y rotación de 5 días
+
+Versión: `128.2-FASE39C-ADICIONALES-MODAL-HISTORIAL-ROTACION-5-DIAS-2026-09-16`
+
+### Ajustes de esta revisión
+
+- **Adicionales Restaurante** y **Adicionales Cafetería** muestran su listado dentro de un `RafikiModal`, tanto en Mesas Normal como Compacta.
+- **Historial de menú** queda como pestaña principal independiente en Admin, al mismo nivel que **Generador de menú**; se eliminan las subtabs internas duplicadas.
+- Desde Historial se puede cargar un menú anterior como borrador y saltar al Generador.
+- **Usados recientemente** usa una ventana fija de **5 días** para Platos, Guisos, Sopas y Pastas.
+- **No usados recientemente** muestra primero los nunca usados y después ordena por último uso del más antiguo al más reciente.
+- No requiere SQL adicional respecto a 128.0/128.1.
+
+---
+
+## Fase 39B — Navegación uniforme y Mesas Compacta por líneas
+
+Versión: `128.1-FASE39B-NAVEGACION-UNIFORME-MESAS-COMPACTA-2026-09-15`
+
+### Ajustes de esta revisión
+
+- En **Mesas → vista Compacta**, **Restaurante** y **Cafetería** aparecen como dos líneas principales al mismo nivel.
+- La vista Compacta abre **Restaurante por defecto** cada vez que se inicia esa vista.
+- Cafetería funciona dentro de la propia vista Compacta, reutilizando sus categorías y controles existentes; ya no queda como un acceso secundario debajo de Restaurante.
+- **Adicionales Restaurante** continúa disponible directamente dentro de Restaurante y **Adicionales Cafetería** permanece dentro de la línea Cafetería.
+- Se crea una navegación interna única con el orden fijo **Mesas → Pedidos hoy → Admin → Gerencia**.
+- La misma barra se muestra en Mesas, Pedidos hoy, Admin, Gerencia e Inventario.
+- **Gerencia siempre conserva su posición visual**; para roles sin permiso se muestra deshabilitada, sin alterar el orden del menú ni conceder acceso.
+- Se conservan íntegramente los cambios financieros, de meseros y de adicionales de la versión 128.0.
+
+---
+
+## Fase 39 — Inicio de la línea 128: Ajustes, Meseros, Adicionales y Abonos editables
+
+Versión: `128.0-FASE39-AJUSTES-MESEROS-ADICIONALES-ABONOS-2026-09-15`
+
+### Cambios principales
+
+- **Gerencia → Catálogo** pasa a llamarse **Gerencia → Ajustes**. Dentro se conserva el Catálogo y se agrega la administración de **Meseros**.
+- Los meseros dejan de estar definidos únicamente en el código: se pueden **agregar, renombrar, activar y desactivar**. Desactivar no altera pedidos históricos.
+- En `/mesas`, el bloque operativo queda organizado como **Cliente → Forma de pago → Mesero**; la vista Beta de respaldo usa el mismo criterio.
+- **Adicionales Restaurante** queda disponible aunque todavía no exista un almuerzo seleccionado y se hace visualmente más visible.
+- Cafetería incorpora una sección independiente **Adicionales Cafetería**, administrable desde **Ajustes → Catálogo → Productos Cafetería** usando la categoría `Adicionales cafetería`.
+- La vista Compacta expone accesos directos a **Adicionales Restaurante** y **Adicionales Cafetería**.
+- Los pagos de Cartera pasan a tener un **pago lógico** independiente de sus aplicaciones FIFO. En Estado de cuenta aparecen acciones visibles **Editar** y **Eliminar**.
+- Editar un abono permite cambiar **valor, método, fecha y observación**. Rafiki reconstruye transaccionalmente todas las aplicaciones FIFO del cliente.
+- Eliminar un abono realiza una **anulación lógica**: deja de afectar el saldo, pero se conserva el historial para auditoría.
+- Los abonos históricos son vinculados automáticamente a un `pago_id` durante la migración para mantener la visualización de un pago único aunque tenga varias aplicaciones.
+
+### Supabase requerido
+
+Antes de publicar esta versión, ejecutar:
+
+`supabase/2026-09-15-fase39-abonos-editables-meseros.sql`
+
+Este SQL crea la tabla de meseros, el modelo de pagos lógicos, auditoría, RPC de edición/anulación y el recálculo FIFO. También actualiza la compatibilidad con la unificación de clientes de Fase 38E.
+
+---
+
+## Fase 38H — Dashboard de gastos alineado con Informes
+
+Versión: `127.28-FASE38J-REGLA-SA-SIN-ACOMPANANTES-2026-08-11`
 
 ### Corrección de organización del panel Gastos
 
@@ -764,3 +939,13 @@ Fase 37C - Filtros de insumos y llave de transferencia: en Admin → Solicitud d
 - Se eliminaron etiquetas de prueba, descripciones operativas y subtítulos.
 - El selector superior queda reducido a **Normal** y **Compacta**.
 - No se modificó el motor real de pedidos, guardado, edición o impresión.
+
+## 128.8 — Fase 39H: Pedidos por QR de mesa
+
+- Se reutiliza `/cliente` como modo de pedido en mesa mediante enlaces con token opaco.
+- Mesas habilitadas: 1A, 1B, 2A, 2B, 3A, 3B, 4A, 4B y 5B.
+- Un acceso QR válido fija la mesa, desactiva la ubicación/para llevar y guarda `tipo_pedido = mesa`, `mesa = <mesa>` y `mesero = Cliente QR`.
+- Gerencia → Ajustes incorpora **Mesas / QR** para copiar enlaces, visualizar e imprimir el QR individual de cada mesa.
+- Pedidos Hoy y Print Server pueden identificar la mesa usando los campos existentes `tipo_pedido` y `mesa`; no se agregan columnas ni migraciones.
+- El QR visual usa `api.qrserver.com` únicamente para renderizar la imagen. El enlace sigue siendo funcional aunque la imagen remota no cargue.
+- No requiere SQL nuevo.

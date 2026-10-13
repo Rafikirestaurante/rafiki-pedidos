@@ -38,11 +38,21 @@
     "fase37d:check": "node scripts/validate-fase37d-adicionales-mesas.mjs",
     "fase37e:check": "node scripts/validate-fase37e-vista-compacta-mesas.mjs",
     "fase37e2:check": "node scripts/validate-fase37e2-flujo-compacto-inline.mjs",
-    "fase37f:check": "node scripts/validate-fase37f-insumos-am-pm.mjs"
+    "fase37f:check": "node scripts/validate-fase37f-insumos-am-pm.mjs",
+    "fase39:check": "node scripts/validate-fase39.mjs",
+    "fase39b:check": "node scripts/validate-fase39b.mjs",
+    "fase39c:check": "node scripts/validate-fase39c.mjs",
+    "fase39d:check": "node scripts/validate-fase39d-navegacion.mjs",
+    "fase39f:check": "node scripts/validate-fase39f-sa-importacion.mjs",
+    "fase39g:check": "node scripts/validate-fase39g-dashboard-filtros-cafeteria.mjs",
+    "fase39e:check": "node scripts/validate-fase39e.mjs",
+    "fase39h:check": "node scripts/validate-fase39h-qr-mesas.mjs",
+    "fase39h1:check": "node scripts/validate-fase39h1-qr-simplificado.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
     "@vitejs/plugin-react": "^4.7.0",
+    "exceljs": "^4.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "vite": "^5.4.21"
@@ -58,6 +68,6 @@
   },
   "type": "module",
   "name": "rafiki-pedidos",
-  "version": "127.25.0",
+  "version": "135.1.0",
   "private": true
 }
