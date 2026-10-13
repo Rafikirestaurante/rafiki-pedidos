@@ -92,3 +92,30 @@ describe("carteraViewUtils", () => {
     expect(resultado).toHaveLength(2);
   });
 });
+
+ describe("libro diario sin asignación por pedido", () => {
+  it("conserva el saldo a favor de un abono con fecha anterior a la compra", () => {
+    const lineas = construirEstadoCuenta(
+      [{id:"p1", fecha_movimiento:"2026-10-12T18:00:00Z", valor:30000, estado:"pendiente"}],
+      [{id:"a1", pago_id:"pago1", fecha_abono:"2026-10-11T18:00:00Z", valor_abono:10000}]
+    );
+    expect(lineas.map((l) => l.saldo)).toEqual([-10000,20000]);
+    expect(lineas[1].saldoAnterior).toBe(-10000);
+  });
+  it("excluye abonos anulados y mantiene la compra anulada sin aumentar el saldo", () => {
+    const lineas = construirEstadoCuenta(
+      [{id:"p1", valor:30000, estado:"anulado"}],
+      [{id:"a1", pago_id:"pago1", valor_abono:10000, estado:"anulado"}]
+    );
+    expect(lineas).toHaveLength(1);
+    expect(lineas[0].saldo).toBe(0);
+  });
+  it("resta cada pago completo una vez y suma compras históricas pagadas", () => {
+    const lineas = construirEstadoCuenta(
+      [{id:"p1",fecha_movimiento:"2026-10-10",valor:30000,estado:"pagado",saldo_movimiento:0},
+       {id:"p2",fecha_movimiento:"2026-10-11",valor:20000,estado:"parcial",saldo_movimiento:5000}],
+      [{id:"a1",pago_id:"pago1",fecha_abono:"2026-10-12",valor_abono:35000}]
+    );
+    expect(lineas.at(-1).saldo).toBe(15000);
+  });
+});

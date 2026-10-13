@@ -64,7 +64,7 @@ export default function useAbonosEditables({ clienteDetalle, guardando, setGuard
       });
       setAbonoEditando(null);
       setFormularioAbonoEdicion(ABONO_INICIAL);
-      setMensaje("Abono actualizado correctamente. Rafiki recalculó la cartera y las aplicaciones FIFO.");
+      setMensaje("Abono actualizado correctamente. Rafiki actualizó el saldo del libro diario.");
       await actualizarTodo();
     } catch (err) {
       registrarErrorSupabase("editar abono de cartera", err);

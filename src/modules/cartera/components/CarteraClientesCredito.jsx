@@ -302,7 +302,7 @@ export default function CarteraClientesCredito() {
     const activos = clientes.filter((cliente) => cliente.activo !== false);
     const clientesConSaldo = clientes.filter((cliente) => Number(cliente.saldo_pendiente || 0) > 0);
     const saldoTotal = clientes.reduce((total, cliente) => total + Number(cliente.saldo_pendiente || 0), 0);
-    const pedidosPendientes = movimientosCartera.filter(movimientoPendiente).length;
+    const pedidosPendientes = movimientosCartera.filter((movimiento) => estadoCartera(movimiento) !== "anulado").length;
     const carteraPagada = abonosAgrupadosCartera.reduce((total, abono) => total + Number(abono.valor_abono || 0), 0);
     const creditosOtorgadosHoy = movimientosCartera.reduce((total, movimiento) => {
       if (estadoCartera(movimiento) === "anulado") return total;
@@ -365,13 +365,11 @@ export default function CarteraClientesCredito() {
   }, [abonosCartera, clienteDetalleId]);
 
   const resumenDetalle = useMemo(() => {
-    const total = movimientosClienteDetalle.reduce((acum, movimiento) => acum + Number(movimiento.valor || 0), 0);
-    const saldo = movimientosClienteDetalle.reduce((acum, movimiento) => {
-      if (!movimientoPendiente(movimiento)) return acum;
-      return acum + saldoMovimiento(movimiento);
-    }, 0);
-    const pendientes = movimientosClienteDetalle.filter(movimientoPendiente).length;
-    const abonado = abonosClienteDetalle.reduce((acum, abono) => acum + Number(abono.valor_abono || 0), 0);
+    const compras = movimientosClienteDetalle.filter((movimiento) => estadoCartera(movimiento) !== "anulado");
+    const total = compras.reduce((acum, movimiento) => acum + Number(movimiento.valor || 0), 0);
+    const abonado = agruparAbonosRegistrados(abonosClienteDetalle).reduce((acum, abono) => acum + Number(abono.valor_abono || 0), 0);
+    const saldo = total - abonado;
+    const pendientes = compras.length;
     return { total, saldo, pendientes, abonado };
   }, [abonosClienteDetalle, movimientosClienteDetalle]);
 
@@ -379,6 +377,63 @@ export default function CarteraClientesCredito() {
     () => construirEstadoCuenta(movimientosClienteDetalle, abonosClienteDetalle, { soloProteina: soloProteinaEstadoCuenta }),
     [abonosClienteDetalle, movimientosClienteDetalle, soloProteinaEstadoCuenta]
   );
+
+  const libroFiltrado = useMemo(() => {
+    const cuentas = new Map();
+    movimientosCartera.forEach((movimiento) => {
+      const id = movimiento.cliente_credito_id;
+      if (!cuentas.has(id)) cuentas.set(id, { movimientos: [], abonos: [] });
+      cuentas.get(id).movimientos.push(movimiento);
+    });
+    abonosCartera.forEach((abono) => {
+      const id = abono.cliente_credito_id;
+      if (!cuentas.has(id)) cuentas.set(id, { movimientos: [], abonos: [] });
+      cuentas.get(id).abonos.push(abono);
+    });
+    const nombres = new Map(clientes.map((cliente) => [cliente.id, cliente.nombre]));
+    return Array.from(cuentas.entries()).flatMap(([clienteId, cuenta]) =>
+      construirEstadoCuenta(cuenta.movimientos, cuenta.abonos).map((linea) => ({
+        ...linea, clienteId,
+        clienteNombre: nombres.get(clienteId) || cuenta.movimientos[0]?.cliente_nombre || cuenta.abonos[0]?.cliente_nombre || "Cliente",
+      }))
+    ).filter((linea) => {
+      if (filtros.clienteId && linea.clienteId !== filtros.clienteId) return false;
+      if (!fechaDentroRango(linea.fecha, filtros.fechaInicio, filtros.fechaFin)) return false;
+      if (filtros.pedido && !normalizarTexto(linea.referencia).includes(normalizarTexto(filtros.pedido))) return false;
+      if (filtros.descripcion && !normalizarTexto(linea.descripcion).includes(normalizarTexto(filtros.descripcion))) return false;
+      return !filtros.texto || normalizarTexto(`${linea.clienteNombre} ${linea.descripcion} ${linea.referencia}`).includes(normalizarTexto(filtros.texto));
+    }).sort((a, b) => new Date(a.fecha) - new Date(b.fecha) || a.id.localeCompare(b.id));
+  }, [movimientosCartera, abonosCartera, clientes, filtros]);
+
+  function exportarLibroDiario() {
+    const encabezado = ["Fecha", "Cliente", "Referencia", "Descripción", "Compra", "Abono", "Saldo anterior", "Saldo acumulado"];
+    const filas = libroFiltrado.map((linea) => [formatearFechaHora(linea.fecha), linea.clienteNombre, linea.referencia, linea.descripcion, linea.pedido, linea.pago, linea.saldoAnterior, linea.saldo]);
+    const tabla = [encabezado, ...filas].map((fila) => `<tr>${fila.map((celda) => `<td>${escaparHtmlExcel(celda)}</td>`).join("")}</tr>`).join("");
+    descargarArchivo(`libro-diario-cartera-${fechaColombiaYYYYMMDD()}.xls`, `<html><head><meta charset="utf-8" /></head><body><h2>Libro diario de cartera</h2><p>Saldo acumulado por cliente, incluyendo movimientos anteriores al filtro.</p><table border="1">${tabla}</table></body></html>`);
+  }
+
+  function imprimirLibroDiario(formato = "80") {
+    const ok = imprimirReporteTermico({
+      formato, titulo: "Libro diario de cartera", subtitulo: "Compras y abonos por cliente",
+      meta: [{ etiqueta: "Fecha", valor: formatearFechaTermica(new Date()) }],
+      listado: {
+        titulo: "Movimientos", modo: "tabla", items: libroFiltrado, vacio: "Sin movimientos",
+        campos: [
+          { etiqueta: "Cliente / Fecha", ancho: "30%", valor: (l) => `${l.clienteNombre} · ${formatearFecha(l.fecha)}` },
+          { etiqueta: "Concepto", ancho: "30%", valor: (l) => `${l.referencia} · ${l.descripcion}` },
+          { etiqueta: "+ / −", ancho: "20%", alinear: "right", valor: (l) => l.pago ? `−${dinero(l.pago)}` : dinero(l.pedido) },
+          { etiqueta: "Saldo", ancho: "20%", alinear: "right", valor: (l) => dinero(l.saldo) },
+        ],
+      },
+    });
+    if (!ok) setError("No se pudo abrir la ventana de impresión.");
+  }
+
+  function compartirLibroDiario() {
+    const filas = libroFiltrado.slice(-25).map((l) => `${formatearFecha(l.fecha)} · ${l.clienteNombre} · ${l.referencia} · ${l.pago ? `Abono ${dinero(l.pago)}` : `Compra ${dinero(l.pedido)}`} · Saldo ${dinero(l.saldo)}`);
+    const texto = ["Libro diario de cartera Rafiki", ...filas, libroFiltrado.length > 25 ? "Últimos 25 movimientos. El Excel incluye el detalle completo." : ""].filter(Boolean).join("\n");
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener,noreferrer");
+  }
 
   function abrirEstadoCuenta(clienteId) {
     setClienteDetalleId(clienteId || null);
@@ -572,7 +627,7 @@ export default function CarteraClientesCredito() {
             { etiqueta: "Abonos recibidos hoy", valor: dinero(indicadores.abonosRecibidosHoy), fuerte: true },
             { etiqueta: "Cartera pendiente total", valor: dinero(indicadores.saldoTotal), fuerte: true },
             { etiqueta: "Clientes con saldo", valor: indicadores.clientesConSaldo },
-            { etiqueta: "Pedidos pendientes", valor: indicadores.pedidosPendientes },
+            { etiqueta: "Compras registradas", valor: indicadores.pedidosPendientes },
             { etiqueta: "Abonos acumulados", valor: dinero(indicadores.carteraPagada) },
             { etiqueta: "Cantidad de abonos", valor: indicadores.abonosRecibidos },
             { etiqueta: "Saldo según filtros", valor: dinero(indicadores.saldoFiltrado) },
@@ -836,8 +891,8 @@ export default function CarteraClientesCredito() {
 
   const tabsCartera = [
     { id: "cartera", label: "Cartera actual", icon: "👥", count: clientesVisibles.length },
-    { id: "estado-cuenta", label: "Estado de cuenta", icon: "📄", count: clienteDetalle ? estadoCuentaCliente.length : null },
-    { id: "historial", label: "Historial", icon: "🧾", count: indicadores.movimientosFiltrados },
+    { id: "estado-cuenta", label: "Cuenta del cliente", icon: "📄", count: clienteDetalle ? estadoCuentaCliente.length : null },
+    { id: "historial", label: "Libro diario", icon: "🧾", count: indicadores.movimientosFiltrados },
   ];
 
   return (
@@ -964,7 +1019,7 @@ export default function CarteraClientesCredito() {
                   <th>Teléfono</th>
                   <th>Último pedido</th>
                   <th>Total pedidos</th>
-                  <th>Saldo pendiente</th>
+                  <th>Saldo acumulado</th>
                   <th>Estado</th>
                   <th>Observaciones</th>
                   <th>Acción</th>
@@ -990,7 +1045,7 @@ export default function CarteraClientesCredito() {
                         <RafikiActionMenu
                           disabled={guardando}
                           items={[
-                            { id: "ver", label: "Ver estado de cuenta", icon: "🔎", variant: "info", onClick: () => abrirEstadoCuenta(cliente.id) },
+                            { id: "ver", label: "Ver libro diario", icon: "🔎", variant: "info", onClick: () => abrirEstadoCuenta(cliente.id) },
                             { id: "editar", label: "Editar cliente", icon: "✏️", onClick: () => editar(cliente) },
                             { id: "unificar", label: "Unificar con otro cliente", icon: "🔗", variant: "warning", onClick: () => abrirUnificacion(cliente) },
                             whatsapp ? { id: "whatsapp", label: "Enviar WhatsApp", icon: "💬", variant: "success", disabled: saldoPendiente <= 0, onClick: () => abrirWhatsApp(cliente) } : null,
@@ -1009,105 +1064,39 @@ export default function CarteraClientesCredito() {
 
       {vistaCartera === "historial" && (
         <section className="card card-pad" style={{ marginTop: 12 }}>
-          <div className="section-heading section-heading-pedidos-unificados">
-            <div>
-              <h3>Historial de cartera</h3>
-              <p className="muted small">Filtra por cliente, pedido, estado o rango de fechas. Los cortes se calculan con horario Colombia para evitar descuadres al cierre.</p>
-            </div>
-            <div className="cartera-movimientos-resumen">
-              <div className="cartera-resumen-chip"><span>Movimientos</span><strong>{indicadores.movimientosFiltrados}</strong></div>
-              <div className="cartera-resumen-chip"><span>Valor filtrado</span><strong title={dinero(indicadores.valorOriginalFiltrado)}>{dinero(indicadores.valorOriginalFiltrado)}</strong></div>
-              <div className="cartera-resumen-chip"><span>Saldo filtrado</span><strong title={dinero(indicadores.saldoFiltrado)}>{dinero(indicadores.saldoFiltrado)}</strong></div>
-            </div>
-          </div>
-
-          <div className="cartera-quick-filters" aria-label="Filtros rápidos de movimientos">
-            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroCreditosHoy}>Créditos de hoy</button>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroAyer}>Ayer</button>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroUltimos7Dias}>Últimos 7 días</button>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={aplicarFiltroPendientes}>Pendientes</button>
-            {hayFiltroFechaMovimientos && <span className="muted small">Mostrando auditoría por fecha: los créditos pagados se mantienen visibles.</span>}
-          </div>
-
+          <h3>Libro diario de cartera</h3>
+          <p className="muted small">Compras y abonos en orden cronológico. El saldo de cada fila corresponde a ese cliente e incluye los movimientos anteriores al filtro.</p>
           <div className="cartera-filtros">
-            <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Búsqueda general" />
-            <input value={filtros.pedido} onChange={(e) => cambiarFiltro("pedido", e.target.value)} placeholder="Filtrar por pedido" aria-label="Filtrar por número de pedido" />
-            <input value={filtros.descripcion} onChange={(e) => cambiarFiltro("descripcion", e.target.value)} placeholder="Filtrar por producto" aria-label="Filtrar por descripción del pedido" />
-            <select value={filtros.clienteId} onChange={(e) => cambiarFiltro("clienteId", e.target.value)} aria-label="Filtrar movimientos por cliente">
+            <input value={filtros.texto} onChange={(e) => cambiarFiltro("texto", e.target.value)} placeholder="Buscar cliente o movimiento" />
+            <select value={filtros.clienteId} onChange={(e) => cambiarFiltro("clienteId", e.target.value)} aria-label="Cliente">
               <option value="">Todos los clientes</option>
-              {clientesParaFiltroMovimientos.map((cliente) => (
-                <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>
-              ))}
+              {clientesParaFiltroMovimientos.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>)}
             </select>
-            <select value={filtros.estado} onChange={(e) => cambiarFiltro("estado", e.target.value)}>
-              <option value="todos">Todos los estados</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="parcial">Parcial</option>
-              <option value="pagado">Pagado</option>
-              <option value="anulado">Anulado</option>
-            </select>
-            <input type="date" value={filtros.fechaInicio} onChange={(e) => cambiarFiltro("fechaInicio", e.target.value)} />
-            <input type="date" value={filtros.fechaFin} onChange={(e) => cambiarFiltro("fechaFin", e.target.value)} />
+            <input type="date" value={filtros.fechaInicio} onChange={(e) => cambiarFiltro("fechaInicio", e.target.value)} aria-label="Desde" />
+            <input type="date" value={filtros.fechaFin} onChange={(e) => cambiarFiltro("fechaFin", e.target.value)} aria-label="Hasta" />
           </div>
           <div className="cartera-actions">
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setFiltros(FILTROS_INICIALES)}>Limpiar filtros</button>
-            <button type="button" className="mini-btn print" style={{ width: "auto", marginBottom: 0 }} onClick={cargarMovimientos} disabled={cargandoMovimientos}>
-              {cargandoMovimientos ? "Cargando..." : "Actualizar movimientos"}
-            </button>
-            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={exportarMovimientosExcel} disabled={movimientosFiltrados.length === 0}>
-              Exportar pedidos filtrados
-            </button>
-            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} onClick={exportarAbonosExcel} disabled={abonosCartera.length === 0}>Exportar abonos filtrados</button>
-            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={compartirMovimientosWhatsApp} disabled={movimientosFiltrados.length === 0}>
-              Compartir WhatsApp
-            </button>
-            <ThermalPrintControls
-              onPrint={imprimirMovimientosCarteraTermico}
-              disabled={movimientosFiltrados.length === 0}
-              label="Imprimir"
-              title="Tamaño"
-              buttonClassName="mini-btn print"
-              className="cartera-thermal-control"
-              compact
-            />
+            <button type="button" className="mini-btn" onClick={() => setFiltros(FILTROS_INICIALES)}>Limpiar filtros</button>
+            <button type="button" className="mini-btn" onClick={actualizarTodo} disabled={cargandoMovimientos || cargandoAbonos}>Actualizar</button>
+            <button type="button" className="mini-btn green" onClick={exportarLibroDiario} disabled={!libroFiltrado.length}>Exportar libro diario</button>
+            <button type="button" className="mini-btn" onClick={compartirLibroDiario} disabled={!libroFiltrado.length}>Compartir WhatsApp</button>
+            <ThermalPrintControls onPrint={imprimirLibroDiario} disabled={!libroFiltrado.length} label="Imprimir" title="Tamaño" buttonClassName="mini-btn print" className="cartera-thermal-control" compact />
           </div>
-          <p className="muted small" style={{ margin: "4px 0 0" }}>WhatsApp comparte un resumen en texto. Para enviar el archivo completo, exporta Excel y adjúntalo manualmente.</p>
-
-          <div className="pedidos-tabla-wrap" style={{ marginTop: 10 }}>
+          <div className="pedidos-tabla-wrap">
             <table className="pedidos-tabla-compacta">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Pedido</th>
-                  <th>Cliente</th>
-                  <th>Descripción del pedido</th>
-                  <th>Valor</th>
-                  <th>Estado</th>
-                  <th>Saldo</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Fecha</th><th>Cliente</th><th>Referencia</th><th>Descripción</th><th>Compra (+)</th><th>Abono (−)</th><th>Saldo acumulado</th></tr></thead>
               <tbody>
-                {movimientosFiltrados.length === 0 ? (
-                  <tr><td colSpan="7"><RafikiEmptyState icon="🧾" title={cargandoMovimientos ? "Cargando movimientos..." : "Sin movimientos"} description={cargandoMovimientos ? "Estamos consultando los movimientos de cartera." : "No hay movimientos para los filtros actuales."} /></td></tr>
-                ) : movimientosFiltrados.slice(0, 300).map((movimiento) => {
-                  const estado = estadoCartera(movimiento);
-                  const saldoPendiente = saldoMovimiento(movimiento);
-                  return (
-                    <tr key={movimiento.id} className={!hayFiltroFechaMovimientos && !movimientoPendiente(movimiento) ? "subtle-row" : ""}>
-                      <td>{formatearFechaHora(movimiento.fecha_movimiento || movimiento.created_at)}</td>
-                      <td>#{movimiento.numero_pedido || "—"}</td>
-                      <td>{movimiento.cliente_nombre || "—"}</td>
-                      <td className="td-pedido-detalle">{resumenPedidoMovimiento(movimiento)}<small>{movimiento.pedido_items?.length ? `${movimiento.pedido_items.length} item(s)` : "Detalle compacto"}</small></td>
-                      <td className="td-total">{dinero(movimiento.valor)}</td>
-                      <td><RafikiBadge estado={estado} /></td>
-                      <td className={`td-total ${saldoPendiente > 0 && estado !== "pagado" && estado !== "anulado" ? "saldo-pendiente" : "saldo-cero"}`}>{dinero(movimiento.saldo_movimiento)}</td>
-                    </tr>
-                  );
-                })}
+                {!libroFiltrado.length && <tr><td colSpan="7">Sin movimientos para estos filtros.</td></tr>}
+                {libroFiltrado.slice(-300).map((linea) => <tr key={linea.id} className={linea.pago ? "subtle-row" : ""}>
+                  <td>{formatearFechaHora(linea.fecha)}</td>
+                  <td><button type="button" className="mini-btn" onClick={() => abrirEstadoCuenta(linea.clienteId)}>{linea.clienteNombre}</button></td>
+                  <td>{linea.referencia}</td><td>{linea.descripcion}{linea.estado === "anulado" ? " · Anulado" : ""}</td>
+                  <td>{linea.pedido ? dinero(linea.pedido) : "—"}</td><td className="abono-valor">{linea.pago ? dinero(linea.pago) : "—"}</td><td>{dinero(linea.saldo)}</td>
+                </tr>)}
               </tbody>
             </table>
           </div>
-          {movimientosFiltrados.length > 300 && <p className="muted small">Se muestran los primeros 300 movimientos. Usa filtros para acotar la búsqueda.</p>}
+          {libroFiltrado.length > 300 && <p className="muted small">Se muestran los últimos 300 movimientos. La exportación incluye todos los movimientos filtrados.</p>}
         </section>
       )}
 
@@ -1124,14 +1113,14 @@ export default function CarteraClientesCredito() {
                   {clientesParaFiltroMovimientos.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>)}
                 </select>
               </div>
-              <RafikiEmptyState icon="🔎" title="Selecciona un cliente" description="También puedes abrir esta pestaña desde la opción Ver estado de cuenta en Cartera actual." />
+              <RafikiEmptyState icon="🔎" title="Selecciona un cliente" description="También puedes abrir esta pestaña desde la opción Ver libro diario en Cartera actual." />
             </div>
           ) : (
             <>
               <div className="section-heading section-heading-pedidos-unificados">
                 <div>
-                  <h3>Estado de cuenta de {clienteDetalle.nombre}</h3>
-                  <p className="muted small">Pedidos a crédito y pagos recibidos en una sola secuencia.</p>
+                  <h3>Libro diario de {clienteDetalle.nombre}</h3>
+                  <p className="muted small">Cada compra suma y cada abono resta al saldo anterior. Un saldo negativo indica saldo a favor.</p>
                 </div>
                 <div className="cartera-actions" style={{ marginTop: 0 }}>
                   <select value={clienteDetalleId || ""} onChange={(e) => abrirEstadoCuenta(e.target.value)} aria-label="Cambiar cliente del estado de cuenta">
@@ -1149,7 +1138,7 @@ export default function CarteraClientesCredito() {
                 <div className="cartera-indicador"><small>Saldo actual cliente</small><strong>{dinero(clienteDetalle.saldo_pendiente)}</strong></div>
                 <div className="cartera-indicador"><small>Total comprado a crédito</small><strong>{dinero(resumenDetalle.total)}</strong></div>
                 <div className="cartera-indicador neutral"><small>Abonado</small><strong className="abono-valor">{dinero(resumenDetalle.abonado)}</strong></div>
-                <div className="cartera-indicador neutral"><small>Pedidos pendientes</small><strong>{resumenDetalle.pendientes}</strong></div>
+                <div className="cartera-indicador neutral"><small>Compras registradas</small><strong>{resumenDetalle.pendientes}</strong></div>
               </div>
 
               <div className="pedidos-tabla-wrap">
@@ -1159,9 +1148,9 @@ export default function CarteraClientesCredito() {
                       <th>Fecha</th>
                       <th>Referencia</th>
                       <th>Descripción</th>
-                      <th>Pedido a crédito</th>
-                      <th>Pago recibido</th>
-                      <th>Saldo pendiente</th>
+                      <th>Compra (+)</th>
+                      <th>Abono (−)</th>
+                      <th>Saldo acumulado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>

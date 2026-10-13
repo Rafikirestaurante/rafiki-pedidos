@@ -136,7 +136,7 @@ export default function CarteraModals({
       <RafikiModal
         open={Boolean(abonoEditando)}
         title="Editar abono"
-        description={abonoEditando ? `Modifica el pago completo de ${dinero(abonoEditando.valor_abono)}. Rafiki volverá a aplicar los abonos por FIFO y recalculará los saldos.` : ""}
+        description={abonoEditando ? `Modifica el pago completo de ${dinero(abonoEditando.valor_abono)}. Rafiki recalculará el saldo del libro diario del cliente.` : ""}
         onClose={cerrarEdicionAbono}
         size="lg"
       >
@@ -189,7 +189,7 @@ export default function CarteraModals({
         {abonoAnulando && (
           <div className="cartera-unificar">
             <div className="alert warning">
-              El abono dejará de contar en el saldo del cliente y Rafiki reconstruirá todas las aplicaciones FIFO posteriores. Por seguridad, no se borra físicamente: queda registrado como anulado en la auditoría.
+              El abono dejará de descontarse del saldo del cliente y se recalculará el libro diario. Por seguridad, no se borra físicamente: queda registrado como anulado en la auditoría.
             </div>
             <label>
               Motivo de eliminación (opcional)

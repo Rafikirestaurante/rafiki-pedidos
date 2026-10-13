@@ -234,7 +234,7 @@ export function agruparAbonosRegistrados(abonos = []) {
   const grupos = new Map();
 
   (Array.isArray(abonos) ? abonos : []).forEach((abono, indice) => {
-    if (abono?.vigente === false) return;
+    if (abono?.vigente === false || abono?.estado === "anulado") return;
 
     const fechaRegistro = abono.created_at || abono.fecha_abono || "";
     const claveLegacy = [
@@ -314,8 +314,9 @@ export function construirEstadoCuenta(movimientos = [], abonos = [], { soloProte
 
   let saldo = 0;
   return lineas.map((linea) => {
-    saldo = Math.max(0, saldo + linea.pedido - linea.pago);
-    return { ...linea, saldo };
+    const saldoAnterior = saldo;
+    saldo = saldo + linea.pedido - linea.pago;
+    return { ...linea, saldoAnterior, saldo };
   });
 }
 

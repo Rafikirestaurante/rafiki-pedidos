@@ -1,10 +1,8 @@
 export const RAFIKI_BUILD = {
-  version: "133.0-FASE42B-CREAR-RESTABLECER-CUENTAS-2026-09-27",
-  phase: "Fase 42 - Usuarios y permisos",
-  date: "2026-09-27",
-  fase: "41-CONTROL-DISPONIBILIDAD-MENU",
-  notes:
-    "Control compartido de cantidades estimadas y ventas diarias por plato, con actualización Realtime, indicadores discretos y aviso informativo sin bloqueo automático.",
+  "version": "135.0-FASE44-CARTERA-LIBRO-DIARIO-2026-10-12",
+  "phase": "Fase 44 - Cartera como libro diario",
+  "date": "2026-10-12",
+  "notes": "Compras y abonos independientes, saldo acumulado por cliente, sin aplicación FIFO.",
+  "fase": "44-CARTERA-LIBRO-DIARIO"
 };
-
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

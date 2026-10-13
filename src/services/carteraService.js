@@ -3,7 +3,6 @@ import { METODOS_PAGO, esMetodoPagoCredito } from "../shared/constants/paymentMe
 import { aPesosEnteros, valoresPesosDiferentes } from "../shared/utils/money";
 import {
   calcularEstadoMovimientoCredito,
-  calcularResumenClienteCredito,
   evaluarRetiroPedidoCredito,
   normalizarDatosAbono,
   pedidoDebeSalirDeCartera,
@@ -62,7 +61,7 @@ function fechaAbonoNormalizada(valor) {
   if (!valor) return new Date().toISOString();
   const texto = String(valor);
   if (texto.includes("T")) return texto;
-  return `${texto}T12:00:00`;
+  return `${texto}T12:00:00-05:00`;
 }
 
 function esPagoCredito(tipoPago) {
@@ -108,79 +107,17 @@ async function cargarMovimientosPedidoCredito(pedidoId) {
   return Array.isArray(data) ? data : [];
 }
 
-async function cargarAbonosPorMovimientos(movimientos = []) {
-  const idsMovimientos = movimientos.map((movimiento) => movimiento.id).filter(Boolean);
-  const abonosPorMovimiento = new Map();
-  const abonos = [];
-
-  if (!supabaseConfigOk || idsMovimientos.length === 0) {
-    return { abonosPorMovimiento, abonos, tablaDisponible: true };
-  }
-
-  for (const lote of partirEnLotes(idsMovimientos, 100)) {
-    const { data, error } = await supabase
-      .from("cartera_abonos")
-      .select(SELECT_CARTERA_ABONOS)
-      .in("cartera_movimiento_id", lote)
-      .eq("vigente", true);
-
-    if (error) {
-      console.warn("No se pudieron revisar abonos de cartera:", error.message);
-      return { abonosPorMovimiento, abonos, tablaDisponible: false, error };
-    }
-
-    for (const abono of Array.isArray(data) ? data : []) {
-      const movimientoId = abono.cartera_movimiento_id;
-      if (!movimientoId) continue;
-      abonos.push(abono);
-      abonosPorMovimiento.set(
-        movimientoId,
-        normalizarNumero(abonosPorMovimiento.get(movimientoId)) + normalizarNumero(abono.valor_abono)
-      );
-    }
-  }
-
-  return { abonosPorMovimiento, abonos, tablaDisponible: true };
+async function cargarAbonosPorMovimientos() {
+  // Los abonos pertenecen a la cuenta del cliente; no a un pedido.
+  return { abonosPorMovimiento: new Map(), abonos: [], tablaDisponible: true };
 }
 
-async function actualizarAbonosMovimiento(movimientoId, payload = {}) {
-  if (!supabaseConfigOk || !movimientoId) return { actualizados: 0 };
-
-  const { data, error } = await supabase
-    .from("cartera_abonos")
-    .update(payload)
-    .eq("cartera_movimiento_id", movimientoId)
-    .eq("vigente", true)
-    .select("id");
-
-  if (error) {
-    console.warn("No se pudieron sincronizar abonos de cartera:", error.message);
-    return { actualizados: 0, error };
-  }
-
-  return { actualizados: Array.isArray(data) ? data.length : 0 };
+async function actualizarAbonosMovimiento() {
+  return { actualizados: 0 };
 }
 
-async function moverAbonosEntreMovimientos({ movimientoOrigenId, movimientoDestinoId, payload = {} } = {}) {
-  if (!supabaseConfigOk || !movimientoOrigenId || !movimientoDestinoId || movimientoOrigenId === movimientoDestinoId) {
-    return { movidos: 0 };
-  }
-
-  const { data, error } = await supabase
-    .from("cartera_abonos")
-    .update({ ...payload, cartera_movimiento_id: movimientoDestinoId })
-    .eq("cartera_movimiento_id", movimientoOrigenId)
-    .eq("vigente", true)
-    .select("id,valor_abono");
-
-  if (error) {
-    console.warn("No se pudieron mover abonos de un movimiento duplicado:", error.message);
-    return { movidos: 0, error };
-  }
-
-  const movidos = Array.isArray(data) ? data.length : 0;
-  const valorMovido = (Array.isArray(data) ? data : []).reduce((total, abono) => total + normalizarNumero(abono.valor_abono), 0);
-  return { movidos, valorMovido };
+async function moverAbonosEntreMovimientos() {
+  return { movidos: 0, valorMovido: 0 };
 }
 
 async function anularMovimientosPedido({ movimientos = [], motivo = "Movimiento anulado durante sincronización de cartera." } = {}) {
@@ -619,37 +556,9 @@ export async function sincronizarCarteraConPedidosBorrados({ limite = 1500 } = {
 
 export async function recalcularResumenClienteCredito(clienteId) {
   if (!supabaseConfigOk || !clienteId) return null;
-
-  const { data: movimientos, error } = await supabase
-    .from("cartera_movimientos")
-    .select("id,valor,saldo_movimiento,estado,fecha_movimiento,tipo_movimiento")
-    .eq("cliente_credito_id", clienteId)
-    .eq("tipo_movimiento", "pedido_credito");
-
-  if (error) {
-    console.warn("No se pudo recalcular cliente crédito:", error.message);
-    return null;
-  }
-
-  const resumen = calcularResumenClienteCredito(Array.isArray(movimientos) ? movimientos : []);
-
-  const { data, error: errorUpdate } = await supabase
-    .from("clientes_credito")
-    .update({
-      total_pedidos: resumen.totalPedidos,
-      saldo_pendiente: resumen.saldoPendiente,
-      fecha_ultimo_pedido: resumen.fechaUltimoPedido,
-    })
-    .eq("id", clienteId)
-    .select("id,nombre,total_pedidos,saldo_pendiente,fecha_ultimo_pedido")
-    .maybeSingle();
-
-  if (errorUpdate) {
-    console.warn("No se pudo actualizar resumen del cliente crédito:", errorUpdate.message);
-    return null;
-  }
-
-  return data || null;
+  const { data, error } = await supabase.rpc("recalcular_libro_cartera_cliente", { p_cliente_id: clienteId });
+  if (error) throw new Error(`No se pudo actualizar el libro de cartera. Ejecuta el SQL de Fase 44. ${error.message}`);
+  return data?.cliente || null;
 }
 
 async function cargarPedidosDetalleCartera(pedidoIds = []) {
@@ -692,23 +601,18 @@ function anexarDetallePedidoMovimiento(movimiento, pedido) {
 export async function listarMovimientosCartera({ clienteId = null, estado = "pendiente", limite = 300 } = {}) {
   if (!supabaseConfigOk) return [];
 
-  let consulta = supabase
-    .from("cartera_movimientos")
-    .select(SELECT_CARTERA_MOVIMIENTOS)
-    .order("fecha_movimiento", { ascending: false })
-    .limit(limite);
-
-  if (clienteId) consulta = consulta.eq("cliente_credito_id", clienteId);
-  if (estado && estado !== "todos") consulta = consulta.eq("estado", estado);
-
-  const { data, error } = await consulta;
-
-  if (error) {
-    console.warn("No se pudieron cargar movimientos de cartera:", error.message);
-    return [];
+  const movimientos = [];
+  for (let desde = 0; ; desde += 500) {
+    let consulta = supabase.from("cartera_movimientos").select(SELECT_CARTERA_MOVIMIENTOS)
+      .order("fecha_movimiento", { ascending: false }).order("id", { ascending: false })
+      .range(desde, desde + 499);
+    if (clienteId) consulta = consulta.eq("cliente_credito_id", clienteId);
+    if (estado && estado !== "todos") consulta = consulta.eq("estado", estado);
+    const { data, error } = await consulta;
+    if (error) throw error;
+    movimientos.push(...(data || []));
+    if (!data || data.length < 500) break;
   }
-
-  const movimientos = Array.isArray(data) ? data : [];
   const pedidoIds = movimientos.map((movimiento) => movimiento.pedido_id).filter(Boolean);
 
   if (pedidoIds.length === 0) return movimientos;
@@ -721,27 +625,22 @@ export async function listarMovimientosCartera({ clienteId = null, estado = "pen
   });
 }
 
-export async function listarAbonosCartera({ clienteId = null, movimientoId = null, limite = 500 } = {}) {
+export async function listarAbonosCartera({ clienteId = null } = {}) {
   if (!supabaseConfigOk) return [];
-
-  let consulta = supabase
-    .from("cartera_abonos")
-    .select(SELECT_CARTERA_ABONOS)
-    .eq("vigente", true)
-    .order("fecha_abono", { ascending: false })
-    .limit(limite);
-
-  if (clienteId) consulta = consulta.eq("cliente_credito_id", clienteId);
-  if (movimientoId) consulta = consulta.eq("cartera_movimiento_id", movimientoId);
-
-  const { data, error } = await consulta;
-
-  if (error) {
-    console.warn("No se pudieron cargar abonos de cartera:", error.message);
-    return [];
+  const resultados = [];
+  // Leer todas las páginas evita perder pagos anteriores al calcular el saldo.
+  for (let desde = 0; ; desde += 500) {
+    let consulta = supabase.from("cartera_pagos")
+      .select("id,created_at,cliente_credito_id,cliente_nombre,valor_abono,metodo_pago,observacion,fecha_abono,estado")
+      .eq("estado", "activo").order("fecha_abono", { ascending: false }).order("id", { ascending: false })
+      .range(desde, desde + 499);
+    if (clienteId) consulta = consulta.eq("cliente_credito_id", clienteId);
+    const { data, error } = await consulta;
+    if (error) throw error;
+    resultados.push(...(data || []));
+    if (!data || data.length < 500) break;
   }
-
-  return Array.isArray(data) ? data : [];
+  return resultados.map((pago) => ({ ...pago, pago_id: pago.id, vigente: true }));
 }
 
 export async function registrarAbonoClienteCredito({
