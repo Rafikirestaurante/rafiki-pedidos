@@ -28,6 +28,11 @@ function contieneRegex(ruta, regex, mensaje) {
   ok(regex.test(texto), mensaje || `${ruta} cumple ${regex}`);
 }
 
+function noContiene(ruta, fragmento, mensaje) {
+  const texto = leer(ruta);
+  ok(!texto.includes(fragmento), mensaje || `${ruta} no contiene ${fragmento}`);
+}
+
 console.log('Validando Clientes Especiales /cliente...');
 
 contiene('src/shared/utils/clientePublicoRuntime.js', "ruta === '/' || ruta === '/cliente' || ruta === '/pedido'", '/cliente se mantiene como link público sin depender de PWA');
@@ -60,7 +65,8 @@ contiene('src/shared/utils/pedidos.js', 'obtenerClienteEspecialPedido', 'existe 
 contiene('src/modules/cliente/components/ConfirmacionPedidoCliente.jsx', 'Cliente especial aplicado', 'confirmación muestra cliente especial aplicado');
 
 contiene('src/shared/utils/pedidos.js', 'Este Producto viene con acompañantes del día', 'mensaje de acompañantes del día se mantiene');
-contieneRegex('src/shared/utils/pedidos.js', /nombre\.includes\("pasta"\)/, 'Pastas dentro de Platos se detectan por nombre');
+contieneRegex('src/shared/utils/pedidos.js', /\(\?:\^\|\\s\)SA/, 'La regla explícita SA controla productos sin acompañantes');
+noContiene('src/shared/utils/pedidos.js', 'nombre.includes("pasta")', 'Pastas ya no se marcan automáticamente por nombre');
 
 const panelMesas = leer('src/modules/mesas/components/PanelMesas.jsx');
 ok(!panelMesas.includes('clienteEspecialAplicado'), '/mesas no depende de clienteEspecialAplicado');

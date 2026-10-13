@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { obtenerVersionBuild, versionRafikiEsAlMenos } from "./validation-utils.mjs";
 
 const archivos = {
   solicitud: readFileSync("src/modules/catalogo/components/SolicitudProductos.jsx", "utf8"),
@@ -29,7 +30,7 @@ const controles = [
   ["Máximo AM y PM visible", archivos.solicitud.includes("máximo una vez en AM y una vez en PM")],
   ["Modal reutilizable sin Cancelar", archivos.comunes.includes("mostrarCancelar = true") && archivos.comunes.includes("mostrarCancelar ?")],
   ["Pruebas AM/PM", archivos.pruebas.includes("omite productos repetidos dentro de la misma jornada") && archivos.pruebas.includes("permite una segunda solicitud en la jornada contraria")],
-  ["Versión 127.18", archivos.build.includes("127.18-FASE37F-CONTROL-INSUMOS-AM-PM-2026-08-05")]
+  ["Versión 127.18 o posterior", versionRafikiEsAlMenos(obtenerVersionBuild(), "127.18")]
 ];
 
 let fallos = 0;

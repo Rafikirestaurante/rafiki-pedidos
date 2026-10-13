@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import { obtenerVersionBuild, versionRafikiEsAlMenos } from "./validation-utils.mjs";
 
 const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const compacto = read("src/modules/mesas/components/PanelMesasCompacto.jsx");
 const css = read("src/styles/app.css");
-const build = read("src/config/rafikiBuild.js");
-const versionDetectada = Number(build.match(/version:\s*"127\.(\d+)-/)?.[1] || 0);
 
 const checks = [
   ["El Paso 3 sigue identificado como Datos y envío", compacto.includes('{ id: "datos", numero: 3, titulo: "Datos y envío" }')],
@@ -20,10 +19,10 @@ const checks = [
   ["Agregar otro almuerzo valida acompañantes antes de crear", compacto.includes('function agregarOtroAlmuerzoDesdeAcompanantes()') && compacto.includes('if (!validarAcompanantesActuales()) return;')],
   ["Continuar del Paso 2 muestra el resumen y los datos", compacto.includes('function mostrarResumenYDatos()') && compacto.includes('desplazarA("mesa-resumen-compacto")')],
   ["El acceso al Paso 3 desplaza al formulario integrado", compacto.includes('function irADatos()') && compacto.includes('desplazarA("mesa-datos-final")')],
-  ["El resumen conserva la opción de agregar otro almuerzo", compacto.includes('onClick={iniciarAlmuerzo}>+ Otro almuerzo</button>')],
+  ["El resumen conserva la opción de agregar otro producto", compacto.includes('lineaActiva === "cafeteria" ? "+ Cafetería" : "+ Otro almuerzo"') && compacto.includes('volverACafeteria')],
   ["Se retiraron los botones redundantes Editar datos y Revisar y enviar", !compacto.includes('>Editar datos</button>') && !compacto.includes('>Revisar y enviar</button>')],
   ["El formulario integrado desactiva el sticky interno", css.includes('.mesas-compacta-datos-inline .sticky-total') && css.includes('position: static;')],
-  ["La versión conserva la Fase 37E.2 o una posterior", versionDetectada >= 17],
+  ["La versión conserva la Fase 37E.2 o una posterior", versionRafikiEsAlMenos(obtenerVersionBuild(), "127.17")],
 ];
 
 let ok = 0;

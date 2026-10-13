@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { obtenerVersionBuild, versionRafikiEsAlMenos } from "./validation-utils.mjs";
 
 const archivos = {
   solicitud: readFileSync("src/modules/catalogo/components/SolicitudProductos.jsx", "utf8"),
@@ -10,8 +11,7 @@ const archivos = {
   build: readFileSync("src/config/rafikiBuild.js", "utf8")
 };
 
-const versionDetectada = archivos.build.match(/version:\s*"127\.(\d+)-/)?.[1];
-const versionCompatible = Number(versionDetectada || 0) >= 13;
+const versionCompatible = versionRafikiEsAlMenos(obtenerVersionBuild(), "127.13");
 
 const controles = [
   ["Filtro Todo", archivos.utilidad.includes('TODO: "todo"')],

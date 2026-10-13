@@ -11,7 +11,7 @@ const css = read("src/styles/app.css");
 const app = read("src/App.jsx");
 
 const checks = [
-  ["La vista Normal es la opción predeterminada", panel.includes('useState("normal")')],
+  ["La vista conserva preferencia por dispositivo con Normal como respaldo", panel.includes("leerVistaMesasPreferida") && panel.includes('? "compacta" : "normal"') && panel.includes("guardarVistaMesasPreferida")],
   ["El selector se integra únicamente dentro del panel oficial de Mesas", panel.includes("<SelectorVistaMesas") && !app.includes("<SelectorVistaMesas")],
   ["El selector ofrece Normal y Compacta", selector.includes('onChange?.("normal")') && selector.includes('onChange?.("compacta")')],
   ["Normal y Compacta se alternan sin desmontar el motor de pedido", panel.includes('vistaMesas === "normal" ? (') && panel.includes("<PanelMesasCompacto")],
@@ -26,8 +26,8 @@ const checks = [
   ["La Compacta selecciona proteínas reales", compacto.includes("onCambiarPlato?.(itemActivo?.id, plato)") && panel.includes("onCambiarPlato={cambiarPlatoMesa}")],
   ["La Compacta selecciona acompañantes reales", compacto.includes("onCambiarAcompanante?.(itemActivo.id, acompanante)") && panel.includes("onCambiarAcompanante={cambiarAcompananteMesa}")],
   ["Cantidad y edición usan las funciones reales del resumen", panel.includes("onCambiarCantidad={actualizarCantidadGrupoMesa}") && panel.includes("onEditarProteina={setGrupoEditandoProteinaMesa}") && panel.includes("onEditarAcompanantes={setGrupoEditandoAcompanantesMesa}")],
-  ["El pedido se conserva al abrir Cafetería desde Compacta", compacto.includes('onAbrirNormalCategoria?.("cafeteria")') && panel.includes("setVistaMesas(\"normal\")")],
-  ["El pedido se conserva al abrir Adicionales desde Compacta", compacto.includes('onAbrirNormalCategoria?.("almuerzos")') && panel.includes("setAdicionalesRestauranteAbiertos(true)")],
+  ["El pedido se conserva al alternar Cafetería dentro de Compacta", compacto.includes('lineaActiva === "cafeteria"') && compacto.includes("contenidoCafeteria") && panel.includes("contenidoCafeteria={contenidoCafeteriaMesa}")],
+  ["El pedido conserva Adicionales Restaurante dentro de Compacta", compacto.includes("contenidoAdicionalesRestaurante") && panel.includes("contenidoAdicionalesRestaurante={contenidoAdicionalesRestauranteMesa}")],
   ["No se usa PanelMesasBeta como motor operativo", !panel.includes("PanelMesasBeta") && !compacto.includes("PanelMesasBeta")],
   ["La cabecera compacta muestra únicamente Mesas", compacto.includes("<h2>Mesas</h2>")],
   ["La interfaz no muestra etiquetas de prueba ni textos operativos", !compacto.includes("Prueba operativa") && !compacto.includes("Vista compacta") && !compacto.includes("Los pedidos se guardan") && !compacto.includes("Crea almuerzos reales") && !selector.includes("Prueba")],
