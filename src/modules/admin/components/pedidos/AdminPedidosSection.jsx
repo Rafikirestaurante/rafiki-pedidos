@@ -344,7 +344,7 @@ function ResumenMesasHoy({ orden = "ultimos", pedidosActivos = [], cambiarEstado
       <div className="admin-mesas-grid" aria-label="Resumen de mesas del día">
         {MESAS_DISPONIBLES.map((mesa) => {
           const pedidosMesa = pedidosPorMesa.get(mesa) || [];
-          const ultimosPedidos = pedidosMesa.slice(0, 3);
+          const ultimosPedidos = pedidosMesa.slice().sort(compararFechaPedidoDesc).slice(0, 1);
           return (
             <article key={mesa} className={`admin-mesa-card ${mesa === "5B" ? "mesa-sola" : ""} ${pedidosMesa.length > 0 ? "con-pedidos" : "sin-pedidos"}`}>
               <div className="admin-mesa-card-head">

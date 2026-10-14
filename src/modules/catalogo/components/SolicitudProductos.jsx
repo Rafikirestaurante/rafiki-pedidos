@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../supabaseClient";
 import { crearLinkWhatsApp, fechaISOColombia, generarId, normalizarTexto } from "../../../shared/utils/pedidos";
 import { BOTONES, CONFIRMACIONES_INSUMOS, MENSAJES_INSUMOS } from "../../../config/textos";
+import RafikiModal from "../../../shared/components/RafikiModal";
 import CampoTexto from "./CampoTexto";
 import { useAlertaRafiki, useConfirmacion } from "../../../shared/components/common";
 import { CATEGORIA_SOLICITUD_DEFECTO, categoriasSolicitudProductos } from "../../../data/solicitudProductosData";
@@ -76,6 +77,8 @@ function borrarBorradorSolicitudInsumos() {
 }
 
 export default function SolicitudProductos({ vistaInicial = "solicitar", mostrarNavegacionInterna = true }) {
+  const [categoriaInsumosAbierta, setCategoriaInsumosAbierta] = useState(null);
+  const [busquedaInsumos, setBusquedaInsumos] = useState("");
   const borradorInicial = leerBorradorSolicitudInsumos();
   const [confirmarRafiki, modalConfirmacionRafiki] = useConfirmacion();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
@@ -720,10 +723,16 @@ export default function SolicitudProductos({ vistaInicial = "solicitar", mostrar
                           }}
                         />
 
-                        <div className="box soft">
-                          <strong>{productosSolicitudSeleccionados.length} insumos seleccionados</strong>
-                        </div>
+                        <label className="field"><span>Buscar insumos</span><input type="search" value={busquedaInsumos} onChange={(e) => setBusquedaInsumos(e.target.value)} placeholder="Buscar en todas las categorías" /></label>
                       </div>
+                      {busquedaInsumos.trim() && <div className="box soft" style={{ maxHeight: 280, overflowY: "auto" }}>
+                        <div className="productos-chips">
+                          {ordenarProductosPorNombre(productosSolicitud.filter((p) => normalizarTexto(`${p.nombre} ${p.categoria}`).includes(normalizarTexto(busquedaInsumos)))).map((producto) => (
+                            <button key={producto.id} type="button" className={`producto-chip ${producto.seleccionada ? "selected" : ""}`} aria-pressed={Boolean(producto.seleccionada)} onClick={() => alternarProductoSolicitud(producto.id)}>{producto.seleccionada ? "✓ " : "+ "}{producto.nombre} · {producto.categoria}</button>
+                          ))}
+                          {!productosSolicitud.some((p) => normalizarTexto(`${p.nombre} ${p.categoria}`).includes(normalizarTexto(busquedaInsumos))) && <span>Sin resultados.</span>}
+                        </div>
+                      </div>}
 
                       <div className="alert alert-info">
                         Cada insumo puede solicitarse máximo una vez en AM y una vez en PM.
@@ -747,28 +756,16 @@ export default function SolicitudProductos({ vistaInicial = "solicitar", mostrar
 
                       {Object.entries(productosSolicitudAgrupados).map(([categoria, productos]) => (
                         <div key={categoria} className="category-block">
-                          <h3 className="category-title">{categoria}</h3>
-
-                          <div className="productos-chips">
-                            {productos.map((producto) => {
-                              const seleccionado = Boolean(producto.seleccionada);
-
-                              return (
-                                <span key={producto.id} className="producto-chip-wrap">
-                                  <button
-                                    type="button"
-                                    onClick={() => alternarProductoSolicitud(producto.id)}
-                                    className={`producto-chip ${seleccionado ? "selected" : ""}`}
-                                  >
-                                    {seleccionado ? "✓ " : "+ "}
-                                    {producto.nombre}
-                                  </button>
-                                </span>
-                              );
-                            })}
-                          </div>
+                          <button type="button" className="button light" onClick={() => setCategoriaInsumosAbierta(categoria)}>{categoria} · {productos.filter((p) => p.seleccionada).length} seleccionados</button>
                         </div>
                       ))}
+                      <RafikiModal open={Boolean(categoriaInsumosAbierta)} title={categoriaInsumosAbierta || "Seleccionar insumos"} onClose={() => setCategoriaInsumosAbierta(null)} size="lg" footer={<button type="button" className="button green" onClick={() => setCategoriaInsumosAbierta(null)}>Listo</button>}>
+                        <div className="productos-chips">
+                          {(productosSolicitudAgrupados[categoriaInsumosAbierta] || []).map((producto) => (
+                            <button key={producto.id} type="button" className={`producto-chip ${producto.seleccionada ? "selected" : ""}`} aria-pressed={Boolean(producto.seleccionada)} onClick={() => alternarProductoSolicitud(producto.id)}>{producto.seleccionada ? "✓ " : "+ "}{producto.nombre}</button>
+                          ))}
+                        </div>
+                      </RafikiModal>
 
                       {productosSolicitudSeleccionados.length > 0 && (
                         <div className="box soft">

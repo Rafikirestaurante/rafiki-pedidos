@@ -67,6 +67,8 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
   const [busquedaPlatos, setBusquedaPlatos] = useState("");
   const [categoriaPlatosAbierta, setCategoriaPlatosAbierta] = useState(null);
   const [acompanantesModalAbierto, setAcompanantesModalAbierto] = useState(false);
+  const [sopasModalAbierto, setSopasModalAbierto] = useState(false);
+  const [busquedaMenuGlobal, setBusquedaMenuGlobal] = useState("");
   const [busquedaSopas, setBusquedaSopas] = useState("");
   const [busquedaAcompanantes, setBusquedaAcompanantes] = useState("");
   const pestanaGenerador = pestanaInicial === "historial" ? "historial" : "generador";
@@ -711,6 +713,16 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
         </div>
         <p className="muted small">{grupoModal?.productos.filter((producto) => nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre))).length || 0} seleccionados en esta categoría.</p>
       </RafikiModal>
+      <RafikiModal open={sopasModalAbierto} title="🍲 Seleccionar sopas" onClose={() => { setSopasModalAbierto(false); setBusquedaSopas(""); }} size="lg" footer={<button type="button" className="button green" onClick={() => { setSopasModalAbierto(false); setBusquedaSopas(""); }}>Listo</button>}>
+        <label className="field"><span>Buscar sopa</span><input type="search" value={busquedaSopas} onChange={(e) => setBusquedaSopas(e.target.value)} /></label>
+        <div className="productos-chips">
+          {sopasFiltradasCatalogo.map((producto) => {
+            const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+            return <button key={producto.id || producto.nombre} type="button" className={`producto-chip ${seleccionado ? "selected" : ""}`} aria-pressed={seleccionado} onClick={() => alternarProductoCatalogoAlMenu(producto)}>{seleccionado ? "✓ " : "+ "}{producto.nombre}</button>;
+          })}
+          {!sopasFiltradasCatalogo.length && <span>Sin resultados.</span>}
+        </div>
+      </RafikiModal>
       <RafikiModal
         open={acompanantesModalAbierto}
         title="🥗 Seleccionar acompañantes"
@@ -962,12 +974,17 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
       <div className="generador-menu-grid" style={{ display: pestanaGenerador === "historial" ? "none" : undefined }}>
         <div>
           <div className="box soft" style={{ marginTop: 0 }}>
-            <strong>Fecha del menú</strong>
-            <p className="muted small">Por defecto queda la fecha actual.</p>
-            <label className="field" style={{ marginTop: 10 }}>
-              <span>Fecha</span>
-              <input type="date" value={fechaMenu} onChange={(e) => setFechaMenu(e.target.value || fechaHoyISO())} />
-            </label>
+            <div className="grid-2">
+              <label className="field"><span>Fecha del menú</span><input type="date" value={fechaMenu} onChange={(e) => setFechaMenu(e.target.value || fechaHoyISO())} /></label>
+              <label className="field"><span>Buscar platos</span><input type="search" value={busquedaMenuGlobal} onChange={(e) => setBusquedaMenuGlobal(e.target.value)} placeholder="Buscar en todas las categorías" /></label>
+            </div>
+            {busquedaMenuGlobal.trim() && <div className="productos-chips" style={{ maxHeight: 280, overflowY: "auto" }}>
+              {[...catalogoPlatos, ...catalogoSopas].filter((p) => normalizarTextoCatalogo(p.nombre).includes(normalizarTextoCatalogo(busquedaMenuGlobal))).map((producto) => {
+                const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
+                return <button key={producto.id || producto.nombre} type="button" className={`producto-chip ${seleccionado ? "selected" : ""}`} aria-pressed={seleccionado} onClick={() => alternarProductoCatalogoAlMenu(producto)}>{seleccionado ? "✓ " : "+ "}{producto.nombre}</button>;
+              })}
+              {![...catalogoPlatos, ...catalogoSopas].some((p) => normalizarTextoCatalogo(p.nombre).includes(normalizarTextoCatalogo(busquedaMenuGlobal))) && <span className="muted small">Sin resultados.</span>}
+            </div>}
           </div>
 
           <div className="box soft selector-catalogo-menu" style={{ marginTop: 14 }}>
@@ -1018,12 +1035,10 @@ export default function GeneradorMenu({ pestanaInicial = "generador", onIrGenera
               <section className="selector-catalogo-section">
                 <div className="selector-catalogo-section-head">
                   <h3 className="category-title">🍲 Sopas</h3>
-                  <label className="field selector-catalogo-search">
-                    <input type="search" value={busquedaSopas} onChange={(e) => setBusquedaSopas(e.target.value)} placeholder="Buscar sopa" />
-                  </label>
+                  <button type="button" className="button light" onClick={() => setSopasModalAbierto(true)}>Seleccionar sopas</button>
                 </div>
                 <div className="productos-chips selector-catalogo-chips">
-                  {sopasFiltradasCatalogo.map((producto) => {
+                  {catalogoSopas.filter((producto) => nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre))).map((producto) => {
                     const seleccionado = nombresPlatosSeleccionados.has(normalizarTextoCatalogo(producto.nombre));
                     return (
                       <span key={producto.id} className="producto-chip-wrap">
