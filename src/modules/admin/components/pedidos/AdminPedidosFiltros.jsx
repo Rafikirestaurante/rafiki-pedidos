@@ -73,7 +73,7 @@ function AdminPedidosFiltrosBase({
 
   return (
     <>
-      {modo !== "buscar" && <>
+      <>
       <div className="filtros-historial filtros-historial-rango">
         <button
           type="button"
@@ -107,7 +107,7 @@ function AdminPedidosFiltrosBase({
         )}
       </div>
 
-      {filtroPedidos === "rango" && (
+      {(filtroPedidos === "rango" || modo === "buscar") && (
         <div className="filtros-rango-fechas">
           <label className="calendario-filtro">
             <span>Desde</span>
@@ -129,7 +129,7 @@ function AdminPedidosFiltrosBase({
         </div>
       )}
 
-      </>}
+      </>
       {modo !== "filtros" && <>
       <CampoTexto
         etiqueta="Buscar pedido"

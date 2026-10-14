@@ -3,6 +3,7 @@ import { dinero } from "../../../shared/utils/pedidos";
 import { FORMA_PAGO_CREDITO, FORMAS_PAGO_MESA, MESAS_DISPONIBLES, MESEROS_DISPONIBLES } from "../../../shared/utils/mesas";
 
 export default function DatosMesa({
+  modoAdicion = false,
   modoLlevar,
   mesaLocal,
   clientePedido,
@@ -45,6 +46,7 @@ export default function DatosMesa({
               <button
                 key={mesa}
                 type="button"
+                disabled={modoAdicion && modoLlevar}
                 onClick={() => onSeleccionarMesa(mesa)}
                 className={`option mesa-boton ${mesa === "5B" ? "mesa-5b" : ""} ${!modoLlevar && mesaLocal === mesa ? "selected" : ""}`}
               >
@@ -53,6 +55,7 @@ export default function DatosMesa({
             ))}
             <button
               type="button"
+              disabled={modoAdicion}
               onClick={onAlternarModoLlevar}
               className={`option mesa-boton mesa-llevar ${modoLlevar ? "selected" : ""}`}
             >
@@ -67,6 +70,7 @@ export default function DatosMesa({
               </span>
               <input
                 type="text"
+                readOnly={modoAdicion}
                 value={clientePedido}
                 onChange={(e) => onClienteChange(e.target.value)}
                 placeholder={tipoPagoMesa === FORMA_PAGO_CREDITO ? "Busca o escribe el cliente de crédito" : "Ej: Sra. Inés, Juan Pérez..."}
@@ -110,6 +114,7 @@ export default function DatosMesa({
               <button
                 key={pago}
                 type="button"
+                disabled={modoAdicion}
                 onClick={() => onTipoPagoChange(pago)}
                 className={`chip ${tipoPagoMesa === pago ? "selected" : ""}`}
               >

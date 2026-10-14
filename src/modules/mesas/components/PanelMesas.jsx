@@ -16,7 +16,7 @@ import {
   normalizarCantidadResumen
 } from "../../../shared/utils/resumenPedido";
 import { MAX_ACOMPANANTES_CLIENTE } from "../../../data/menuAlmuerzos";
-import { CampoTexto, useAlertaRafiki } from "../../../shared/components/common";
+import { CampoTexto, useAlertaRafiki, useConfirmacion } from "../../../shared/components/common";
 import {
   CAFETERIA_ACOMPANANTES_DESAYUNO,
   CAFETERIA_BEBIDAS_DESAYUNO,
@@ -86,7 +86,8 @@ function guardarVistaMesasPreferida(vista) {
   } catch { /* conserva la vista de la sesión */ }
 }
 
-export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion }) {
+export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = false, guardandoPedido, onEnviar, modoAdicion = false, onGuardarAdicion, pedidoEditando = null, modoEdicionAdmin = false, onGuardarEdicion, onCancelarEdicion }) {
+  const [confirmarCambioMesa, modalCambioMesa] = useConfirmacion();
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [itemsMesa, setItemsMesa] = useState([crearItemNuevo()]);
   const [mesaLocal, setMesaLocal] = useState("");
@@ -200,7 +201,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       : [crearItemNuevo()];
 
     const esLlevar = String(pedidoEditando.tipo_pedido || pedidoEditando.mesa || "").toLowerCase().includes("llevar");
-    setItemsMesa(itemsEditables);
+    setItemsMesa(modoAdicion ? [crearItemNuevo()] : itemsEditables);
     setAdicionalesRestauranteAbiertos(itemsEditables.some((item) => esAdicionalAlmuerzo(item)));
     setModoLlevar(esLlevar);
     setMesaLocal(esLlevar ? "" : (pedidoEditando.mesa || pedidoEditando.ubicacion || ""));
@@ -209,12 +210,12 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     setUbicacionLlevar(esLlevar ? (pedidoEditando.ubicacion || "") : "");
     setMeseroLocal(pedidoEditando.mesero || "");
     setTipoPagoMesa(pedidoEditando.tipo_pago || FORMAS_PAGO_MESA[0]);
-    setObservacionesLocal(pedidoEditando.observaciones || "");
+    setObservacionesLocal(modoAdicion ? "" : pedidoEditando.observaciones || "");
     setPedidoMesaConfirmado(null);
     setErrorMesa("");
     setCategoriaActivaMesa("almuerzos");
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 80);
-  }, [pedidoEditando]);
+  }, [pedidoEditando, modoAdicion]);
 
   useEffect(() => {
     let activo = true;
@@ -610,7 +611,12 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     setErrorMesa("");
   }
 
-  function seleccionarMesaLocal(mesa) {
+  async function seleccionarMesaLocal(mesa) {
+    if (modoAdicion && modoLlevar) return;
+    if (modoAdicion) {
+      if (mesa === mesaLocal) return;
+      if (!(await confirmarCambioMesa({ tipo: "advertencia", titulo: "Cambiar mesa del pedido original", mensaje: `El pedido #${pedidoEditando.numero_pedido || pedidoEditando.id} cambiará de la mesa ${mesaLocal} a ${mesa} al enviar la adición. ¿Continuar?`, textoConfirmar: "Cambiar mesa" }))) return;
+    }
     setErrorMesa("");
     if (!modoLlevar && mesaLocal === mesa) {
       setMesaLocal("");
@@ -621,6 +627,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   function alternarModoLlevar() {
+    if (modoAdicion) return;
     setErrorMesa("");
     if (modoLlevar) {
       setModoLlevar(false);
@@ -631,7 +638,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   function reiniciarPedidoMesa() {
-    if (modoEdicionAdmin && pedidoEditando?.id) {
+    if ((modoAdicion || modoEdicionAdmin) && pedidoEditando?.id) {
       onCancelarEdicion?.();
       return;
     }
@@ -914,6 +921,11 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
       observaciones: observacionesLocal
     };
 
+    if (modoAdicion && pedidoEditando?.id) {
+      await onGuardarAdicion?.(pedidoEditando.id, payloadMesa);
+      return;
+    }
+
     if (modoEdicionAdmin && pedidoEditando?.id) {
       const pedidoActualizado = await onGuardarEdicion?.(pedidoEditando.id, payloadMesa);
       if (pedidoActualizado) {
@@ -940,6 +952,7 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
   }
 
   const datosMesaProps = {
+    modoAdicion,
     modoLlevar,
     mesaLocal,
     clientePedido,
@@ -954,13 +967,13 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
     itemsConProducto: itemsConModoLlevar,
     onSeleccionarMesa: seleccionarMesaLocal,
     onAlternarModoLlevar: alternarModoLlevar,
-    onClienteChange: (valor) => { setClientePedido(valor); setErrorMesa(""); },
+    onClienteChange: (valor) => { if (modoAdicion) return; setClientePedido(valor); setErrorMesa(""); },
     onTelefonoChange: (valor) => { setTelefonoLlevar(valor); setErrorMesa(""); },
     onUbicacionChange: (valor) => { setUbicacionLlevar(valor); setErrorMesa(""); },
     onMeseroChange: (mesero) => { setMeseroLocal(mesero); setErrorMesa(""); },
     clientesCreditoMesa,
     meserosDisponibles,
-    onTipoPagoChange: (pago) => { setTipoPagoMesa(pago); setErrorMesa(""); },
+    onTipoPagoChange: (pago) => { if (modoAdicion) return; setTipoPagoMesa(pago); setErrorMesa(""); },
     onObservacionesChange: setObservacionesLocal,
     onEnviarPedido: enviarPedidoMesa,
     modoEdicionAdmin,
@@ -1285,6 +1298,8 @@ export default function PanelMesasPOS({ menu, platosAgrupados, cargandoMenu = fa
 
   return (
     <>
+      {modalCambioMesa}
+      {modoAdicion && pedidoEditando && <div className="alert alert-info"><strong>Agregar al pedido #{pedidoEditando.numero_pedido || pedidoEditando.id}</strong><p>Solo se enviarán a cocina los productos nuevos. Mesa, cliente y pago se toman del pedido original; puedes seleccionar otro mesero para esta adición.</p><button type="button" className="mini-btn" disabled={guardandoPedido} onClick={() => onCancelarEdicion?.({ volverAdmin: true })}>Cancelar adición</button></div>}
       <SelectorVistaMesas vista={vistaMesas} onChange={seleccionarVistaMesas} />
       {vistaMesas === "normal" ? (
     <main className="order-layout mesas-cliente-layout mesas-panel-layout">

@@ -58,7 +58,7 @@ function renderDetalleCafeteria(item) {
   return filas;
 }
 
-function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, revisado = true, puedeEditarPedido = false, onEditarPedido, editandoPedido = false }) {
+function PedidoCocinaBase({ onAgregarPedido, pedido, onCambiarEstado, guardandoEstado = false, revisado = true, puedeEditarPedido = false, onEditarPedido, editandoPedido = false }) {
   const items = obtenerItemsPedido(pedido);
   const estadoNormalizado = obtenerEstadoPedido(pedido);
   const telefonoCliente = limpiarTelefonoWhatsApp(pedido.telefono);
@@ -189,7 +189,9 @@ function PedidoCocinaBase({ pedido, onCambiarEstado, guardandoEstado = false, re
         </div>
       )}
 
+      {(pedido.adiciones_resumen || []).map((adicion) => <p key={adicion.id} className="muted small">Adición · {adicion.mesero} · {formatearFechaHora(adicion.fecha)}</p>)}
       <div className="pedido-actions">
+        {onAgregarPedido && estadoNormalizado !== "Borrado" && <button type="button" className="button green" onClick={() => onAgregarPedido(pedido)}>Agregar</button>}
         {puedeEditarPedido && (
           <button
             type="button"
@@ -293,7 +295,7 @@ function obtenerTipoBadgePagoPedido(pedido) {
   return "info";
 }
 
-function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCambiarFechaPedido, cambiandoFechaPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
+function TablaPedidosCompactaBase({ onAgregarPedido, pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCambiarFechaPedido, cambiandoFechaPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [paginaActual, setPaginaActual] = useState(1);
   const tablaRef = useRef(null);
@@ -385,13 +387,16 @@ function TablaPedidosCompactaBase({ pedidos, onCambiarEstado, guardandoEstadoPed
                   <small>{pedido.telefono || "Sin teléfono"}</small>
                   {pedido.ubicacion ? <small>{pedido.ubicacion}</small> : null}
                 </td>
-                <td className="td-pedido">{resumirItemsPedidoCompacto(pedido)}</td>
+                <td className="td-pedido">{resumirItemsPedidoCompacto(pedido)}
+                  {(pedido.adiciones_resumen || []).map((adicion) => <small key={adicion.id}>Adición · {adicion.mesero} · {formatearFechaHora(adicion.fecha)}</small>)}
+                </td>
                 <td className="td-obs">{pedido.observaciones || "—"}</td>
                 <td>
                   <RafikiBadge estado={pedido.tipo_pago || "Sin pago"} tipo={obtenerTipoBadgePagoPedido(pedido)} />
                 </td>
                 <td className="td-total">{dinero(pedido.total)}</td>
                 <td className="td-acciones td-acciones-compactas">
+                  {onAgregarPedido && estadoNormalizado !== "Borrado" && <button type="button" className="mini-btn green" onClick={() => onAgregarPedido(pedido)}>Agregar</button>}
                   {estadoNormalizado === "Borrado" ? (
                     <span className="mini-estado-borrado">Borrado</span>
                   ) : estadoNormalizado !== "Finalizado" ? (

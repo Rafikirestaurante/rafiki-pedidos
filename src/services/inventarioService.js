@@ -519,7 +519,20 @@ export function calcularSalidasInventarioPedido(pedido, recetasActivas = []) {
   return Array.from(mapa.values()).filter((item) => item.cantidad > 0);
 }
 
-export async function registrarDescuentoInventarioPedido(pedido, { usuario = "Pedidos Rafiki" } = {}) {
+export async function registrarDescuentoInventarioPedido(pedido, { usuario = "Pedidos Rafiki", loteAdicion = "" } = {}) {
+  if (!loteAdicion && (pedido.items || []).some((item) => item.adicion_id)) {
+    const grupos = new Map();
+    (pedido.items || []).forEach((item) => {
+      const key = item.adicion_id || "original";
+      if (!grupos.has(key)) grupos.set(key, []);
+      grupos.get(key).push(item);
+    });
+    const resultados = [];
+    for (const [lote, items] of grupos) {
+      resultados.push(await registrarDescuentoInventarioPedido({ ...pedido, items }, { usuario, loteAdicion: lote }));
+    }
+    return { total: resultados.reduce((s, r) => s + r.total, 0), aplicadas: resultados.flatMap((r) => r.aplicadas), omitidas: resultados.flatMap((r) => r.omitidas), salidas: resultados.flatMap((r) => r.salidas) };
+  }
   const relacionesActivas = await cargarRelacionesInventarioProductos({ incluirInactivas: false }).catch(() => []);
   let salidas = calcularSalidasInventarioPorProductos(pedido, relacionesActivas);
 
@@ -541,7 +554,7 @@ export async function registrarDescuentoInventarioPedido(pedido, { usuario = "Pe
       pedido_id: pedido.id,
       insumo_nombre: salida.insumoNombre,
       cantidad: salida.cantidad,
-      regla_codigo: salida.reglaCodigo,
+      regla_codigo: loteAdicion && loteAdicion !== "original" ? `${salida.reglaCodigo}:adicion:${loteAdicion}` : salida.reglaCodigo,
       motivo: `Salida automática por pedido #${pedido.numero_pedido || pedido.id}: ${salida.descripcion}`,
       usuario
     });

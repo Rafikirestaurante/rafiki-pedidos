@@ -1,8 +1,8 @@
 export const RAFIKI_BUILD = {
-  "version": "135.3-FASE44D-INSUMOS-MENU-BUSQUEDA-MODALES-2026-10-14",
-  "phase": "Fase 44D - Insumos y menú compactos",
+  "version": "136.0-FASE45-ADICIONES-BUSQUEDA-2026-10-14",
+  "phase": "Fase 45 - Adiciones a pedidos y búsqueda por fechas",
   "date": "2026-10-14",
-  "notes": "Categorías de insumos y sopas en modales, búsqueda general junto a la fecha y último pedido por mesa.",
-  "fase": "44D-INSUMOS-MENU-BUSQUEDA-MODALES"
+  "notes": "Adiciones con el panel completo de Mesas, mesa confirmada, mesero por adición, comanda separada y búsqueda por rango.",
+  "fase": "45-ADICIONES-BUSQUEDA"
 };
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

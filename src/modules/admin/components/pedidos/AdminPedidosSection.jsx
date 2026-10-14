@@ -315,7 +315,7 @@ function imprimirResumenPedidosFiltradosTermico({
   });
 }
 
-function ResumenMesasHoy({ orden = "ultimos", pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
+function ResumenMesasHoy({ onAgregarPedido, orden = "ultimos", pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
   const [mesaSeleccionada, setMesaSeleccionada] = useState(null);
 
   const pedidosPorMesa = useMemo(() => {
@@ -377,6 +377,7 @@ function ResumenMesasHoy({ orden = "ultimos", pedidosActivos = [], cambiarEstado
               >
                 Ver pedido completo
               </button>
+              {onAgregarPedido && ultimosPedidos.length > 0 && <button type="button" className="button green" onClick={() => onAgregarPedido(ultimosPedidos[0])}>Agregar</button>}
 
             </article>
           );
@@ -402,6 +403,7 @@ function ResumenMesasHoy({ orden = "ultimos", pedidosActivos = [], cambiarEstado
                 <PedidoCocina
                   key={pedido.id}
                   pedido={pedido}
+                  onAgregarPedido={onAgregarPedido}
                   onCambiarEstado={cambiarEstadoPedido}
                   guardandoEstado={guardandoEstadoPedidoId === pedido.id}
                   puedeEditarPedido={puedeEditarPedido}
@@ -756,6 +758,7 @@ function AdminPedidosSectionBase({
   puedeEditarPedido = false,
   editarPedidoAdministrador,
   cambiarFechaPedidoAdministrador,
+  onAgregarPedidoEnMesas,
   onEditarPedidoEnMesas,
   editandoPedidoId,
   pedidosActivos,
@@ -1093,6 +1096,7 @@ function AdminPedidosSectionBase({
             <div className="alert alert-warning">{errorNumeroPedido}</div>
           ) : (
             <TablaPedidosCompacta
+              onAgregarPedido={onAgregarPedidoEnMesas}
               pedidos={resultadoNumeroPedidoVisual}
               onCambiarEstado={cambiarEstadoPedido}
               guardandoEstadoPedidoId={guardandoEstadoPedidoId}
@@ -1125,6 +1129,7 @@ function AdminPedidosSectionBase({
 
       {vistaPedidosHoy === "mesas" ? (
         <ResumenMesasHoy
+          onAgregarPedido={onAgregarPedidoEnMesas}
           orden={ordenPedidosHoy}
           pedidosActivos={aplicarFiltrosRapidosPedidos(pedidosActivosVisuales, filtrosTipoPedido, filtroTipoPagoRapido)}
           cambiarEstadoPedido={cambiarEstadoPedido}
@@ -1145,6 +1150,7 @@ function AdminPedidosSectionBase({
           />
         ) : (
           <TablaPedidosCompacta
+            onAgregarPedido={onAgregarPedidoEnMesas}
             pedidos={pedidosVisiblesTabla}
             onCambiarEstado={cambiarEstadoPedido}
             guardandoEstadoPedidoId={guardandoEstadoPedidoId}
