@@ -9,6 +9,7 @@ import {
   calcularTotalItems,
   crearItemCafeteria,
   crearItemNuevo,
+  crearTextoPedido,
   crearLinkWhatsApp,
   crearMensajeWhatsAppPedido,
   limpiarTelefonoWhatsApp,
@@ -84,6 +85,10 @@ export default function App() {
   const [cambiosPedidosPendientes, setCambiosPedidosPendientes] = useState(false);
   const [mensajeCambiosPedidos, setMensajeCambiosPedidos] = useState("");
   const [alertaPedidoNuevo, setAlertaPedidoNuevo] = useState(null);
+  const [modoAdicionEnMesas, setModoAdicionEnMesas] = useState(false);
+  const [guardandoAdicion, setGuardandoAdicion] = useState(false);
+  const adicionOperacionRef = useRef(null);
+  const adicionEnCursoRef = useRef(false);
   const [pedidoEditandoEnMesas, setPedidoEditandoEnMesas] = useState(null);
   const mensajeTimer = useRef(null);
   const mensajeMenuTimer = useRef(null);
@@ -746,6 +751,7 @@ export default function App() {
         return;
       }
 
+      setModoAdicionEnMesas(false);
       setPedidoEditandoEnMesas(pedido || null);
       navegar("/mesas", "mesas");
       mostrarMensaje(
@@ -758,6 +764,7 @@ export default function App() {
 
   const cancelarEdicionPedidoEnMesas = useCallback(
     (opciones = {}) => {
+      setModoAdicionEnMesas(false);
       setPedidoEditandoEnMesas(null);
       if (opciones?.volverAdmin) {
         guardarAdminTabActiva("pedidos");
@@ -767,6 +774,38 @@ export default function App() {
     },
     [navegar]
   );
+
+  function abrirAdicionPedidoEnMesas(pedido) {
+    if (!adminUsuario) { mostrarMensaje("Inicia sesión para agregar productos.", "error"); return; }
+    adicionOperacionRef.current = crypto.randomUUID();
+    setModoAdicionEnMesas(true);
+    setPedidoEditandoEnMesas(pedido);
+    navegar("/mesas", "mesas");
+  }
+
+  async function guardarAdicionPedido(id, payload) {
+    if (adicionEnCursoRef.current) return false;
+    adicionEnCursoRef.current = true;
+    setGuardandoAdicion(true);
+    try {
+      const items = payload.items.filter((item) => item.plato || item.proteina || item.producto);
+      const { data, error } = await supabase.rpc("agregar_productos_pedido", {
+        p_pedido_id: String(id), p_operacion_id: adicionOperacionRef.current,
+        p_items: items, p_total: calcularTotalItems(items), p_texto: crearTextoPedido(items, payload.observaciones),
+        p_mesero: payload.mesero, p_mesa: payload.mesa,
+        p_mesa_original: pedidoEditandoEnMesas.mesa || "", p_pago_original: pedidoEditandoEnMesas.tipo_pago || "",
+      });
+      if (error) throw error;
+      setPedidos((actual) => actual.map((p) => String(p.id) === String(id) ? data.pedido : p));
+      mostrarMensaje(`Adición guardada en el pedido #${data.pedido.numero_pedido || id}. Comanda pendiente en el servidor de impresión.`, "success");
+      setRecargaPedidos((actual) => actual + 1);
+      cancelarEdicionPedidoEnMesas({ volverAdmin: true });
+      return data.pedido;
+    } catch (error) {
+      mostrarMensaje(error.message || "No se pudo guardar la adición. Reintenta sin cerrar el panel.", "error");
+      return false;
+    } finally { adicionEnCursoRef.current = false; setGuardandoAdicion(false); }
+  }
 
   function nuevoPedidoCliente() {
     reiniciarPedido();
@@ -890,6 +929,7 @@ export default function App() {
                     puedeEditarPedido={puedeEditarPedido}
                     editarPedidoAdministrador={editarPedidoAdministrador}
                     cambiarFechaPedidoAdministrador={cambiarFechaPedidoAdministrador}
+                    onAgregarPedidoEnMesas={abrirAdicionPedidoEnMesas}
                     onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
                     editandoPedidoId={editandoPedidoId}
                     pedidosFinalizados={pedidosFinalizados}
@@ -995,10 +1035,12 @@ export default function App() {
                     menu={menu}
                     platosAgrupados={platosAgrupados}
                     cargandoMenu={cargandoMenu}
-                    guardandoPedido={guardandoPedido}
+                    guardandoPedido={guardandoPedido || guardandoAdicion}
+                    modoAdicion={modoAdicionEnMesas}
+                    onGuardarAdicion={guardarAdicionPedido}
                     onEnviar={registrarPedidoMesa}
                     pedidoEditando={pedidoEditandoEnMesas}
-                    modoEdicionAdmin={Boolean(pedidoEditandoEnMesas)}
+                    modoEdicionAdmin={Boolean(pedidoEditandoEnMesas) && !modoAdicionEnMesas}
                     onGuardarEdicion={editarPedidoMesaAdministrador}
                     onCancelarEdicion={cancelarEdicionPedidoEnMesas}
                   />
@@ -1137,7 +1179,8 @@ export default function App() {
                       puedeEditarPedido={puedeEditarPedido}
                       editarPedidoAdministrador={editarPedidoAdministrador}
                       cambiarFechaPedidoAdministrador={cambiarFechaPedidoAdministrador}
-                      onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
+                      onAgregarPedidoEnMesas={abrirAdicionPedidoEnMesas}
+                    onEditarPedidoEnMesas={abrirEditorPedidoEnMesas}
                       editandoPedidoId={editandoPedidoId}
                       pedidosFinalizados={pedidosFinalizados}
                       consolidado={consolidado}
