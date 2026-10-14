@@ -757,6 +757,13 @@ export default function SolicitudProductos({ vistaInicial = "solicitar", mostrar
                       {Object.entries(productosSolicitudAgrupados).map(([categoria, productos]) => (
                         <div key={categoria} className="category-block">
                           <button type="button" className="button light" onClick={() => setCategoriaInsumosAbierta(categoria)}>{categoria} · {productos.filter((p) => p.seleccionada).length} seleccionados</button>
+                          {productos.some((producto) => producto.seleccionada) && (
+                            <div className="productos-chips" style={{ marginTop: 8 }} aria-label={`Insumos seleccionados en ${categoria}`}>
+                              {productos.filter((producto) => producto.seleccionada).map((producto) => (
+                                <button key={producto.id} type="button" className="producto-chip selected" aria-pressed={true} title="Quitar de la solicitud" onClick={() => alternarProductoSolicitud(producto.id)}>✓ {producto.nombre}</button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                       <RafikiModal open={Boolean(categoriaInsumosAbierta)} title={categoriaInsumosAbierta || "Seleccionar insumos"} onClose={() => setCategoriaInsumosAbierta(null)} size="lg" footer={<button type="button" className="button green" onClick={() => setCategoriaInsumosAbierta(null)}>Listo</button>}>
