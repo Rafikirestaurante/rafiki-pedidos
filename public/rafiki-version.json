@@ -1,6 +1,6 @@
 {
-  "version": "135.1-FASE44B-PEDIDOS-EXCEL-NAVEGACION-2026-10-13",
-  "phase": "Fase 44B - Pedidos hoy: navegación y Excel",
-  "date": "2026-10-13",
-  "notes": "Buscar y Filtros discretos, exportación XLSX por rango con cliente, teléfono, ubicación, mesa y mesero separados."
+  "version": "136.0-FASE45-ADICIONES-BUSQUEDA-2026-10-14",
+  "phase": "Fase 45 - Adiciones a pedidos y búsqueda por fechas",
+  "date": "2026-10-14",
+  "notes": "Adiciones con el panel completo de Mesas, mesa confirmada, mesero por adición, comanda separada y búsqueda por rango."
 }
