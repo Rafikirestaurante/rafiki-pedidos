@@ -313,8 +313,8 @@ export function useAuthAdmin({ vista, setVista, navegar }) {
     const rutaActual = window.location.pathname.replace(/\/$/, "") || "/";
     if (rutaActual === "/mesas") {
       navegar("/mesas", "mesas");
-    } else if (rutaActual === "/pedidos") {
-      navegar("/pedidos", "pedidos");
+    } else if (rutaActual === "/pedidos" || rutaActual === "/pedidos-hoy/mesas") {
+      navegar(rutaActual, "pedidos");
     } else if (rutaActual === "/inventario") {
       navegar("/inventario", "inventario");
     } else if (rutaActual === "/gerencia" || rutaActual === "/rafa") {
@@ -340,7 +340,7 @@ export function useAuthAdmin({ vista, setVista, navegar }) {
     }
 
     navegar(
-      rutaActual === "/pedidos" ? "/pedidos" : rutaActual === "/inventario" ? "/inventario" : "/admin",
+      (rutaActual === "/pedidos" || rutaActual === "/pedidos-hoy/mesas") ? rutaActual : rutaActual === "/inventario" ? "/inventario" : "/admin",
       "adminLogin"
     );
   }

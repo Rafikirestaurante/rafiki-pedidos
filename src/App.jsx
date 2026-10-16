@@ -95,8 +95,10 @@ export default function App() {
   const alertaPedidoTimer = useRef(null);
   const sincronizandoOfflineRef = useRef(false);
 
+  const [accesoNavegacion, setAccesoNavegacion] = useState(() => ({ ruta: window.location.pathname.replace(/\/$/, ""), secuencia: 0 }));
   const navegar = useCallback((ruta, nuevaVista) => {
     actualizarRuta(ruta);
+    setAccesoNavegacion((actual) => ({ ruta, secuencia: actual.secuencia + 1 }));
     setVista(nuevaVista);
   }, []);
 
@@ -389,6 +391,7 @@ export default function App() {
   useEffect(() => {
     function manejarCambioRuta() {
       const vistaRuta = obtenerVistaInicial();
+      setAccesoNavegacion((actual) => ({ ruta: window.location.pathname.replace(/\/$/, ""), secuencia: actual.secuencia + 1 }));
       setVista((vistaActual) => {
         if (vistaRuta === "adminLogin" && adminAutenticado && vistaActual === "admin") {
           return "admin";
@@ -828,6 +831,7 @@ export default function App() {
               <header className="topbar navegacion-interna-header">
                 <NavegacionInterna
                   vistaActual={vista}
+                  rutaActual={accesoNavegacion.ruta}
                   navegar={navegar}
                   puedeVerGerencia={puedeVerRafa}
                 />
@@ -885,6 +889,8 @@ export default function App() {
                   onReset={() => setRecargaPedidos((actual) => actual + 1)}
                 >
                   <AdminPedidosSection
+                    key={`${accesoNavegacion.ruta}-${accesoNavegacion.secuencia}`}
+                    vistaInicial={accesoNavegacion.ruta === "/pedidos-hoy/mesas" ? "mesas" : "pedidos"}
                     tituloPedidos={tituloPedidos}
                     setRecargaPedidos={setRecargaPedidos}
                     alertaPedidoNuevo={alertaPedidoNuevo}
