@@ -710,6 +710,7 @@ function CorregirClienteCreditoModal({ pedido, onCerrar, onGuardar, onRetirar, g
 }
 
 function AdminPedidosSectionBase({
+  vistaInicial = "pedidos",
   tituloPedidos,
   setRecargaPedidos,
   alertaPedidoNuevo,
@@ -765,7 +766,7 @@ function AdminPedidosSectionBase({
   const [guardandoCorreccionClienteId, setGuardandoCorreccionClienteId] = useState(null);
   const [mensajeCorreccionCliente, setMensajeCorreccionCliente] = useState("");
   const [ordenPedidosHoy, setOrdenPedidosHoy] = useState("ultimos");
-  const [vistaPedidosHoy, setVistaPedidosHoy] = useState("pedidos");
+  const [vistaPedidosHoy, setVistaPedidosHoy] = useState(vistaInicial === "mesas" ? "mesas" : "pedidos");
   const [filtrosTipoPedido, setFiltrosTipoPedido] = useState({
     restauranteParaLlevar: false,
     cafeteriaParaLlevar: false,

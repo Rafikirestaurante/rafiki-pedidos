@@ -1,8 +1,8 @@
 export const RAFIKI_BUILD = {
-  "version": "136.1-FASE45B-CAMBIAR-MESAS-CONTROLES-2026-10-16",
-  "phase": "Fase 45B - Cambio de mesa y tarjetas compactas",
+  "version": "136.2-FASE45C-ACCESO-DIRECTO-MESAS-2026-10-16",
+  "phase": "Fase 45C - Acceso directo a consulta de mesas",
   "date": "2026-10-16",
-  "notes": "Cambiar mesa para cuentas activas, Entregado en Opciones, Ver más y menú de puntos en tarjetas.",
-  "fase": "45B-CAMBIAR-MESAS-CONTROLES"
+  "notes": "Navegación Mesas · 🍽️ · Pedidos hoy · Admin · Gerencia; consulta de mesas en /pedidos-hoy/mesas.",
+  "fase": "45C-ACCESO-DIRECTO-MESAS"
 };
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
