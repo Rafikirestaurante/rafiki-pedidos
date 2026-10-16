@@ -8704,3 +8704,8 @@ body.rafiki-modal-open {
   .pedidos-herramientas-discretas { gap: 5px !important; }
   .pedidos-herramientas-discretas .mini-btn { padding: 5px 7px; }
 }
+
+.admin-mesa-acciones-compactas { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.admin-mesa-acciones-compactas .mini-btn { width: auto; margin: 0; padding: 5px 9px; min-height: 30px; font-size: 12px; }
+.admin-mesa-acciones-compactas .mini-btn:first-child { flex: 1; }
+.admin-mesa-acciones-compactas .mini-btn:last-child { flex: 0 0 34px; font-size: 19px; line-height: 1; }
