@@ -1,3 +1,4 @@
+import { supabase } from "../../../../supabaseClient";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { dinero, formatearFechaHora, normalizarTexto, esItemCafeteria, obtenerCliente, obtenerCodigoPedido, obtenerEstadoPedido, obtenerItemsPedido } from "../../../../shared/utils/pedidos";
 import { exportarPedidosExcel } from "../../utils/exportarPedidosExcel";
@@ -315,7 +316,7 @@ function imprimirResumenPedidosFiltradosTermico({
   });
 }
 
-function ResumenMesasHoy({ onAgregarPedido, orden = "ultimos", pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
+function ResumenMesasHoy({ onOpcionesMesa, onAgregarPedido, orden = "ultimos", pedidosActivos = [], cambiarEstadoPedido, guardandoEstadoPedidoId, puedeEditarPedido = false, onEditarPedido, editandoPedidoId }) {
   const [mesaSeleccionada, setMesaSeleccionada] = useState(null);
 
   const pedidosPorMesa = useMemo(() => {
@@ -369,15 +370,10 @@ function ResumenMesasHoy({ onAgregarPedido, orden = "ultimos", pedidosActivos = 
                 <div className="admin-mesa-vacia">Sin pedidos registrados hoy.</div>
               )}
 
-              <button
-                type="button"
-                className="button light admin-mesa-ver"
-                onClick={() => setMesaSeleccionada(mesa)}
-                disabled={pedidosMesa.length === 0}
-              >
-                Ver pedido completo
-              </button>
-              {onAgregarPedido && ultimosPedidos.length > 0 && <button type="button" className="button green" onClick={() => onAgregarPedido(ultimosPedidos[0])}>Agregar</button>}
+              <div className="admin-mesa-acciones-compactas">
+                <button type="button" className="mini-btn" onClick={() => setMesaSeleccionada(mesa)} disabled={pedidosMesa.length === 0}>Ver más</button>
+                <button type="button" className="mini-btn" aria-label={`Opciones de la mesa ${mesa}`} onClick={() => onOpcionesMesa?.(ultimosPedidos[0])} disabled={!ultimosPedidos.length}>⋯</button>
+              </div>
 
             </article>
           );
@@ -403,7 +399,7 @@ function ResumenMesasHoy({ onAgregarPedido, orden = "ultimos", pedidosActivos = 
                 <PedidoCocina
                   key={pedido.id}
                   pedido={pedido}
-                  onAgregarPedido={onAgregarPedido}
+                  onAgregarPedido={(pedido) => { setMesaSeleccionada(null); onAgregarPedido?.(pedido); }}
                   onCambiarEstado={cambiarEstadoPedido}
                   guardandoEstado={guardandoEstadoPedidoId === pedido.id}
                   puedeEditarPedido={puedeEditarPedido}
@@ -778,6 +774,9 @@ function AdminPedidosSectionBase({
   });
   const [filtroTipoPagoRapido, setFiltroTipoPagoRapido] = useState("");
   const [mostrarModalFiltrosRapidos, setMostrarModalFiltrosRapidos] = useState(false);
+  const [accionMesa, setAccionMesa] = useState(null);
+  const [guardandoCambioMesa, setGuardandoCambioMesa] = useState(false);
+  const [errorCambioMesa, setErrorCambioMesa] = useState("");
   const [mostrarImpresion, setMostrarImpresion] = useState(false);
   const [mostrarOrden, setMostrarOrden] = useState(false);
   const [mostrarBusquedaPedidos, setMostrarBusquedaPedidos] = useState(false);
@@ -994,6 +993,28 @@ function AdminPedidosSectionBase({
     }
   }, [fechaReferenciaImpresion, hayFiltrosRapidosActivos, mostrarAlertaRafiki, ordenPedidosHoy, pedidosVisiblesTabla, rangoBusquedaPedidosTermico, resumenFiltrosRapidos, totalCargadosServidor]);
 
+  function abrirCambioMesa(pedido) {
+    setErrorCambioMesa("");
+    setAccionMesa({ tipo: "cambiar", pedido, destino: normalizarMesaPedido(pedido) });
+  }
+
+  async function confirmarCambioMesaPedido() {
+    if (guardandoCambioMesa || !accionMesa?.pedido) return;
+    setGuardandoCambioMesa(true);
+    setErrorCambioMesa("");
+    try {
+      const { error } = await supabase.rpc("cambiar_mesa_pedido", {
+        p_pedido_id: String(accionMesa.pedido.id),
+        p_mesa_anterior: accionMesa.pedido.mesa || "",
+        p_mesa_nueva: accionMesa.destino,
+      });
+      if (error) throw error;
+      setAccionMesa(null);
+      refrescarPedidos();
+    } catch (error) { setErrorCambioMesa(error.message || "No se pudo cambiar la mesa."); }
+    finally { setGuardandoCambioMesa(false); }
+  }
+
   return (
     <section className="card card-pad">
       <div className="admin-top-row admin-top-row-compact">
@@ -1041,6 +1062,18 @@ function AdminPedidosSectionBase({
         <button type="button" className="mini-btn" style={{ width: "auto" }} onClick={() => setMostrarImpresion(true)} aria-expanded={mostrarImpresion}>Imprimir</button>
         <button type="button" className="mini-btn" style={{ width: "auto" }} onClick={() => setMostrarOrden(true)} aria-expanded={mostrarOrden}>Orden</button>
       </div>
+      <RafikiModal key={accionMesa?.tipo || "mesa-cerrada"} open={Boolean(accionMesa)} title={accionMesa?.tipo === "opciones" ? `Pedido #${accionMesa?.pedido?.numero_pedido || ""}` : "Cambiar mesa"} onClose={() => { if (!guardandoCambioMesa) setAccionMesa(null); }} size="sm" footer={accionMesa?.tipo === "cambiar" ? <button type="button" className="button green" disabled={guardandoCambioMesa || !accionMesa.destino || accionMesa.destino === normalizarMesaPedido(accionMesa.pedido)} onClick={confirmarCambioMesaPedido}>{guardandoCambioMesa ? "Guardando…" : "Confirmar cambio"}</button> : null}>
+        {accionMesa?.tipo === "opciones" ? <div style={{ display: "grid", gap: 10 }}>
+          <button type="button" className="button green" onClick={() => { const pedido = accionMesa.pedido; setAccionMesa(null); onAgregarPedidoEnMesas?.(pedido); }}>Agregar productos</button>
+          <button type="button" className="button light" onClick={() => abrirCambioMesa(accionMesa.pedido)}>Cambiar mesa</button>
+        </div> : accionMesa && <>
+          <p>Pedido #{accionMesa.pedido.numero_pedido || accionMesa.pedido.id} · Mesa actual: <strong>{normalizarMesaPedido(accionMesa.pedido) || "Sin mesa"}</strong></p>
+          <div className="mesa-selector-grid" aria-label="Seleccionar nueva mesa">
+            {MESAS_DISPONIBLES.map((mesa) => <button key={mesa} type="button" disabled={guardandoCambioMesa} className={`option mesa-boton ${mesa === "5B" ? "mesa-5b" : ""} ${accionMesa.destino === mesa ? "selected" : ""}`} aria-pressed={accionMesa.destino === mesa} onClick={() => setAccionMesa((actual) => ({ ...actual, destino: mesa }))}>{mesa}</button>)}
+          </div>
+          {errorCambioMesa && <div className="alert alert-warning" role="alert">{errorCambioMesa}</div>}
+        </>}
+      </RafikiModal>
       <RafikiModal open={mostrarImpresion} title="Imprimir pedidos" onClose={() => setMostrarImpresion(false)} size="sm">
         <ThermalPrintControls onPrint={imprimirPedidosFiltradosTermico} disabled={pedidosVisiblesTabla.length === 0} label="Imprimir" title="Tamaño" buttonClassName="mini-btn" compact />
       </RafikiModal>
@@ -1096,7 +1129,8 @@ function AdminPedidosSectionBase({
             <div className="alert alert-warning">{errorNumeroPedido}</div>
           ) : (
             <TablaPedidosCompacta
-              onAgregarPedido={onAgregarPedidoEnMesas}
+              onCambiarMesa={abrirCambioMesa}
+            onAgregarPedido={onAgregarPedidoEnMesas}
               pedidos={resultadoNumeroPedidoVisual}
               onCambiarEstado={cambiarEstadoPedido}
               guardandoEstadoPedidoId={guardandoEstadoPedidoId}
@@ -1129,6 +1163,7 @@ function AdminPedidosSectionBase({
 
       {vistaPedidosHoy === "mesas" ? (
         <ResumenMesasHoy
+          onOpcionesMesa={(pedido) => { setErrorCambioMesa(""); setAccionMesa({ tipo: "opciones", pedido }); }}
           onAgregarPedido={onAgregarPedidoEnMesas}
           orden={ordenPedidosHoy}
           pedidosActivos={aplicarFiltrosRapidosPedidos(pedidosActivosVisuales, filtrosTipoPedido, filtroTipoPagoRapido)}
@@ -1150,6 +1185,7 @@ function AdminPedidosSectionBase({
           />
         ) : (
           <TablaPedidosCompacta
+            onCambiarMesa={abrirCambioMesa}
             onAgregarPedido={onAgregarPedidoEnMesas}
             pedidos={pedidosVisiblesTabla}
             onCambiarEstado={cambiarEstadoPedido}

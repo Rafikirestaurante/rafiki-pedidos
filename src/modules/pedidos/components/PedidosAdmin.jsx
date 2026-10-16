@@ -295,7 +295,7 @@ function obtenerTipoBadgePagoPedido(pedido) {
   return "info";
 }
 
-function TablaPedidosCompactaBase({ onAgregarPedido, pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCambiarFechaPedido, cambiandoFechaPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
+function TablaPedidosCompactaBase({ onCambiarMesa, onAgregarPedido, pedidos, onCambiarEstado, guardandoEstadoPedidoId, onEliminarPedido, eliminandoPedidoId, onEditarPedido, editandoPedidoId, onCambiarFechaPedido, cambiandoFechaPedidoId, onCorregirClienteCredito, corrigiendoClientePedidoId, pedidosPorPagina = 15 }) {
   const [mostrarAlertaRafiki, modalAlertaRafiki] = useAlertaRafiki();
   const [paginaActual, setPaginaActual] = useState(1);
   const tablaRef = useRef(null);
@@ -397,23 +397,14 @@ function TablaPedidosCompactaBase({ onAgregarPedido, pedidos, onCambiarEstado, g
                 <td className="td-total">{dinero(pedido.total)}</td>
                 <td className="td-acciones td-acciones-compactas">
                   {onAgregarPedido && estadoNormalizado !== "Borrado" && <button type="button" className="mini-btn green" onClick={() => onAgregarPedido(pedido)}>Agregar</button>}
-                  {estadoNormalizado === "Borrado" ? (
-                    <span className="mini-estado-borrado">Borrado</span>
-                  ) : estadoNormalizado !== "Finalizado" ? (
-                    <button
-                      type="button"
-                      className="mini-btn green accion-principal-pedido"
-                      onClick={() => onCambiarEstado?.(pedido.id, "Finalizado")}
-                      disabled={guardandoEstadoPedidoId === pedido.id}
-                    >
-                      {guardandoEstadoPedidoId === pedido.id ? "Guardando..." : "Entregado"}
-                    </button>
-                  ) : (
-                    <span className="mini-estado-finalizado">Entregado</span>
-                  )}
+                  {onCambiarMesa && estadoNormalizado !== "Borrado" && <button type="button" className="mini-btn green accion-principal-pedido" onClick={() => onCambiarMesa(pedido)} disabled={String(pedido.tipo_pedido || "").toLowerCase() === "llevar"} title="Cambiar mesa del pedido">Cambiar mesa</button>}
                   <RafikiActionMenu
                     label="Opciones"
                     items={[
+                      estadoNormalizado !== "Borrado" && estadoNormalizado !== "Finalizado" && onCambiarEstado ? {
+                        id: "entregado", label: guardandoEstadoPedidoId === pedido.id ? "Guardando…" : "Marcar como entregado", icon: "✓",
+                        disabled: guardandoEstadoPedidoId === pedido.id, onClick: () => onCambiarEstado(pedido.id, "Finalizado"),
+                      } : null,
                       onEditarPedido && estadoNormalizado !== "Borrado"
                         ? {
                             id: "editar",
