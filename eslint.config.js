@@ -46,7 +46,7 @@ export default [
     }
   },
   {
-    files: ["scripts/**/*.mjs", "*.config.js", "eslint.config.js"],
+    files: ["scripts/**/*.mjs", "server/**/*.js", "api/**/*.js", "*.config.js", "eslint.config.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

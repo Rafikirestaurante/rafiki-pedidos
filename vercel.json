@@ -64,8 +64,13 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/kiara.js": {
+      "maxDuration": 60
+    }
+  }
 }

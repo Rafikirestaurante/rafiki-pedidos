@@ -1,3 +1,7 @@
+# 137.0-FASE46-KIARA-GEMINI-2026-10-19
+
+Kiara: **Asistente Virtual Rafiki**, link público `/kiara`. Para activar Gemini, ejecutar el SQL y configurar las variables privadas siguiendo [FASE46-KIARA-INSTALACION.md](docs/FASE46-KIARA-INSTALACION.md). Incluye package-lock.json.
+
 # Rafiki Pedidos — 129.2 / Fase 40C
 
 ## 129.2 — Fase 40C: Historial compartido

@@ -91,6 +91,7 @@ export default defineConfig({
         clientsClaim: false,
         cleanupOutdatedCaches: true,
         navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,json}"],
         globIgnores: ["**/rafiki-version.json", "**/manifest.json"],
         runtimeCaching: [
