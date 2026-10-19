@@ -536,3 +536,22 @@
     transition: none !important;
   }
 }
+
+.kiara-codigo > div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.kiara-codigo > div input {
+  flex: 1;
+  min-width: 0;
+}
+.kiara-codigo > div button {
+  white-space: nowrap;
+  padding: 8px 12px;
+}
+.kiara-codigo > p {
+  font-size: 13px;
+  color: #08734f;
+  margin: 8px 0 0;
+}

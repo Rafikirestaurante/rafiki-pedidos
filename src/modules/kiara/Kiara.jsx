@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./kiara.css";
+import { agruparMenuKiara } from "./menuKiara.js";
 const dinero = (n) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(
     n || 0
@@ -10,6 +11,7 @@ const saludo = {
   text: "¡Hola! Soy Kiara 👋\n¿Qué te gustaría pedir hoy? Escríbeme o explora el menú.",
   hora: hora()
 };
+const agruparCategorias = (catalogo) => [...new Set(catalogo.map((p) => p.categoria))];
 const STORAGE = "rafiki-kiara-v1";
 function inicial() {
   try {
@@ -114,10 +116,20 @@ export default function Kiara() {
   const [error, setError] = useState("");
   const [hoja, setHoja] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [categoriaMenu, setCategoriaMenu] = useState("");
   const [producto, setProducto] = useState(null);
+  const [grupoProducto, setGrupoProducto] = useState(null);
+  const [codigoCliente, setCodigoCliente] = useState("");
+  const [avisoCliente, setAvisoCliente] = useState("");
   const [opciones, setOpciones] = useState({});
   const [cantidad, setCantidad] = useState(1);
-  const [cliente, setCliente] = useState({ nombre: "", telefono: "", pago: "Efectivo", notas: "" });
+  const [cliente, setCliente] = useState({
+    nombre: "",
+    telefono: "",
+    ubicacion: "",
+    pago: "Efectivo",
+    notas: ""
+  });
   const [pedido, setPedido] = useState(guardado.pedido || null);
   const fin = useRef();
   const bloqueo = useRef(false);
@@ -228,20 +240,24 @@ export default function Kiara() {
   }
   function nuevoPedido() {
     if (bloqueo.current) return;
+    setCodigoCliente("");
+    setAvisoCliente("");
+    setGrupoProducto(null);
     setPedido(null);
     setHoja("");
     setToken("");
     setCarrito([]);
     setTotal(0);
     setMensajes([saludo]);
-    setCliente({ nombre: "", telefono: "", pago: "Efectivo", notas: "" });
+    setCliente({ nombre: "", telefono: "", ubicacion: "", pago: "Efectivo", notas: "" });
     setListo(false);
     ejecutar(async () => {
       aplicar(await pedir({ accion: "iniciar" }, ""));
     });
   }
   function escoger(p) {
-    setProducto(p);
+    setGrupoProducto(p);
+    setProducto(p.variantes.length === 1 ? p.variantes[0] : null);
     setOpciones({});
     setCantidad(1);
     setError("");
@@ -249,6 +265,7 @@ export default function Kiara() {
   }
   function agregarProducto(e) {
     e.preventDefault();
+    if (!producto) return;
     const linea = { productoId: producto.id, cantidad: Number(cantidad), opciones };
     const anterior = carrito.findIndex(
       (l) => l.productoId === linea.productoId && JSON.stringify(l.opciones) === JSON.stringify(opciones)
@@ -264,6 +281,14 @@ export default function Kiara() {
       aplicar(await pedir({ accion: "iniciar" }));
     });
   }
+  async function buscarCliente() {
+    setAvisoCliente("");
+    await ejecutar(async () => {
+      const d = await pedir({ accion: "cliente", codigo: codigoCliente });
+      setCliente((c) => ({ ...c, ...d.cliente }));
+      setAvisoCliente("¡Listo! Cargué tus datos. Revísalos antes de confirmar.");
+    });
+  }
   async function confirmar(e) {
     e.preventDefault();
     await ejecutar(async () => {
@@ -274,7 +299,7 @@ export default function Kiara() {
     });
   }
   const unidades = carrito.reduce((s, l) => s + l.cantidad, 0);
-  const productosFiltrados = catalogo.filter((p) =>
+  const productosFiltrados = agruparMenuKiara(catalogo).filter((p) =>
     `${p.nombre} ${p.categoria}`
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -336,7 +361,7 @@ export default function Kiara() {
         {pedido ? (
           <div className="kiara-exito">
             <strong>✓ Pedido #{pedido.numero} registrado</strong>
-            <span>Para recoger en Rafiki · {dinero(pedido.total)}</span>
+            <span>Pedido para llevar · {dinero(pedido.total)}</span>
             <button type="button" className="kiara-primario" onClick={nuevoPedido}>
               Hacer otro pedido
             </button>
@@ -349,6 +374,7 @@ export default function Kiara() {
                 onClick={() => {
                   setHoja("menu");
                   setBusqueda("");
+                  setCategoriaMenu("");
                 }}
               >
                 <Icono tipo="menu" />
@@ -388,7 +414,9 @@ export default function Kiara() {
       {hoja && (
         <Hoja
           titulo={
-            { menu: "Nuestro menú", producto: producto?.nombre, pedido: "Tu pedido", ayuda: "Kiara" }[hoja]
+            { menu: "Nuestro menú", producto: grupoProducto?.nombre, pedido: "Tu pedido", ayuda: "Kiara" }[
+              hoja
+            ]
           }
           cerrar={cerrar}
         >
@@ -401,8 +429,8 @@ export default function Kiara() {
                   antes de confirmarlo.
                 </p>
                 <p>
-                  Por ahora, los pedidos de Kiara son para recoger en el local. Para pedidos de Restaurante,
-                  visita <a href="/cliente">/cliente</a>.
+                  Puedes hacer tu pedido para llevar. Para pedidos de Restaurante, visita{" "}
+                  <a href="/cliente">/cliente</a>.
                 </p>
                 <p>
                   No compartas datos de tarjetas o contraseñas. Tus mensajes se procesan con Gemini para
@@ -423,37 +451,89 @@ export default function Kiara() {
                   onChange={(e) => setBusqueda(e.target.value)}
                 />
                 {!productosFiltrados.length && <p>No encontré productos con ese nombre.</p>}
-                {[...new Set(productosFiltrados.map((p) => p.categoria))].map((c) => (
-                  <section className="kiara-categoria" key={c}>
-                    <h3>{c}</h3>
-                    {productosFiltrados
-                      .filter((p) => p.categoria === c)
-                      .map((p) => (
-                        <button className="kiara-producto" key={p.id} onClick={() => escoger(p)}>
-                          <span>
-                            {p.nombre}
-                            <small>
-                              {dinero(p.precio)}
-                              {p.extraTerceraFruta ? " · tercera fruta +$1.000" : ""}
-                              {p.empaque ? " · incluye empaque" : ""}
-                            </small>
-                          </span>
-                          <b aria-label="Elegir">+</b>
-                        </button>
-                      ))}
-                  </section>
-                ))}
+                {!categoriaMenu && !busqueda.trim() ? (
+                  agruparCategorias(catalogo).map((c) => (
+                    <button key={c} className="kiara-producto" onClick={() => setCategoriaMenu(c)}>
+                      <span>{c}</span>
+                      <b aria-hidden="true">›</b>
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    {categoriaMenu && (
+                      <button
+                        type="button"
+                        className="kiara-secundario"
+                        onClick={() => {
+                          setCategoriaMenu("");
+                          setBusqueda("");
+                        }}
+                      >
+                        ‹ Categorías
+                      </button>
+                    )}
+                    {[
+                      ...new Set(
+                        productosFiltrados
+                          .filter((p) => !categoriaMenu || busqueda.trim() || p.categoria === categoriaMenu)
+                          .map((p) => p.categoria)
+                      )
+                    ].map((c) => (
+                      <section className="kiara-categoria" key={c}>
+                        <h3>{c}</h3>
+                        {productosFiltrados
+                          .filter((p) => p.categoria === c)
+                          .map((p) => (
+                            <button className="kiara-producto" key={p.id} onClick={() => escoger(p)}>
+                              <span>
+                                {p.nombre}
+                                <small>
+                                  {p.variantes.length > 1 ? "Desde " : ""}
+                                  {dinero(p.precio)}
+                                  {p.extraTerceraFruta ? " · tercera fruta +$1.000" : ""}
+                                  {p.empaque ? " · incluye empaque" : ""}
+                                </small>
+                              </span>
+                              <b aria-label="Elegir">+</b>
+                            </button>
+                          ))}
+                      </section>
+                    ))}
+                  </>
+                )}
               </>
             )}
-            {hoja === "producto" && producto && (
+            {hoja === "producto" && grupoProducto && (
               <form className="kiara-formulario" onSubmit={agregarProducto}>
-                <p className="kiara-precio">
-                  {dinero(producto.precio + (opciones.frutas?.length === 3 ? 1000 : 0))}
-                </p>
-                {producto.empaque > 0 && (
+                {grupoProducto.variantes.length > 1 && (
+                  <label>
+                    Tamaño
+                    <select
+                      required
+                      value={producto?.id || ""}
+                      onChange={(e) => {
+                        setProducto(grupoProducto.variantes.find((p) => p.id === e.target.value) || null);
+                        setOpciones({});
+                      }}
+                    >
+                      <option value="">Elige el tamaño</option>
+                      {grupoProducto.variantes.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.tamano} · {dinero(p.precio)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {producto && (
+                  <p className="kiara-precio">
+                    {dinero(producto.precio + (opciones.frutas?.length === 3 ? 1000 : 0))}
+                  </p>
+                )}
+                {producto?.empaque > 0 && (
                   <small>Incluye {dinero(producto.empaque)} de empaque para llevar.</small>
                 )}
-                {Object.entries(producto.opciones).map(([campo, valores]) =>
+                {Object.entries(producto?.opciones || {}).map(([campo, valores]) =>
                   campo === "frutas" ? (
                     <fieldset key={campo}>
                       <legend>Elige de 1 a 3 frutas</legend>
@@ -507,7 +587,7 @@ export default function Kiara() {
                   />
                 </label>
                 <button
-                  disabled={ocupado || (producto.opciones.frutas && !opciones.frutas?.length)}
+                  disabled={ocupado || !producto || (producto.opciones.frutas && !opciones.frutas?.length)}
                   className="kiara-primario"
                 >
                   Agregar a mi pedido
@@ -572,7 +652,33 @@ export default function Kiara() {
                       <strong>{dinero(total)}</strong>
                     </div>
                     <form className="kiara-formulario" onSubmit={confirmar}>
-                      <p className="kiara-recogida">Para recoger en el local</p>
+                      <p className="kiara-recogida">Pedido para llevar</p>
+                      <fieldset className="kiara-codigo">
+                        <legend>¿Ya tienes código de cliente?</legend>
+                        <div>
+                          <input
+                            aria-label="Código de cliente"
+                            autoComplete="off"
+                            maxLength={80}
+                            value={codigoCliente}
+                            onChange={(e) => {
+                              setCodigoCliente(e.target.value);
+                              setAvisoCliente("");
+                            }}
+                            placeholder="Tu código"
+                          />
+                          <button
+                            type="button"
+                            className="kiara-secundario"
+                            disabled={ocupado || !codigoCliente.trim()}
+                            onClick={buscarCliente}
+                          >
+                            Usar código
+                          </button>
+                        </div>
+                        <small>Puedes usar el mismo código de Rafiki o completar tus datos abajo.</small>
+                        {avisoCliente && <p role="status">{avisoCliente}</p>}
+                      </fieldset>
                       <label>
                         Tu nombre
                         <input
@@ -594,6 +700,16 @@ export default function Kiara() {
                           autoComplete="tel"
                           value={cliente.telefono}
                           onChange={(e) => setCliente((c) => ({ ...c, telefono: e.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Ubicación / dirección (opcional)
+                        <input
+                          maxLength={180}
+                          autoComplete="street-address"
+                          value={cliente.ubicacion || ""}
+                          onChange={(e) => setCliente((c) => ({ ...c, ubicacion: e.target.value }))}
+                          placeholder="Si lo recoges, puedes dejarla vacía"
                         />
                       </label>
                       <label>
