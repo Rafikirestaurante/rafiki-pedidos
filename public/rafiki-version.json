@@ -1,6 +1,6 @@
 {
-  "version": "136.0-FASE45-ADICIONES-BUSQUEDA-2026-10-14",
-  "phase": "Fase 45 - Adiciones a pedidos y búsqueda por fechas",
-  "date": "2026-10-14",
-  "notes": "Adiciones con el panel completo de Mesas, mesa confirmada, mesero por adición, comanda separada y búsqueda por rango."
+  "version": "137.0-FASE46-KIARA-GEMINI-2026-10-19",
+  "phase": "Fase 46 - Kiara Asistente Virtual Rafiki",
+  "date": "2026-10-19",
+  "notes": "Chat público /kiara con Gemini en servidor, catálogo cafetería y confirmación de pedidos para recoger."
 }
