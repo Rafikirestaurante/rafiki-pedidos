@@ -8,7 +8,7 @@ function normalizarRuta(pathname = window.location.pathname) {
 
 export function esRutaPublicaCliente(pathname = window.location.pathname) {
   const ruta = normalizarRuta(pathname);
-  return ruta === '/' || ruta === '/cliente' || ruta === '/pedido';
+  return ruta === '/' || ruta === '/cliente' || ruta === '/pedido' || ruta === '/kiara';
 }
 
 function tieneParametroRefreshCliente() {

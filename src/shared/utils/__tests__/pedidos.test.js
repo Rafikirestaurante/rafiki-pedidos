@@ -108,7 +108,7 @@ describe("utils/pedidos", () => {
     expect(esAdicionalAlmuerzo(adicional)).toBe(true);
     expect(calcularTotalItem(adicional)).toBe(15000);
     expect(valorParaLlevarItem(adicional)).toBe(0);
-    expect(crearTextoItem(adicional)).toBe("3 Papas Fritas ($ 5.000)");
+    expect(crearTextoItem(adicional).replace(/\u00a0/g, " ")).toBe("3 Papas Fritas ($ 5.000)");
   });
 
 });

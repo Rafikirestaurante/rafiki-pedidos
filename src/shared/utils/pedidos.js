@@ -644,6 +644,10 @@ export function precioBaseItem(item) {
     return precioActual + adicionalesAlmuerzo;
   }
 
+  // Kiara valida el precio contra el catálogo en el servidor al confirmar.
+  // Conservar ese precio también al mostrar e imprimir pedidos históricos.
+  if (item?.origen === "Kiara") return precioActual;
+
   const tipo = normalizarTexto(item?.tipo);
   const nombreCompleto = normalizarTexto(item?.producto || item?.plato || item?.proteina || item?.nombre);
 

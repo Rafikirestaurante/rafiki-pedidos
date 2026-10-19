@@ -62,6 +62,8 @@ export function obtenerVistaInicial() {
     return adminActivo ? "inventario" : "adminLogin";
   }
 
+  if (ruta === "/kiara") return "kiara";
+
   if (ruta === "/pedido" || ruta === "/cliente") {
     return "cliente";
   }

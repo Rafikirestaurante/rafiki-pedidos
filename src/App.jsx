@@ -40,6 +40,7 @@ import {
   GeneradorMenu,
   GerenciaPanel,
   InicioRafiki,
+  Kiara,
   InventarioAdmin,
   MenuDiarioTab,
   PanelClienteBeta,
@@ -825,7 +826,7 @@ export default function App() {
       {modalConfirmacionRafiki}
 
       <Suspense fallback={<CargandoModulo texto="Cargando módulo..." />}>
-        <div className={`app ${vista === "mesas" || vista === "mesasBeta" ? "mesas-pos-activo" : ""}`}>
+        <div className={`app ${vista === "kiara" ? "kiara-app" : ""} ${vista === "mesas" || vista === "mesasBeta" ? "mesas-pos-activo" : ""}`}>
           <div className="container">
             {VISTAS_NAVEGACION_INTERNA.has(vista) && (
               <header className="topbar navegacion-interna-header">
@@ -838,7 +839,7 @@ export default function App() {
               </header>
             )}
 
-            {vista !== "inicio" &&
+            {vista !== "kiara" && vista !== "inicio" &&
               vista !== "adminLogin" &&
               !VISTAS_NAVEGACION_INTERNA.has(vista) && (
                 <header
@@ -856,6 +857,8 @@ export default function App() {
 
             {mensaje.texto && <div className={`alert alert-${mensaje.tipo}`}>{mensaje.texto}</div>}
             {cargando && <div className="card card-pad">Verificando sesión administrativa...</div>}
+
+            {vista === "kiara" && <ErrorBoundary nombreModulo="Kiara"><Kiara /></ErrorBoundary>}
 
             {!cargando && vista === "inicio" && <InicioRafiki navegar={navegar} />}
 
