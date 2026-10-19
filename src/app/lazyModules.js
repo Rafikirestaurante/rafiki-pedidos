@@ -76,3 +76,5 @@ export const GerenciaPanel = lazyConReintento(
   () => import("../modules/gerencia/components/GerenciaPanel"),
   "GerenciaPanel",
 );
+
+export const Kiara = lazyConReintento(() => import("../modules/kiara/Kiara.jsx"), "Kiara");

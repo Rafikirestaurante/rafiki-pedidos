@@ -1,8 +1,9 @@
 export const RAFIKI_BUILD = {
-  "version": "136.2-FASE45C-ACCESO-DIRECTO-MESAS-2026-10-16",
-  "phase": "Fase 45C - Acceso directo a consulta de mesas",
-  "date": "2026-10-16",
-  "notes": "Navegación Mesas · 🍽️ · Pedidos hoy · Admin · Gerencia; consulta de mesas en /pedidos-hoy/mesas.",
-  "fase": "45C-ACCESO-DIRECTO-MESAS"
+  version: "137.0-FASE46-KIARA-GEMINI-2026-10-19",
+  phase: "Fase 46 - Kiara Asistente Virtual Rafiki",
+  date: "2026-10-19",
+  notes:
+    "Chat público /kiara con Gemini en servidor, catálogo cafetería y confirmación de pedidos para recoger.",
+  fase: "46-KIARA-GEMINI"
 };
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;

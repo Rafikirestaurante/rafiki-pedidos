@@ -1,0 +1,538 @@
+.app.kiara-app {
+  padding: 0;
+  background: #d9e0dc;
+  min-height: 100dvh;
+}
+.app.kiara-app > .container {
+  max-width: 760px;
+  padding: 0;
+  margin: 0 auto;
+}
+.kiara-chat {
+  --verde: #075e54;
+  --acento: #008069;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #efeae2;
+  color: #172a2a;
+  font:
+    15px/1.5 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  isolation: isolate;
+}
+.kiara-chat * {
+  box-sizing: border-box;
+}
+.kiara-chat button,
+.kiara-chat input,
+.kiara-chat select,
+.kiara-chat textarea {
+  font: inherit;
+}
+.kiara-chat button {
+  cursor: pointer;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+.kiara-chat button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.kiara-chat button:focus-visible,
+.kiara-chat input:focus-visible,
+.kiara-chat select:focus-visible,
+.kiara-chat textarea:focus-visible {
+  outline: 3px solid #19a78b;
+  outline-offset: 2px;
+}
+.kiara-cabecera {
+  background: var(--verde);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: max(14px, env(safe-area-inset-top)) 18px 14px;
+  box-shadow: 0 1px 4px #0002;
+  z-index: 2;
+}
+.kiara-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #e1f4eb;
+  color: #075e54;
+  font-size: 25px;
+  font-weight: 650;
+  position: relative;
+}
+.kiara-avatar span {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--verde);
+  background: #66d9a6;
+  border-radius: 50%;
+}
+.kiara-identidad {
+  flex: 1;
+}
+.kiara-identidad h1 {
+  font-size: 19px;
+  line-height: 1.2;
+  color: inherit;
+  margin: 0 0 3px;
+  font-weight: 650;
+}
+.kiara-identidad p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+.kiara-icono {
+  font-size: 28px !important;
+  background: transparent;
+  color: white;
+  min-width: 44px;
+}
+.kiara-conversacion {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px clamp(14px, 4vw, 32px);
+  background-color: #efeae2;
+  background-image: radial-gradient(#b7b2a733 0.8px, transparent 0.8px);
+  background-size: 17px 17px;
+  overscroll-behavior: contain;
+}
+.kiara-fecha {
+  align-self: center;
+  background: #fff9;
+  color: #596a68;
+  font-size: 11px;
+  padding: 3px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 1px #0001;
+}
+.kiara-bienvenida {
+  align-self: center;
+  font-size: 11px;
+  color: #66746c;
+  background: #fff6;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.kiara-burbuja {
+  align-self: flex-start;
+  background: #fff;
+  border-radius: 0 12px 12px 12px;
+  box-shadow: 0 1px 1px #0002;
+  padding: 10px 12px 5px;
+  max-width: 85%;
+  min-width: 90px;
+  overflow-wrap: anywhere;
+}
+.kiara-burbuja p {
+  white-space: pre-wrap;
+  margin: 0;
+  line-height: 1.5;
+}
+.kiara-propia {
+  align-self: flex-end;
+  border-radius: 12px 0 12px 12px;
+  background: #d9fdd3;
+}
+.kiara-hora {
+  font-size: 10px;
+  color: #71817b;
+  display: block;
+  text-align: right;
+  margin: 3px 0 0 16px;
+}
+.kiara-hora span {
+  color: #5d8275;
+  margin-left: 4px;
+}
+.kiara-escribiendo {
+  font-size: 12px;
+  color: #63716d;
+}
+.kiara-escribiendo > span {
+  margin-left: 12px;
+  letter-spacing: 3px;
+}
+.kiara-pie {
+  background: #f0f2f5;
+  padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid #d9dfda;
+}
+.kiara-atajos {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.kiara-atajos button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #dce4df;
+  background: white;
+  color: #116756;
+  font-size: 13px;
+  flex: 1;
+  min-height: 39px;
+  border-radius: 20px;
+}
+.kiara-atajos svg {
+  width: 18px;
+  height: 18px;
+}
+.kiara-atajos b {
+  background: #008069;
+  color: white;
+  border-radius: 12px;
+  font-size: 10px;
+  min-width: 19px;
+}
+.kiara-compositor {
+  display: flex;
+  gap: 8px;
+}
+.kiara-compositor input {
+  flex: 1;
+  min-width: 0;
+  border: 0 !important;
+  background: white;
+  border-radius: 24px !important;
+  padding: 12px 17px !important;
+  margin: 0 !important;
+  height: 48px;
+  box-shadow: 0 1px 2px #0001;
+  color: #172a2a;
+}
+.kiara-compositor button {
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  background: var(--acento);
+  color: white;
+  display: grid;
+  place-items: center;
+}
+.kiara-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+  background: #dcece5;
+  color: #075e54;
+  padding: 8px 12px;
+  min-height: 38px !important;
+  font-size: 12px !important;
+}
+.kiara-resumen strong > span {
+  font-size: 22px;
+  margin-left: 8px;
+}
+.kiara-error {
+  border: 1px solid #e8c2b8;
+  background: #fff1ea;
+  color: #753926;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.kiara-error button {
+  display: block;
+  background: transparent;
+  text-decoration: underline;
+  color: inherit;
+  font-size: 12px;
+}
+.kiara-velo {
+  position: fixed;
+  inset: 0;
+  background: #10282280;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 10000;
+  padding-top: 30px;
+}
+.kiara-hoja {
+  background: #fff;
+  width: 100%;
+  max-width: 760px;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 30px #0002;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.kiara-hoja > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e7ece9;
+}
+.kiara-hoja h2 {
+  font-size: 18px;
+  margin: 0;
+  flex: 1;
+  color: #173f34;
+}
+.kiara-hoja > header button {
+  background: #f0f3f1;
+  color: #30584b;
+  min-width: 44px;
+}
+.kiara-hoja-cuerpo {
+  overflow: auto;
+  padding: 16px 20px 24px;
+  overscroll-behavior: contain;
+}
+.kiara-chat input,
+.kiara-chat select,
+.kiara-chat textarea {
+  color: #182b25;
+  background: #fff;
+  border: 1px solid #ccd8d2;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 44px;
+  width: 100%;
+  margin: 0;
+}
+.kiara-buscar {
+  background: #f3f6f4 !important;
+  margin-bottom: 14px !important;
+}
+.kiara-categoria {
+  margin-bottom: 18px;
+}
+.kiara-categoria h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6b7973;
+  margin: 15px 0 6px;
+}
+.kiara-producto {
+  background: white;
+  border-bottom: 1px solid #edf1ee !important;
+  border-radius: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-align: left;
+  width: 100%;
+  padding: 13px 0;
+  color: #203d30;
+}
+.kiara-producto > span {
+  flex: 1;
+}
+.kiara-producto small {
+  display: block;
+  color: #6e8074;
+  margin-top: 3px;
+  font-size: 12px;
+}
+.kiara-producto b {
+  display: grid;
+  place-items: center;
+  background: #edf7f1;
+  color: #087b5f;
+  border: 1px solid #d0e6d9;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 22px;
+  font-weight: 400;
+}
+.kiara-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.kiara-formulario > label {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kiara-formulario > label input,
+.kiara-formulario > label select,
+.kiara-formulario > label textarea {
+  font-weight: 400;
+}
+.kiara-formulario fieldset {
+  border: 1px solid #dce5df;
+  border-radius: 10px;
+  padding: 12px;
+}
+.kiara-formulario legend {
+  font-size: 13px;
+  font-weight: 600;
+}
+.kiara-frutas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+.kiara-frutas label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: #f4f7f5;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.kiara-frutas input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #008069;
+}
+.kiara-chat .kiara-primario {
+  background: #008069;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 24px;
+  width: 100%;
+  font-weight: 600;
+}
+.kiara-secundario {
+  background: #f0f5f2;
+  color: #12674d;
+}
+.kiara-precio {
+  font-size: 23px;
+  font-weight: 650;
+  color: #087a59;
+  margin: 0 0 8px;
+}
+.kiara-lineas article {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #edf1ee;
+  align-items: center;
+}
+.kiara-lineas article > div:first-child {
+  flex: 1;
+}
+.kiara-lineas strong,
+.kiara-lineas small,
+.kiara-lineas article > div > span {
+  display: block;
+}
+.kiara-lineas strong {
+  font-size: 14px;
+}
+.kiara-lineas small {
+  color: #6c7e74;
+  font-size: 12px;
+  margin-top: 3px;
+}
+.kiara-lineas article > div > span {
+  font-size: 13px;
+  color: #087a59;
+  margin-top: 5px;
+}
+.kiara-cantidad {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kiara-cantidad button {
+  background: #eff6f2;
+  color: #087a59;
+  min-width: 36px;
+}
+.kiara-cantidad span {
+  min-width: 18px;
+  text-align: center;
+}
+.kiara-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  padding: 20px 0;
+}
+.kiara-recogida {
+  background: #eff7f2;
+  padding: 10px 12px;
+  color: #25654e;
+  border-radius: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+.kiara-formulario small {
+  color: #657a6e;
+  font-size: 12px;
+}
+.kiara-exito {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  padding: 10px;
+  color: #075e54;
+}
+.kiara-exito > span {
+  font-size: 13px;
+}
+.kiara-vacio {
+  text-align: center;
+  padding: 30px 0;
+}
+.kiara-hoja-cuerpo a {
+  color: #008069;
+  text-decoration: underline;
+}
+@media (min-width: 800px) {
+  .kiara-chat {
+    height: calc(100dvh - 32px);
+    margin: 16px auto;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 35px #1c3b3022;
+  }
+  .kiara-velo {
+    align-items: center;
+    padding: 20px;
+  }
+  .kiara-hoja {
+    max-width: 540px;
+    border-radius: 20px;
+    max-height: 90dvh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiara-chat * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
