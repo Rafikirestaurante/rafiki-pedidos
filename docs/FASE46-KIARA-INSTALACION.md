@@ -1,3 +1,7 @@
+# Nota de actualización 137.1
+
+El funcionamiento actual está descrito en `FASE46B-KIARA-AJUSTES.md`: para llevar con ubicación opcional, código de cliente y menú por categoría/sabor/tamaño. Las instrucciones de variables y SQL siguientes siguen aplicando.
+
 # Kiara — versión 137.0 / Fase 46
 
 Módulo público en `https://TU-DOMINIO/kiara`, con el encabezado **Kiara · Asistente Virtual Rafiki** y apariencia de chat familiar. Usa Gemini por el servidor de Vercel. `/cliente` sigue siendo el enlace de Restaurante.
@@ -29,7 +33,7 @@ Las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` de la aplicación s
 - Parfait: 1–3 frutas; tercera fruta +$1.000. Desayunos principales: acompañante y bebida. Los desayunos incluyen en el precio mostrado $1.000 de empaque para llevar, igual que la operación actual. Batidos cremosos y jugos: base obligatoria.
 - Se puede escribir a Gemini o agregar desde Ver menú. Ver mi pedido permite aumentar, reducir o quitar productos.
 - Gemini propone un carrito; el servidor valida IDs, cantidades, opciones, disponibilidad y precios. No recibe facultad para crear pedidos. Una respuesta con productos u opciones inválidos conserva el carrito anterior.
-- El cliente revisa el resumen, completa nombre, teléfono y pago, y pulsa **Confirmar pedido**. En esta primera entrega los pedidos son **para recoger en el local**; no se ofrecen domicilios, tarifas de envío, pedidos a crédito ni pagos en línea. Efectivo y Transferencia son formas de pago declaradas, sin afirmar pago verificado.
+- El cliente revisa el resumen, completa nombre, teléfono y pago, y pulsa **Confirmar pedido**. Los pedidos son **para llevar** con ubicación opcional; si no se indica, se registra recogida. No se garantizan domicilios ni se calculan tarifas de envío, pedidos a crédito o pagos en línea. Efectivo y Transferencia son formas de pago declaradas, sin afirmar pago verificado.
 - El pedido se guarda en `pedidos`, estado Pendiente, origen Kiara, mesero Kiara, tipo llevar, ítems de cafetería. Usa el flujo existente de Pedidos hoy y la cola normal de impresión; no cambia el servidor de impresión. La confirmación del chat acredita registro, no impresión ni pago.
 - El ID acompaña las revisiones y la confirmación es atómica e idempotente: reintentar el mismo pedido devuelve su número sin insertar otro. Tras confirmarlo, el chat ofrece Hacer otro pedido.
 - El carrito firmado vence en dos horas. El historial y el carrito se conservan sólo en la sesión de la pestaña; el formulario de nombre/teléfono no se guarda en ese historial. Los mensajes se envían a Gemini para responder; no enviar datos de tarjetas o contraseñas.

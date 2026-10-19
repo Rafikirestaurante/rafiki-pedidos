@@ -35,7 +35,7 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
       if (
         !body ||
         JSON.stringify(body).length > 32000 ||
-        !["iniciar", "chat", "carrito", "confirmar"].includes(body.accion)
+        !["iniciar", "chat", "carrito", "confirmar", "cliente"].includes(body.accion)
       )
         throw new ErrorKiara("Solicitud no válida.");
       const estado = leerEstado(body.token, secret);
@@ -52,6 +52,36 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
         throw new ErrorKiara("Kiara no está lista. Revisa la instalación de la actualización.", 503);
       if (limite.data !== true)
         throw new ErrorKiara("Has realizado muchas consultas. Intenta más tarde.", 429);
+      if (body.accion === "cliente") {
+        const codigo =
+          typeof body.codigo === "string"
+            ? body.codigo
+                .trim()
+                .replace(/[^a-zA-Z0-9]+/g, "")
+                .toUpperCase()
+            : "";
+        if (codigo.length < 3 || codigo.length > 80) throw new ErrorKiara("Escribe tu código de cliente.");
+        // Mismo registro de clientes de /cliente; no crea una segunda base de datos.
+        const resultado = await db
+          .from("clientes_especiales")
+          .select("nombre,telefono,ubicacion")
+          .eq("codigo_normalizado", codigo)
+          .eq("activo", true)
+          .maybeSingle();
+        if (resultado.error)
+          throw new ErrorKiara("No pude consultar el código. Puedes completar los datos manualmente.", 503);
+        if (!resultado.data)
+          throw new ErrorKiara("No encontré ese código activo. Revísalo o completa tus datos manualmente.");
+        return res
+          .status(200)
+          .json({
+            cliente: {
+              nombre: resultado.data.nombre || "",
+              telefono: resultado.data.telefono || "",
+              ubicacion: resultado.data.ubicacion || ""
+            }
+          });
+      }
       if (body.accion === "confirmar") {
         const previo = await db
           .from("pedidos")
@@ -61,12 +91,10 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
         if (previo.error)
           throw new ErrorKiara("No pude verificar el pedido. Intenta de nuevo sin iniciar otro.", 503);
         if (previo.data?.origen === "Kiara")
-          return res
-            .status(200)
-            .json({
-              pedido: { numero: previo.data.numero_pedido, total: previo.data.total },
-              respuesta: "Tu pedido ya está registrado."
-            });
+          return res.status(200).json({
+            pedido: { numero: previo.data.numero_pedido, total: previo.data.total },
+            respuesta: "Tu pedido ya está registrado."
+          });
       }
       const { data, error } = await db
         .from("catalogo_productos")
@@ -96,7 +124,7 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
       }
       if (body.accion === "carrito") {
         carrito = validarCarrito(body.carrito, catalogo);
-        respuesta = "Actualicé tu pedido. Puedes seguir eligiendo o revisarlo antes de confirmar.";
+        respuesta = "¡Listo, ya lo agregué a tu pedido! ¿Te provoca algo más?";
       }
       const total = totalCarrito(carrito);
       if (body.accion === "confirmar") {
@@ -116,12 +144,12 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
           cliente: c.nombre,
           cliente_nombre: c.nombre,
           telefono: c.telefono,
-          ubicacion: "Recoger en el local",
+          ubicacion: c.ubicacion,
           tipo_pago: c.pago,
           tipo_pedido: "llevar",
           mesa: "Llevar",
           mesero: "Kiara",
-          observaciones: `KIARA · Recoger en el local${c.notas ? " · " + c.notas : ""}`,
+          observaciones: `KIARA · PARA LLEVAR${c.notas ? " · " + c.notas : ""}`,
           items: crearItems(carrito),
           pedido_texto: texto,
           total,
@@ -135,13 +163,11 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
             "No pude confirmar el registro. Pulsa Confirmar de nuevo: no se duplicará.",
             503
           );
-        return res
-          .status(200)
-          .json({
-            pedido: resultado.data,
-            respuesta:
-              "¡Listo! Tu pedido quedó registrado para recoger en Rafiki. El pago se realiza con el local."
-          });
+        return res.status(200).json({
+          pedido: resultado.data,
+          respuesta:
+            "¡Listo! Tu pedido para llevar quedó registrado en Rafiki. El pago se realiza con el local."
+        });
       }
       // El mismo ID acompaña las revisiones; una confirmación reintentada es idempotente.
       return res
@@ -149,13 +175,11 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
         .json({ respuesta, catalogo, carrito, total, token: firmarEstado(carrito, secret, estado) });
     } catch (error) {
       const conocido = error instanceof ErrorKiara;
-      return res
-        .status(conocido ? error.status : 500)
-        .json({
-          error: conocido
-            ? error.message
-            : "No pude procesar la solicitud. Tu pedido sigue igual; intenta de nuevo."
-        });
+      return res.status(conocido ? error.status : 500).json({
+        error: conocido
+          ? error.message
+          : "No pude procesar la solicitud. Tu pedido sigue igual; intenta de nuevo."
+      });
     }
   };
 }
