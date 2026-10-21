@@ -1,9 +1,8 @@
 export const RAFIKI_BUILD = {
-  version: "137.1-FASE46B-KIARA-ATENCION-MENU-2026-10-19",
-  phase: "Fase 46B - Kiara atención, frutas y clientes",
-  date: "2026-10-19",
-  notes:
-    "Atención breve y amable; parfait con frutas en comanda; para llevar y código de cliente; categorías, sabores y tamaños.",
-  fase: "46B-KIARA-ATENCION-MENU"
+  "version": "137.2-FASE46C-KIARA-MISMO-REGISTRO-2026-10-21",
+  "phase": "Fase 46C - Kiara mismo registro operativo",
+  "date": "2026-10-21",
+  "notes": "Kiara registra igual que mesas y solo identifica mesero Kiara.",
+  "fase": "46C-KIARA-MISMO-REGISTRO"
 };
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
