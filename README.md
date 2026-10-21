@@ -1,3 +1,7 @@
+# 137.2-FASE46C-KIARA-MISMO-REGISTRO-2026-10-21
+
+Kiara comparte la estructura operativa de /mesas; mesero = Kiara.
+
 # 137.1-FASE46B-KIARA-ATENCION-MENU-2026-10-19
 
 Actualización de Kiara: atención amable, frutas en comanda, para llevar, código de cliente y menú por categoría → sabor → tamaño. Ver [FASE46B-KIARA-AJUSTES.md](docs/FASE46B-KIARA-AJUSTES.md).

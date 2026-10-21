@@ -31,13 +31,12 @@ returns jsonb language plpgsql security definer set search_path=public as $$
 declare v public.pedidos%rowtype;
 begin
  -- Sólo el servidor con service_role puede invocar esta función.
- if p_pedido->>'origen' is distinct from 'Kiara' or jsonb_typeof(p_pedido->'items') is distinct from 'array'
+ if jsonb_typeof(p_pedido->'items') is distinct from 'array'
  or jsonb_array_length(p_pedido->'items')=0 or (p_pedido->>'total')::numeric <= 0 then raise exception 'Pedido inválido'; end if;
  -- Serializa reintentos del mismo pedido, sin bloquear otros pedidos.
  perform pg_advisory_xact_lock(hashtextextended(p_pedido->>'id',46));
  select * into v from pedidos where id::text=p_pedido->>'id';
  if found then
-  if v.origen is distinct from 'Kiara' then raise exception 'Pedido no válido'; end if;
  else
   insert into pedidos(id,cliente,cliente_nombre,telefono,ubicacion,tipo_pago,tipo_pedido,mesa,mesero,
     observaciones,items,pedido_texto,total,estado,enviado_whatsapp,origen,impreso)
