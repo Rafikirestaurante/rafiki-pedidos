@@ -131,27 +131,30 @@ export function validarCarrito(carrito, catalogo) {
   });
 }
 export function crearItems(carrito) {
-  return carrito.map((l, i) => ({
-    id: `kiara-${i}`,
-    categoria: "cafeteria",
-    area: "cafeteria",
-    tipo: l.tipo,
-    producto: l.producto,
-    plato: l.producto,
-    proteina: l.producto,
-    precio: l.precio - l.empaque,
-    precioPlato: l.precio - l.empaque,
-    precioProteina: l.precio - l.empaque,
-    cantidad: l.cantidad,
-    tamano: l.tamano,
-    ...l.opciones,
-    extraFrutas: l.extraFrutas,
-    acompanantes: [],
-    observacionAcompanantes: "",
-    paraLlevar: true,
-    detalle_impresion: `${l.nombre}${l.detalle ? " - " + l.detalle : ""}`,
-    origen: "Kiara"
-  }));
+  return carrito.map((l, i) => {
+    const nombre =
+      l.tipo === "Parfait" ? `Parfait ${l.tamano} - Frutas: ${l.opciones.frutas.join(", ")}` : l.producto;
+    return {
+      id: `kiara-${i}`,
+      categoria: "cafeteria",
+      area: "cafeteria",
+      tipo: l.tipo,
+      producto: nombre,
+      plato: nombre,
+      proteina: nombre,
+      precio: l.precio - l.empaque,
+      precioPlato: l.precio - l.empaque,
+      precioProteina: l.precio - l.empaque,
+      cantidad: l.cantidad,
+      tamano: l.tamano,
+      ...l.opciones,
+      extraFrutas: l.extraFrutas,
+      acompanantes: [],
+      observacionAcompanantes: "",
+      paraLlevar: true,
+      detalle_impresion: `${l.nombre}${l.detalle ? " - " + l.detalle : ""}`
+    };
+  });
 }
 export function validarCliente(c) {
   const limpio = (v, min, max, nombre) => {
@@ -169,10 +172,11 @@ export function validarCliente(c) {
   if (!/^\+?[\d ()-]{7,25}$/.test(telefono) || telefono.replace(/\D/g, "").length < 7)
     throw new ErrorKiara("Revisa tu teléfono.");
   if (!["Efectivo", "Transferencia"].includes(c?.pago)) throw new ErrorKiara("Selecciona la forma de pago.");
-  // Primera versión: recogida en el local, sin prometer domicilios ni tarifas desconocidas.
+
   return {
     nombre,
     telefono,
+    ubicacion: c.ubicacion ? limpio(c.ubicacion, 2, 180, "la ubicación") : "Recoger en el local",
     pago: c.pago,
     notas: c.notas ? limpio(c.notas, 1, 300, "las observaciones") : ""
   };

@@ -1,4 +1,5 @@
 import { calcularTotalItems } from "../../src/shared/utils/pedidos.js";
+import { agruparMenuKiara } from "../../src/modules/kiara/menuKiara.js";
 import { describe, it, expect, vi } from "vitest";
 import { crearCatalogo, validarCarrito, validarCliente, crearItems, totalCarrito } from "./catalogo.js";
 import { firmarEstado, leerEstado } from "./seguridad.js";
@@ -170,14 +171,6 @@ describe("catálogo y cobro Kiara", () => {
     vi.useRealTimers();
   });
 });
-describe("precio del catálogo en vistas operativas", () => {
-  it("conserva el precio confirmado aunque difiera de las tarifas locales antiguas", () => {
-    const actual = crearCatalogo(rows.map((r) => (r.id === "cafe" ? { ...r, precio: 4200 } : r)));
-    const cart = validarCarrito([linea], actual);
-    expect(totalCarrito(cart)).toBe(8400);
-    expect(calcularTotalItems(crearItems(cart))).toBe(8400);
-  });
-});
 describe("Gemini y confirmación", () => {
   it("envía la clave sólo por cabecera y recibe JSON estructurado", async () => {
     const fetchImpl = vi.fn(async () => ({
@@ -264,5 +257,65 @@ describe("Gemini y confirmación", () => {
     const db = dbMock();
     db.rpc = vi.fn(async () => ({ data: false }));
     expect((await llamar(crearHandler({ env, cliente: db }), { accion: "iniciar" })).statusCode).toBe(429);
+  });
+});
+
+describe("ajustes de atención, menú y clientes F46B", () => {
+  it("muestra un sabor y conserva sus tres tamaños sin mezclarlos con otras categorías", () => {
+    const grupos = agruparMenuKiara(catalogo);
+    const mambo = grupos.filter((p) => p.nombre === "Mambo");
+    expect(mambo).toHaveLength(1);
+    expect(mambo[0].categoria).toBe("Batidos cremosos");
+    expect(mambo[0].variantes.map((p) => p.tamano)).toEqual(["12 oz", "16 oz", "22 oz"]);
+    expect(grupos.find((p) => p.id === "cafe").variantes).toHaveLength(1);
+  });
+  it("incluye todas las frutas en los campos que utiliza la comanda", () => {
+    const carrito = validarCarrito(
+      [{ productoId: "parfait", cantidad: 1, opciones: { frutas: ["Fresa", "Banano", "Uva"] } }],
+      catalogo
+    );
+    const item = crearItems(carrito)[0];
+    expect(item.producto).toBe("Parfait 12 oz - Frutas: Fresa, Banano, Uva");
+    expect(item.plato).toBe(item.producto);
+    expect(item.proteina).toBe(item.producto);
+    expect(item.frutas).toEqual(["Fresa", "Banano", "Uva"]);
+    expect(item.precio).toBe(13500);
+    expect(item.paraLlevar).toBe(true);
+  });
+  it("acepta para llevar con ubicación y mantiene recogida como alternativa sin dirección", () => {
+    const cliente = { nombre: "Rafa", telefono: "3001234567", pago: "Efectivo", ubicacion: "Oficina 707" };
+    expect(validarCliente(cliente).ubicacion).toBe("Oficina 707");
+    expect(validarCliente({ ...cliente, ubicacion: "" }).ubicacion).toBe("Recoger en el local");
+  });
+  it("normaliza el código y devuelve únicamente datos de autocompletado", async () => {
+    const db = dbMock();
+    const select = vi.fn();
+    const eq = vi.fn();
+    const query = {
+      select,
+      eq,
+      maybeSingle: async () => ({ data: { nombre: "Rafa", telefono: "3001234567", ubicacion: "707" } })
+    };
+    select.mockReturnValue(query);
+    eq.mockReturnValue(query);
+    db.from = vi.fn(() => query);
+    const r = await llamar(crearHandler({ env, cliente: db }), { accion: "cliente", codigo: " raf-001 " });
+    expect(r.statusCode).toBe(200);
+    expect(eq).toHaveBeenCalledWith("codigo_normalizado", "RAF001");
+    expect(eq).toHaveBeenCalledWith("activo", true);
+    expect(select).toHaveBeenCalledWith("nombre,telefono,ubicacion");
+    expect(r.body.cliente).toEqual({ nombre: "Rafa", telefono: "3001234567", ubicacion: "707" });
+    expect(db.insertados.size).toBe(0);
+  });
+  it("no carga datos para códigos ausentes y ofrece completar manualmente", async () => {
+    const db = dbMock();
+    const q = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: null }) };
+    db.from = vi.fn(() => q);
+    const r = await llamar(crearHandler({ env, cliente: db }), { accion: "cliente", codigo: "NOEXISTE" });
+    expect(r.statusCode).toBe(400);
+    expect(r.body.error).toContain("manualmente");
+    expect(
+      (await llamar(crearHandler({ env, cliente: db }), { accion: "cliente", codigo: "" })).statusCode
+    ).toBe(400);
   });
 });

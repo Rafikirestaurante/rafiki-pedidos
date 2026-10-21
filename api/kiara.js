@@ -72,25 +72,23 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
           throw new ErrorKiara("No pude consultar el código. Puedes completar los datos manualmente.", 503);
         if (!resultado.data)
           throw new ErrorKiara("No encontré ese código activo. Revísalo o completa tus datos manualmente.");
-        return res
-          .status(200)
-          .json({
-            cliente: {
-              nombre: resultado.data.nombre || "",
-              telefono: resultado.data.telefono || "",
-              ubicacion: resultado.data.ubicacion || ""
-            }
-          });
+        return res.status(200).json({
+          cliente: {
+            nombre: resultado.data.nombre || "",
+            telefono: resultado.data.telefono || "",
+            ubicacion: resultado.data.ubicacion || ""
+          }
+        });
       }
       if (body.accion === "confirmar") {
         const previo = await db
           .from("pedidos")
-          .select("id,numero_pedido,total,origen")
+          .select("id,numero_pedido,total")
           .eq("id", estado.pedidoId)
           .maybeSingle();
         if (previo.error)
           throw new ErrorKiara("No pude verificar el pedido. Intenta de nuevo sin iniciar otro.", 503);
-        if (previo.data?.origen === "Kiara")
+        if (previo.data)
           return res.status(200).json({
             pedido: { numero: previo.data.numero_pedido, total: previo.data.total },
             respuesta: "Tu pedido ya está registrado."
@@ -154,8 +152,7 @@ export function crearHandler({ env = process.env, cliente, conversar = conversar
           pedido_texto: texto,
           total,
           estado: "Pendiente",
-          enviado_whatsapp: false,
-          origen: "Kiara"
+          enviado_whatsapp: false
         };
         const resultado = await db.rpc("kiara_crear_pedido", { p_pedido: payload });
         if (resultado.error || !resultado.data)
