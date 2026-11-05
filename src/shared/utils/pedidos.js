@@ -181,7 +181,6 @@ export function formatoNumeroPedido(numero) {
   const valor = Number(numero) || 0;
 
   if (!valor) return "----";
-  if (valor >= 10000) return "10000";
 
   return String(valor).padStart(4, "0");
 }

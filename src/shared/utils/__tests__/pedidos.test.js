@@ -8,6 +8,7 @@ import {
   esProductoSinAcompanantes,
   esItemCafeteria,
   formatoNumeroPedido,
+  obtenerCodigoPedido,
   limpiarTelefono,
   limpiarTexto,
   normalizarTexto,
@@ -26,9 +27,16 @@ describe("utils/pedidos", () => {
     expect(limpiarTelefono("Tel: +57 (300) 123-45xx")).toBe("+57 (300) 123-45");
   });
 
-  it("formatea el número de pedido con cuatro dígitos", () => {
+  it("formatea números de pedido de cuatro o más dígitos", () => {
     expect(formatoNumeroPedido(25)).toBe("0025");
+    expect(formatoNumeroPedido(9999)).toBe("9999");
+    expect(formatoNumeroPedido(10000)).toBe("10000");
+    expect(formatoNumeroPedido(10001)).toBe("10001");
     expect(formatoNumeroPedido(null)).toBe("----");
+  });
+
+  it("conserva el código de ciclo en pedidos históricos", () => {
+    expect(obtenerCodigoPedido({ numero_pedido: 25, ciclo_pedido: 2 })).toBe("C2-0025");
   });
 
   it("normaliza texto con tildes", () => {
