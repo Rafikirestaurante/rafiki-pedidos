@@ -1,3 +1,7 @@
+# 137.3-NUMERACION-CONTINUA-2026-11-05
+
+Los pedidos nuevos continúan después del 9999 (10000, 10001…). Los números históricos con ciclo, como C2, se conservan. Ejecutar `supabase/2026-11-05-fase47-numeracion-pedidos-continua.sql` antes de desplegar.
+
 # 137.2-FASE46C-KIARA-MISMO-REGISTRO-2026-10-21
 
 Kiara comparte la estructura operativa de /mesas; mesero = Kiara.
