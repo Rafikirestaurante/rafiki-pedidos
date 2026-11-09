@@ -22,6 +22,14 @@
         .cartera-profesional-panel .section-heading .cartera-resumen-chip span { display: block; background: transparent !important; color: #64748b; min-width: 0; height: auto; border-radius: 0; box-shadow: none; padding: 0; font-size: 11px; font-weight: 800; line-height: 1.15; text-align: left; }
         .cartera-profesional-panel .section-heading .cartera-resumen-chip strong { display: block; background: transparent !important; color: #0f172a; box-shadow: none; border-radius: 0; padding: 0; font-size: 13px; line-height: 1.2; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cartera-profesional-panel .cartera-export-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .cartera-impresion-libro { display: grid; gap: 14px; }
+        .cartera-impresion-rango { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .cartera-impresion-rango label, .cartera-impresion-campos label { display: grid; gap: 6px; color: #431407; font-weight: 800; }
+        .cartera-impresion-rango input { width: 100%; min-height: 42px; border: 1px solid #e7e5e4; border-radius: 12px; padding: 9px 10px; font: inherit; }
+        .cartera-impresion-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; border: 1px solid #fed7aa; border-radius: 14px; padding: 12px; margin: 0; }
+        .cartera-impresion-campos legend { padding: 0 6px; color: #9a3412; font-size: 13px; font-weight: 900; }
+        .cartera-impresion-campos label { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 7px; font-size: 13px; }
+        .cartera-impresion-campos input { accent-color: #ea580c; }
         .cartera-profesional-panel .cartera-filtros { display: grid; grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.8fr) repeat(3, minmax(140px, 0.5fr)); gap: 8px; align-items: center; margin: 14px 0 8px; }
         .cartera-profesional-panel .pedidos-tabla-compacta { min-width: 1040px; }
         .cartera-profesional-panel .pedidos-tabla-compacta th { position: sticky; top: 0; z-index: 8; background: #fff7ed; box-shadow: 0 1px 0 #fed7aa; }
@@ -52,4 +60,4 @@
         .cartera-ui-limpia .cartera-resumen-header h3 { margin: 0; color: #9a3412; }
         .cartera-ui-limpia .cartera-table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         @media (max-width: 980px) { .cartera-profesional-panel .cartera-indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cartera-profesional-panel .ranking-grid { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid, .cartera-profesional-panel .cartera-movimientos-resumen { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } }
+        @media (max-width: 760px) { .cartera-profesional-panel .cartera-indicadores, .cartera-profesional-panel .cartera-form, .cartera-profesional-panel .cartera-filtros, .cartera-profesional-panel .abono-form-grid, .cartera-profesional-panel .cartera-movimientos-resumen, .cartera-impresion-rango, .cartera-impresion-campos { grid-template-columns: 1fr; } .cartera-profesional-panel .cartera-form textarea { grid-column: auto; } .cartera-ui-limpia .cartera-resumen-header { align-items: stretch; flex-direction: column; } }

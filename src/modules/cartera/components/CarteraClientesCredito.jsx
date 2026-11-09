@@ -19,6 +19,7 @@ import CarteraModals from "./CarteraModals";
 import RafikiBadge from "../../../shared/components/RafikiBadge";
 import RafikiEmptyState from "../../../shared/components/RafikiEmptyState";
 import RafikiTabs from "../../../shared/components/RafikiTabs";
+import RafikiModal from "../../../shared/components/RafikiModal";
 import { describirErrorSupabase, registrarErrorSupabase } from "../../../shared/utils/supabaseErrors";
 import { aPesosEnteros } from "../../../shared/utils/money";
 import {
@@ -29,6 +30,17 @@ import {
 import { formatearFechaTermica, imprimirReporteTermico } from "../../impresion/thermalReportService";
 import ThermalPrintControls from "../../impresion/ThermalPrintControls";
 import useAbonosEditables from "../hooks/useAbonosEditables";
+
+const CAMPOS_IMPRESION_LIBRO = [
+  { id: "fecha", label: "Fecha" },
+  { id: "cliente", label: "Cliente" },
+  { id: "tipo", label: "Tipo de movimiento" },
+  { id: "valor", label: "Valor (compra + / abono −)" },
+  { id: "descripcion", label: "Descripción" },
+  { id: "pedido", label: "Número del pedido" },
+  { id: "saldo", label: "Saldo acumulado" },
+];
+const CAMPOS_IMPRESION_LIBRO_INICIALES = ["fecha", "cliente", "tipo", "valor", "descripcion", "pedido"];
 
 import {
   ABONO_INICIAL,
@@ -83,6 +95,13 @@ export default function CarteraClientesCredito() {
   const [soloProteinaEstadoCuenta, setSoloProteinaEstadoCuenta] = useState(false);
   const [clienteUnificarId, setClienteUnificarId] = useState(null);
   const [clienteDestinoUnificarId, setClienteDestinoUnificarId] = useState("");
+  const [modalImprimirLibro, setModalImprimirLibro] = useState(false);
+  const [formatoImpresionLibro, setFormatoImpresionLibro] = useState("80");
+  const [configImpresionLibro, setConfigImpresionLibro] = useState({
+    fechaInicio: "",
+    fechaFin: "",
+    campos: CAMPOS_IMPRESION_LIBRO_INICIALES,
+  });
 
   const cargarClientes = useCallback(async () => {
     setCargando(true);
@@ -378,7 +397,7 @@ export default function CarteraClientesCredito() {
     [abonosClienteDetalle, movimientosClienteDetalle, soloProteinaEstadoCuenta]
   );
 
-  const libroFiltrado = useMemo(() => {
+  const libroCompleto = useMemo(() => {
     const cuentas = new Map();
     movimientosCartera.forEach((movimiento) => {
       const id = movimiento.cliente_credito_id;
@@ -396,14 +415,24 @@ export default function CarteraClientesCredito() {
         ...linea, clienteId,
         clienteNombre: nombres.get(clienteId) || cuenta.movimientos[0]?.cliente_nombre || cuenta.abonos[0]?.cliente_nombre || "Cliente",
       }))
-    ).filter((linea) => {
+    ).sort((a, b) => new Date(a.fecha) - new Date(b.fecha) || a.id.localeCompare(b.id));
+  }, [movimientosCartera, abonosCartera, clientes]);
+
+  const libroFiltrado = useMemo(() => libroCompleto.filter((linea) => {
       if (filtros.clienteId && linea.clienteId !== filtros.clienteId) return false;
       if (!fechaDentroRango(linea.fecha, filtros.fechaInicio, filtros.fechaFin)) return false;
       if (filtros.pedido && !normalizarTexto(linea.referencia).includes(normalizarTexto(filtros.pedido))) return false;
       if (filtros.descripcion && !normalizarTexto(linea.descripcion).includes(normalizarTexto(filtros.descripcion))) return false;
       return !filtros.texto || normalizarTexto(`${linea.clienteNombre} ${linea.descripcion} ${linea.referencia}`).includes(normalizarTexto(filtros.texto));
-    }).sort((a, b) => new Date(a.fecha) - new Date(b.fecha) || a.id.localeCompare(b.id));
-  }, [movimientosCartera, abonosCartera, clientes, filtros]);
+    }), [filtros, libroCompleto]);
+
+  const libroImpresionFiltrado = useMemo(() => libroCompleto.filter((linea) => {
+    if (filtros.clienteId && linea.clienteId !== filtros.clienteId) return false;
+    if (!fechaDentroRango(linea.fecha, configImpresionLibro.fechaInicio, configImpresionLibro.fechaFin)) return false;
+    if (filtros.pedido && !normalizarTexto(linea.referencia).includes(normalizarTexto(filtros.pedido))) return false;
+    if (filtros.descripcion && !normalizarTexto(linea.descripcion).includes(normalizarTexto(filtros.descripcion))) return false;
+    return !filtros.texto || normalizarTexto(`${linea.clienteNombre} ${linea.descripcion} ${linea.referencia}`).includes(normalizarTexto(filtros.texto));
+  }), [configImpresionLibro.fechaFin, configImpresionLibro.fechaInicio, filtros, libroCompleto]);
 
   function exportarLibroDiario() {
     const encabezado = ["Fecha", "Cliente", "Referencia", "Descripción", "Compra", "Abono", "Saldo anterior", "Saldo acumulado"];
@@ -412,21 +441,71 @@ export default function CarteraClientesCredito() {
     descargarArchivo(`libro-diario-cartera-${fechaColombiaYYYYMMDD()}.xls`, `<html><head><meta charset="utf-8" /></head><body><h2>Libro diario de cartera</h2><p>Saldo acumulado por cliente, incluyendo movimientos anteriores al filtro.</p><table border="1">${tabla}</table></body></html>`);
   }
 
-  function imprimirLibroDiario(formato = "80") {
-    const ok = imprimirReporteTermico({
-      formato, titulo: "Libro diario de cartera", subtitulo: "Compras y abonos por cliente",
-      meta: [{ etiqueta: "Fecha", valor: formatearFechaTermica(new Date()) }],
-      listado: {
-        titulo: "Movimientos", modo: "tabla", items: libroFiltrado, vacio: "Sin movimientos",
-        campos: [
-          { etiqueta: "Cliente / Fecha", ancho: "30%", valor: (l) => `${l.clienteNombre} · ${formatearFecha(l.fecha)}` },
-          { etiqueta: "Concepto", ancho: "30%", valor: (l) => `${l.referencia} · ${l.descripcion}` },
-          { etiqueta: "+ / −", ancho: "20%", alinear: "right", valor: (l) => l.pago ? `−${dinero(l.pago)}` : dinero(l.pedido) },
-          { etiqueta: "Saldo", ancho: "20%", alinear: "right", valor: (l) => dinero(l.saldo) },
-        ],
-      },
+  function abrirImpresionLibro(formato = "80") {
+    setFormatoImpresionLibro(formato);
+    setConfigImpresionLibro({
+      fechaInicio: filtros.fechaInicio || "",
+      fechaFin: filtros.fechaFin || "",
+      campos: [...CAMPOS_IMPRESION_LIBRO_INICIALES],
     });
-    if (!ok) setError("No se pudo abrir la ventana de impresión.");
+    setModalImprimirLibro(true);
+  }
+
+  function cambiarCampoImpresionLibro(campo) {
+    setConfigImpresionLibro((actual) => {
+      const yaSeleccionado = actual.campos.includes(campo);
+      if (yaSeleccionado && actual.campos.length <= 1) return actual;
+      return {
+        ...actual,
+        campos: yaSeleccionado ? actual.campos.filter((valor) => valor !== campo) : [...actual.campos, campo],
+      };
+    });
+  }
+
+  function imprimirLibroDiario() {
+    if (configImpresionLibro.fechaInicio && configImpresionLibro.fechaFin && configImpresionLibro.fechaInicio > configImpresionLibro.fechaFin) {
+      setError("La fecha inicial del reporte no puede ser posterior a la fecha final.");
+      return;
+    }
+    if (!libroImpresionFiltrado.length || !configImpresionLibro.campos.length) return;
+    const valoresCampo = {
+      fecha: (linea) => formatearFecha(linea.fecha),
+      cliente: (linea) => linea.clienteNombre,
+      tipo: (linea) => linea.pago ? "Abono recibido" : "Compra a crédito",
+      valor: (linea) => `${linea.pago ? "−" : "+"}${dinero(linea.pago || linea.pedido)}`,
+      descripcion: (linea) => linea.descripcion || "—",
+      pedido: (linea) => linea.tipo === "Pedido a crédito" ? linea.referencia : "—",
+      saldo: (linea) => dinero(linea.saldo),
+    };
+    const campos = CAMPOS_IMPRESION_LIBRO
+      .filter((campo) => configImpresionLibro.campos.includes(campo.id))
+      .map((campo) => ({ etiqueta: campo.label, fuerte: campo.id === "valor", valor: valoresCampo[campo.id] }));
+    const rango = configImpresionLibro.fechaInicio || configImpresionLibro.fechaFin
+      ? `${configImpresionLibro.fechaInicio || "Inicio"} a ${configImpresionLibro.fechaFin || "Hoy"}`
+      : "Todos los movimientos";
+    const ok = imprimirReporteTermico({
+      formato: formatoImpresionLibro,
+      titulo: "Libro diario de cartera",
+      subtitulo: filtros.clienteId ? clienteFiltradoMovimientos?.nombre || "Movimientos del cliente" : "Compras y abonos por cliente",
+      meta: [
+        { etiqueta: "Rango", valor: rango },
+        { etiqueta: "Movimientos", valor: libroImpresionFiltrado.length },
+        { etiqueta: "Impresión", valor: formatearFechaTermica(new Date()) },
+      ],
+      listado: {
+        titulo: "Movimientos",
+        modo: "bloques",
+        items: libroImpresionFiltrado,
+        vacio: "Sin movimientos en este rango",
+        campos,
+      },
+      pie: "Compras suman · Abonos restan · Saldo acumulado por cliente",
+    });
+    if (!ok) {
+      setError("No se pudo abrir la ventana de impresión.");
+      return;
+    }
+    setModalImprimirLibro(false);
   }
 
   function compartirLibroDiario() {
@@ -1080,7 +1159,7 @@ export default function CarteraClientesCredito() {
             <button type="button" className="mini-btn" onClick={actualizarTodo} disabled={cargandoMovimientos || cargandoAbonos}>Actualizar</button>
             <button type="button" className="mini-btn green" onClick={exportarLibroDiario} disabled={!libroFiltrado.length}>Exportar libro diario</button>
             <button type="button" className="mini-btn" onClick={compartirLibroDiario} disabled={!libroFiltrado.length}>Compartir WhatsApp</button>
-            <ThermalPrintControls onPrint={imprimirLibroDiario} disabled={!libroFiltrado.length} label="Imprimir" title="Tamaño" buttonClassName="mini-btn print" className="cartera-thermal-control" compact />
+            <ThermalPrintControls onPrint={abrirImpresionLibro} disabled={!libroFiltrado.length} label="Imprimir" title="Tamaño" buttonClassName="mini-btn print" className="cartera-thermal-control" compact />
           </div>
           <div className="pedidos-tabla-wrap">
             <table className="pedidos-tabla-compacta">
@@ -1184,6 +1263,38 @@ export default function CarteraClientesCredito() {
           )}
         </section>
       )}
+
+      <RafikiModal
+        open={modalImprimirLibro}
+        title="Imprimir libro diario"
+        description="Elige el rango y los campos que aparecerán en la impresión térmica."
+        onClose={() => setModalImprimirLibro(false)}
+        size="md"
+        footer={(
+          <div className="cartera-actions">
+            <button type="button" className="mini-btn" style={{ width: "auto", marginBottom: 0 }} onClick={() => setModalImprimirLibro(false)}>Cancelar</button>
+            <button type="button" className="mini-btn green" style={{ width: "auto", marginBottom: 0 }} disabled={!libroImpresionFiltrado.length} onClick={imprimirLibroDiario}>Imprimir {formatoImpresionLibro} mm</button>
+          </div>
+        )}
+      >
+        <div className="cartera-impresion-libro">
+          <div className="cartera-impresion-rango">
+            <label>Desde<input type="date" value={configImpresionLibro.fechaInicio} onChange={(event) => setConfigImpresionLibro((actual) => ({ ...actual, fechaInicio: event.target.value }))} /></label>
+            <label>Hasta<input type="date" value={configImpresionLibro.fechaFin} onChange={(event) => setConfigImpresionLibro((actual) => ({ ...actual, fechaFin: event.target.value }))} /></label>
+          </div>
+          <p className="muted small">Se imprimirán {libroImpresionFiltrado.length} movimiento(s). El rango vacío incluye todos los movimientos filtrados por cliente o búsqueda.</p>
+          <fieldset className="cartera-impresion-campos">
+            <legend>Campos para imprimir</legend>
+            {CAMPOS_IMPRESION_LIBRO.map((campo) => (
+              <label key={campo.id}>
+                <input type="checkbox" checked={configImpresionLibro.campos.includes(campo.id)} onChange={() => cambiarCampoImpresionLibro(campo.id)} />
+                <span>{campo.label}</span>
+              </label>
+            ))}
+          </fieldset>
+          <div className="alert info">La impresión se organiza en bloques compactos para que las descripciones largas no se corten en la impresora de 80 mm.</div>
+        </div>
+      </RafikiModal>
     </section>
   );
 }

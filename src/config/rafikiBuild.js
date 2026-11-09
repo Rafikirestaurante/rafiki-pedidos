@@ -1,8 +1,8 @@
 export const RAFIKI_BUILD = {
-  version: "137.3-NUMERACION-CONTINUA-2026-11-05",
-  phase: "Fase 47 - Numeración continua de pedidos",
-  date: "2026-11-05",
-  notes: "Los pedidos nuevos continúan desde 10000; se conservan los códigos históricos C2.",
-  fase: "47-NUMERACION-CONTINUA"
+  version: "137.4-CARTERA-IMPRESION-80MM-2026-11-09",
+  phase: "Fase 48 - Impresión de cartera en 80 mm",
+  date: "2026-11-09",
+  notes: "Libro diario con rango de fechas y selección de campos para impresión térmica.",
+  fase: "48-CARTERA-IMPRESION-80MM"
 };
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
