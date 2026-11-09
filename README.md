@@ -1,3 +1,7 @@
+# 137.4-FASE48-CARTERA-IMPRESION-80MM-2026-11-09
+
+El libro diario de cartera permite seleccionar rango de fechas y campos para imprimir en formato térmico de 80 mm.
+
 # 137.3-NUMERACION-CONTINUA-2026-11-05
 
 Los pedidos nuevos continúan después del 9999 (10000, 10001…). Los números históricos con ciclo, como C2, se conservan. Ejecutar `supabase/2026-11-05-fase47-numeracion-pedidos-continua.sql` antes de desplegar.
