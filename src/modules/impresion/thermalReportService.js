@@ -254,10 +254,10 @@ function renderListadoTabla(listado = {}, campos = [], items = [], formato = "80
 
 function renderListadoBloques(listado = {}, campos = [], items = []) {
   return `
-    <section class="thermal-list-section">
+    <section class="thermal-list-section ${escapeHtmlTermico(listado.clase || "")}">
       ${listado.titulo ? `<h3>${renderTextoTermico(listado.titulo)}</h3>` : ""}
       <div class="thermal-list">
-        ${items.map((item) => `
+        ${items.map((item, index) => `
           <article class="thermal-list-item">
             ${campos.map((campo) => `
               <div class="thermal-list-line ${campo.fuerte ? "thermal-list-line-strong" : ""} ${campo.bloque ? "thermal-list-line-block" : ""}">
@@ -265,6 +265,7 @@ function renderListadoBloques(listado = {}, campos = [], items = []) {
                 <strong>${renderTextoTermico(resolverValorCampoTermico(campo, item))}</strong>
               </div>
             `).join("")}
+            ${listado.separador && index < items.length - 1 ? `<div class="thermal-list-separator">${renderTextoTermico(listado.separador)}</div>` : ""}
           </article>
         `).join("")}
       </div>
@@ -406,6 +407,18 @@ function construirHtmlReporteTermico({ formato = "80", titulo = "Reporte Rafiki"
             font-size: 1em;
             text-transform: uppercase;
             font-weight: ${cfg.fontWeight};
+          }
+          .thermal-list-large .thermal-list-line-block strong {
+            font-size: 14px;
+            line-height: 1.2;
+            text-align: left;
+          }
+          .thermal-list-separator {
+            margin: 5px 0 4px;
+            text-align: center;
+            font-size: 11px;
+            line-height: 1;
+            letter-spacing: 0;
           }
           .thermal-pre-table {
             width: 100%;

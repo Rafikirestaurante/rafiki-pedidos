@@ -1,8 +1,8 @@
 export const RAFIKI_BUILD = {
-  version: "137.4-CARTERA-IMPRESION-80MM-2026-11-09",
-  phase: "Fase 48 - Impresión de cartera en 80 mm",
-  date: "2026-11-09",
-  notes: "Libro diario con rango de fechas y selección de campos para impresión térmica.",
-  fase: "48-CARTERA-IMPRESION-80MM"
+  version: "137.5-CARTERA-CUENTA-CLIENTE-IMPRESION-LEGIBLE-2026-11-13",
+  phase: "Fase 48B - Cuenta del cliente e impresión legible",
+  date: "2026-11-13",
+  notes: "Una sola subpestaña de cuenta del cliente e impresión térmica con separadores y texto legible.",
+  fase: "48B-CARTERA-CUENTA-CLIENTE"
 };
 export const RAFIKI_APP_VERSION = RAFIKI_BUILD.version;
